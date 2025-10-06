@@ -1,0 +1,144 @@
+---
+# assuming version clang-format 11
+# run "brew update; brew upgrade; brew cleanup" to pull the latest clang-format
+Language: Cpp
+BasedOnStyle: WebKit
+AccessModifierOffset: -2
+AlignArrayOfStructures: None # since clang 15 only applies to array with equal number of columns per row
+AlignConsecutiveAssignments:
+   Enabled: true
+   AlignCompound: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Right
+AlignOperands: true
+
+# Align trailing comments even across empty lines
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html#aligntrailingcomments
+AlignTrailingComments:
+   Kind: Always
+   OverEmptyLines: 1
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowAllArgumentsOnNextLine: true
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
+BreakAfterReturnType: Automatic
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: Yes
+# See: https://clang.llvm.org/docs/ClangFormatStyleOptions.html#attributemacros
+AttributeMacros:
+   [
+      "VOLA_DEPRECATED",
+      "DLL_PUBLIC",
+      "DLL_LOCAL",
+      "DLL_PUBLIC_DEPRECATED",
+      "VOLA_CONSTEXPR_CPP14",
+      "VOLA_LIFETIMEBOUND",
+   ]
+BinPackParameters: OnePerLine
+BinPackArguments: false
+# Allman breaks also after namespaces... yek
+# BreakBeforeBraces: Stroustrup
+# BreakBeforeBraces: Allman
+BreakBeforeBraces: Custom
+BraceWrapping:
+   IndentBraces: false
+   AfterNamespace: false
+   AfterClass: true
+   AfterControlStatement: true
+   AfterEnum: true
+   AfterFunction: true
+   AfterStruct: true
+   AfterUnion: true
+   BeforeCatch: true
+   BeforeElse: true
+BreakBeforeBinaryOperators: All
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+ColumnLimit: 80 # 120 # 0 = no limit
+CommentPragmas: "^ IWYU pragma:"
+CompactNamespaces: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: false #true # This option is deprecated. See CurrentLine of PackConstructorInitializers
+ConstructorInitializerIndentWidth: 0
+ContinuationIndentWidth: 4
+Cpp11BracedListStyle: false
+DerivePointerAlignment: false
+DisableFormat: false
+EmptyLineAfterAccessModifier: Always
+EmptyLineBeforeAccessModifier: Always
+ExperimentalAutoDetectBinPacking: false
+FixNamespaceComments: true
+# ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
+#IncludeBlocks: Regroup # TODO do we want this ? probably after rejigging of code base etc...
+#IncludeCategories: # TODO do we want this ?
+#IncludeIsMainRegex: # TODO
+IndentAccessModifiers: false
+IndentCaseBlocks: true
+IndentCaseLabels: false
+IndentExternBlock: AfterExternBlock
+IndentPPDirectives: BeforeHash # None
+# IndentPPDirectives: AfterHash
+IndentWidth: 4
+IndentWrappedFunctionNames: false
+# IndentFunctionDeclarationAfterType: false
+# InsertBraces: true # TODO delicate this requires care before applying see warning in https://releases.llvm.org/15.0.0/tools/clang/docs/ClangFormatStyleOptions.html
+InsertTrailingCommas: Wrapped
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: Signature
+MaxEmptyLinesToKeep: 2
+#MaxEmptyLinesToKeep: 1 # I prefer this, but hey what is an extra empty line or two...
+#NamespaceIndentation: None
+# NamespaceIndentation: Inner # or All
+NamespaceIndentation: All
+PackConstructorInitializers: Never
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 300
+PenaltyBreakString: 1000
+PenaltyBreakFirstLessLess: 120
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 60
+PointerAlignment: Left
+# QualifierAlignment: Right # TODO this seems to interact with PointerAligment and adds a space before pointers and refs which I dont want ??!!
+# QualifierAlignment: Custom
+# QualifierOrder: ['inline', 'static', 'type', 'const', 'volatile' ]
+ReferenceAlignment: Left # TODO seems to be a bug here, does Middle
+# ReflowComments: true # TODO to check if we want this, potentially meshes up lots of comments...
+# SeparateDefinitionBlocks: Always # TODO why didnt they introduce a bloody argument for the minimum number of lines to keep ?
+SeparateDefinitionBlocks: Leave
+ShortNamespaceLines: 0
+#SortIncludes: true # TODO do we want this ? there is the other settings above as well to line up includes, how do these interact ?
+#SortUsingDeclarations: true # TODO do we want this ? not clear that we want to always sort alfabetically... sometimes there is a reason to line them up as is because of functionality etc.
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+# SpaceAroundPointerQualifiers: After # TODO this creates a mess: "int const&" => "int const &" DONT USE
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false # TODO figure why this gives an error should be available... should work with clang-format 15
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: Never
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: true
+SpacesInContainerLiterals: true
+# SpacesInLineCommentPrefix: # TODO not clear how to specify min and max here ??
+SpacesInParentheses: true
+SpacesInSquareBrackets: false
+Standard: c++17
+# StatementMacros: # TODO
+TabWidth: 8
+# TypenameMacros: # TODO
+UseTab: Never
+MacroBlockBegin: 'VOLA_POLY_CLASS_BEGIN'
+MacroBlockEnd: 'VOLA_POLY_CLASS_END'
