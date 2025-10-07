@@ -5,6 +5,31 @@ project(vtz)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
+set(BUILD "${CMAKE_CURRENT_BINARY_DIR}")
+
+set(tzdb_file tzdb-2025b.tar.lz)
+cmake_path(GET tzdb_file STEM tzdb_stem)
+
+file(
+    DOWNLOAD
+        "https://data.iana.org/time-zones/releases/${tzdb_file}"
+        "${BUILD}/${tzdb_file}"
+)
+
+file(
+    ARCHIVE_EXTRACT
+    INPUT
+        "${BUILD}/${tzdb_file}"
+    DESTINATION
+        "${BUILD}/data"
+)
+
+file(
+    CREATE_LINK
+        "${BUILD}/data/${tzdb_stem}"
+        "${BUILD}/data/tzdata"
+    SYMBOLIC
+)
 
 if(PROJECT_IS_TOP_LEVEL)
     set(LINK_FLAGS_SANITIZE "-fsanitize=address,undefined")
