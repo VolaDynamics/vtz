@@ -15,13 +15,19 @@ if(PROJECT_IS_TOP_LEVEL)
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
     CPMAddPackage("gh:google/googletest@1.17.0")
 
-    add_library(vtz INTERFACE)
+    file(GLOB_RECURSE sources include/*.cpp)
+    add_library(
+        vtz
+        STATIC
+            ${sources})
+
+    target_link_libraries(vtz PRIVATE fmt::fmt)
     add_library(vtz::vtz ALIAS vtz)
 
     file(GLOB_RECURSE headers include/*.h)
     target_sources(
         vtz
-        INTERFACE
+        PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES ${headers}

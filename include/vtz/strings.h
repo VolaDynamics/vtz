@@ -7,6 +7,7 @@
 
 namespace vtz {
     using std::string_view;
+    using std::vector;
 
     /// Optional-like wrapper around a string_view. This optional is empty if
     /// data() == nullptr
@@ -81,6 +82,8 @@ namespace vtz {
         {
         }
 
+        string_view rest() const noexcept { return string_view( b_, e_ - b_ ); }
+
         void clear() noexcept { b_ = e_; }
 
         opt_sv next()
@@ -128,19 +131,16 @@ namespace vtz {
     }
 
     /// Tokenize a line. Return a vector of tokens
-    inline std::vector<string_view> tokenize( string_view line )
+    inline vector<string_view> tokenize( string_view line )
     {
         size_t max_size = ( line.size() + 1 ) / 2;
 
-        auto result = std::vector<string_view>( max_size );
+        auto result = vector<string_view>( max_size );
 
         // Fill vector with tokens
         size_t     i = 0;
         token_iter tokens( line );
-        while( auto tok = tokens.next() )
-        {
-            result[i++] = tok;
-        }
+        while( auto tok = tokens.next() ) { result[i++] = tok; }
 
         result.resize( i );
         return result;
@@ -152,6 +152,23 @@ namespace vtz {
         auto pos = line.find( '#' );
         if( pos == string_view::npos ) { return line; }
         return string_view( line.data(), pos );
+    }
+
+    [[nodiscard]] inline string_view strip_trailing_delim(
+        string_view s ) noexcept
+    {
+        if( s.empty() ) { return s; }
+        size_t i = s.size();
+        while( i > 0 && is_delim( s[i - 1] ) ) { --i; }
+        return string_view( s.data(), i );
+    }
+
+    [[nodiscard]] inline string_view strip_leading_delim(
+        string_view s ) noexcept
+    {
+        size_t i = 0;
+        while( i < s.size() && is_delim( s[i] ) ) ++i;
+        return string_view( s.data() + i, s.size() - i );
     }
 
 
@@ -181,13 +198,17 @@ namespace vtz {
     }
 
 
-    struct line_reader
+    struct line_iter
     {
+      private:
+
         string_view input;
 
-        line_reader() = default;
+      public:
 
-        constexpr line_reader( string_view input ) noexcept
+        line_iter() = default;
+
+        constexpr line_iter( string_view input ) noexcept
         : input( input )
         {
         }
@@ -216,30 +237,22 @@ namespace vtz {
 
             return string_view();
         }
+
+        string_view peek_input() const noexcept { return input; }
     };
 
-    /// Get a vector of all the lines in the input. Do not include line endings.
-    inline std::vector<string_view> lines( string_view input )
+    inline char first_or_nil( string_view sv )
     {
-        std::vector<string_view> result( count_lines( input ) );
-        line_reader              r( input );
+        if( sv.empty() ) return '\0';
+        return sv[0];
+    }
+
+    /// Get a vector of all the lines in the input. Do not include line endings.
+    inline vector<string_view> lines( string_view input )
+    {
+        vector<string_view> result( count_lines( input ) );
+        line_iter           r( input );
         for( auto& elem : result ) { elem = r.next(); }
         return result;
     }
-
-    // # Rule	NAME	FROM	TO	-	IN	ON	AT	SAVE
-    // LETTER Rule	CA	1948	only	-	Mar	14	2:01
-    // 1:00	D Rule	CA	1949	only	-	Jan	 1	2:00
-    // 0	S Rule	CA	1950	1966	-	Apr	lastSun	1:00
-    // 1:00	D
-    struct RawRule
-    {
-        string_view name;
-        string_view from;
-        string_view to;
-        string_view in;
-        string_view on;
-        string_view at;
-        string_view save;
-    };
 } // namespace vtz

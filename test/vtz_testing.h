@@ -4,8 +4,114 @@
 #include <fmt/ranges.h>
 
 #include <gtest/gtest.h>
+#include <string_view>
+#include <tuple>
 
 namespace _test_vtz {
+    using std::string_view;
+    template<auto Mem>
+    struct Field
+    {
+        string_view name;
+
+        template<class T>
+        auto operator()( T const& value ) -> decltype( value.*Mem )
+        {
+            return value.*Mem;
+        }
+    };
+
+    template<class T>
+    struct StructInfo
+    {
+        constexpr static bool has = false;
+    };
+
+    inline void print_indent( std::string& s, size_t indent )
+    {
+        s.resize( s.size() + indent, ' ' );
+    }
+
+    template<class T>
+    void debug_print( std::string& s, T const& value, size_t indent = 0 );
+
+    template<class T>
+    void debug_print(
+        std::string& s, std::vector<T> const& values, size_t indent = 0 );
+
+    void debug_print( std::string& s, std::string_view sv, size_t indent = 0 )
+    {
+        s += '"';
+        for( char ch : sv )
+        {
+            switch( ch )
+            {
+            case '\\': s += "\\\\"; break;
+            case '\a': s += "\\a"; break;
+            case '\b': s += "\\b"; break;
+            case '\f': s += "\\f"; break;
+            case '\n': s += "\\n"; break;
+            case '\r': s += "\\r"; break;
+            case '\t': s += "\\t"; break;
+            case '\v': s += "\\v"; break;
+            default: s += ch;
+            }
+        }
+        s += '"';
+    }
+
+    template<class T>
+    void debug_print_field(
+        std::string& s, string_view name, T const& value, size_t indent )
+    {
+        print_indent( s, indent );
+        s += ".";
+        s += name;
+        s += " = ";
+        debug_print( s, value, indent );
+        s += ",\n";
+    }
+
+    template<class T>
+    void debug_print(
+        std::string& s, std::vector<T> const& values, size_t indent )
+    {
+        auto begin = values.begin();
+        auto end   = values.end();
+        if( begin == end )
+        {
+            s += "[]";
+            return;
+        }
+
+        s += "[\n";
+        for( ; begin != end; ++begin )
+        {
+            auto&& value = *begin;
+            print_indent( s, indent + 4 );
+            debug_print( s, value, indent + 4 );
+            s += ",\n";
+        }
+        print_indent( s, indent );
+        s += "]";
+    }
+    template<class T>
+    void debug_print( std::string& s, T const& value, size_t indent )
+    {
+        if constexpr( StructInfo<T>::has )
+        {
+            StructInfo<T>::apply( [&]( auto... fields ) {
+                s += StructInfo<T>::name;
+                s += " {\n";
+                ( debug_print_field(
+                      s, fields.name, fields( value ), indent + 4 ),
+                    ... );
+                print_indent( s, indent );
+                s += "}";
+            } );
+        }
+        else { s += fmt::format( "{}", value ); }
+    }
 
     struct test_printer
     {
@@ -21,24 +127,6 @@ namespace _test_vtz {
             char const*         filename,
             int                 line )
         {
-            char lhs_buff[64];
-            char rhs_buff[64];
-            auto lhs_result = fmt::format_to_n( lhs_buff, 60, "{}", lhs );
-            auto rhs_result = fmt::format_to_n( rhs_buff, 60, "{}", rhs );
-            if( lhs_result.size > 60 )
-            {
-                lhs_result.size = 63;
-                lhs_buff[60]    = '.';
-                lhs_buff[61]    = '.';
-                lhs_buff[62]    = '.';
-            }
-            if( rhs_result.size > 60 )
-            {
-                rhs_result.size = 63;
-                rhs_buff[60]    = '.';
-                rhs_buff[61]    = '.';
-                rhs_buff[62]    = '.';
-            }
             if( print_expr )
             {
                 auto expr_style
@@ -68,11 +156,37 @@ namespace _test_vtz {
     {
         return testing::internal::EqFailure( lhs_expr,
             rhs_expr,
-            testing::internal::FormatForComparisonFailureMessage( lhs, rhs ),
-            testing::internal::FormatForComparisonFailureMessage( rhs, lhs ),
+            fmt::format( "{}", lhs ),
+            fmt::format( "{}", rhs ),
             false );
     }
 } // namespace _test_vtz
+
+#define FIELD( type, member )                                                  \
+    _test_vtz::Field<&type::member> { #member }
+
+#define STRUCT_INFO( type, ... )                                               \
+    template<>                                                                 \
+    struct _test_vtz::StructInfo<type>                                         \
+    {                                                                          \
+        constexpr static bool             has  = true;                         \
+        constexpr static std::string_view name = #type;                        \
+        template<class F>                                                      \
+        constexpr static void apply( F&& func )                                \
+        {                                                                      \
+            func( __VA_ARGS__ );                                               \
+        }                                                                      \
+    };                                                                         \
+    template<>                                                                 \
+    struct fmt::formatter<type> : fmt::formatter<std::string_view>             \
+    {                                                                          \
+        auto format( type const& value, format_context& ctx ) const            \
+        {                                                                      \
+            std::string s;                                                     \
+            _test_vtz::debug_print( s, value );                                \
+            return fmt::formatter<std::string_view>::format( s, ctx );         \
+        }                                                                      \
+    }
 
 #undef ASSERT_EQ
 #define ASSERT_EQ( lhs, rhs )                                                  \

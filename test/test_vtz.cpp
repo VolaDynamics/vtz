@@ -1,9 +1,11 @@
 #include <vtz/strings.h>
+#include <vtz/tz_reader.h>
 
 #include <gtest/gtest.h>
 
 #include <fmt/color.h>
 #include <fmt/format.h>
+
 
 #include "vtz_testing.h"
 
@@ -19,7 +21,7 @@ namespace vtz {
     namespace {
         void check_lines( string_view input, std::vector<string_view> lines )
         {
-            auto reader = line_reader( input );
+            auto reader = line_iter( input );
             for( auto expected : lines )
             {
                 auto line = reader.next();
@@ -159,6 +161,7 @@ namespace vtz {
 
     TEST( vtz_parser, strip_comments )
     {
+        ASSERT_EQ( strip_comment( string_view() ), "" );
         ASSERT_EQ( strip_comment( "# This is a comment" ), "" );
         ASSERT_EQ( strip_comment( "#STDOFF" ), "" );
         ASSERT_EQ( strip_comment( "        #STDOFF" ), "        " );
@@ -166,3 +169,183 @@ namespace vtz {
         ASSERT_EQ( strip_comment( "        hello #STDOFF" ), "        hello " );
     }
 } // namespace vtz
+
+STRUCT_INFO( vtz::raw_rule,
+    FIELD( vtz::raw_rule, name ),
+    FIELD( vtz::raw_rule, from ),
+    FIELD( vtz::raw_rule, to ),
+    FIELD( vtz::raw_rule, in ),
+    FIELD( vtz::raw_rule, on ),
+    FIELD( vtz::raw_rule, at ),
+    FIELD( vtz::raw_rule, save ),
+    FIELD( vtz::raw_rule, letter ) );
+
+STRUCT_INFO( vtz::raw_zone_entry,
+    FIELD( vtz::raw_zone_entry, stdoff ),
+    FIELD( vtz::raw_zone_entry, rules ),
+    FIELD( vtz::raw_zone_entry, format ),
+    FIELD( vtz::raw_zone_entry, until ) );
+
+STRUCT_INFO(
+    vtz::raw_zone, FIELD( vtz::raw_zone, name ), FIELD( vtz::raw_zone, ents ) );
+
+STRUCT_INFO( vtz::raw_tzdata_file,
+    FIELD( vtz::raw_tzdata_file, rules ),
+    FIELD( vtz::raw_tzdata_file, zones ) );
+
+using namespace vtz;
+TEST( vtz_parser, parse_tzdata )
+{
+    using ze = raw_zone_entry;
+    using r  = raw_rule;
+    ASSERT_EQ( parse_tzdata(
+                   R"(#
+# Note that 1933-05-21 was a Sunday.
+# We're left to guess the time of day when Act 163 was approved; guess noon.
+
+# Zone	NAME		STDOFF	RULES	FORMAT	[UNTIL]
+Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
+			-10:30	-	HST	1933 Apr 30  2:00
+			-10:30	1:00	HDT	1933 May 21 12:00
+			-10:30	US	H%sT	1947 Jun  8  2:00
+			-10:00	-	HST
+
+# Now we turn to US areas that have diverged from the consensus since 1970.
+
+# Arizona mostly uses MST.
+)" ),
+        ( raw_tzdata_file{
+            {},
+            {
+                raw_zone{
+                    "Pacific/Honolulu",
+                    {
+                        ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
+                        ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
+                        ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
+                        ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
+                        ze{ "-10:00", "-", "HST", {} },
+                    },
+                },
+            },
+        } ) );
+
+
+    /// Test rules immediately before or after zone declaration
+
+    ASSERT_EQ( parse_tzdata(
+                   R"(
+# Rule	NAME	FROM	TO	-	IN	ON	AT	SAVE	LETTER/S
+Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D
+Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S
+Rule	US	1942	only	-	Feb	9	2:00	1:00	W # War
+Rule	US	1945	only	-	Aug	14	23:00u	1:00	P # Peace
+Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
+			-10:30	-	HST	1933 Apr 30  2:00
+			-10:30	1:00	HDT	1933 May 21 12:00
+			-10:30	US	H%sT	1947 Jun  8  2:00
+			-10:00	-	HST
+Rule	US	1945	only	-	Sep	30	2:00	0	S
+Rule	US	1967	2006	-	Oct	lastSun	2:00	0	S
+Rule	US	1967	1973	-	Apr	lastSun	2:00	1:00	D
+Rule	US	1974	only	-	Jan	6	2:00	1:00	D
+
+# Now we turn to US areas that have diverged from the consensus since 1970.
+
+# Arizona mostly uses MST.
+)" ),
+        ( raw_tzdata_file{
+            std::vector<raw_rule>{
+                { "US", "1918", "1919", "Mar", "lastSun", "2:00", "1:00", "D" },
+                { "US", "1918", "1919", "Oct", "lastSun", "2:00", "0", "S" },
+                { "US", "1942", "only", "Feb", "9", "2:00", "1:00", "W" },
+                { "US", "1945", "only", "Aug", "14", "23:00u", "1:00", "P" },
+                { "US", "1945", "only", "Sep", "30", "2:00", "0", "S" },
+                { "US", "1967", "2006", "Oct", "lastSun", "2:00", "0", "S" },
+                { "US", "1967", "1973", "Apr", "lastSun", "2:00", "1:00", "D" },
+                { "US", "1974", "only", "Jan", "6", "2:00", "1:00", "D" },
+            },
+            {
+                raw_zone{
+                    "Pacific/Honolulu",
+                    {
+                        ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
+                        ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
+                        ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
+                        ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
+                        ze{ "-10:00", "-", "HST", {} },
+                    },
+                },
+            },
+        } ) );
+
+
+    /// Test comments within zone declaration
+    ASSERT_EQ( parse_tzdata(
+                   R"(#
+# Note that 1933-05-21 was a Sunday.
+# We're left to guess the time of day when Act 163 was approved; guess noon.
+
+# Zone	NAME		STDOFF	RULES	FORMAT	[UNTIL]
+Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
+			-10:30	-	HST	1933 Apr 30  2:00   # This is a comment
+			-10:30	1:00	HDT	1933 May 21 12:00
+            #STDOFF
+			-10:30	US	H%sT	1947 Jun  8  2:00
+			-10:00	-	HST
+# Now we turn to US areas that have diverged from the consensus since 1970.
+
+# Arizona mostly uses MST.
+)" ),
+        ( raw_tzdata_file{
+            {},
+            {
+                raw_zone{
+                    "Pacific/Honolulu",
+                    {
+                        ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
+                        ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
+                        ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
+                        ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
+                        ze{ "-10:00", "-", "HST", {} },
+                    },
+                },
+            },
+        } ) );
+
+    /// Test consecutive Zone declarations, with no spacing
+    ASSERT_EQ( parse_tzdata(
+                   R"(
+# From Paul Eggert (2023-01-23):
+# America/Adak is for the Aleutian Islands that are part of Alaska
+# and are west of 169.5° W.
+
+# Zone	NAME		STDOFF	RULES	FORMAT	[UNTIL]
+Zone America/Juneau	 15:02:19 -	LMT	1867 Oct 19 15:33:32
+			 -8:57:41 -	LMT	1900 Aug 20 12:00
+			 -9:00	US	AK%sT
+Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
+			 -9:01:13 -	LMT	1900 Aug 20 12:00
+			 -8:00	-	PST	1942
+			 -8:00	US	P%sT	1946)" ),
+        ( raw_tzdata_file{
+            {},
+            {
+                raw_zone{ "America/Juneau",
+                    {
+                        ze{ "15:02:19", "-", "LMT", "1867 Oct 19 15:33:32" },
+                        ze{ "-8:57:41", "-", "LMT", "1900 Aug 20 12:00" },
+                        ze{ "-9:00", "US", "AK%sT" },
+                    } },
+                raw_zone{
+                    "America/Sitka",
+                    {
+                        ze{ "14:58:47", "-", "LMT", "1867 Oct 19 15:30" },
+                        ze{ "-9:01:13", "-", "LMT", "1900 Aug 20 12:00" },
+                        ze{ "-8:00", "-", "PST", "1942" },
+                        ze{ "-8:00", "US", "P%sT", "1946" },
+                    },
+                },
+            },
+        } ) )
+}
