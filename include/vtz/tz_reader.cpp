@@ -5,6 +5,38 @@
 #include <stdexcept>
 
 namespace vtz {
+    raw_link parse_link_entry( token_iter tok_iter )
+    {
+        raw_link link;
+        link.canonical = tok_iter.next();
+        link.alias     = tok_iter.next();
+        return link;
+    }
+
+    raw_zone_entry parse_zone_entry( token_iter tok_iter )
+    {
+        raw_zone_entry e;
+        e.stdoff = tok_iter.next();
+        e.rules  = tok_iter.next();
+        e.format = tok_iter.next();
+        e.until  = strip_trailing_delim( tok_iter.rest() );
+        return e;
+    }
+
+    raw_rule parse_rule( token_iter tok_iter )
+    {
+        raw_rule r;
+        r.name = tok_iter.next();
+        r.from = tok_iter.next();
+        r.to   = tok_iter.next();
+        tok_iter.next(); // '-'
+        r.in     = tok_iter.next();
+        r.on     = tok_iter.next();
+        r.at     = tok_iter.next();
+        r.save   = tok_iter.next();
+        r.letter = tok_iter.next();
+        return r;
+    }
 
     void parse_zone_or_rule(
         raw_tzdata_file& file, string_view line, line_iter& lines )
@@ -19,6 +51,11 @@ namespace vtz {
         if( what == "Rule" )
         {
             file.rules.push_back( parse_rule( tok_iter ) );
+            return;
+        }
+        if( what == "Link" )
+        {
+            file.links.push_back( parse_link_entry( tok_iter ) );
             return;
         }
 
@@ -55,28 +92,14 @@ namespace vtz {
         throw std::runtime_error( fmt::format( "Unable to parse '{}'", line ) );
     }
 
-    raw_zone_entry parse_zone_entry( token_iter tok_iter )
+    raw_tzdata_file parse_tzdata( string_view input )
     {
-        raw_zone_entry e;
-        e.stdoff = tok_iter.next();
-        e.rules  = tok_iter.next();
-        e.format = tok_iter.next();
-        e.until  = strip_trailing_delim( tok_iter.rest() );
-        return e;
-    }
-
-    raw_rule parse_rule( token_iter tok_iter )
-    {
-        raw_rule r;
-        r.name = tok_iter.next();
-        r.from = tok_iter.next();
-        r.to   = tok_iter.next();
-        tok_iter.next(); // '-'
-        r.in     = tok_iter.next();
-        r.on     = tok_iter.next();
-        r.at     = tok_iter.next();
-        r.save   = tok_iter.next();
-        r.letter = tok_iter.next();
-        return r;
+        auto            lines = line_iter( input );
+        raw_tzdata_file file;
+        while( auto line = lines.next() )
+        {
+            parse_zone_or_rule( file, line, lines );
+        }
+        return file;
     }
 } // namespace vtz

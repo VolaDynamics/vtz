@@ -49,12 +49,12 @@ BreakBeforeBraces: Custom
 BraceWrapping:
    IndentBraces: false
    AfterNamespace: false
-   AfterClass: true
+   AfterClass: false
    AfterControlStatement: true
-   AfterEnum: true
-   AfterFunction: true
-   AfterStruct: true
-   AfterUnion: true
+   AfterEnum: false
+   AfterFunction: false
+   AfterStruct: false
+   AfterUnion: false
    BeforeCatch: true
    BeforeElse: true
 BreakBeforeBinaryOperators: All

@@ -10,25 +10,21 @@
 namespace _test_vtz {
     using std::string_view;
     template<auto Mem>
-    struct Field
-    {
+    struct Field {
         string_view name;
 
         template<class T>
-        auto operator()( T const& value ) -> decltype( value.*Mem )
-        {
+        auto operator()( T const& value ) -> decltype( value.*Mem ) {
             return value.*Mem;
         }
     };
 
     template<class T>
-    struct StructInfo
-    {
+    struct StructInfo {
         constexpr static bool has = false;
     };
 
-    inline void print_indent( std::string& s, size_t indent )
-    {
+    inline void print_indent( std::string& s, size_t indent ) {
         s.resize( s.size() + indent, ' ' );
     }
 
@@ -39,13 +35,14 @@ namespace _test_vtz {
     void debug_print(
         std::string& s, std::vector<T> const& values, size_t indent = 0 );
 
-    void debug_print( std::string& s, std::string_view sv, size_t indent = 0 )
-    {
+    inline void debug_print(
+        std::string& s, std::string_view sv, size_t indent = 0 ) {
         s += '"';
         for( char ch : sv )
         {
             switch( ch )
             {
+            case '\0': s += "\\0"; break;
             case '\\': s += "\\\\"; break;
             case '\a': s += "\\a"; break;
             case '\b': s += "\\b"; break;
@@ -54,16 +51,42 @@ namespace _test_vtz {
             case '\r': s += "\\r"; break;
             case '\t': s += "\\t"; break;
             case '\v': s += "\\v"; break;
-            default: s += ch;
+            default:
+                {
+                    uint8_t value( ch );
+                    if( value < 32 || value >= 127 )
+                    {
+                        int  d1 = value >> 4;
+                        int  d0 = value & 0xf;
+                        char h1
+                            = d1 >= 10 ? ( d1 + ( 'A' - 10 ) ) : ( d1 + '0' );
+                        char h0
+                            = d0 >= 10 ? ( d0 + ( 'A' - 10 ) ) : ( d0 + '0' );
+
+                        char buff[4]{ '\\', 'x', h1, h0 };
+                        s.append( buff, 4 );
+                    }
+                    else { s += ch; }
+                }
             }
         }
         s += '"';
     }
 
+
+    inline void debug_print(
+        std::string& dest, std::string const& s, size_t indent = 0 ) {
+        return debug_print( dest, string_view( s ), indent );
+    }
+
+    inline void debug_print(
+        std::string& dest, char const* s, size_t indent = 0 ) {
+        return debug_print( dest, string_view( s ), indent );
+    }
+
     template<class T>
     void debug_print_field(
-        std::string& s, string_view name, T const& value, size_t indent )
-    {
+        std::string& s, string_view name, T const& value, size_t indent ) {
         print_indent( s, indent );
         s += ".";
         s += name;
@@ -74,8 +97,7 @@ namespace _test_vtz {
 
     template<class T>
     void debug_print(
-        std::string& s, std::vector<T> const& values, size_t indent )
-    {
+        std::string& s, std::vector<T> const& values, size_t indent ) {
         auto begin = values.begin();
         auto end   = values.end();
         if( begin == end )
@@ -96,8 +118,7 @@ namespace _test_vtz {
         s += "]";
     }
     template<class T>
-    void debug_print( std::string& s, T const& value, size_t indent )
-    {
+    void debug_print( std::string& s, T const& value, size_t indent ) {
         if constexpr( StructInfo<T>::has )
         {
             StructInfo<T>::apply( [&]( auto... fields ) {
@@ -113,11 +134,29 @@ namespace _test_vtz {
         else { s += fmt::format( "{}", value ); }
     }
 
-    struct test_printer
-    {
+    template<class T>
+    std::string debug_to_string( T const& value ) {
+        std::string result;
+        debug_print( result, value, 0 );
+        return result;
+    }
+
+    struct test_printer {
         bool print_on_success = true;
         bool print_expr       = true;
         bool print_location   = true;
+
+        template<class T>
+        void info_good( string_view what, T const& value ) {
+            auto bg = fmt::emphasis::bold | fmt::fg( fmt::color::green );
+            auto bw = fmt::emphasis::bold;
+            auto grey
+                = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
+            fmt::println( "{} {}: {}",
+                fmt::styled( "[info]", grey ),
+                fmt::styled( what, bw ),
+                fmt::styled( debug_to_string( value ), bg ) );
+        }
 
         template<class A, class B>
         void print( char const* lhs_expr,
@@ -125,8 +164,7 @@ namespace _test_vtz {
             A const&            lhs,
             B const&            rhs,
             char const*         filename,
-            int                 line )
-        {
+            int                 line ) {
             if( print_expr )
             {
                 auto expr_style
@@ -139,25 +177,26 @@ namespace _test_vtz {
 
             if( print_location ) { fmt::print( "({}:{}) ", filename, line ); }
             fmt::println( "{} == {}",
-                fmt::styled(
-                    lhs, fmt::emphasis::bold | fmt::fg( fmt::color::green ) ),
-                fmt::styled(
-                    rhs, fmt::emphasis::bold | fmt::fg( fmt::color::green ) ) );
+                fmt::styled( debug_to_string( lhs ),
+                    fmt::emphasis::bold | fmt::fg( fmt::color::green ) ),
+                fmt::styled( debug_to_string( rhs ),
+                    fmt::emphasis::bold | fmt::fg( fmt::color::green ) ) );
         }
     };
 
 
-    inline test_printer PRINT_SETTINGS{};
+    inline test_printer TEST_LOG{};
 
 
     template<class A, class B>
-    static auto _eqFail(
-        char const* lhs_expr, char const* rhs_expr, A const& lhs, B const& rhs )
-    {
+    static auto _eqFail( char const* lhs_expr,
+        char const*                  rhs_expr,
+        A const&                     lhs,
+        B const&                     rhs ) {
         return testing::internal::EqFailure( lhs_expr,
             rhs_expr,
-            fmt::format( "{}", lhs ),
-            fmt::format( "{}", rhs ),
+            debug_to_string( lhs ),
+            debug_to_string( rhs ),
             false );
     }
 } // namespace _test_vtz
@@ -167,21 +206,17 @@ namespace _test_vtz {
 
 #define STRUCT_INFO( type, ... )                                               \
     template<>                                                                 \
-    struct _test_vtz::StructInfo<type>                                         \
-    {                                                                          \
+    struct _test_vtz::StructInfo<type> {                                       \
         constexpr static bool             has  = true;                         \
         constexpr static std::string_view name = #type;                        \
         template<class F>                                                      \
-        constexpr static void apply( F&& func )                                \
-        {                                                                      \
+        constexpr static void apply( F&& func ) {                              \
             func( __VA_ARGS__ );                                               \
         }                                                                      \
     };                                                                         \
     template<>                                                                 \
-    struct fmt::formatter<type> : fmt::formatter<std::string_view>             \
-    {                                                                          \
-        auto format( type const& value, format_context& ctx ) const            \
-        {                                                                      \
+    struct fmt::formatter<type> : fmt::formatter<std::string_view> {           \
+        auto format( type const& value, format_context& ctx ) const {          \
             std::string s;                                                     \
             _test_vtz::debug_print( s, value );                                \
             return fmt::formatter<std::string_view>::format( s, ctx );         \
@@ -195,8 +230,8 @@ namespace _test_vtz {
         auto const& _test_rhs = rhs;                                           \
         if( _test_lhs == _test_rhs )                                           \
         {                                                                      \
-            if( _test_vtz::PRINT_SETTINGS.print_on_success )                   \
-                _test_vtz::PRINT_SETTINGS.print( #lhs,                         \
+            if( _test_vtz::TEST_LOG.print_on_success )                         \
+                _test_vtz::TEST_LOG.print( #lhs,                               \
                     #rhs,                                                      \
                     _test_lhs,                                                 \
                     _test_rhs,                                                 \
