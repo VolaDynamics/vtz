@@ -10,7 +10,7 @@ namespace vtz {
     using std::string_view;
     using std::vector;
 
-    [[nodiscard]] size_t count_lines( string_view input );
+    [[nodiscard]] size_t countLines( string_view input );
 
     /// Get a vector of all the lines in the input. Do not include line endings.
     vector<string_view> lines( string_view input );
@@ -20,20 +20,20 @@ namespace vtz {
 
 
     /// (linenumber, column) pair
-    struct location {
+    struct Location {
         size_t line{};
         size_t col{};
 
-        location() = default;
+        Location() = default;
 
-        constexpr location( size_t line, size_t col ) noexcept
+        constexpr Location( size_t line, size_t col ) noexcept
         : line( line )
         , col( col ) {}
 
         bool     has_value() const noexcept { return line != 0; }
         explicit operator bool() const noexcept { return line != 0; }
 
-        bool operator==( location rhs ) const noexcept {
+        bool operator==( Location rhs ) const noexcept {
             return line == rhs.line && col == rhs.col;
         }
 
@@ -42,30 +42,30 @@ namespace vtz {
         /// Find the line and column number where a given cursor appears within
         /// some body of text. Return an empty Loc if the input is outside the
         /// body.
-        static location where_ptr(
+        static Location wherePtr(
             string_view body, char const* cursor ) noexcept;
 
         /// Find the line and column number where a given cursor appears within
         /// some body of text. Return an empty Loc if the input is outside the
         /// body.
-        static location where( string_view body, size_t cursor ) noexcept;
+        static Location where( string_view body, size_t cursor ) noexcept;
 
         /// Find the line and column number where the substring ends.
         /// Always returns a valid location.
-        static location where( string_view substr ) noexcept;
+        static Location where( string_view substr ) noexcept;
     };
 
 
     /// Optional-like wrapper around a string_view. This optional is empty if
     /// data() == nullptr
-    struct opt_sv : string_view {
+    struct OptSV : string_view {
         using string_view::string_view;
 
         // Allow construction from base
-        constexpr opt_sv( string_view rhs ) noexcept
+        constexpr OptSV( string_view rhs ) noexcept
         : string_view( rhs ) {}
 
-        constexpr opt_sv( std::nullopt_t ) noexcept
+        constexpr OptSV( std::nullopt_t ) noexcept
         : string_view() {}
 
         constexpr string_view value() const noexcept { return *this; }
@@ -82,28 +82,28 @@ namespace vtz {
         }
     };
 
-    constexpr bool is_delim( char ch ) { return ch == ' ' || ch == '\t'; }
+    constexpr bool isDelim( char ch ) { return ch == ' ' || ch == '\t'; }
 
-    struct token_iter {
+    struct TokenIter {
       private:
 
         char const* b_ = nullptr;
         char const* e_ = nullptr;
 
-        constexpr static char const* find_delim(
+        constexpr static char const* findDelim(
             char const* p, char const* end ) noexcept {
             while( p < end )
             {
-                if( is_delim( *p ) ) return p;
+                if( isDelim( *p ) ) return p;
                 ++p;
             }
             return end;
         }
-        constexpr static char const* find_non_delim(
+        constexpr static char const* findNonDelim(
             char const* p, char const* end ) noexcept {
             while( p < end )
             {
-                if( !is_delim( *p ) ) return p;
+                if( !isDelim( *p ) ) return p;
                 ++p;
             }
             return end;
@@ -111,9 +111,9 @@ namespace vtz {
 
       public:
 
-        constexpr token_iter() = default;
+        constexpr TokenIter() = default;
 
-        constexpr token_iter( string_view line ) noexcept
+        constexpr TokenIter( string_view line ) noexcept
         : b_( line.data() )
         , e_( line.data() + line.size() ) {}
 
@@ -121,8 +121,8 @@ namespace vtz {
 
         void clear() noexcept { b_ = e_; }
 
-        opt_sv next() {
-            auto start = find_non_delim( b_, e_ );
+        OptSV next() {
+            auto start = findNonDelim( b_, e_ );
 
             if( start == e_ )
             {
@@ -130,7 +130,7 @@ namespace vtz {
                 return std::nullopt;
             }
 
-            auto end = find_delim( start + 1, e_ );
+            auto end = findDelim( start + 1, e_ );
 
             auto result = string_view( start, size_t( end - start ) );
 
@@ -142,53 +142,53 @@ namespace vtz {
         }
     };
 
-    inline string_view strip_comment( string_view line ) {
+    inline string_view stripComment( string_view line ) {
         auto pos = line.find( '#' );
         if( pos == string_view::npos ) { return line; }
         return string_view( line.data(), pos );
     }
 
-    [[nodiscard]] inline string_view strip_trailing_delim(
+    [[nodiscard]] inline string_view stripTrailingDelim(
         string_view s ) noexcept {
         if( s.empty() ) { return s; }
         size_t i = s.size();
-        while( i > 0 && is_delim( s[i - 1] ) ) { --i; }
+        while( i > 0 && isDelim( s[i - 1] ) ) { --i; }
         return string_view( s.data(), i );
     }
 
-    [[nodiscard]] inline string_view strip_leading_delim(
+    [[nodiscard]] inline string_view stripLeadingDelim(
         string_view s ) noexcept {
         size_t i = 0;
-        while( i < s.size() && is_delim( s[i] ) ) ++i;
+        while( i < s.size() && isDelim( s[i] ) ) ++i;
         return string_view( s.data() + i, s.size() - i );
     }
 
 
     // If a line ends in a '\r' character, strip it from the end of the line
-    [[nodiscard]] inline string_view strip_cr( string_view line ) {
+    [[nodiscard]] inline string_view stripCR( string_view line ) {
         if( line.size() > 0 && line.back() == '\r' )
         { return string_view( line.data(), line.size() - 1 ); }
         return line;
     }
 
 
-    struct line_iter {
+    struct LineIter {
       private:
 
         string_view input;
 
       public:
 
-        line_iter() = default;
+        LineIter() = default;
 
-        constexpr line_iter( string_view input ) noexcept
+        constexpr LineIter( string_view input ) noexcept
         : input( input ) {}
 
-        constexpr opt_sv next() noexcept {
+        constexpr OptSV next() noexcept {
             auto p = input.find( '\n' );
             if( p != string_view::npos )
             {
-                string_view line = strip_cr( string_view( input.data(), p ) );
+                string_view line = stripCR( string_view( input.data(), p ) );
                 // Start of next line
                 size_t next = p + 1;
                 input = string_view( input.data() + next, input.size() - next );
@@ -208,10 +208,10 @@ namespace vtz {
             return string_view();
         }
 
-        string_view peek_input() const noexcept { return input; }
+        string_view rest() const noexcept { return input; }
     };
 
-    inline char first_or_nil( string_view sv ) {
+    inline char firstOrNil( string_view sv ) {
         if( sv.empty() ) return '\0';
         return sv[0];
     }

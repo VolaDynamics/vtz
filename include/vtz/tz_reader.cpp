@@ -5,27 +5,24 @@
 #include <stdexcept>
 
 namespace vtz {
-    raw_link parse_link_entry( token_iter tok_iter )
-    {
-        raw_link link;
+    Link parseLink( TokenIter tok_iter ) {
+        Link link;
         link.canonical = tok_iter.next();
         link.alias     = tok_iter.next();
         return link;
     }
 
-    raw_zone_entry parse_zone_entry( token_iter tok_iter )
-    {
-        raw_zone_entry e;
+    ZoneEntry parseZoneEntry( TokenIter tok_iter ) {
+        ZoneEntry e;
         e.stdoff = tok_iter.next();
         e.rules  = tok_iter.next();
         e.format = tok_iter.next();
-        e.until  = strip_trailing_delim( tok_iter.rest() );
+        e.until  = stripTrailingDelim( tok_iter.rest() );
         return e;
     }
 
-    raw_rule parse_rule( token_iter tok_iter )
-    {
-        raw_rule r;
+    Rule parseRule( TokenIter tok_iter ) {
+        Rule r;
         r.name = tok_iter.next();
         r.from = tok_iter.next();
         r.to   = tok_iter.next();
@@ -38,49 +35,47 @@ namespace vtz {
         return r;
     }
 
-    void parse_zone_or_rule(
-        raw_tzdata_file& file, string_view line, line_iter& lines )
-    {
-        line = strip_comment( line );
+    void parseEntry( TZDataFile& file, string_view line, LineIter& lines ) {
+        line = stripComment( line );
         if( line.empty() ) return;
 
-        auto tok_iter = token_iter( line );
+        auto tok_iter = TokenIter( line );
         // Either 'Zone' or 'Rule'
         auto what = tok_iter.next();
         if( !what.has_value() ) return;
         if( what == "Rule" )
         {
-            file.rules.push_back( parse_rule( tok_iter ) );
+            file.rules.push_back( parseRule( tok_iter ) );
             return;
         }
         if( what == "Link" )
         {
-            file.links.push_back( parse_link_entry( tok_iter ) );
+            file.links.push_back( parseLink( tok_iter ) );
             return;
         }
 
         if( what == "Zone" )
         {
-            raw_zone z;
+            Zone z;
             z.name = tok_iter.next();
-            z.ents.push_back( parse_zone_entry( tok_iter ) );
+            z.ents.push_back( parseZoneEntry( tok_iter ) );
             for( ;; )
             {
                 // Get the next char of the next line. We're going to
                 // inspect it to see if we're still in a zone
-                auto next_ch = first_or_nil( lines.peek_input() );
+                auto next_ch = firstOrNil( lines.rest() );
                 if( next_ch == '#' )
                 {
                     (void)lines.next();
                     continue;
                 }
-                if( is_delim( next_ch ) )
+                if( isDelim( next_ch ) )
                 {
                     line = lines.next();
-                    line = strip_comment( line );
-                    line = strip_leading_delim( line );
+                    line = stripComment( line );
+                    line = stripLeadingDelim( line );
                     if( line.empty() ) continue;
-                    z.ents.push_back( parse_zone_entry( token_iter( line ) ) );
+                    z.ents.push_back( parseZoneEntry( TokenIter( line ) ) );
                     continue;
                 }
                 break;
@@ -92,14 +87,10 @@ namespace vtz {
         throw std::runtime_error( fmt::format( "Unable to parse '{}'", line ) );
     }
 
-    raw_tzdata_file parse_tzdata( string_view input )
-    {
-        auto            lines = line_iter( input );
-        raw_tzdata_file file;
-        while( auto line = lines.next() )
-        {
-            parse_zone_or_rule( file, line, lines );
-        }
+    TZDataFile parseTZData( string_view input ) {
+        auto       lines = LineIter( input );
+        TZDataFile file;
+        while( auto line = lines.next() ) { parseEntry( file, line, lines ); }
         return file;
     }
 } // namespace vtz

@@ -24,18 +24,18 @@ namespace _test_vtz {
         constexpr static bool has = false;
     };
 
-    inline void print_indent( std::string& s, size_t indent ) {
+    inline void printIndent( std::string& s, size_t indent ) {
         s.resize( s.size() + indent, ' ' );
     }
 
     template<class T>
-    void debug_print( std::string& s, T const& value, size_t indent = 0 );
+    void debugPrint( std::string& s, T const& value, size_t indent = 0 );
 
     template<class T>
-    void debug_print(
+    void debugPrint(
         std::string& s, std::vector<T> const& values, size_t indent = 0 );
 
-    inline void debug_print(
+    inline void debugPrint(
         std::string& s, std::string_view sv, size_t indent = 0 ) {
         s += '"';
         for( char ch : sv )
@@ -74,29 +74,29 @@ namespace _test_vtz {
     }
 
 
-    inline void debug_print(
+    inline void debugPrint(
         std::string& dest, std::string const& s, size_t indent = 0 ) {
-        return debug_print( dest, string_view( s ), indent );
+        return debugPrint( dest, string_view( s ), indent );
     }
 
-    inline void debug_print(
+    inline void debugPrint(
         std::string& dest, char const* s, size_t indent = 0 ) {
-        return debug_print( dest, string_view( s ), indent );
+        return debugPrint( dest, string_view( s ), indent );
     }
 
     template<class T>
-    void debug_print_field(
+    void debugPrintField(
         std::string& s, string_view name, T const& value, size_t indent ) {
-        print_indent( s, indent );
+        printIndent( s, indent );
         s += ".";
         s += name;
         s += " = ";
-        debug_print( s, value, indent );
+        debugPrint( s, value, indent );
         s += ",\n";
     }
 
     template<class T>
-    void debug_print(
+    void debugPrint(
         std::string& s, std::vector<T> const& values, size_t indent ) {
         auto begin = values.begin();
         auto end   = values.end();
@@ -110,24 +110,24 @@ namespace _test_vtz {
         for( ; begin != end; ++begin )
         {
             auto&& value = *begin;
-            print_indent( s, indent + 4 );
-            debug_print( s, value, indent + 4 );
+            printIndent( s, indent + 4 );
+            debugPrint( s, value, indent + 4 );
             s += ",\n";
         }
-        print_indent( s, indent );
+        printIndent( s, indent );
         s += "]";
     }
     template<class T>
-    void debug_print( std::string& s, T const& value, size_t indent ) {
+    void debugPrint( std::string& s, T const& value, size_t indent ) {
         if constexpr( StructInfo<T>::has )
         {
             StructInfo<T>::apply( [&]( auto... fields ) {
                 s += StructInfo<T>::name;
                 s += " {\n";
-                ( debug_print_field(
+                ( debugPrintField(
                       s, fields.name, fields( value ), indent + 4 ),
                     ... );
-                print_indent( s, indent );
+                printIndent( s, indent );
                 s += "}";
             } );
         }
@@ -135,19 +135,19 @@ namespace _test_vtz {
     }
 
     template<class T>
-    std::string debug_to_string( T const& value ) {
+    std::string debugToString( T const& value ) {
         std::string result;
-        debug_print( result, value, 0 );
+        debugPrint( result, value, 0 );
         return result;
     }
 
-    struct test_printer {
+    struct TestPrinter {
         bool print_on_success = true;
         bool print_expr       = true;
         bool print_location   = true;
 
         template<class T>
-        void info_good( string_view what, T const& value ) {
+        void logGood( string_view what, T const& value ) {
             auto bg = fmt::emphasis::bold | fmt::fg( fmt::color::green );
             auto bw = fmt::emphasis::bold;
             auto grey
@@ -155,7 +155,7 @@ namespace _test_vtz {
             fmt::println( "{} {}: {}",
                 fmt::styled( "[info]", grey ),
                 fmt::styled( what, bw ),
-                fmt::styled( debug_to_string( value ), bg ) );
+                fmt::styled( debugToString( value ), bg ) );
         }
 
         template<class A, class B>
@@ -177,15 +177,15 @@ namespace _test_vtz {
 
             if( print_location ) { fmt::print( "({}:{}) ", filename, line ); }
             fmt::println( "{} == {}",
-                fmt::styled( debug_to_string( lhs ),
+                fmt::styled( debugToString( lhs ),
                     fmt::emphasis::bold | fmt::fg( fmt::color::green ) ),
-                fmt::styled( debug_to_string( rhs ),
+                fmt::styled( debugToString( rhs ),
                     fmt::emphasis::bold | fmt::fg( fmt::color::green ) ) );
         }
     };
 
 
-    inline test_printer TEST_LOG{};
+    inline TestPrinter TEST_LOG{};
 
 
     template<class A, class B>
@@ -195,8 +195,8 @@ namespace _test_vtz {
         B const&                     rhs ) {
         return testing::internal::EqFailure( lhs_expr,
             rhs_expr,
-            debug_to_string( lhs ),
-            debug_to_string( rhs ),
+            debugToString( lhs ),
+            debugToString( rhs ),
             false );
     }
 } // namespace _test_vtz
@@ -218,7 +218,7 @@ namespace _test_vtz {
     struct fmt::formatter<type> : fmt::formatter<std::string_view> {           \
         auto format( type const& value, format_context& ctx ) const {          \
             std::string s;                                                     \
-            _test_vtz::debug_print( s, value );                                \
+            _test_vtz::debugPrint( s, value );                                 \
             return fmt::formatter<std::string_view>::format( s, ctx );         \
         }                                                                      \
     }

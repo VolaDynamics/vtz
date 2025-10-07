@@ -19,7 +19,7 @@ namespace vtz {
         template<class T>
         _guard( T ) -> _guard<T>;
 
-        auto file_error( int errc, char const* fp, string_view verb )
+        auto fileError( int errc, char const* fp, string_view verb )
             -> std::runtime_error {
             return std::runtime_error(
                 fmt::format( "Error when {} '{}'. What: {} (OS Error {})",
@@ -30,17 +30,17 @@ namespace vtz {
         }
     } // namespace
 
-    std::string read_file( std::string const& fp ) {
-        return read_file( fp.c_str() );
+    std::string readFile( std::string const& fp ) {
+        return readFile( fp.c_str() );
     }
 
-    std::string read_file( char const* fp ) {
+    std::string readFile( char const* fp ) {
         if( fp == nullptr )
             throw std::runtime_error( "read_file(): given null filepath" );
 
         std::FILE* file = std::fopen( fp, "rb" );
 
-        if( file == nullptr ) throw file_error( errno, fp, "opening" );
+        if( file == nullptr ) throw fileError( errno, fp, "opening" );
 
         // Close the file when we leave the scope
         auto _close = _guard{ [file] {
@@ -59,7 +59,7 @@ namespace vtz {
 
             // Check the error code
             if( int errc = std::ferror( file ) )
-                throw file_error( errc, fp, "reading" );
+                throw fileError( errc, fp, "reading" );
 
             // Add the bytes to the buffer
             result.append( buffer, bytes );
