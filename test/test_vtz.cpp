@@ -15,6 +15,28 @@
 using namespace vtz;
 using _test_vtz::TEST_LOG;
 
+static_assert( format_as( Mon::Jan ) == "Jan" );
+static_assert( format_as( Mon::Feb ) == "Feb" );
+static_assert( format_as( Mon::Mar ) == "Mar" );
+static_assert( format_as( Mon::Apr ) == "Apr" );
+static_assert( format_as( Mon::May ) == "May" );
+static_assert( format_as( Mon::Jun ) == "Jun" );
+static_assert( format_as( Mon::Jul ) == "Jul" );
+static_assert( format_as( Mon::Aug ) == "Aug" );
+static_assert( format_as( Mon::Sep ) == "Sep" );
+static_assert( format_as( Mon::Oct ) == "Oct" );
+static_assert( format_as( Mon::Nov ) == "Nov" );
+static_assert( format_as( Mon::Dec ) == "Dec" );
+
+static_assert( format_as( DOW::Sun ) == "Sun" );
+static_assert( format_as( DOW::Mon ) == "Mon" );
+static_assert( format_as( DOW::Tue ) == "Tue" );
+static_assert( format_as( DOW::Wed ) == "Wed" );
+static_assert( format_as( DOW::Thu ) == "Thu" );
+static_assert( format_as( DOW::Fri ) == "Fri" );
+static_assert( format_as( DOW::Sat ) == "Sat" );
+
+
 static_assert( RuleLetter().sv() == "" );
 static_assert( RuleLetter().size_ == 0 );
 static_assert( RuleLetter( "x" ).sv() == "x" );

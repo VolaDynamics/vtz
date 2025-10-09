@@ -32,6 +32,10 @@ file(
 )
 
 if(PROJECT_IS_TOP_LEVEL)
+    if(UNIX)
+        add_compile_options(-fdiagnostics-color=always)
+    endif()
+
     set(LINK_FLAGS_SANITIZE "-fsanitize=address,undefined")
     set(CMAKE_CXX_FLAGS_SANITIZE "-fsanitize=address,undefined -O0 -g")
 
