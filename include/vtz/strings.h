@@ -58,6 +58,9 @@ namespace vtz {
 
     /// Optional-like wrapper around a string_view. This optional is empty if
     /// data() == nullptr
+    ///
+    /// `has_value()` implies `data() != nullptr`. This makes it appropriate for
+    /// returning from a LineIterator, since non-empty lines are still valid.
     struct OptSV : string_view {
         using string_view::string_view;
 
@@ -73,12 +76,45 @@ namespace vtz {
         constexpr bool has_value() const noexcept { return data() != nullptr; }
 
         constexpr string_view value_or( string_view rhs ) const noexcept {
-            if( data() == nullptr ) { return rhs; }
-            else { return *this; }
+            return has_value() ? string_view( *this ) : rhs;
         }
 
         constexpr explicit operator bool() const noexcept {
             return has_value();
+        }
+    };
+
+    /// Optional-like interface representing a token. Unlike OptSV, has_value()
+    /// returns true if the token is not empty.
+    ///
+    /// An empty token may still, however, have a valid data() pointer. This is
+    /// used to simplify error handling:
+    struct OptTok : string_view {
+        using string_view::string_view;
+
+        constexpr OptTok( string_view rhs ) noexcept
+        : string_view( rhs ) {}
+
+        constexpr string_view value() const noexcept { return *this; }
+
+        constexpr bool has_value() const noexcept { return size() > 0; }
+
+
+        constexpr string_view value_or( string_view rhs ) const noexcept {
+            return has_value() ? string_view( *this ) : rhs;
+        }
+
+        constexpr explicit operator bool() const noexcept {
+            return has_value();
+        }
+
+        /// Used to indicate that we expected a token at the given position, but
+        /// that one was missing.
+        ///
+        /// `data()` must still be valid, so that we can obtain a proper
+        /// lineno/column when providing an error message to the user.
+        constexpr static OptTok missingAt( char const* at ) noexcept {
+            return OptTok( at, 0 );
         }
     };
 
@@ -99,6 +135,7 @@ namespace vtz {
             }
             return end;
         }
+
         constexpr static char const* findNonDelim(
             char const* p, char const* end ) noexcept {
             while( p < end )
@@ -121,24 +158,29 @@ namespace vtz {
 
         void clear() noexcept { b_ = e_; }
 
-        OptSV next() {
+        OptTok next() {
             auto start = findNonDelim( b_, e_ );
 
             if( start == e_ )
             {
                 clear();
-                return std::nullopt;
+                return OptTok::missingAt( e_ );
             }
 
             auto end = findDelim( start + 1, e_ );
 
             auto result = string_view( start, size_t( end - start ) );
 
-            // start searching from 1 past the last character we checked
+            // next time around, we will start searching from 1 past the last
+            // character we checked
             if( end < e_ ) { b_ = end + 1; }
             else { clear(); }
 
             return result;
+        }
+        TokenIter& drop() {
+            (void)next();
+            return *this;
         }
     };
 
@@ -215,5 +257,7 @@ namespace vtz {
         if( sv.empty() ) return '\0';
         return sv[0];
     }
+
+    std::string escapeString( std::string_view sv );
 
 } // namespace vtz

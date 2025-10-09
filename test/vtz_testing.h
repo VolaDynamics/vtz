@@ -1,3 +1,5 @@
+#include <vtz/strings.h>
+
 #include <fmt/color.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
@@ -7,7 +9,31 @@
 #include <string_view>
 #include <tuple>
 
+#define DECLARE_STRINGLIKE( type )                                             \
+    namespace _test_vtz {                                                      \
+        template<>                                                             \
+        struct DebugTraits<type> {                                             \
+            constexpr static bool stringlike = true;                           \
+        };                                                                     \
+    }
+
 namespace _test_vtz {
+    template<class T>
+    struct DebugTraits {
+        constexpr static bool stringlike = false;
+    };
+    template<size_t N>
+    struct DebugTraits<char const ( & )[N]> {
+        constexpr static bool stringlike = true;
+    };
+} // namespace _test_vtz
+
+DECLARE_STRINGLIKE( std::string );
+DECLARE_STRINGLIKE( std::string_view );
+DECLARE_STRINGLIKE( char const* );
+
+namespace _test_vtz {
+
     using std::string_view;
     template<auto Mem>
     struct Field {
@@ -34,44 +60,6 @@ namespace _test_vtz {
     template<class T>
     void debugPrint(
         std::string& s, std::vector<T> const& values, size_t indent = 0 );
-
-    inline void debugPrint(
-        std::string& s, std::string_view sv, size_t indent = 0 ) {
-        s += '"';
-        for( char ch : sv )
-        {
-            switch( ch )
-            {
-            case '\0': s += "\\0"; break;
-            case '\\': s += "\\\\"; break;
-            case '\a': s += "\\a"; break;
-            case '\b': s += "\\b"; break;
-            case '\f': s += "\\f"; break;
-            case '\n': s += "\\n"; break;
-            case '\r': s += "\\r"; break;
-            case '\t': s += "\\t"; break;
-            case '\v': s += "\\v"; break;
-            default:
-                {
-                    uint8_t value( ch );
-                    if( value < 32 || value >= 127 )
-                    {
-                        int  d1 = value >> 4;
-                        int  d0 = value & 0xf;
-                        char h1
-                            = d1 >= 10 ? ( d1 + ( 'A' - 10 ) ) : ( d1 + '0' );
-                        char h0
-                            = d0 >= 10 ? ( d0 + ( 'A' - 10 ) ) : ( d0 + '0' );
-
-                        char buff[4]{ '\\', 'x', h1, h0 };
-                        s.append( buff, 4 );
-                    }
-                    else { s += ch; }
-                }
-            }
-        }
-        s += '"';
-    }
 
 
     inline void debugPrint(
@@ -131,7 +119,10 @@ namespace _test_vtz {
                 s += "}";
             } );
         }
-        else { s += fmt::format( "{}", value ); }
+        else if constexpr( DebugTraits<T>::stringlike )
+            s += vtz::escapeString( std::string_view( value ) );
+        else
+            s += fmt::format( "{}", value );
     }
 
     template<class T>

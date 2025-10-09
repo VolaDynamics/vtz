@@ -43,7 +43,7 @@ namespace vtz {
         auto result = vector<string_view>( max_size );
 
         // Fill vector with tokens
-        size_t     i = 0;
+        size_t    i = 0;
         TokenIter tokens( line );
         while( auto tok = tokens.next() ) { result[i++] = tok; }
 
@@ -80,5 +80,45 @@ namespace vtz {
         *r1.ptr = ':';
         auto r2 = std::to_chars( r1.ptr + 1, buffer + sizeof( buffer ), col );
         return std::string( buffer, r2.ptr - buffer );
+    }
+
+
+    std::string escapeString( std::string_view sv ) {
+        std::string s;
+        s += '"';
+        for( char ch : sv )
+        {
+            switch( ch )
+            {
+            case '\0': s += "\\0"; break;
+            case '\\': s += "\\\\"; break;
+            case '\a': s += "\\a"; break;
+            case '\b': s += "\\b"; break;
+            case '\f': s += "\\f"; break;
+            case '\n': s += "\\n"; break;
+            case '\r': s += "\\r"; break;
+            case '\t': s += "\\t"; break;
+            case '\v': s += "\\v"; break;
+            default:
+                {
+                    uint8_t value( ch );
+                    if( value < 32 || value >= 127 )
+                    {
+                        int  d1 = value >> 4;
+                        int  d0 = value & 0xf;
+                        char h1
+                            = d1 >= 10 ? ( d1 + ( 'A' - 10 ) ) : ( d1 + '0' );
+                        char h0
+                            = d0 >= 10 ? ( d0 + ( 'A' - 10 ) ) : ( d0 + '0' );
+
+                        char buff[4]{ '\\', 'x', h1, h0 };
+                        s.append( buff, 4 );
+                    }
+                    else { s += ch; }
+                }
+            }
+        }
+        s += '"';
+        return s;
     }
 } // namespace vtz

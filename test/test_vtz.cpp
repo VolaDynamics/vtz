@@ -15,6 +15,13 @@
 using namespace vtz;
 using _test_vtz::TEST_LOG;
 
+static_assert( RuleLetter().sv() == "" );
+static_assert( RuleLetter().size_ == 0 );
+static_assert( RuleLetter( "x" ).sv() == "x" );
+static_assert( RuleLetter( "x" ) == RuleLetter( "x" ) );
+
+DECLARE_STRINGLIKE( RuleLetter );
+
 namespace {
     template<size_t... N>
     std::vector<string_view> vecSV( char const ( &... arr )[N] ) {
@@ -98,21 +105,21 @@ TEST( vtz_parser, lines ) {
     ASSERT_EQ( countLines( "hello\nworld\n" ), 2 );
     ASSERT_EQ( countLines( "hello\r\nworld\n" ), 2 );
     ASSERT_EQ( countLines( "hello\n"
-                            "\n"
-                            "The quick brown fox jumps over the lazy dogs.\n"
-                            "End.\n" ),
+                           "\n"
+                           "The quick brown fox jumps over the lazy dogs.\n"
+                           "End.\n" ),
         4 );
     ASSERT_EQ( countLines( "hello\n"
-                            "\n"
-                            "The quick brown fox jumps over the lazy dogs.\n"
-                            "End." ),
+                           "\n"
+                           "The quick brown fox jumps over the lazy dogs.\n"
+                           "End." ),
         4 );
 
     ASSERT_EQ( countLines( "hello\n"
-                            "\n"
-                            "\n"
-                            "\n"
-                            "\n" ),
+                           "\n"
+                           "\n"
+                           "\n"
+                           "\n" ),
         5 );
 
     checkLines( "", vecSV() );
@@ -129,28 +136,28 @@ TEST( vtz_parser, lines ) {
     checkLines( "hello\r\nworld\r", vecSV( "hello", "world\r" ) );
 
     checkLines( "hello\n"
-                 "\n"
-                 "The quick brown fox jumps over the lazy dogs.\n"
-                 "End.\n",
+                "\n"
+                "The quick brown fox jumps over the lazy dogs.\n"
+                "End.\n",
         vecSV( "hello",
             "",
             "The quick brown fox jumps over the lazy dogs.",
             "End." ) );
 
     checkLines( "hello\n"
-                 "\n"
-                 "The quick brown fox jumps over the lazy dogs.\n"
-                 "End.",
+                "\n"
+                "The quick brown fox jumps over the lazy dogs.\n"
+                "End.",
         vecSV( "hello",
             "",
             "The quick brown fox jumps over the lazy dogs.",
             "End." ) );
 
     checkLines( "hello\n"
-                 "\n"
-                 "\n"
-                 "\n"
-                 "\n",
+                "\n"
+                "\n"
+                "\n"
+                "\n",
         vecSV( "hello", "", "", "", "" ) );
 }
 
@@ -183,12 +190,10 @@ STRUCT_INFO( vtz::ZoneEntry,
     FIELD( vtz::ZoneEntry, format ),
     FIELD( vtz::ZoneEntry, until ) );
 
-STRUCT_INFO(
-    vtz::Zone, FIELD( vtz::Zone, name ), FIELD( vtz::Zone, ents ) );
+STRUCT_INFO( vtz::Zone, FIELD( vtz::Zone, name ), FIELD( vtz::Zone, ents ) );
 
-STRUCT_INFO( vtz::Link,
-    FIELD( vtz::Link, canonical ),
-    FIELD( vtz::Link, alias ) );
+STRUCT_INFO(
+    vtz::Link, FIELD( vtz::Link, canonical ), FIELD( vtz::Link, alias ) );
 
 STRUCT_INFO( vtz::TZDataFile,
     FIELD( vtz::TZDataFile, rules ),
@@ -200,7 +205,10 @@ using namespace vtz;
 TEST( vtz_parser, parse_tzdata ) {
     using ze = ZoneEntry;
     using r  = Rule;
+    using M  = Mon;
 
+    constexpr auto lastSun = RuleOn::last( DOW::Sun );
+    constexpr auto on      = []( u8 day ) { return RuleOn::on( day ); };
 
     ASSERT_EQ( parseTZData(
                    R"(#
@@ -260,14 +268,14 @@ Rule	US	1974	only	-	Jan	6	2:00	1:00	D
 )" ),
         ( TZDataFile{
             std::vector<Rule>{
-                { "US", "1918", "1919", "Mar", "lastSun", "2:00", "1:00", "D" },
-                { "US", "1918", "1919", "Oct", "lastSun", "2:00", "0", "S" },
-                { "US", "1942", "only", "Feb", "9", "2:00", "1:00", "W" },
-                { "US", "1945", "only", "Aug", "14", "23:00u", "1:00", "P" },
-                { "US", "1945", "only", "Sep", "30", "2:00", "0", "S" },
-                { "US", "1967", "2006", "Oct", "lastSun", "2:00", "0", "S" },
-                { "US", "1967", "1973", "Apr", "lastSun", "2:00", "1:00", "D" },
-                { "US", "1974", "only", "Jan", "6", "2:00", "1:00", "D" },
+                { "US", 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
+                { "US", 1918, 1919, M::Oct, lastSun, "2:00", "0", "S" },
+                { "US", 1942, Y_ONLY, M::Feb, on( 9 ), "2:00", "1:00", "W" },
+                { "US", 1945, Y_ONLY, M::Aug, on( 14 ), "23:00u", "1:00", "P" },
+                { "US", 1945, Y_ONLY, M::Sep, on( 30 ), "2:00", "0", "S" },
+                { "US", 1967, 2006, M::Oct, lastSun, "2:00", "0", "S" },
+                { "US", 1967, 1973, M::Apr, lastSun, "2:00", "1:00", "D" },
+                { "US", 1974, Y_ONLY, M::Jan, on( 6 ), "2:00", "1:00", "D" },
             },
             {
                 Zone{
@@ -301,7 +309,7 @@ Link	Africa/Abidjan	Africa/Dakar
 )" ),
         ( TZDataFile{
             std::vector<Rule>{
-                { "US", "1918", "1919", "Mar", "lastSun", "2:00", "1:00", "D" },
+                { "US", 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
             },
             {
                 Zone{
@@ -392,7 +400,7 @@ Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
                     },
                 },
             },
-        } ) )
+        } ) );
 }
 
 
@@ -483,21 +491,199 @@ TEST( vtz_io, read_file ) {
 }
 
 
+TEST( vtz_parser, parse_errors ) {
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942	only	-	Feb2	9	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942	only	-	# Feb	9	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942x	only	-	Feb	9	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942	only	-	Feb	92	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            // BAD: Day of Month is out of range
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942	only	-	Feb	9x	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            // BAD: Day of Month is not completely parsed
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942	only	-	Feb	0	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            // BAD: Day of Month is out of range (0 is out of range)
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942	only	-	Feb	x9	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            // BAD: Day of Month is not an int
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942	only	-	Feb	lastSud	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            // BAD: last[DOW] does not have a valid DOW
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+
+    // This is fine
+    // clang-format off
+    EXPECT_NO_THROW(
+        parseTZData(
+            "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+            "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+            "Rule	US	1942	only	-	Feb	Tue>=13	2:00	1:00	W # War\n" ) );
+
+    // Also fine - we can have [DOW]<=[DOM]
+    EXPECT_NO_THROW(
+        parseTZData(
+            "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+            "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+            "Rule	US	1942	only	-	Feb	Fri<=1	2:00	1:00	W # War\n" ) );
+    // clang-format on
+
+    EXPECT_THROW(
+        try {
+            // clang-format off
+            parseTZData(
+                "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
+                "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
+                "Rule	US	1942	only	-	Feb	Sud>=13	2:00	1:00	W # War\n" );
+            // clang-format on
+        } catch( std::exception const& ex ) {
+            // BAD: last[DOW] does not have a valid DOW
+            TEST_LOG.logGood( "error message", ex.what() );
+            throw;
+        },
+        std::exception );
+}
+
+
+namespace {
+    void testLoadFile( char const* fp ) {
+        using HRC = std::chrono::high_resolution_clock;
+        using std::chrono::duration_cast;
+
+        auto t0      = HRC::now();
+        auto content = readFile( fp );
+        auto t1      = HRC::now();
+        auto result  = parseTZData( content, fp );
+        auto t2      = HRC::now();
+
+        using msR = std::chrono::duration<double, std::micro>;
+
+        // TEST_LOG.info_good( "northamerica", result );
+
+        TEST_LOG.logGood( " successfully loaded", fp );
+        TEST_LOG.logGood(
+            "    time read_file()", duration_cast<msR>( t1 - t0 ) );
+        TEST_LOG.logGood(
+            " time parse_tzdata()", duration_cast<msR>( t2 - t1 ) );
+        TEST_LOG.logGood(
+            "               total", duration_cast<msR>( t2 - t0 ) );
+    }
+} // namespace
+
+
 TEST( vtz_io, load_northamerica ) {
-    using HRC = std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
+    testLoadFile( "build/data/tzdata/africa" );
+    testLoadFile( "build/data/tzdata/antarctica" );
+    testLoadFile( "build/data/tzdata/asia" );
+    testLoadFile( "build/data/tzdata/australasia" );
+    testLoadFile( "build/data/tzdata/backward" );
+    testLoadFile( "build/data/tzdata/backzone" );
+    testLoadFile( "build/data/tzdata/etcetera" );
+    testLoadFile( "build/data/tzdata/europe" );
+    testLoadFile( "build/data/tzdata/factory" );
+    testLoadFile( "build/data/tzdata/northamerica" );
+    testLoadFile( "build/data/tzdata/southamerica" );
+}
 
-    auto t0      = HRC::now();
-    auto content = readFile( "build/data/tzdata/northamerica" );
-    auto t1      = HRC::now();
-    auto result  = parseTZData( content );
-    auto t2      = HRC::now();
-
-    using msR = std::chrono::duration<double, std::micro>;
-
-    // TEST_LOG.info_good( "northamerica", result );
-
-    TEST_LOG.logGood( "    time read_file()", duration_cast<msR>( t1 - t0 ) );
-    TEST_LOG.logGood( " time parse_tzdata()", duration_cast<msR>( t2 - t1 ) );
-    TEST_LOG.logGood( "               total", duration_cast<msR>( t2 - t0 ) );
+TEST( vtz_parser, basics ) {
+    ASSERT_EQ( parseHHMMSSOffset( "2:00" ), 7200 );
+    ASSERT_EQ( parseSignedHHMMSSOffset( "2:00" ), 7200 );
+    ASSERT_EQ( parseSignedHHMMSSOffset( "-2:00" ), -7200 );
 }
