@@ -31,6 +31,7 @@ namespace vtz {
         u8   size_{};
         char buff_[N]{};
 
+
         constexpr string_view sv() const noexcept { return { data(), size() }; }
 
         explicit operator string_view() const noexcept { return sv(); }
@@ -235,6 +236,14 @@ namespace vtz {
         }
     };
     std::string format_as( ZoneOff off );
+
+    template <class T, T NULL_VALUE>
+    struct Opt {
+        T data;
+        bool has_value() const noexcept { return data == NULL_VALUE; }
+        T& value() noexcept { return data; }
+        T const& value() const noexcept { return data; }
+    };
 
     // # Zone	NAME		STDOFF	RULES	FORMAT	[UNTIL]
     // Zone America/Los_Angeles -7:52:58 -	LMT	1883 Nov 18 20:00u

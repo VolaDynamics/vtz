@@ -21,7 +21,7 @@ namespace vtz {
             if( tok.size() == 3 )
             {
                 auto result = _impl::_parseMon( tok.data() );
-                if( result != _impl::MONTH_BAD ) return result;
+                if( result ) return *result;
             }
 
             throw ParseError{
@@ -79,15 +79,15 @@ namespace vtz {
                 constexpr auto _last = _load4( "last" );
                 if( _load4( p ) == _last )
                 {
-                    DOW dow = _parseDOW( p + 4 );
-                    if( dow != DOW_BAD ) { return RuleOn::last( dow ); }
+                    if( OptDOW dow = _parseDOW( p + 4 ) )
+                        return RuleOn::last( *dow );
                 }
             }
 
             if( size >= 6 )
             {
                 // If size >= 6, Input should be of form [DOW]>=[value]
-                DOW dow = _parseDOW( p );
+                OptDOW dow = _parseDOW( p );
 
                 u8 day{};
 
@@ -97,18 +97,17 @@ namespace vtz {
                 auto GE_or_LE = _load2( p + 3 );
 
                 // true if 'DOW' is good and the 'DOM' is good
-                bool goodDOW = dow != _impl::DOW_BAD; // check DOW is valid
                 bool goodDOM
                     = day
                       && day < 32 // check that day is a valid day of the month
                       && result.ptr == end_;
 
-                if( goodDOW && goodDOM )
+                if( bool( dow ) && goodDOM )
                 {
                     switch( GE_or_LE )
                     {
-                    case _load2( ">=" ): return RuleOn::after( day, dow );
-                    case _load2( "<=" ): return RuleOn::before( day, dow );
+                    case _load2( ">=" ): return RuleOn::after( day, *dow );
+                    case _load2( "<=" ): return RuleOn::before( day, *dow );
                     default: break;
                     }
                 }

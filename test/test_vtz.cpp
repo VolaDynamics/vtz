@@ -1,4 +1,5 @@
 
+#include <vtz/dates.h>
 #include <vtz/files.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader.h>
@@ -36,6 +37,54 @@ static_assert( format_as( DOW::Thu ) == "Thu" );
 static_assert( format_as( DOW::Fri ) == "Fri" );
 static_assert( format_as( DOW::Sat ) == "Sat" );
 
+static_assert( _impl::_parseMon( "blarg" ) == none );
+static_assert( _impl::_parseMon( "Jan" ).value() == Mon::Jan );
+static_assert( _impl::_parseMon( "Feb" ).value() == Mon::Feb );
+static_assert( _impl::_parseMon( "Mar" ).value() == Mon::Mar );
+static_assert( _impl::_parseMon( "Apr" ).value() == Mon::Apr );
+static_assert( _impl::_parseMon( "May" ).value() == Mon::May );
+static_assert( _impl::_parseMon( "Jun" ).value() == Mon::Jun );
+static_assert( _impl::_parseMon( "Jul" ).value() == Mon::Jul );
+static_assert( _impl::_parseMon( "Aug" ).value() == Mon::Aug );
+static_assert( _impl::_parseMon( "Sep" ).value() == Mon::Sep );
+static_assert( _impl::_parseMon( "Oct" ).value() == Mon::Oct );
+static_assert( _impl::_parseMon( "Nov" ).value() == Mon::Nov );
+static_assert( _impl::_parseMon( "Dec" ).value() == Mon::Dec );
+
+static_assert( _impl::_parseDOW( "blarg" ) == none );
+static_assert( _impl::_parseDOW( "Sun" ).value() == DOW::Sun );
+static_assert( _impl::_parseDOW( "Mon" ).value() == DOW::Mon );
+static_assert( _impl::_parseDOW( "Tue" ).value() == DOW::Tue );
+static_assert( _impl::_parseDOW( "Wed" ).value() == DOW::Wed );
+static_assert( _impl::_parseDOW( "Thu" ).value() == DOW::Thu );
+static_assert( _impl::_parseDOW( "Fri" ).value() == DOW::Fri );
+static_assert( _impl::_parseDOW( "Sat" ).value() == DOW::Sat );
+
+
+static_assert( !OptMon{}.has_value() );
+static_assert( !OptMon( none ).has_value() );
+static_assert( OptMon{ Mon::Jan }.has_value() );
+static_assert( OptMon{ Mon::Feb }.has_value() );
+static_assert( OptMon{ Mon::Mar }.has_value() );
+static_assert( OptMon{ Mon::Apr }.has_value() );
+static_assert( OptMon{ Mon::May }.has_value() );
+static_assert( OptMon{ Mon::Jun }.has_value() );
+static_assert( OptMon{ Mon::Jul }.has_value() );
+static_assert( OptMon{ Mon::Aug }.has_value() );
+static_assert( OptMon{ Mon::Sep }.has_value() );
+static_assert( OptMon{ Mon::Oct }.has_value() );
+static_assert( OptMon{ Mon::Nov }.has_value() );
+static_assert( OptMon{ Mon::Dec }.has_value() );
+
+static_assert( !OptDOW{}.has_value() );
+static_assert( !OptDOW( none ).has_value() );
+static_assert( OptDOW{ DOW::Sun }.has_value() );
+static_assert( OptDOW{ DOW::Mon }.has_value() );
+static_assert( OptDOW{ DOW::Tue }.has_value() );
+static_assert( OptDOW{ DOW::Wed }.has_value() );
+static_assert( OptDOW{ DOW::Thu }.has_value() );
+static_assert( OptDOW{ DOW::Fri }.has_value() );
+static_assert( OptDOW{ DOW::Sat }.has_value() );
 
 static_assert( RuleLetter().sv() == "" );
 static_assert( RuleLetter().size_ == 0 );
@@ -677,7 +726,12 @@ namespace {
 
         using msR = std::chrono::duration<double, std::micro>;
 
-        // TEST_LOG.info_good( "northamerica", result );
+
+        for( auto zone : result.zones )
+        {
+            for( auto ent : zone.ents )
+            { fmt::println( ".until = {}", ent.until ); }
+        }
 
         TEST_LOG.logGood( " successfully loaded", fp );
         TEST_LOG.logGood(

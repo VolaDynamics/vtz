@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vtz/inplace_optional.h>
 #include <cstdint>
 #include <string_view>
 namespace vtz {
@@ -14,9 +15,23 @@ namespace vtz {
     using i32 = int32_t;
 
     // clang-format off
-    enum class Mon : u16 { Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec };
+    /// Enum representing the Month. Values start counting up from 1.
+    ///
+    /// `Jan=1` was chosen because using '1' for the first month is convention,
+    /// and converting to the numeric month representation is as simple
+    /// as doing a cast.
+    enum class Mon : u16 { Jan = 1, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec };
+
+    /// ENum representing the day of the week. Values start counting up from 0.
+    ///
+    /// `Sun=0` (and dates start from 0) because being able to compute DOW
+    /// by taking the number of days
     enum class DOW : u8 { Sun, Mon, Tue, Wed, Thu, Fri, Sat };
     // clang-format on
+
+    using OptMon = OptV<Mon, Mon{}>;
+    using OptDOW = OptV<DOW, DOW{ 7 }>;
+
 } // namespace vtz
 
 
@@ -33,51 +48,49 @@ namespace vtz::_impl {
     constexpr u32 _load4( char const* src ) noexcept { return u8( src[0] ) | ( u8( src[1] ) << 8 ) | ( u8( src[2] ) << 16 ) | ( u8( src[3] ) << 24 ); }
     // clang-format on
 
-    constexpr Mon MONTH_BAD = Mon( ~0 );
-    constexpr DOW DOW_BAD   = DOW( ~0 );
-
     /// Load 3 bytes into a u32
-    constexpr Mon _parseMon( char const* src ) noexcept {
+    constexpr OptMon _parseMon( char const* src ) noexcept {
         switch( _load3( src ) )
         {
-        case _load3( "Jan" ): return Mon::Jan;
-        case _load3( "Feb" ): return Mon::Feb;
-        case _load3( "Mar" ): return Mon::Mar;
-        case _load3( "Apr" ): return Mon::Apr;
-        case _load3( "May" ): return Mon::May;
-        case _load3( "Jun" ): return Mon::Jun;
-        case _load3( "Jul" ): return Mon::Jul;
-        case _load3( "Aug" ): return Mon::Aug;
-        case _load3( "Sep" ): return Mon::Sep;
-        case _load3( "Oct" ): return Mon::Oct;
-        case _load3( "Nov" ): return Mon::Nov;
-        case _load3( "Dec" ): return Mon::Dec;
+        case _load3( "Jan" ): return { Mon::Jan };
+        case _load3( "Feb" ): return { Mon::Feb };
+        case _load3( "Mar" ): return { Mon::Mar };
+        case _load3( "Apr" ): return { Mon::Apr };
+        case _load3( "May" ): return { Mon::May };
+        case _load3( "Jun" ): return { Mon::Jun };
+        case _load3( "Jul" ): return { Mon::Jul };
+        case _load3( "Aug" ): return { Mon::Aug };
+        case _load3( "Sep" ): return { Mon::Sep };
+        case _load3( "Oct" ): return { Mon::Oct };
+        case _load3( "Nov" ): return { Mon::Nov };
+        case _load3( "Dec" ): return { Mon::Dec };
         }
 
-        return MONTH_BAD;
+        return none;
     }
 
-    constexpr DOW _parseDOW( char const* src ) noexcept {
+    constexpr OptDOW _parseDOW( char const* src ) noexcept {
         switch( _load3( src ) )
         {
-        case _load3( "Sun" ): return DOW::Sun;
-        case _load3( "Mon" ): return DOW::Mon;
-        case _load3( "Tue" ): return DOW::Tue;
-        case _load3( "Wed" ): return DOW::Wed;
-        case _load3( "Thu" ): return DOW::Thu;
-        case _load3( "Fri" ): return DOW::Fri;
-        case _load3( "Sat" ): return DOW::Sat;
+        case _load3( "Sun" ): return { DOW::Sun };
+        case _load3( "Mon" ): return { DOW::Mon };
+        case _load3( "Tue" ): return { DOW::Tue };
+        case _load3( "Wed" ): return { DOW::Wed };
+        case _load3( "Thu" ): return { DOW::Thu };
+        case _load3( "Fri" ): return { DOW::Fri };
+        case _load3( "Sat" ): return { DOW::Sat };
         }
 
-        return DOW_BAD;
+        return none;
     }
 } // namespace vtz::_impl
 
 
 namespace vtz {
     constexpr string_view format_as( Mon m ) {
-        return u32( m ) < 12 ? string_view( _impl::MONTH_NAMES[u32( m )], 3 )
-                             : string_view( "Mon(<unknown>)" );
+        size_t i = size_t( m ) - 1;
+        return i < 12 ? string_view( _impl::MONTH_NAMES[i], 3 )
+                      : string_view( "Mon(<unknown>)" );
     }
 
 
