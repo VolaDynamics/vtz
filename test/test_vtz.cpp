@@ -727,12 +727,6 @@ namespace {
         using msR = std::chrono::duration<double, std::micro>;
 
 
-        // for( auto zone : result.zones )
-        // {
-        //     for( auto ent : zone.ents )
-        //     { fmt::println( ".until = {}", ent.until ); }
-        // }
-
         TEST_LOG.logGood( " successfully loaded", fp );
         TEST_LOG.logGood(
             "    time read_file()", duration_cast<msR>( t1 - t0 ) );
