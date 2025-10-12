@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string_view>
+#include <vtz/civil.h>
 #include <vtz/date_types.h>
 #include <vtz/strings.h>
 
@@ -206,8 +207,25 @@ namespace vtz {
         constexpr static RuleOn fromRepr( u16 repr ) noexcept {
             return RuleOn( repr );
         }
+
+        /// Evaluate the rule for a given year/month in order to obtain an
+        /// actual date
+        constexpr YMD eval( i32 year, Mon mon ) const noexcept {
+            switch( kind() )
+            {
+            case DAY: return YMD( year, mon, day() );
+            case DOW_LAST:
+                return YMD(
+                    year, mon, getLastDOWInMonth( year, u32( mon ), dow() ) );
+            case DOW_AFTER:
+                return getYMD_DOW_GE( year, u32( mon ), day(), dow() );
+            case DOW_BEFORE:
+                return getYMD_DOW_LE( year, u32( mon ), day(), dow() );
+            }
+        }
     };
     std::string format_as( RuleOn r );
+
 
     template<>
     struct OptTraits<RuleOn> {

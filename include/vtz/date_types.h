@@ -13,6 +13,11 @@ namespace vtz {
     using i8  = int8_t;
     using i16 = int16_t;
     using i32 = int32_t;
+    using i64 = int64_t;
+
+    using uint  = unsigned;
+    using usize = size_t;
+
 
     // clang-format off
     /// Enum representing the Month. Values start counting up from 1.
@@ -28,6 +33,16 @@ namespace vtz {
     /// by taking the number of days
     enum class DOW : u8 { Sun, Mon, Tue, Wed, Thu, Fri, Sat };
     // clang-format on
+
+    /// Weekday Difference. Return the number of days to get from the lhs to the
+    /// rhs weekday.
+    ///
+    /// Eg: Mon - Sun == 1, Sun - Mon == 6
+    constexpr usize operator-( DOW lhs, DOW rhs ) noexcept {
+        usize l = usize( lhs );
+        usize r = usize( rhs );
+        return ( l - r ) + ( l < r ? 7 : 0 );
+    }
 
     using OptMon = OptV<Mon, Mon{}>;
     using OptDOW = OptV<DOW, DOW{ 7 }>;

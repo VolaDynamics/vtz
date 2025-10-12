@@ -384,16 +384,12 @@ namespace vtz {
                     if( auto day = iter.next() )
                     {
                         auto on = parseRuleOn( day );
-                        if( on.kind() != RuleOn::DAY )
-                            throw ParseError{
-                                "Expected to be written by an "
-                                "actually competent programmer",
-                                "is a 'ON' rule with kind() != DAY, which, "
-                                "while valid, is not yet handled",
-                                day,
-                            };
 
-                        auto d = u8( on.day() );
+                        auto ymd = on.eval( y, m );
+                        y        = ymd.year;
+                        m        = ymd.mon();
+                        u8 d     = u8( ymd.day );
+
                         if( auto stdoff = iter.next() )
                         {
                             auto at = parseRuleAt( stdoff );
