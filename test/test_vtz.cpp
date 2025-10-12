@@ -37,28 +37,38 @@ static_assert( format_as( DOW::Thu ) == "Thu" );
 static_assert( format_as( DOW::Fri ) == "Fri" );
 static_assert( format_as( DOW::Sat ) == "Sat" );
 
-static_assert( _impl::_parseMon( "blarg" ) == none );
-static_assert( _impl::_parseMon( "Jan" ).value() == Mon::Jan );
-static_assert( _impl::_parseMon( "Feb" ).value() == Mon::Feb );
-static_assert( _impl::_parseMon( "Mar" ).value() == Mon::Mar );
-static_assert( _impl::_parseMon( "Apr" ).value() == Mon::Apr );
-static_assert( _impl::_parseMon( "May" ).value() == Mon::May );
-static_assert( _impl::_parseMon( "Jun" ).value() == Mon::Jun );
-static_assert( _impl::_parseMon( "Jul" ).value() == Mon::Jul );
-static_assert( _impl::_parseMon( "Aug" ).value() == Mon::Aug );
-static_assert( _impl::_parseMon( "Sep" ).value() == Mon::Sep );
-static_assert( _impl::_parseMon( "Oct" ).value() == Mon::Oct );
-static_assert( _impl::_parseMon( "Nov" ).value() == Mon::Nov );
-static_assert( _impl::_parseMon( "Dec" ).value() == Mon::Dec );
+static_assert( _impl::_parseMon( "blarg", 3 ) == none );
+static_assert( _impl::_parseMon( "Jan", 3 ).value() == Mon::Jan );
+static_assert( _impl::_parseMon( "Feb", 3 ).value() == Mon::Feb );
+static_assert( _impl::_parseMon( "Mar", 3 ).value() == Mon::Mar );
+static_assert( _impl::_parseMon( "Apr", 3 ).value() == Mon::Apr );
+static_assert( _impl::_parseMon( "May", 3 ).value() == Mon::May );
+static_assert( _impl::_parseMon( "Jun", 3 ).value() == Mon::Jun );
+static_assert( _impl::_parseMon( "Jul", 3 ).value() == Mon::Jul );
+static_assert( _impl::_parseMon( "Aug", 3 ).value() == Mon::Aug );
+static_assert( _impl::_parseMon( "Sep", 3 ).value() == Mon::Sep );
+static_assert( _impl::_parseMon( "Oct", 3 ).value() == Mon::Oct );
+static_assert( _impl::_parseMon( "Nov", 3 ).value() == Mon::Nov );
+static_assert( _impl::_parseMon( "Dec", 3 ).value() == Mon::Dec );
 
-static_assert( _impl::_parseDOW( "blarg" ) == none );
-static_assert( _impl::_parseDOW( "Sun" ).value() == DOW::Sun );
-static_assert( _impl::_parseDOW( "Mon" ).value() == DOW::Mon );
-static_assert( _impl::_parseDOW( "Tue" ).value() == DOW::Tue );
-static_assert( _impl::_parseDOW( "Wed" ).value() == DOW::Wed );
-static_assert( _impl::_parseDOW( "Thu" ).value() == DOW::Thu );
-static_assert( _impl::_parseDOW( "Fri" ).value() == DOW::Fri );
-static_assert( _impl::_parseDOW( "Sat" ).value() == DOW::Sat );
+static_assert( _impl::_parseDOW( "blarg", 3 ) == none );
+static_assert( _impl::_parseDOW( "Sun", 3 ).value() == DOW::Sun );
+static_assert( _impl::_parseDOW( "Mon", 3 ).value() == DOW::Mon );
+static_assert( _impl::_parseDOW( "Tue", 3 ).value() == DOW::Tue );
+static_assert( _impl::_parseDOW( "Wed", 3 ).value() == DOW::Wed );
+static_assert( _impl::_parseDOW( "Thu", 3 ).value() == DOW::Thu );
+static_assert( _impl::_parseDOW( "Fri", 3 ).value() == DOW::Fri );
+static_assert( _impl::_parseDOW( "Sat", 3 ).value() == DOW::Sat );
+static_assert( _impl::_parseDOW( "Su", 2 ).value() == DOW::Sun );
+static_assert( _impl::_parseDOW( "Mo", 2 ).value() == DOW::Mon );
+static_assert( _impl::_parseDOW( "Tu", 2 ).value() == DOW::Tue );
+static_assert( _impl::_parseDOW( "We", 2 ).value() == DOW::Wed );
+static_assert( _impl::_parseDOW( "Th", 2 ).value() == DOW::Thu );
+static_assert( _impl::_parseDOW( "Fr", 2 ).value() == DOW::Fri );
+static_assert( _impl::_parseDOW( "Sa", 2 ).value() == DOW::Sat );
+static_assert( _impl::_parseDOW( "M", 1 ).value() == DOW::Mon );
+static_assert( _impl::_parseDOW( "W", 1 ).value() == DOW::Wed );
+static_assert( _impl::_parseDOW( "F", 1 ).value() == DOW::Fri );
 
 
 static_assert( !OptMon{}.has_value() );
@@ -750,9 +760,11 @@ TEST( vtz_io, load_northamerica ) {
     testLoadFile( "build/data/tzdata/factory" );
     testLoadFile( "build/data/tzdata/northamerica" );
     testLoadFile( "build/data/tzdata/southamerica" );
+    testLoadFile( "build/data/tzdata/tzdata.zi" );
 }
 
 TEST( vtz_parser, basics ) {
+    ASSERT_EQ( parseHHMMSSOffset( "0:12:12" ), 60 * 12 + 12 );
     ASSERT_EQ( parseHHMMSSOffset( "2:00" ), 7200 );
     ASSERT_EQ( parseSignedHHMMSSOffset( "2:00" ), 7200 );
     ASSERT_EQ( parseSignedHHMMSSOffset( "-2:00" ), -7200 );

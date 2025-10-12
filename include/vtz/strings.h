@@ -243,7 +243,7 @@ namespace vtz {
                 // The carriage return is only stripped if the ending is '\r\n'.
                 // So, if there's no '\n', no stripping occurs.
                 auto line = input;
-                input     = string_view();
+                input     = string_view( input.data() + input.size(), 0 );
                 return line;
             }
 

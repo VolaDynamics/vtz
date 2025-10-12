@@ -72,17 +72,50 @@ namespace vtz {
         // clang-format on
     };
 
+    template<class T>
+    struct TrivialOpt {
+        static_assert( std::is_trivial<T>{} );
+        T    data;
+        bool good;
+
+        constexpr T&       operator*() noexcept { return data; }
+        constexpr T const& operator*() const noexcept { return data; }
+        constexpr T&       value() noexcept { return data; }
+        constexpr T const& value() const noexcept { return data; }
+
+        constexpr T const& value_or( T const& input ) const noexcept {
+            return good ? data : input;
+        }
+
+        constexpr bool has_value() const noexcept { return good; }
+
+        constexpr explicit operator bool() const noexcept { return good; }
+    };
+
     struct NoneType {
+        template<class T>
+        constexpr operator OptClass<T>() const noexcept {
+            return { OptTraits<T>::NULL_VALUE };
+        }
+        template<class T>
+        constexpr operator TrivialOpt<T>() const noexcept {
+            return {};
+        }
+
         template<class T, T NULL_VALUE>
         constexpr operator OptV<T, NULL_VALUE>() const noexcept {
             return { NULL_VALUE };
         }
     };
 
+
     /// Holds a value, implicitly convertible to an OptV
     template<class T>
     struct SomeType {
         T value;
+
+        constexpr operator OptClass<T>() const noexcept { return { value }; }
+        constexpr operator TrivialOpt<T>() const noexcept { return { value, true }; }
 
         template<T NULL_VALUE>
         constexpr operator OptV<T, NULL_VALUE>() const noexcept {
@@ -96,4 +129,6 @@ namespace vtz {
     constexpr inline SomeType<T> some( T value ) noexcept {
         return { value };
     }
+
+
 } // namespace vtz

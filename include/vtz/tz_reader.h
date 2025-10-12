@@ -311,6 +311,8 @@ namespace vtz {
         bool operator==( ZoneUntil const& rhs ) const noexcept {
             return _repr() == rhs._repr();
         }
+
+        constexpr bool has_value() const noexcept { return year.has_value(); }
     };
 
     std::string format_as( ZoneUntil );

@@ -45,11 +45,13 @@ namespace vtz {
             = "is too large to be valid for the LETTER/S field.";
 
         Mon parseMonth( OptTok tok ) {
-            if( tok.size() == 3 )
-            {
-                auto result = _impl::_parseMon( tok.data() );
-                if( result ) return *result;
-            }
+            using _impl::_load1;
+            using _impl::_load2;
+            using _impl::_load3;
+            using _impl::_parseMon;
+            char const* p = tok.data();
+
+            if( auto m = _parseMon( tok.data(), tok.size() ) ) return *m;
 
             throw ParseError{
                 "Expected month",
@@ -103,8 +105,8 @@ namespace vtz {
         }
 
         rule_year_t parseYearTo( OptTok tok ) {
-            if( tok == "max" ) { return Y_MAX; }
-            if( tok == "only" ) { return Y_ONLY; }
+            if( tok == "ma" || tok == "max" ) { return Y_MAX; }
+            if( tok == "o" || tok == "only" ) { return Y_ONLY; }
             i16         year{};
             char const* begin = tok.data();
             char const* end   = tok.data() + tok.size();
@@ -128,50 +130,56 @@ namespace vtz {
             char const* p    = tok.data();
             char const* end_ = p + size;
 
-            if( size == 7 )
-            {
-                constexpr auto _last = _load4( "last" );
-                if( _load4( p ) == _last )
-                {
-                    if( OptDOW dow = _parseDOW( p + 4 ) )
-                        return RuleOn::last( *dow );
-                }
-            }
-
-            if( size >= 6 )
-            {
-                // If size >= 6, Input should be of form [DOW]>=[value]
-                OptDOW dow = _parseDOW( p );
-
-                u8 day{};
-
-                auto result = std::from_chars( p + 5, end_, day );
-
-                // this should be either '>=' or '<='
-                auto GE_or_LE = _load2( p + 3 );
-
-                // true if 'DOW' is good and the 'DOM' is good
-                bool goodDOM
-                    = day
-                      && day < 32 // check that day is a valid day of the month
-                      && result.ptr == end_;
-
-                if( bool( dow ) && goodDOM )
-                {
-                    switch( GE_or_LE )
-                    {
-                    case _load2( ">=" ): return RuleOn::after( day, *dow );
-                    case _load2( "<=" ): return RuleOn::before( day, *dow );
-                    default: break;
-                    }
-                }
-            }
-            else if( size <= 2 )
+            // For size<=2, it can only be a day
+            if( size <= 2 )
             {
                 u8   day{};
                 auto result = std::from_chars( p, end_, day );
                 bool isGood = day && day < 32 && result.ptr == end_;
                 if( isGood ) { return RuleOn::on( day ); }
+            }
+
+            else if( size >= 4 )
+            {
+                constexpr auto _last = _load4( "last" );
+                if( _load4( p ) == _last )
+                {
+                    if( OptDOW dow = _parseDOW( p + 4, size - 4 ) )
+                        return RuleOn::last( *dow );
+                }
+                else
+                {
+                    size_t dowLen{};
+                    if( p[2] == '=' ) // Eg, M>=3 or M<=3
+                        dowLen = 1;
+                    else if( p[3] == '=' )
+                        dowLen = 2;
+                    else if( size > 4 && p[4] == '=' )
+                        dowLen = 3;
+
+                    if( dowLen )
+                    {
+                        // We know it must be of form
+                        // \w{dowLen}[<>]=\d+
+                        char   ge_or_le = p[dowLen];
+                        OptDOW dow      = _parseDOW( p, dowLen );
+                        u8     day{};
+
+                        auto result
+                            = std::from_chars( p + dowLen + 2, end_, day );
+
+                        // true if 'DOW' is good and the 'DOM' is good
+                        bool goodDOM = day && day < 32 // check that day is a
+                                                       // valid day of the month
+                                       && result.ptr == end_;
+
+                        switch( ge_or_le )
+                        {
+                        case '<': return RuleOn::before( day, *dow );
+                        case '>': return RuleOn::after( day, *dow );
+                        }
+                    }
+                }
             }
 
             throw ParseError{
@@ -189,92 +197,86 @@ namespace vtz {
             return h * 3600 + m * 60 + s;
         }
 
+        // Parse 1 digit
+        TrivialOpt<i32> parse1( char const* src ) noexcept {
+            i32 value = src[0] - '0';
+            return { value, isD10( value ) };
+        }
+        // Parse 2 digits.
+        TrivialOpt<i32> parse2( char const* src ) noexcept {
+            i32 v0 = src[0] - '0';
+            i32 v1 = src[1] - '0';
+            return { v0 * 10 + v1, isD10( v0 ) && isD10( v1 ) };
+        }
+        // Parse 1 or 2 digits. Anything else is bad.
+        constexpr TrivialOpt<i32> parse1or2(
+            char const* src, size_t size ) noexcept {
+            if( size == 2 )
+            {
+                i32 v0 = src[0] - '0';
+                i32 v1 = src[1] - '0';
+                return { v0 * 10 + v1, isD10( v0 ) && isD10( v1 ) };
+            }
+            if( size == 1 )
+            {
+                i32 v0 = src[0] - '0';
+                return { v0, isD10( v0 ) };
+            }
+            return { 0, false };
+        }
     } // namespace
 
     i32 parseHHMMSSOffset( char const* p, size_t size, int sign ) noexcept {
-        switch( size )
+        if( !size ) return OFFSET_NPOS;
+
+        if( size <= 8 )
         {
-        // Single digit (represents hour)
-        case 1:
+            char buff[8]{};
+            _vtz_memcpy( buff, p, size );
+            int sepPos[8];
+            int numSep = 0;
+            // H:M [1]
+            // H:M:S [1, 3]
+            // H:MM:S [1, 4]
+            // H:MM:SS [1, 4]
+            // HH:M [2]
+            // HH:M:S [2, 4]
+            // HH:M:SS [2, 4]
+            // HH:MM:S [2, 5]
+            // HH:MM:SS [2, 5]
+            if( buff[1] == ':' ) sepPos[numSep++] = 1;
+            if( buff[2] == ':' ) sepPos[numSep++] = 2;
+            if( buff[3] == ':' ) sepPos[numSep++] = 3;
+            if( buff[4] == ':' ) sepPos[numSep++] = 4;
+            if( buff[5] == ':' ) sepPos[numSep++] = 5;
+            if( numSep == 0 )
             {
-                i32 H0 = p[0] - '0';
-                if( isD10( H0 ) ) return sign * _hms( H0 );
-                return OFFSET_NPOS;
+                if( auto hh = parse1or2( buff, size ) )
+                    return sign * _hms( *hh );
             }
-        // Two digits (represents hour)
-        case 2:
+            else if( numSep == 1 )
             {
-                i32 H0 = p[0] - '0';
-                i32 H1 = p[1] - '0';
-                if( isD10( H0 ) && isD10( H1 ) )
-                    return sign * _hms( H0 * 10 + H1 );
-                return OFFSET_NPOS;
+                int  p0 = sepPos[0];
+                auto hh = parse1or2( buff, p0 );
+                auto mm = parse1or2( buff + p0 + 1, size - p0 - 1 );
+                if( hh && mm ) return sign * _hms( *hh, *mm );
             }
-        // H:MM
-        case 4:
+            else if( numSep == 2 )
             {
-                i32 H0 = p[0] - '0';
-                if( p[1] != ':' ) break;
-                i32 M0 = p[2] - '0';
-                i32 M1 = p[3] - '0';
-                if( isD10( H0 ) && isD6( M0 ) && isD10( M1 ) )
-                    return sign * _hms( H0, M0 * 10 + M1 );
-                return OFFSET_NPOS;
-            }
-        // HH:MM
-        case 5:
-            {
-                i32 H0 = p[0] - '0';
-                i32 H1 = p[1] - '0';
-                if( p[2] != ':' ) break;
-                i32 M0 = p[3] - '0';
-                i32 M1 = p[4] - '0';
-                if( isD10( H0 ) && isD10( H1 ) && isD6( M0 ) && isD10( M1 ) )
-                    return sign * _hms( H0 * 10 + H1, M0 * 10 + M1 );
-                return OFFSET_NPOS;
-            }
-        // H:MM:SS
-        case 7:
-            {
-                i32 H0 = p[0] - '0';
-                if( p[1] != ':' ) break;
-                i32 M0 = p[2] - '0';
-                i32 M1 = p[3] - '0';
-                if( p[4] != ':' ) break;
-                i32 S0 = p[5] - '0';
-                i32 S1 = p[6] - '0';
-                if( isD10( H0 )    //
-                    && isD6( M0 )  //
-                    && isD10( M1 ) //
-                    && isD6( S0 )  //
-                    && isD10( S1 ) //
-                )
-                    return sign * _hms( H0, M0 * 10 + M1, S0 * 10 + S1 );
-                return OFFSET_NPOS;
-            }
-        // HH:MM:SS
-        case 8:
-            {
-                if( p[2] != ':' ) break;
-                if( p[5] != ':' ) break;
-                i32 H0 = p[0] - '0';
-                i32 H1 = p[1] - '0';
-                i32 M0 = p[3] - '0';
-                i32 M1 = p[4] - '0';
-                i32 S0 = p[6] - '0';
-                i32 S1 = p[7] - '0';
-                if( isD10( H0 )    //
-                    && isD10( H1 ) //
-                    && isD6( M0 )  //
-                    && isD10( M1 ) //
-                    && isD6( S0 )  //
-                    && isD10( S1 ) //
-                )
-                    return sign
-                           * _hms( H0 * 10 + H1, M0 * 10 + M1, S0 * 10 + S1 );
-                return OFFSET_NPOS;
+                int p0 = sepPos[0];
+                int p1 = sepPos[1];
+                // fmt::println( "input = {} sep={} pos={}, {}",
+                //     string_view( p, size ),
+                //     numSep,
+                //     p0,
+                //     p1 );
+                auto hh = parse1or2( buff, p0 );
+                auto mm = parse1or2( buff + p0 + 1, p1 - p0 - 1 );
+                auto ss = parse1or2( buff + p1 + 1, size - p1 - 1 );
+                if( hh && mm && ss ) return sign * _hms( *hh, *mm, *ss );
             }
         }
+
         return OFFSET_NPOS;
     }
 
@@ -417,8 +419,8 @@ namespace vtz {
                 }
                 return ZoneUntil{ y }; // 'UNTIL' field only given a year
             }
-            return ZoneUntil{}; // 'UNTIL' field is empty; reached end of Zone
-                                // entry
+            return ZoneUntil{};        // 'UNTIL' field is empty; reached end of
+                                       // Zone entry
         }
     } // namespace
 
@@ -465,48 +467,53 @@ namespace vtz {
         // Either 'Zone' or 'Rule'
         auto what = tok_iter.next();
         if( !what.has_value() ) return;
-        if( what == "Rule" )
+        if( what == "R" || what == "Rule" )
         {
             file.rules.push_back( parseRule( tok_iter ) );
             return;
         }
-        if( what == "Link" )
+        if( what == "L" || what == "Link" )
         {
             file.links.push_back( parseLink( tok_iter ) );
             return;
         }
 
-        if( what == "Zone" )
+        if( what == "Z" || what == "Zone" )
         {
             Zone z;
             z.name = tok_iter.next();
-            z.ents.push_back( parseZoneEntry( tok_iter ) );
             for( ;; )
             {
-                // Get the next char of the next line. We're going to
-                // inspect it to see if we're still in a zone
-                auto next_ch = firstOrNil( lines.rest() );
-                if( next_ch == '#' )
-                {
-                    (void)lines.next();
-                    continue;
-                }
-                if( isDelim( next_ch ) )
-                {
-                    line = lines.next();
+                auto ent = parseZoneEntry( tok_iter );
+                z.ents.push_back( ent );
+                if( !ent.until.has_value() ) break;
+                do {
+                    auto maybeLine = lines.next();
+                    if( !maybeLine )
+                    {
+                        throw ParseError{
+                            "Expected more entries in Zone specification",
+                            "End of input was reached",
+                            lines.rest()
+                        };
+                    }
+                    line = maybeLine.value();
                     line = stripComment( line );
                     line = stripLeadingDelim( line );
-                    if( line.empty() ) continue;
-                    z.ents.push_back( parseZoneEntry( TokenIter( line ) ) );
-                    continue;
-                }
-                break;
+                } while( line.empty() );
+
+                tok_iter = TokenIter( line );
             }
-            file.zones.push_back( z );
+
+            file.zones.push_back( std::move( z ) );
             return;
         }
 
-        throw std::runtime_error( fmt::format( "Unable to parse '{}'", line ) );
+        throw ParseError{
+            "Expected Zone, Rule, or Link",
+            "Did not match any of those.",
+            { line },
+        };
     }
 
     TZDataFile parseTZData( string_view input, string_view filename ) {
