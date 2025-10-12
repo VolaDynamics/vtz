@@ -1,5 +1,5 @@
 
-#include <vtz/dates.h>
+#include <vtz/date_types.h>
 #include <vtz/files.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader.h>

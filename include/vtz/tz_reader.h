@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string_view>
-#include <vtz/dates.h>
+#include <vtz/date_types.h>
 #include <vtz/strings.h>
 
 #if __has_builtin( __builtin_memcpy )
