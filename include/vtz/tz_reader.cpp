@@ -13,10 +13,37 @@ namespace vtz {
     struct ParseError {
         char const* expected; ///< What was expected
         char const* but;      ///< Reason why input was bad
-        OptTok      token;
+        OptTok      token;    ///< token where failure occurred
     };
 
     namespace {
+        constexpr char const* no_token = "no token was given";
+        constexpr char const* bad_SAVE
+            = "is not a valid SAVE. SAVE must fits one of the following "
+              "forms: "
+              "[-]H, [-]HH, [-]H:MM, [-]HH:MM, [-]H:MM:SS, or [-]HH:MM:SS";
+        constexpr char const* bad_STDOFF
+            = "is not a valid STDOFF. STDOFF must fits one of the following "
+              "forms: "
+              "[-]H, [-]HH, [-]H:MM, [-]HH:MM, [-]H:MM:SS, or [-]HH:MM:SS";
+        constexpr char const* bad_AT
+            = "is not a valid AT token. AT must fits one of the following "
+              "forms: "
+              "[-]H[sguzw], [-]HH[sguzw], [-]H:MM[sguzw], [-]HH:MM[sguzw], "
+              "[-]H:MM:SS[sguzw], or [-]HH:MM:SS[sguzw]";
+        constexpr char const* exp_RULE_ON
+            = "Expected rule describing when within the month "
+              "a transition occurs";
+        constexpr char const* bad_RULE_ON
+            = "could not be parsed. Valid forms are: 'last[DOW]', "
+              "'[DOW]>=[DOM]', '[DOW]<=[DOM]', or '[DOM]', where "
+              "'[DOW]' represents "
+              "Sun, Mon, Tue, Wed, Thu, Fri, or Sat, and DOM is an "
+              "integer 1-31.";
+
+        constexpr char const* bad_LETTER
+            = "is too large to be valid for the LETTER/S field.";
+
         Mon parseMonth( OptTok tok ) {
             if( tok.size() == 3 )
             {
@@ -28,6 +55,33 @@ namespace vtz {
                 "Expected month",
                 tok.has_value() ? "is not a valid month name"
                                 : "month is missing",
+                tok,
+            };
+        }
+
+        u8 parseDayOfMonth( OptTok tok ) {
+            if( tok.size() == 1 )
+            {
+                char   ch  = tok[0];
+                size_t dig = size_t( ch - '0' );
+                if( dig <= 9 ) return u8( dig );
+            }
+            else if( tok.size() == 2 )
+            {
+                size_t d10 = size_t( tok[0] - '0' );
+                size_t d1  = size_t( tok[1] - '0' );
+                if( d10 <= 9 && d1 <= 9 )
+                {
+                    size_t day = d10 * 10 + d1;
+                    if( day && day < 32 ) return u8( day );
+                }
+            }
+
+            throw ParseError{
+                "Expected day of the month",
+                tok.has_value()
+                    ? "is not a valid day of the month (day must be 1-31)"
+                    : no_token,
                 tok,
             };
         }
@@ -120,16 +174,9 @@ namespace vtz {
                 if( isGood ) { return RuleOn::on( day ); }
             }
 
-            throw ParseError{ "Expected rule describing when within the month "
-                              "a transition occurs",
-                tok.has_value()
-                    ? "could not be parsed. Valid forms are: 'last[DOW]', "
-                      "'[DOW]>=[DOM]', '[DOW]<=[DOM]', or '[DOM]', where "
-                      "'[DOW]' represents "
-                      "Sun, Mon, Tue, Wed, Thu, Fri, or Sat, and DOM is an "
-                      "integer 1-31."
-                    : "token was missing",
-                tok };
+            throw ParseError{
+                exp_RULE_ON, tok.has_value() ? bad_RULE_ON : no_token, tok
+            };
         }
 
         constexpr inline bool isD10( int x ) noexcept {
@@ -243,23 +290,6 @@ namespace vtz {
     }
 
     namespace {
-        constexpr char const* no_token = "no token was given";
-        constexpr char const* bad_SAVE
-            = "is not a valid SAVE. SAVE must fits one of the following "
-              "forms: "
-              "[-]H, [-]HH, [-]H:MM, [-]HH:MM, [-]H:MM:SS, or [-]HH:MM:SS";
-        constexpr char const* bad_STDOFF
-            = "is not a valid STDOFF. STDOFF must fits one of the following "
-              "forms: "
-              "[-]H, [-]HH, [-]H:MM, [-]HH:MM, [-]H:MM:SS, or [-]HH:MM:SS";
-        constexpr char const* bad_AT
-            = "is not a valid AT token. AT must fits one of the following "
-              "forms: "
-              "[-]H[sguzw], [-]HH[sguzw], [-]H:MM[sguzw], [-]HH:MM[sguzw], "
-              "[-]H:MM:SS[sguzw], or [-]HH:MM:SS[sguzw]";
-
-        constexpr char const* bad_LETTER
-            = "is too large to be valid for the LETTER/S field.";
 
         RuleSave parseRuleSave( OptTok tok ) {
             size_t      size = tok.size();
@@ -341,6 +371,59 @@ namespace vtz {
                 "Expected STDOFF offset", tok ? bad_STDOFF : no_token, tok
             };
         }
+
+        ZoneUntil parseZoneUntil( string_view sv ) {
+            TokenIter iter( sv );
+
+            if( auto year = iter.next() )
+            {
+                auto y = u16( parseYear( year ) );
+                if( auto mon = iter.next() )
+                {
+                    auto m = parseMonth( mon );
+                    if( auto day = iter.next() )
+                    {
+                        auto on = parseRuleOn( day );
+                        if( on.kind() != RuleOn::DAY )
+                            throw ParseError{
+                                "Expected to be written by an "
+                                "actually competent programmer",
+                                "is a 'ON' rule with kind() != DAY, which, "
+                                "while valid, is not yet handled",
+                                day,
+                            };
+
+                        auto d = u8( on.day() );
+                        if( auto stdoff = iter.next() )
+                        {
+                            auto at = parseRuleAt( stdoff );
+                            // Make sure there are no more tokens
+                            if( auto extraToken = iter.next() )
+                            {
+                                throw ParseError{
+                                    "Expected no more tokens "
+                                    "after 'until' field",
+                                    "another token appeared",
+                                    extraToken,
+                                };
+                            }
+                            return ZoneUntil{
+                                y, m, d, at
+                            }; // 'UNTIL' field given year, month, day, and
+                               // STDOFF
+                        }
+                        return ZoneUntil{
+                            y, m, d
+                        }; // 'UNTIL' field given year, month, day
+                    }
+                    return ZoneUntil{ y,
+                        m }; // 'UNTIL' field only given a year and month
+                }
+                return ZoneUntil{ y }; // 'UNTIL' field only given a year
+            }
+            return ZoneUntil{}; // 'UNTIL' field is empty; reached end of Zone
+                                // entry
+        }
     } // namespace
 
 
@@ -356,7 +439,7 @@ namespace vtz {
         e.stdoff = parseZoneOff( tok_iter.next() );
         e.rules  = tok_iter.next();
         e.format = tok_iter.next();
-        e.until  = stripTrailingDelim( tok_iter.rest() );
+        e.until  = parseZoneUntil( tok_iter.rest() );
         return e;
     }
 
@@ -435,8 +518,7 @@ namespace vtz {
         {
             auto       lines = LineIter( input );
             TZDataFile file;
-            while( auto line = lines.next() )
-            { parseEntry( file, line, lines ); }
+            while( auto line = lines.next() ) parseEntry( file, line, lines );
             return file;
         }
         catch( ParseError err )
@@ -530,4 +612,41 @@ namespace vtz {
     }
     RuleAt::RuleAt( string_view text )
     : RuleAt( parseRuleAt( text ) ) {}
+
+
+    ZoneEntry::ZoneEntry( string_view stdoff,
+        string_view                   rules,
+        string_view                   format,
+        string_view                   until )
+
+    : stdoff( stdoff )
+    , rules( rules )
+    , format( format )
+    , until( parseZoneUntil( until ) ) {}
+
+
+    std::string format_as( ZoneUntil until ) {
+        if( until.year )
+        {
+            if( until.mon )
+            {
+                if( until.day )
+                {
+                    if( until.at )
+                    {
+                        return fmt::format( "{:>4} {} {:>2} {}",
+                            *until.year,
+                            *until.mon,
+                            *until.day,
+                            *until.at );
+                    }
+                    return fmt::format(
+                        "{:>4} {} {:>2}", *until.year, *until.mon, *until.day );
+                }
+                return fmt::format( "{:>4} {}", *until.year, *until.mon );
+            }
+            return fmt::format( "{:>4}", *until.year );
+        }
+        return "(none)";
+    }
 } // namespace vtz

@@ -38,6 +38,40 @@ namespace vtz {
         // clang-format on
     };
 
+    template<class T>
+    struct OptTraits;
+
+    template<class T>
+    struct OptClass {
+        constexpr static T NULL_VALUE = OptTraits<T>::NULL_VALUE;
+
+        T data = NULL_VALUE;
+
+        constexpr T&       operator*() noexcept { return data; }
+        constexpr T const& operator*() const noexcept { return data; }
+        constexpr T&       value() noexcept { return data; }
+        constexpr T const& value() const noexcept { return data; }
+
+        constexpr T const& value_or( T const& input ) const noexcept {
+            return data == NULL_VALUE ? input : data;
+        }
+
+        constexpr bool has_value() const noexcept { return data != NULL_VALUE; }
+
+        constexpr explicit operator bool() const noexcept {
+            return data != NULL_VALUE;
+        }
+
+        // clang-format off
+        constexpr bool operator==( OptClass const& rhs ) const noexcept { return data == rhs.data; }
+        constexpr bool operator!=( OptClass const& rhs ) const noexcept { return data != rhs.data; }
+        constexpr bool operator<=( OptClass const& rhs ) const noexcept { return data <= rhs.data; }
+        constexpr bool operator>=( OptClass const& rhs ) const noexcept { return data >= rhs.data; }
+        constexpr bool operator< ( OptClass const& rhs ) const noexcept { return data <  rhs.data; }
+        constexpr bool operator> ( OptClass const& rhs ) const noexcept { return data >  rhs.data; }
+        // clang-format on
+    };
+
     struct NoneType {
         template<class T, T NULL_VALUE>
         constexpr operator OptV<T, NULL_VALUE>() const noexcept {

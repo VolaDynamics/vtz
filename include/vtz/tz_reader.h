@@ -7,6 +7,13 @@
 #include <vtz/dates.h>
 #include <vtz/strings.h>
 
+#if __has_builtin( __builtin_memcpy )
+    #define _vtz_memcpy __builtin_memcpy
+#else
+    #include <cstring>
+    #define _vtz_memcpy memcpy
+#endif
+
 namespace vtz {
     using rule_year_t            = i16;
     constexpr rule_year_t Y_ONLY = -1;
@@ -100,6 +107,9 @@ namespace vtz {
     class RuleAt {
         i32 repr_{};
 
+        constexpr explicit RuleAt( i32 repr ) noexcept
+        : repr_( repr ) {}
+
       public:
 
         enum Kind : u8 {
@@ -131,13 +141,30 @@ namespace vtz {
         constexpr bool operator==( RuleAt const& rhs ) const noexcept {
             return repr_ == rhs.repr_;
         }
+        constexpr bool operator!=( RuleAt const& rhs ) const noexcept {
+            return repr_ != rhs.repr_;
+        }
+
+        constexpr static RuleAt fromRepr( i32 repr ) noexcept {
+            return RuleAt( repr );
+        }
     };
+
+    template<>
+    struct OptTraits<RuleAt> {
+        constexpr static RuleAt NULL_VALUE = RuleAt::fromRepr( INT32_MIN );
+    };
+
+    using OptRuleAt = OptClass<RuleAt>;
 
     std::string format_as( RuleAt r );
 
 
     class RuleOn {
         u16 repr_;
+
+        constexpr explicit RuleOn( u16 repr ) noexcept
+        : repr_( repr ) {}
 
       public:
 
@@ -175,8 +202,21 @@ namespace vtz {
         constexpr bool operator==( RuleOn const& rhs ) const noexcept {
             return repr_ == rhs.repr_;
         }
+
+        constexpr static RuleOn fromRepr( u16 repr ) noexcept {
+            return RuleOn( repr );
+        }
     };
     std::string format_as( RuleOn r );
+
+    template<>
+    struct OptTraits<RuleOn> {
+        /// Corresponds to kind() == DAY, dow() == Sun, day() == 0, which is not
+        /// a valid day of the month
+        constexpr static RuleOn NULL_VALUE = RuleOn::fromRepr( 0 );
+    };
+
+    using OptRuleOn = OptClass<RuleOn>;
 
     // # Rule	NAME	FROM	TO	-	IN	ON	AT	SAVE
     // LETTER Rule	CA	1948	only	-	Mar	14	2:01
@@ -237,13 +277,25 @@ namespace vtz {
     };
     std::string format_as( ZoneOff off );
 
-    template <class T, T NULL_VALUE>
-    struct Opt {
-        T data;
-        bool has_value() const noexcept { return data == NULL_VALUE; }
-        T& value() noexcept { return data; }
-        T const& value() const noexcept { return data; }
+    struct ZoneUntil {
+        OptV<u16, 0> year; ///< year
+        OptMon       mon;  ///< Month
+        OptV<u8, 0>  day;  ///< Day of the month (1-31)
+        OptRuleAt    at;   ///< Time of day when it ends
+
+        u64 _repr() const noexcept {
+            u64 result{};
+            static_assert( sizeof( ZoneUntil ) == sizeof( u64 ) );
+            _vtz_memcpy( &result, this, sizeof( u64 ) );
+            return result;
+        }
+
+        bool operator==( ZoneUntil const& rhs ) const noexcept {
+            return _repr() == rhs._repr();
+        }
     };
+
+    std::string format_as( ZoneUntil );
 
     // # Zone	NAME		STDOFF	RULES	FORMAT	[UNTIL]
     // Zone America/Los_Angeles -7:52:58 -	LMT	1883 Nov 18 20:00u
@@ -253,9 +305,25 @@ namespace vtz {
 
     struct ZoneEntry {
         ZoneOff     stdoff;
+        ZoneUntil   until;
         string_view rules;
         string_view format;
-        string_view until;
+
+        ZoneEntry() = default;
+
+        constexpr ZoneEntry( ZoneOff stdoff,
+            string_view              rules,
+            string_view              format,
+            ZoneUntil                until ) noexcept
+        : stdoff( stdoff )
+        , until( until )
+        , rules( rules )
+        , format( format ) {}
+
+        ZoneEntry( string_view stdoff,
+            string_view        rules,
+            string_view        format,
+            string_view        until = {} );
 
         bool operator==( ZoneEntry const& rhs ) const noexcept {
             return stdoff == rhs.stdoff    //

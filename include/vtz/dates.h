@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vtz/inplace_optional.h>
 #include <cstdint>
 #include <string_view>
+#include <vtz/inplace_optional.h>
 namespace vtz {
     using std::string_view;
     using u8  = uint8_t;
@@ -20,7 +20,7 @@ namespace vtz {
     /// `Jan=1` was chosen because using '1' for the first month is convention,
     /// and converting to the numeric month representation is as simple
     /// as doing a cast.
-    enum class Mon : u16 { Jan = 1, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec };
+    enum class Mon : u8 { Jan = 1, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec };
 
     /// ENum representing the day of the week. Values start counting up from 0.
     ///
