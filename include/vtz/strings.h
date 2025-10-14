@@ -71,6 +71,9 @@ namespace vtz {
         constexpr OptSV( std::nullopt_t ) noexcept
         : string_view() {}
 
+        constexpr string_view const& operator*() const noexcept {
+            return *this;
+        }
         constexpr string_view value() const noexcept { return *this; }
 
         constexpr bool has_value() const noexcept { return data() != nullptr; }
