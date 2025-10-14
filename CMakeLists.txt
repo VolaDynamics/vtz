@@ -39,6 +39,8 @@ if(PROJECT_IS_TOP_LEVEL)
     set(LINK_FLAGS_SANITIZE "-fsanitize=address,undefined")
     set(CMAKE_CXX_FLAGS_SANITIZE "-fsanitize=address,undefined -O0 -g")
 
+    set(CMAKE_CXX_FLAGS_PROFILE "-Og -g")
+
     include(cmake/get_cpm.cmake)
 
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
