@@ -1,8 +1,10 @@
 #pragma once
 
+#include <ankerl/unordered_dense.h>
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <string_view>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
@@ -16,6 +18,9 @@
 #endif
 
 namespace vtz {
+    using ankerl::unordered_dense::map;
+    using std::string;
+
     using rule_year_t            = i16;
     constexpr rule_year_t Y_ONLY = -1;
     constexpr rule_year_t Y_MAX  = -2;
@@ -103,7 +108,7 @@ namespace vtz {
             return save == rhs.save;
         }
     };
-    std::string format_as( RuleSave );
+    string format_as( RuleSave );
 
     class RuleAt {
         i32 repr_{};
@@ -158,7 +163,7 @@ namespace vtz {
 
     using OptRuleAt = OptClass<RuleAt>;
 
-    std::string format_as( RuleAt r );
+    string format_as( RuleAt r );
 
 
     class RuleOn {
@@ -223,8 +228,10 @@ namespace vtz {
                 return getYMD_DOW_LE( year, u32( mon ), day(), dow() );
             }
         }
+
+        string string() const;
     };
-    std::string format_as( RuleOn r );
+    inline string format_as( RuleOn r ) { return r.string(); }
 
 
     template<>
@@ -236,13 +243,18 @@ namespace vtz {
 
     using OptRuleOn = OptClass<RuleOn>;
 
-    // # Rule	NAME	FROM	TO	-	IN	ON	AT	SAVE
-    // LETTER Rule	CA	1948	only	-	Mar	14	2:01
-    // 1:00	D Rule	CA	1949	only	-	Jan	 1	2:00
-    // 0	S Rule	CA	1950	1966	-	Apr	lastSun	1:00
-    // 1:00	D
-    struct Rule {
-        string_view name;
+
+    /// Example rules:
+    ///
+    /// #Rule NAME    FROM TO    -   IN  ON      AT   SAVE LETTER
+    /// Rule  Chicago 1920 only  -   Jun 13      2:00 1:00 D
+    /// Rule  Chicago 1920 1921  -   Oct lastSun 2:00 0    S
+    /// Rule  Chicago 1921 only  -   Mar lastSun 2:00 1:00 D
+    /// Rule  Chicago 1922 1966  -   Apr lastSun 2:00 1:00 D
+    /// Rule  Chicago 1922 1954  -   Sep lastSun 2:00 0    S
+    /// Rule  Chicago 1955 1966  -   Oct lastSun 2:00 0    S
+
+    struct RuleEntry {
         rule_year_t from;
         rule_year_t to;
         Mon         in;
@@ -251,9 +263,8 @@ namespace vtz {
         RuleSave    save;
         RuleLetter  letter;
 
-        bool operator==( Rule const& rhs ) const noexcept {
-            return name == rhs.name    //
-                   && from == rhs.from //
+        bool operator==( RuleEntry const& rhs ) const noexcept {
+            return from == rhs.from    //
                    && to == rhs.to     //
                    && in == rhs.in     //
                    && on == rhs.on     //
@@ -293,7 +304,7 @@ namespace vtz {
             return offset == rhs.offset;
         }
     };
-    std::string format_as( ZoneOff off );
+    string format_as( ZoneOff off );
 
     struct ZoneUntil {
         OptV<u16, 0> year; ///< year
@@ -315,7 +326,7 @@ namespace vtz {
         constexpr bool has_value() const noexcept { return year.has_value(); }
     };
 
-    std::string format_as( ZoneUntil );
+    string format_as( ZoneUntil );
 
     // # Zone	NAME		STDOFF	RULES	FORMAT	[UNTIL]
     // Zone America/Los_Angeles -7:52:58 -	LMT	1883 Nov 18 20:00u
@@ -362,9 +373,11 @@ namespace vtz {
         }
     };
 
+    using RuleMap = map<string_view, vector<RuleEntry>>;
+
 
     struct TZDataFile {
-        vector<Rule> rules;
+        RuleMap      rules;
         vector<Zone> zones;
         vector<Link> links;
 
@@ -375,8 +388,11 @@ namespace vtz {
         }
     };
 
-    /// Parse a rule
-    Rule parseRule( TokenIter tok_iter );
+    rule_year_t parseYear( OptTok tok );
+    rule_year_t parseYearTo( OptTok tok );
+    Mon         parseMonth( OptTok tok );
+    u8          parseDayOfMonth( OptTok tok );
+    RuleOn      parseRuleOn( OptTok tok );
 
     /// Parse a zone entry
     ZoneEntry parseZoneEntry( TokenIter tok_iter );

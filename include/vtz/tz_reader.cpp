@@ -95,159 +95,156 @@ namespace vtz {
             }
             return { 0, false };
         }
+    } // namespace
 
-        Mon parseMonth( OptTok tok ) {
-            using _impl::_load1;
-            using _impl::_load2;
-            using _impl::_load3;
-            using _impl::_parseMon;
-            char const* p = tok.data();
+    rule_year_t parseYear( OptTok tok ) {
+        char const* begin = tok.data();
+        size_t      size  = tok.size();
+        if( size == 4 )
+        {
+            if( auto y = parse4( begin ) ) { return *y; }
+        }
+        else
+        {
+            char const* end = begin + size;
 
-            if( auto m = _parseMon( tok.data(), tok.size() ) ) return *m;
+            i16  year{};
+            auto result = std::from_chars( begin, end, year );
+            if( result.ec == std::errc{} && result.ptr == end && year > 0 )
+                return rule_year_t( year );
+        }
+        throw ParseError{
+            "Expected year of form 'YYYY'",
+            tok.has_value() ? "is not a valid year" : "year is missing",
+            tok,
+        };
+    }
 
-            throw ParseError{
-                "Expected month",
-                tok.has_value() ? "is not a valid month name"
-                                : "month is missing",
-                tok,
-            };
+    rule_year_t parseYearTo( OptTok tok ) {
+        if( tok == "ma" || tok == "max" ) { return Y_MAX; }
+        if( tok == "o" || tok == "only" ) { return Y_ONLY; }
+        char const* begin = tok.data();
+        size_t      size  = tok.size();
+
+        if( size == 4 )
+        {
+            if( auto y = parse4( begin ) ) { return *y; }
+        }
+        else
+        {
+            i16         year{};
+            char const* end = begin + size;
+
+            auto result = std::from_chars( begin, end, year );
+            if( result.ec == std::errc{} && result.ptr == end && year > 0 )
+                return rule_year_t( year );
         }
 
-        u8 parseDayOfMonth( OptTok tok ) {
-            if( tok.size() == 1 )
-            {
-                char   ch  = tok[0];
-                size_t dig = size_t( ch - '0' );
-                if( dig <= 9 ) return u8( dig );
-            }
-            else if( tok.size() == 2 )
-            {
-                size_t d10 = size_t( tok[0] - '0' );
-                size_t d1  = size_t( tok[1] - '0' );
-                if( d10 <= 9 && d1 <= 9 )
-                {
-                    size_t day = d10 * 10 + d1;
-                    if( day && day < 32 ) return u8( day );
-                }
-            }
+        throw ParseError{
+            "Expected year of form 'YYYY' or literal strings 'max' or "
+            "'only'",
+            tok.has_value() ? "is not a valid year" : "year is missing",
+            tok,
+        };
+    }
 
-            throw ParseError{
-                "Expected day of the month",
-                tok.has_value()
-                    ? "is not a valid day of the month (day must be 1-31)"
-                    : no_token,
-                tok,
-            };
+    Mon parseMonth( OptTok tok ) {
+        using _impl::_load1;
+        using _impl::_load2;
+        using _impl::_load3;
+        using _impl::_parseMon;
+        char const* p = tok.data();
+
+        if( auto m = _parseMon( tok.data(), tok.size() ) ) return *m;
+
+        throw ParseError{
+            "Expected month",
+            tok.has_value() ? "is not a valid month name" : "month is missing",
+            tok,
+        };
+    }
+
+    u8 parseDayOfMonth( char const* tok, size_t size ) {
+        if( size == 1 )
+        {
+            char   ch  = tok[0];
+            size_t dig = size_t( ch - '0' );
+            if( dig && dig <= 9 ) return u8( dig );
+        }
+        else if( size == 2 )
+        {
+            size_t d10 = size_t( tok[0] - '0' );
+            size_t d1  = size_t( tok[1] - '0' );
+            if( d10 <= 9 && d1 <= 9 )
+            {
+                size_t day = d10 * 10 + d1;
+                if( day && day < 32 ) return u8( day );
+            }
         }
 
-        rule_year_t parseYear( OptTok tok ) {
-            char const* begin = tok.data();
-            size_t      size  = tok.size();
-            if( size == 4 )
-            {
-                if( auto y = parse4( begin ) ) { return *y; }
-            }
-            else
-            {
-                char const* end = begin + size;
+        throw ParseError{
+            "Expected day of the month",
+            size ? "is not a valid day of the month (day must be 1-31)"
+                 : no_token,
+            OptTok( tok, size ),
+        };
+    }
 
-                i16  year{};
-                auto result = std::from_chars( begin, end, year );
-                if( result.ec == std::errc{} && result.ptr == end && year > 0 )
-                    return rule_year_t( year );
-            }
-            throw ParseError{
-                "Expected year of form 'YYYY'",
-                tok.has_value() ? "is not a valid year" : "year is missing",
-                tok,
-            };
-        }
+    RuleOn parseRuleOn( OptTok tok ) {
+        using namespace _impl;
 
-        rule_year_t parseYearTo( OptTok tok ) {
-            if( tok == "ma" || tok == "max" ) { return Y_MAX; }
-            if( tok == "o" || tok == "only" ) { return Y_ONLY; }
-            char const* begin = tok.data();
-            size_t      size  = tok.size();
+        size_t      size = tok.size();
+        char const* p    = tok.data();
+        char const* end_ = p + size;
 
-            if( size == 4 )
-            {
-                if( auto y = parse4( begin ) ) { return *y; }
-            }
-            else
-            {
-                i16         year{};
-                char const* end = begin + size;
-
-                auto result = std::from_chars( begin, end, year );
-                if( result.ec == std::errc{} && result.ptr == end && year > 0 )
-                    return rule_year_t( year );
-            }
-
-            throw ParseError{
-                "Expected year of form 'YYYY' or literal strings 'max' or "
-                "'only'",
-                tok.has_value() ? "is not a valid year" : "year is missing",
-                tok,
-            };
-        }
-
-        RuleOn parseRuleOn( OptTok tok ) {
-            using namespace _impl;
-
-            size_t      size = tok.size();
-            char const* p    = tok.data();
-            char const* end_ = p + size;
-
+        if( size <= 2 )
+        {
             // For size<=2, it can only be a day
-            if( size <= 2 )
+            return RuleOn::on( parseDayOfMonth( p, size ) );
+        }
+        else if( size >= 4 )
+        {
+            constexpr auto _last = _load4( "last" );
+            if( _load4( p ) == _last )
             {
-                auto day = parse1or2( p, size );
-                if( day && *day && *day < 32 ) return RuleOn::on( *day );
+                if( OptDOW dow = _parseDOW( p + 4, size - 4 ) )
+                    return RuleOn::last( *dow );
             }
-            else if( size >= 4 )
+            else
             {
-                constexpr auto _last = _load4( "last" );
-                if( _load4( p ) == _last )
-                {
-                    if( OptDOW dow = _parseDOW( p + 4, size - 4 ) )
-                        return RuleOn::last( *dow );
-                }
-                else
-                {
-                    size_t dowLen{};
-                    if( p[2] == '=' ) // Eg, M>=3 or M<=3
-                        dowLen = 1;
-                    else if( p[3] == '=' )
-                        dowLen = 2;
-                    else if( size > 4 && p[4] == '=' )
-                        dowLen = 3;
+                size_t dowLen{};
+                if( p[2] == '=' ) // Eg, M>=3 or M<=3
+                    dowLen = 1;
+                else if( p[3] == '=' )
+                    dowLen = 2;
+                else if( size > 4 && p[4] == '=' )
+                    dowLen = 3;
 
-                    if( dowLen )
+                if( dowLen )
+                {
+                    // We know it must be of form
+                    // \w{dowLen}[<>]=\d+
+                    char   ge_or_le = p[dowLen];
+                    OptDOW dow      = _parseDOW( p, dowLen );
+                    auto   day      = parseDayOfMonth(
+                        p + ( dowLen + 2 ), size - ( dowLen + 2 ) );
+
+                    if( dow )
                     {
-                        // We know it must be of form
-                        // \w{dowLen}[<>]=\d+
-                        char   ge_or_le = p[dowLen];
-                        OptDOW dow      = _parseDOW( p, dowLen );
-                        auto   day      = parse1or2(
-                            p + ( dowLen + 2 ), size - ( dowLen + 2 ) );
-
-                        // true if 'DOW' is good and the 'DOM' is good
-                        bool goodDOM = day && *day && *day < 32;
-
                         switch( ge_or_le )
                         {
-                        case '<': return RuleOn::before( *day, *dow );
-                        case '>': return RuleOn::after( *day, *dow );
+                        case '<': return RuleOn::before( day, *dow );
+                        case '>': return RuleOn::after( day, *dow );
                         }
                     }
                 }
             }
-
-            throw ParseError{
-                exp_RULE_ON, tok.has_value() ? bad_RULE_ON : no_token, tok
-            };
         }
-    } // namespace
+
+        throw ParseError{
+            exp_RULE_ON, tok.has_value() ? bad_RULE_ON : no_token, tok
+        };
+    }
 
     i32 parseHHMMSSOffset( char const* p, size_t size, int sign ) noexcept {
         if( !size ) return OFFSET_NPOS;
@@ -464,9 +461,8 @@ namespace vtz {
         return e;
     }
 
-    Rule parseRule( TokenIter tok_iter ) {
-        return Rule{
-            tok_iter.next(),
+    RuleEntry parseRuleEntry( TokenIter tok_iter ) {
+        return RuleEntry{
             parseYear( tok_iter.next() ),
             /// For the 'TO' year, the values 'only' and 'max' must also be
             /// accepted
@@ -517,8 +513,7 @@ namespace vtz {
         try
         {
             auto       lines = LineIter( input );
-            TZDataFile file;
-            file.rules.reserve( 4096 );
+            TZDataFile file{ RuleMap( 512 ) };
             file.zones.reserve( 512 );
             file.links.reserve( 512 );
             while( auto nextLine = lines.next() )
@@ -534,8 +529,18 @@ namespace vtz {
 
                 if( what == "R" || what == "Rule" )
                 {
-                    file.rules.push_back( parseRule( tok_iter ) );
-                    continue;
+                    if( auto name = tok_iter.nextNonComment() )
+                    {
+                        file.rules[name].push_back(
+                            parseRuleEntry( tok_iter ) );
+                        continue;
+                    }
+                    else
+                    {
+                        throw ParseError{
+                            "Expected rule name", "name was missing", name
+                        };
+                    }
                 }
                 if( what == "L" || what == "Link" )
                 {
@@ -583,17 +588,16 @@ namespace vtz {
         }
     }
 
-
-    std::string format_as( RuleOn r ) {
-        switch( r.kind() )
+    std::string RuleOn::string() const {
+        switch( kind() )
         {
-        case RuleOn::DAY: return fmt::format( "{}", r.day() );
-        case RuleOn::DOW_BEFORE:
-            return fmt::format( "{}<={}", r.dow(), r.day() );
-        case RuleOn::DOW_AFTER:
-            return fmt::format( "{}>={}", r.dow(), r.day() );
-        case RuleOn::DOW_LAST: return fmt::format( "last{}", r.dow() );
+        case RuleOn::DAY: return fmt::format( "{}", day() );
+        case RuleOn::DOW_BEFORE: return fmt::format( "{}<={}", dow(), day() );
+        case RuleOn::DOW_AFTER: return fmt::format( "{}>={}", dow(), day() );
+        case RuleOn::DOW_LAST: return fmt::format( "last{}", dow() );
         }
+
+        throw std::runtime_error( "RuleOn::string(): bad kind()" );
     }
 
 

@@ -5,6 +5,8 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+#include <ankerl/unordered_dense.h>
+
 #include <gtest/gtest.h>
 #include <string_view>
 #include <tuple>
@@ -61,6 +63,11 @@ namespace _test_vtz {
     void debugPrint(
         std::string& s, std::vector<T> const& values, size_t indent = 0 );
 
+    template<class K, class V>
+    void debugPrint( std::string&                 s,
+        ankerl::unordered_dense::map<K, V> const& values,
+        size_t                                    indent );
+
 
     inline void debugPrint(
         std::string& dest, std::string const& s, size_t indent = 0 ) {
@@ -105,6 +112,35 @@ namespace _test_vtz {
         printIndent( s, indent );
         s += "]";
     }
+
+
+    template<class K, class V>
+    void debugPrint( std::string&                 s,
+        ankerl::unordered_dense::map<K, V> const& values,
+        size_t                                    indent ) {
+        auto begin = values.begin();
+        auto end   = values.end();
+        if( begin == end )
+        {
+            s += "{}";
+            return;
+        }
+
+        s += "{\n";
+        for( ; begin != end; ++begin )
+        {
+            auto&& [k, v] = *begin;
+            printIndent( s, indent + 4 );
+            debugPrint( s, k, indent + 4 );
+            s += ": ";
+            debugPrint( s, v, indent + 4 );
+            s += ",\n";
+        }
+        printIndent( s, indent );
+        s += "}";
+    }
+
+
     template<class T>
     void debugPrint( std::string& s, T const& value, size_t indent ) {
         if constexpr( StructInfo<T>::has )

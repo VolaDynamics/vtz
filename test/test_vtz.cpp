@@ -255,15 +255,14 @@ TEST( vtz_parser, strip_comments ) {
 STRUCT_INFO(
     vtz::Location, FIELD( vtz::Location, line ), FIELD( vtz::Location, col ) );
 
-STRUCT_INFO( vtz::Rule,
-    FIELD( vtz::Rule, name ),
-    FIELD( vtz::Rule, from ),
-    FIELD( vtz::Rule, to ),
-    FIELD( vtz::Rule, in ),
-    FIELD( vtz::Rule, on ),
-    FIELD( vtz::Rule, at ),
-    FIELD( vtz::Rule, save ),
-    FIELD( vtz::Rule, letter ) );
+STRUCT_INFO( vtz::RuleEntry,
+    FIELD( vtz::RuleEntry, from ),
+    FIELD( vtz::RuleEntry, to ),
+    FIELD( vtz::RuleEntry, in ),
+    FIELD( vtz::RuleEntry, on ),
+    FIELD( vtz::RuleEntry, at ),
+    FIELD( vtz::RuleEntry, save ),
+    FIELD( vtz::RuleEntry, letter ) );
 
 STRUCT_INFO( vtz::ZoneEntry,
     FIELD( vtz::ZoneEntry, stdoff ),
@@ -285,7 +284,7 @@ STRUCT_INFO( vtz::TZDataFile,
 using namespace vtz;
 TEST( vtz_parser, parse_tzdata ) {
     using ze = ZoneEntry;
-    using r  = Rule;
+    using re = RuleEntry;
     using M  = Mon;
 
     constexpr auto lastSun = RuleOn::last( DOW::Sun );
@@ -348,16 +347,19 @@ Rule	US	1974	only	-	Jan	6	2:00	1:00	D
 # Arizona mostly uses MST.
 )" ),
         ( TZDataFile{
-            std::vector<Rule>{
-                { "US", 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
-                { "US", 1918, 1919, M::Oct, lastSun, "2:00", "0", "S" },
-                { "US", 1942, Y_ONLY, M::Feb, on( 9 ), "2:00", "1:00", "W" },
-                { "US", 1945, Y_ONLY, M::Aug, on( 14 ), "23:00u", "1:00", "P" },
-                { "US", 1945, Y_ONLY, M::Sep, on( 30 ), "2:00", "0", "S" },
-                { "US", 1967, 2006, M::Oct, lastSun, "2:00", "0", "S" },
-                { "US", 1967, 1973, M::Apr, lastSun, "2:00", "1:00", "D" },
-                { "US", 1974, Y_ONLY, M::Jan, on( 6 ), "2:00", "1:00", "D" },
-            },
+            { {
+                "US",
+                vector<RuleEntry>{
+                    { 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
+                    { 1918, 1919, M::Oct, lastSun, "2:00", "0", "S" },
+                    { 1942, Y_ONLY, M::Feb, on( 9 ), "2:00", "1:00", "W" },
+                    { 1945, Y_ONLY, M::Aug, on( 14 ), "23:00u", "1:00", "P" },
+                    { 1945, Y_ONLY, M::Sep, on( 30 ), "2:00", "0", "S" },
+                    { 1967, 2006, M::Oct, lastSun, "2:00", "0", "S" },
+                    { 1967, 1973, M::Apr, lastSun, "2:00", "1:00", "D" },
+                    { 1974, Y_ONLY, M::Jan, on( 6 ), "2:00", "1:00", "D" },
+                },
+            } },
             {
                 Zone{
                     "Pacific/Honolulu",
@@ -389,9 +391,12 @@ Link	Africa/Abidjan	Africa/Conakry
 Link	Africa/Abidjan	Africa/Dakar
 )" ),
         ( TZDataFile{
-            std::vector<Rule>{
-                { "US", 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
-            },
+            { {
+                {
+                    "US",
+                    { { 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" } },
+                },
+            } },
             {
                 Zone{
                     "Pacific/Honolulu",
@@ -461,7 +466,11 @@ Zone America/Juneau	 15:02:19 -	LMT	1867 Oct 19 15:33:32
 Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
 			 -9:01:13 -	LMT	1900 Aug 20 12:00
 			 -8:00	-	PST	1942
-			 -8:00	US	P%sT	1946)" ),
+			 -8:00	US	P%sT	1946
+             -8:00	-	PST	1969
+			 -8:00	US	P%sT	1983 Oct 30  2:00
+			 -9:00	US	Y%sT	1983 Nov 30
+			 -9:00	US	AK%sT)" ),
         ( TZDataFile{
             {},
             {
@@ -478,6 +487,10 @@ Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
                         ze{ "-9:01:13", "-", "LMT", "1900 Aug 20 12:00" },
                         ze{ "-8:00", "-", "PST", "1942" },
                         ze{ "-8:00", "US", "P%sT", "1946" },
+                        ze{ "-8:00", "-", "PST", "1969" },
+                        ze{ "-8:00", "US", "P%sT", "1983 Oct 30  2:00" },
+                        ze{ "-9:00", "US", "Y%sT", "1983 Nov 30" },
+                        ze{ "-9:00", "US", "AK%sT" },
                     },
                 },
             },
@@ -768,4 +781,31 @@ TEST( vtz_parser, basics ) {
     ASSERT_EQ( parseHHMMSSOffset( "2:00" ), 7200 );
     ASSERT_EQ( parseSignedHHMMSSOffset( "2:00" ), 7200 );
     ASSERT_EQ( parseSignedHHMMSSOffset( "-2:00" ), -7200 );
+
+    using RO = RuleOn;
+    ASSERT_EQ( parseRuleOn( "lastSun" ).string(), "lastSun" );
+    ASSERT_EQ( parseRuleOn( "lastMon" ).string(), "lastMon" );
+    ASSERT_EQ( parseRuleOn( "lastTue" ).string(), "lastTue" );
+    ASSERT_EQ( parseRuleOn( "lastWed" ).string(), "lastWed" );
+    ASSERT_EQ( parseRuleOn( "lastThu" ).string(), "lastThu" );
+    ASSERT_EQ( parseRuleOn( "lastFri" ).string(), "lastFri" );
+    ASSERT_EQ( parseRuleOn( "lastSat" ).string(), "lastSat" );
+
+    ASSERT_EQ( parseRuleOn( "Sun>=1" ).string(), "Sun>=1" );
+    ASSERT_EQ( parseRuleOn( "Mon>=2" ).string(), "Mon>=2" );
+    ASSERT_EQ( parseRuleOn( "Tue>=3" ).string(), "Tue>=3" );
+    ASSERT_EQ( parseRuleOn( "Wed>=10" ).string(), "Wed>=10" );
+    ASSERT_EQ( parseRuleOn( "Thu>=11" ).string(), "Thu>=11" );
+    ASSERT_EQ( parseRuleOn( "Fri>=12" ).string(), "Fri>=12" );
+    ASSERT_EQ( parseRuleOn( "Sat>=31" ).string(), "Sat>=31" );
+
+    ASSERT_EQ( parseRuleOn( "Sun<=1" ).string(), "Sun<=1" );
+    ASSERT_EQ( parseRuleOn( "Mon<=2" ).string(), "Mon<=2" );
+    ASSERT_EQ( parseRuleOn( "Tue<=3" ).string(), "Tue<=3" );
+    ASSERT_EQ( parseRuleOn( "Wed<=10" ).string(), "Wed<=10" );
+    ASSERT_EQ( parseRuleOn( "Thu<=11" ).string(), "Thu<=11" );
+    ASSERT_EQ( parseRuleOn( "Fri<=12" ).string(), "Fri<=12" );
+    ASSERT_EQ( parseRuleOn( "Sat<=31" ).string(), "Sat<=31" );
+
+    ASSERT_ANY_THROW( parseRuleOn( "Sun<=0" ); );
 }

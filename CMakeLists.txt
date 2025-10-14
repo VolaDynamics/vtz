@@ -45,6 +45,7 @@ if(PROJECT_IS_TOP_LEVEL)
 
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
     CPMAddPackage("gh:google/googletest@1.17.0")
+    CPMAddPackage("gh:martinus/unordered_dense@4.7.0")
 
     file(GLOB_RECURSE sources include/*.cpp)
     add_library(
@@ -52,7 +53,13 @@ if(PROJECT_IS_TOP_LEVEL)
         STATIC
             ${sources})
 
-    target_link_libraries(vtz PRIVATE fmt::fmt)
+    target_link_libraries(
+        vtz
+        PRIVATE
+            fmt::fmt
+        PUBLIC
+            unordered_dense::unordered_dense
+    )
     add_library(vtz::vtz ALIAS vtz)
 
     file(GLOB_RECURSE headers include/*.h)
