@@ -44,6 +44,58 @@ namespace vtz {
         constexpr char const* bad_LETTER
             = "is too large to be valid for the LETTER/S field.";
 
+        constexpr inline bool isD10( int x ) noexcept {
+            return 0 <= x && x < 10;
+        }
+        constexpr inline bool isD6( int x ) noexcept { return 0 <= x && x < 6; }
+
+
+        constexpr i32 _hms( i32 h, i32 m = 0, i32 s = 0 ) noexcept {
+            return h * 3600 + m * 60 + s;
+        }
+
+        // Parse 1 digit
+        TrivialOpt<i32> parse1( char const* src ) noexcept {
+            i32 value = src[0] - '0';
+            return { value, isD10( value ) };
+        }
+
+        // Parse 2 digits.
+        TrivialOpt<i32> parse2( char const* src ) noexcept {
+            i32 v0 = src[0] - '0';
+            i32 v1 = src[1] - '0';
+            return { v0 * 10 + v1, isD10( v0 ) && isD10( v1 ) };
+        }
+
+        // Parse 4 digits
+        TrivialOpt<i32> parse4( char const* src ) noexcept {
+            i32 v0 = src[0] - '0';
+            i32 v1 = src[1] - '0';
+            i32 v2 = src[2] - '0';
+            i32 v3 = src[3] - '0';
+            return {
+                v0 * 1000 + v1 * 100 + v2 * 10 + v3,
+                isD10( v0 ) && isD10( v1 ) && isD10( v2 ) && isD10( v3 ),
+            };
+        }
+
+        // Parse 1 or 2 digits. Anything else is bad.
+        constexpr TrivialOpt<i32> parse1or2(
+            char const* src, size_t size ) noexcept {
+            if( size == 2 )
+            {
+                i32 v0 = src[0] - '0';
+                i32 v1 = src[1] - '0';
+                return { v0 * 10 + v1, isD10( v0 ) && isD10( v1 ) };
+            }
+            if( size == 1 )
+            {
+                i32 v0 = src[0] - '0';
+                return { v0, isD10( v0 ) };
+            }
+            return { 0, false };
+        }
+
         Mon parseMonth( OptTok tok ) {
             using _impl::_load1;
             using _impl::_load2;
@@ -89,14 +141,21 @@ namespace vtz {
         }
 
         rule_year_t parseYear( OptTok tok ) {
-            i16         year{};
             char const* begin = tok.data();
-            char const* end   = tok.data() + tok.size();
+            size_t      size  = tok.size();
+            if( size == 4 )
+            {
+                if( auto y = parse4( begin ) ) { return *y; }
+            }
+            else
+            {
+                char const* end = begin + size;
 
-            auto result = std::from_chars( begin, end, year );
-            if( result.ec == std::errc{} && result.ptr == end && year > 0 )
-                return rule_year_t( year );
-
+                i16  year{};
+                auto result = std::from_chars( begin, end, year );
+                if( result.ec == std::errc{} && result.ptr == end && year > 0 )
+                    return rule_year_t( year );
+            }
             throw ParseError{
                 "Expected year of form 'YYYY'",
                 tok.has_value() ? "is not a valid year" : "year is missing",
@@ -107,13 +166,22 @@ namespace vtz {
         rule_year_t parseYearTo( OptTok tok ) {
             if( tok == "ma" || tok == "max" ) { return Y_MAX; }
             if( tok == "o" || tok == "only" ) { return Y_ONLY; }
-            i16         year{};
             char const* begin = tok.data();
-            char const* end   = tok.data() + tok.size();
+            size_t      size  = tok.size();
 
-            auto result = std::from_chars( begin, end, year );
-            if( result.ec == std::errc{} && result.ptr == end && year > 0 )
-                return rule_year_t( year );
+            if( size == 4 )
+            {
+                if( auto y = parse4( begin ) ) { return *y; }
+            }
+            else
+            {
+                i16         year{};
+                char const* end = begin + size;
+
+                auto result = std::from_chars( begin, end, year );
+                if( result.ec == std::errc{} && result.ptr == end && year > 0 )
+                    return rule_year_t( year );
+            }
 
             throw ParseError{
                 "Expected year of form 'YYYY' or literal strings 'max' or "
@@ -133,12 +201,9 @@ namespace vtz {
             // For size<=2, it can only be a day
             if( size <= 2 )
             {
-                u8   day{};
-                auto result = std::from_chars( p, end_, day );
-                bool isGood = day && day < 32 && result.ptr == end_;
-                if( isGood ) { return RuleOn::on( day ); }
+                auto day = parse1or2( p, size );
+                if( day && *day && *day < 32 ) return RuleOn::on( *day );
             }
-
             else if( size >= 4 )
             {
                 constexpr auto _last = _load4( "last" );
@@ -163,20 +228,16 @@ namespace vtz {
                         // \w{dowLen}[<>]=\d+
                         char   ge_or_le = p[dowLen];
                         OptDOW dow      = _parseDOW( p, dowLen );
-                        u8     day{};
-
-                        auto result
-                            = std::from_chars( p + dowLen + 2, end_, day );
+                        auto   day      = parse1or2(
+                            p + ( dowLen + 2 ), size - ( dowLen + 2 ) );
 
                         // true if 'DOW' is good and the 'DOM' is good
-                        bool goodDOM = day && day < 32 // check that day is a
-                                                       // valid day of the month
-                                       && result.ptr == end_;
+                        bool goodDOM = day && *day && *day < 32;
 
                         switch( ge_or_le )
                         {
-                        case '<': return RuleOn::before( day, *dow );
-                        case '>': return RuleOn::after( day, *dow );
+                        case '<': return RuleOn::before( *day, *dow );
+                        case '>': return RuleOn::after( *day, *dow );
                         }
                     }
                 }
@@ -185,44 +246,6 @@ namespace vtz {
             throw ParseError{
                 exp_RULE_ON, tok.has_value() ? bad_RULE_ON : no_token, tok
             };
-        }
-
-        constexpr inline bool isD10( int x ) noexcept {
-            return 0 <= x && x < 10;
-        }
-        constexpr inline bool isD6( int x ) noexcept { return 0 <= x && x < 6; }
-
-
-        constexpr i32 _hms( i32 h, i32 m = 0, i32 s = 0 ) noexcept {
-            return h * 3600 + m * 60 + s;
-        }
-
-        // Parse 1 digit
-        TrivialOpt<i32> parse1( char const* src ) noexcept {
-            i32 value = src[0] - '0';
-            return { value, isD10( value ) };
-        }
-        // Parse 2 digits.
-        TrivialOpt<i32> parse2( char const* src ) noexcept {
-            i32 v0 = src[0] - '0';
-            i32 v1 = src[1] - '0';
-            return { v0 * 10 + v1, isD10( v0 ) && isD10( v1 ) };
-        }
-        // Parse 1 or 2 digits. Anything else is bad.
-        constexpr TrivialOpt<i32> parse1or2(
-            char const* src, size_t size ) noexcept {
-            if( size == 2 )
-            {
-                i32 v0 = src[0] - '0';
-                i32 v1 = src[1] - '0';
-                return { v0 * 10 + v1, isD10( v0 ) && isD10( v1 ) };
-            }
-            if( size == 1 )
-            {
-                i32 v0 = src[0] - '0';
-                return { v0, isD10( v0 ) };
-            }
-            return { 0, false };
         }
     } // namespace
 
@@ -377,13 +400,13 @@ namespace vtz {
         ZoneUntil parseZoneUntil( string_view sv ) {
             TokenIter iter( sv );
 
-            if( auto year = iter.next() )
+            if( auto year = iter.nextNonComment() )
             {
                 auto y = u16( parseYear( year ) );
-                if( auto mon = iter.next() )
+                if( auto mon = iter.nextNonComment() )
                 {
                     auto m = parseMonth( mon );
-                    if( auto day = iter.next() )
+                    if( auto day = iter.nextNonComment() )
                     {
                         auto on = parseRuleOn( day );
 
@@ -392,11 +415,11 @@ namespace vtz {
                         m        = ymd.mon();
                         u8 d     = u8( ymd.day );
 
-                        if( auto stdoff = iter.next() )
+                        if( auto stdoff = iter.nextNonComment() )
                         {
                             auto at = parseRuleAt( stdoff );
                             // Make sure there are no more tokens
-                            if( auto extraToken = iter.next() )
+                            if( auto extraToken = iter.nextNonComment() )
                             {
                                 throw ParseError{
                                     "Expected no more tokens "
@@ -459,61 +482,35 @@ namespace vtz {
         };
     }
 
-    void parseEntry( TZDataFile& file, string_view line, LineIter& lines ) {
-        line = stripComment( line );
-        if( line.empty() ) return;
-
-        auto tok_iter = TokenIter( line );
-        // Either 'Zone' or 'Rule'
-        auto what = tok_iter.next();
-        if( !what.has_value() ) return;
-        if( what == "R" || what == "Rule" )
+    string_view nextZoneLine( LineIter& lines ) {
+        while( auto nextLine = lines.next() )
         {
-            file.rules.push_back( parseRule( tok_iter ) );
-            return;
+            auto line = stripLeadingDelim( *nextLine );
+            if( line.empty() || line[0] == '#' ) continue;
+            return line;
         }
-        if( what == "L" || what == "Link" )
+        throw ParseError{ "Expected more entries in "
+                          "Zone specification",
+            "End of input was reached",
+            lines.rest() };
+    }
+
+    Zone parseZone( TokenIter tok_iter, LineIter& lines ) {
+        Zone z;
+        z.name = tok_iter.next();
+        z.ents.reserve( 32 );
+        for( ;; )
         {
-            file.links.push_back( parseLink( tok_iter ) );
-            return;
-        }
+            auto ent = parseZoneEntry( tok_iter );
+            z.ents.push_back( ent );
 
-        if( what == "Z" || what == "Zone" )
-        {
-            Zone z;
-            z.name = tok_iter.next();
-            for( ;; )
-            {
-                auto ent = parseZoneEntry( tok_iter );
-                z.ents.push_back( ent );
-                if( !ent.until.has_value() ) break;
-                do {
-                    auto maybeLine = lines.next();
-                    if( !maybeLine )
-                    {
-                        throw ParseError{
-                            "Expected more entries in Zone specification",
-                            "End of input was reached",
-                            lines.rest()
-                        };
-                    }
-                    line = maybeLine.value();
-                    line = stripComment( line );
-                    line = stripLeadingDelim( line );
-                } while( line.empty() );
+            // We found the last entry in the zone
+            if( !ent.until.has_value() ) break;
 
-                tok_iter = TokenIter( line );
-            }
-
-            file.zones.push_back( std::move( z ) );
-            return;
+            tok_iter = TokenIter( nextZoneLine( lines ) );
         }
 
-        throw ParseError{
-            "Expected Zone, Rule, or Link",
-            "Did not match any of those.",
-            { line },
-        };
+        return z;
     }
 
     TZDataFile parseTZData( string_view input, string_view filename ) {
@@ -521,7 +518,43 @@ namespace vtz {
         {
             auto       lines = LineIter( input );
             TZDataFile file;
-            while( auto line = lines.next() ) parseEntry( file, line, lines );
+            file.rules.reserve( 4096 );
+            file.zones.reserve( 512 );
+            file.links.reserve( 512 );
+            while( auto nextLine = lines.next() )
+            {
+                auto line = stripLeadingDelim( *nextLine );
+                if( line.empty() ) continue;
+                if( line[0] == '#' ) continue;
+
+                auto tok_iter = TokenIter( line );
+                // Either 'Zone' or 'Rule'
+                auto what = tok_iter.next();
+                if( !what.has_value() ) continue;
+
+                if( what == "R" || what == "Rule" )
+                {
+                    file.rules.push_back( parseRule( tok_iter ) );
+                    continue;
+                }
+                if( what == "L" || what == "Link" )
+                {
+                    file.links.push_back( parseLink( tok_iter ) );
+                    continue;
+                }
+
+                if( what == "Z" || what == "Zone" )
+                {
+                    file.zones.push_back( parseZone( tok_iter, lines ) );
+                    continue;
+                }
+
+                throw ParseError{
+                    "Expected Zone, Rule, or Link",
+                    "Did not match any of those.",
+                    { line },
+                };
+            }
             return file;
         }
         catch( ParseError err )

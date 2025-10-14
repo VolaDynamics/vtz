@@ -121,7 +121,7 @@ namespace vtz {
         }
     };
 
-    constexpr bool isDelim( char ch ) { return ch == ' ' || ch == '\t'; }
+    constexpr bool isDelim( char ch ) { return ch <= (unsigned char)( ' ' ); }
 
     struct TokenIter {
       private:
@@ -131,22 +131,40 @@ namespace vtz {
 
         constexpr static char const* findDelim(
             char const* p, char const* end ) noexcept {
-            while( p < end )
+            for( ;; )
             {
-                if( isDelim( *p ) ) return p;
+                if( p == end || isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || isDelim( *p ) ) return p;
                 ++p;
             }
-            return end;
         }
 
         constexpr static char const* findNonDelim(
             char const* p, char const* end ) noexcept {
-            while( p < end )
+            for( ;; )
             {
-                if( !isDelim( *p ) ) return p;
+                if( p == end || !isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || !isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || !isDelim( *p ) ) return p;
+                ++p;
+                if( p == end || !isDelim( *p ) ) return p;
                 ++p;
             }
-            return end;
         }
 
       public:
@@ -181,6 +199,29 @@ namespace vtz {
 
             return result;
         }
+
+        OptTok nextNonComment() {
+            auto start = findNonDelim( b_, e_ );
+
+            if( start == e_ )
+            {
+                clear();
+                return OptTok::missingAt( e_ );
+            }
+            if( *start == '#' ) return OptTok::missingAt( start );
+
+            auto end = findDelim( start + 1, e_ );
+
+            auto result = string_view( start, size_t( end - start ) );
+
+            // next time around, we will start searching from 1 past the last
+            // character we checked
+            if( end < e_ ) { b_ = end + 1; }
+            else { clear(); }
+
+            return result;
+        }
+
         TokenIter& drop() {
             (void)next();
             return *this;
