@@ -374,12 +374,29 @@ namespace vtz {
     };
 
     using RuleMap = map<string_view, vector<RuleEntry>>;
+    using ZoneMap = map<string_view, vector<ZoneEntry>>;
+    using LinkMap = map<string_view, string_view>;
 
+    struct ZoneState {
+        i32        offset; // offset from UTC
+        FixStr<11> abbr;
+    };
+
+    struct ZoneTransition {
+        i64       when; // UTC time of change
+        ZoneState state;
+    };
+
+    struct ZoneStates {
+        ZoneState              initial;
+        vector<ZoneTransition> transitions;
+    };
 
     struct TZDataFile {
-        RuleMap      rules;
-        vector<Zone> zones;
-        vector<Link> links;
+        RuleMap rules;
+        ZoneMap zones;
+        LinkMap links;
+
 
         bool operator==( TZDataFile const& rhs ) const noexcept {
             return rules == rhs.rules    //

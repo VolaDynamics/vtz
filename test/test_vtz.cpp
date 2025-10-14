@@ -309,7 +309,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
         ( TZDataFile{
             {},
             {
-                Zone{
+                {
                     "Pacific/Honolulu",
                     {
                         ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
@@ -361,7 +361,7 @@ Rule	US	1974	only	-	Jan	6	2:00	1:00	D
                 },
             } },
             {
-                Zone{
+                {
                     "Pacific/Honolulu",
                     {
                         ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
@@ -398,7 +398,7 @@ Link	Africa/Abidjan	Africa/Dakar
                 },
             } },
             {
-                Zone{
+                {
                     "Pacific/Honolulu",
                     {
                         ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
@@ -410,11 +410,11 @@ Link	Africa/Abidjan	Africa/Dakar
                 },
             },
             {
-                Link{ "Africa/Abidjan", "Africa/Accra" },
-                Link{ "Africa/Abidjan", "Africa/Bamako" },
-                Link{ "Africa/Abidjan", "Africa/Banjul" },
-                Link{ "Africa/Abidjan", "Africa/Conakry" },
-                Link{ "Africa/Abidjan", "Africa/Dakar" },
+                { "Africa/Accra", "Africa/Abidjan" },
+                { "Africa/Bamako", "Africa/Abidjan" },
+                { "Africa/Banjul", "Africa/Abidjan" },
+                { "Africa/Conakry", "Africa/Abidjan" },
+                { "Africa/Dakar", "Africa/Abidjan" },
             },
         } ) );
 
@@ -439,7 +439,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
         ( TZDataFile{
             {},
             {
-                Zone{
+                {
                     "Pacific/Honolulu",
                     {
                         ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
@@ -474,13 +474,13 @@ Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
         ( TZDataFile{
             {},
             {
-                Zone{ "America/Juneau",
+                { "America/Juneau",
                     {
                         ze{ "15:02:19", "-", "LMT", "1867 Oct 19 15:33:32" },
                         ze{ "-8:57:41", "-", "LMT", "1900 Aug 20 12:00" },
                         ze{ "-9:00", "US", "AK%sT" },
                     } },
-                Zone{
+                {
                     "America/Sitka",
                     {
                         ze{ "14:58:47", "-", "LMT", "1867 Oct 19 15:30" },
@@ -737,7 +737,7 @@ TEST( vtz_parser, parse_errors ) {
 
 
 namespace {
-    void testLoadFile( char const* fp ) {
+    TZDataFile testLoadFile( char const* fp ) {
         using HRC = std::chrono::high_resolution_clock;
         using std::chrono::duration_cast;
 
@@ -757,6 +757,8 @@ namespace {
             " time parse_tzdata()", duration_cast<msR>( t2 - t1 ) );
         TEST_LOG.logGood(
             "               total", duration_cast<msR>( t2 - t0 ) );
+
+        return result;
     }
 } // namespace
 
@@ -773,7 +775,10 @@ TEST( vtz_io, load_northamerica ) {
     testLoadFile( "build/data/tzdata/factory" );
     testLoadFile( "build/data/tzdata/northamerica" );
     testLoadFile( "build/data/tzdata/southamerica" );
-    testLoadFile( "build/data/tzdata/tzdata.zi" );
+    auto allZones = testLoadFile( "build/data/tzdata/tzdata.zi" );
+
+    ASSERT_EQ( allZones.links["GMT"], "Etc/GMT" );
+    ASSERT_EQ( allZones.links["EST5EDT"], "America/New_York" );
 }
 
 TEST( vtz_parser, basics ) {

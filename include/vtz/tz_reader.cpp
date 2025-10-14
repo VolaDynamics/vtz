@@ -513,9 +513,11 @@ namespace vtz {
         try
         {
             auto       lines = LineIter( input );
-            TZDataFile file{ RuleMap( 512 ) };
-            file.zones.reserve( 512 );
-            file.links.reserve( 512 );
+            TZDataFile file{
+                RuleMap( 512 ),
+                ZoneMap( 512 ),
+                LinkMap( 512 ),
+            };
             while( auto nextLine = lines.next() )
             {
                 auto line = stripLeadingDelim( *nextLine );
@@ -544,13 +546,16 @@ namespace vtz {
                 }
                 if( what == "L" || what == "Link" )
                 {
-                    file.links.push_back( parseLink( tok_iter ) );
+                    Link link              = parseLink( tok_iter );
+                    file.links[link.alias] = link.canonical;
                     continue;
                 }
 
                 if( what == "Z" || what == "Zone" )
                 {
-                    file.zones.push_back( parseZone( tok_iter, lines ) );
+                    Zone zone = parseZone( tok_iter, lines );
+
+                    file.zones[zone.name] = std::move( zone.ents );
                     continue;
                 }
 
