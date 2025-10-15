@@ -233,8 +233,8 @@ namespace vtz {
                     {
                         switch( ge_or_le )
                         {
-                        case '<': return RuleOn::before( day, *dow );
-                        case '>': return RuleOn::after( day, *dow );
+                        case '<': return RuleOn::le( *dow, day );
+                        case '>': return RuleOn::ge( *dow, day );
                         }
                     }
                 }
@@ -599,8 +599,8 @@ namespace vtz {
         switch( kind() )
         {
         case RuleOn::DAY: return fmt::format( "{}", day() );
-        case RuleOn::DOW_BEFORE: return fmt::format( "{}<={}", dow(), day() );
-        case RuleOn::DOW_AFTER: return fmt::format( "{}>={}", dow(), day() );
+        case RuleOn::DOW_LE: return fmt::format( "{}<={}", dow(), day() );
+        case RuleOn::DOW_GE: return fmt::format( "{}>={}", dow(), day() );
         case RuleOn::DOW_LAST: return fmt::format( "last{}", dow() );
         }
 

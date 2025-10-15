@@ -248,7 +248,7 @@ TEST( vtz, resolveRule ) {
         2007,
         Y_MAX,
         Mon::Mar,
-        RuleOn::after( 8, DOW::Sun ),
+        RuleOn::ge( DOW::Sun, 8 ), // Sun>=8
         RuleAt( "2:00" ),
         "1:00",
         "D",
@@ -257,7 +257,7 @@ TEST( vtz, resolveRule ) {
         2007,
         Y_MAX,
         Mon::Nov,
-        RuleOn::after( 1, DOW::Sun ),
+        RuleOn::ge( DOW::Sun, 1 ), // Sun>=1
         RuleAt( "2:00" ),
         "0",
         "S",

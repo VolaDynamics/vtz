@@ -221,10 +221,10 @@ namespace vtz {
       public:
 
         enum Kind {
-            DAY,        ///< 'on' is a specific day of the month, eg '13'
-            DOW_LAST,   ///< 'on' is, eg 'lastSun' or 'lastMon'
-            DOW_AFTER,  ///< 'on' is 'Sun>=13', for example
-            DOW_BEFORE, ///< 'on' is 'Fri<=1', for example
+            DAY,      ///< 'on' is a specific day of the month, eg '13'
+            DOW_LAST, ///< 'on' is, eg 'lastSun' or 'lastMon'
+            DOW_GE,   ///< 'on' is 'Sun>=13', for example
+            DOW_LE,   ///< 'on' is 'Fri<=1', for example
         };
 
         RuleOn() = default;
@@ -244,11 +244,11 @@ namespace vtz {
         constexpr static RuleOn last( DOW dow ) noexcept {
             return { DOW_LAST, {}, dow };
         }
-        constexpr static RuleOn after( u8 day, DOW dow ) noexcept {
-            return { DOW_AFTER, day, dow };
+        constexpr static RuleOn ge( DOW dow, u8 day ) noexcept {
+            return { DOW_GE, day, dow };
         }
-        constexpr static RuleOn before( u8 day, DOW dow ) noexcept {
-            return { DOW_BEFORE, day, dow };
+        constexpr static RuleOn le( DOW dow, u8 day ) noexcept {
+            return { DOW_LE, day, dow };
         }
 
         constexpr bool operator==( RuleOn const& rhs ) const noexcept {
@@ -260,16 +260,16 @@ namespace vtz {
         }
 
         constexpr sysdays_t resolveDate( i32 year, Mon mon ) const noexcept {
-            return resolve( year, u32( mon ) );
+            return resolveDate( year, u32( mon ) );
         }
 
-        constexpr sysdays_t resolve( i32 year, u32 mon ) const noexcept {
+        constexpr sysdays_t resolveDate( i32 year, u32 mon ) const noexcept {
             switch( kind() )
             {
             case DAY: return resolveCivil( year, mon, day() );
             case DOW_LAST: return resolveLastDOW( year, mon, dow() );
-            case DOW_AFTER: return resolveDOW_GE( year, mon, day(), dow() );
-            case DOW_BEFORE: return resolveDOW_LE( year, mon, day(), dow() );
+            case DOW_GE: return resolveDOW_GE( year, mon, day(), dow() );
+            case DOW_LE: return resolveDOW_LE( year, mon, day(), dow() );
             }
         }
 
@@ -283,10 +283,8 @@ namespace vtz {
             case DOW_LAST:
                 return YMD(
                     year, mon, getLastDOWInMonth( year, u32( mon ), dow() ) );
-            case DOW_AFTER:
-                return getYMD_DOW_GE( year, u32( mon ), day(), dow() );
-            case DOW_BEFORE:
-                return getYMD_DOW_LE( year, u32( mon ), day(), dow() );
+            case DOW_GE: return getYMD_DOW_GE( year, u32( mon ), day(), dow() );
+            case DOW_LE: return getYMD_DOW_LE( year, u32( mon ), day(), dow() );
             }
         }
 
