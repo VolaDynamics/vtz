@@ -2,21 +2,12 @@
 
 #include <cstdint>
 #include <string_view>
+
+#include <vtz/vtzdef.h>
+
 #include <vtz/inplace_optional.h>
 namespace vtz {
     using std::string_view;
-    using u8  = uint8_t;
-    using u16 = uint16_t;
-    using u32 = uint32_t;
-    using u64 = uint64_t;
-
-    using i8  = int8_t;
-    using i16 = int16_t;
-    using i32 = int32_t;
-    using i64 = int64_t;
-
-    using uint  = unsigned;
-    using usize = size_t;
 
 
     // clang-format off

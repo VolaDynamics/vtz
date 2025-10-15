@@ -1,7 +1,8 @@
 #pragma once
 
+#include <string>
 #include <vtz/date_types.h>
-
+#include <vtz/math.h>
 
 namespace vtz::detail {
     // clang-format off
@@ -23,6 +24,18 @@ namespace vtz::detail {
 
 
 namespace vtz {
+    using std::string;
+    /// Represents a date as a number of days from the epoch
+    ///
+    /// sysdays_t(0) is 1970-01-01, sysdays_t(1) is 1970-01-02, etc
+    using sysdays_t = i32;
+    /// Seconds from epoch
+    using sysseconds_t = i64;
+
+    constexpr sysseconds_t daysToSeconds( sysdays_t days ) noexcept {
+        return i64( days ) * 86400;
+    }
+
     struct YMD {
         i32 year;
         u16 month;
@@ -43,7 +56,35 @@ namespace vtz {
         constexpr bool operator==( YMD const& rhs ) const noexcept {
             return year == rhs.year && month == rhs.month && day == rhs.day;
         }
+
+        /// Writes the date as YYYY-MM-DD. Requires 10 characters of space.
+        constexpr void write( char* dest, char sep = '-' ) const noexcept {
+            int y0  = year / 1000;
+            int y1  = ( year / 100 ) % 10;
+            int y2  = ( year / 10 ) % 10;
+            int y3  = year % 10;
+            dest[0] = char( '0' + y0 );
+            dest[1] = char( '0' + y1 );
+            dest[2] = char( '0' + y2 );
+            dest[3] = char( '0' + y3 );
+            dest[4] = sep;
+            dest[5] = month >= 10 ? '1' : '0';
+            dest[6] = char( ( month < 10 ? '0' : '&' ) + month );
+            dest[7] = sep;
+            dest[8] = char( '0' + day / 10 );
+            dest[9] = char( '0' + day % 10 );
+        }
+        string str( char sep ) const {
+            char buffer[10]{};
+            write( buffer, sep );
+            return std::string( buffer, 10 );
+        }
+
+        string str() const { return str( '-' ); }
     };
+
+
+    inline string format_as( YMD ymd ) { return ymd.str(); }
 
 
     /// Checks if the given year is a leap year as per the international
@@ -95,7 +136,7 @@ namespace vtz {
     /// @param y year
     /// @param m month
     /// @param d day
-    constexpr i32 daysFromCivil( i32 y, u32 m, u32 d ) noexcept {
+    constexpr sysdays_t resolveCivil( i32 y, u32 m, u32 d ) noexcept {
         y -= m <= 2;
 
         i32 era = ( y >= 0 ? y : y - 399 ) / 400;
@@ -106,17 +147,38 @@ namespace vtz {
         return era * 146097 + static_cast<i32>( doe ) - 719468;
     }
 
+    /// Get a date as a year, month, and day. The return value is YMD, which
+    /// holds a Year/Month/Day triplet
+    ///
+    /// Based on reference implementation by Howard Hinnant provided here:
+    /// https://howardhinnant.github.io/date_algorithms.html#civil_from_days
+    ///
+    /// @param days Days since the epoch (The epoch being January 1st, 1970)
+    constexpr YMD toCivil( sysdays_t days ) noexcept {
+        days          += 719468;
+        const i64 era  = ( days >= 0 ? days : days - 146096 ) / 146097;
+        const u32 doe  = u32( days - era * 146097 ); // [0, 146096]
+        const u32 yoe  = ( doe - doe / 1460 + doe / 36524 - doe / 146096 )
+                        / 365;                       // [0, 399]
+        const i64 y   = i64( yoe ) + era * 400;
+        const u32 doy = doe - ( 365 * yoe + yoe / 4 - yoe / 100 ); // [0, 365]
+        const u32 mp  = ( 5 * doy + 2 ) / 153;                     // [0, 11]
+        const u32 d   = doy - ( 153 * mp + 2 ) / 5 + 1;            // [1, 31]
+        const u32 m   = mp < 10 ? mp + 3 : mp - 9;                 // [1, 12]
+        return YMD{ i32( y + ( m <= 2 ) ), u16( m ), u16( d ) };
+    }
+
     /// Returns the weekday for the given date, expressed as a number of days
     /// since the epoch, where 0=Sun, 1=Mon, etc
-    constexpr DOW dowFromDays( i32 daysFromEpoch ) noexcept {
-        return DOW( ( int64_t( daysFromEpoch ) + 0x80000002ull ) % 7 );
+    constexpr DOW dowFromDays( sysdays_t daysFromEpoch ) noexcept {
+        return DOW( ( i64( daysFromEpoch ) + 0x80000002ull ) % 7 );
     }
 
     /// Given a date (eg, 2025 Oct 11, or 2025-10-11), get the weekday as a
     /// number 0-6 where 0=Sun
 
     constexpr DOW dowFromCivil( i32 year, u32 month, u32 dom ) noexcept {
-        return dowFromDays( daysFromCivil( year, month, dom ) );
+        return dowFromDays( resolveCivil( year, month, dom ) );
     }
 
 
@@ -133,6 +195,48 @@ namespace vtz {
         u32  day     = last - ( dowLast - dow );
         return day;
     }
+
+
+    /// Resolve a date such as '1966 Oct Sun>=10' - returns the first Sunday on
+    /// or after October 10, 1966
+    constexpr sysdays_t resolveDOW_GE(
+        i32 year, u32 month, u32 dom, DOW dow ) noexcept {
+        sysdays_t d = resolveCivil( year, month, dom );
+        // Add as many days as needed to get to the desired weekday
+        d += dow - dowFromDays( d );
+        return d;
+    }
+
+    /// Resolve a date such as '2012 Apr Fri<=1' - returns the first Friday on
+    /// or before April 1st, 2012
+    constexpr sysdays_t resolveDOW_LE(
+        i32 year, u32 month, u32 dom, DOW dow ) noexcept {
+        sysdays_t d = resolveCivil( year, month, dom );
+        // Subtract as many days as needed to get from the desired weekday
+        d -= dowFromDays( d ) - dow;
+        return d;
+    }
+
+
+    constexpr sysdays_t resolveLastDOW(
+        i32 year, u32 month, DOW dow ) noexcept {
+        // Last day of the month
+        u32 lastDOM = lastDayOfMonth( year, month );
+        // sysdays_t of that date
+        sysdays_t d = resolveCivil( year, month, lastDOM );
+        // Weekday of the last day of the month
+        DOW dowEOM = dowFromDays( d );
+
+        // Suppose the last day of the month is a Tuesday, but we want the last
+        // _Sunday_ of the month. (Tuesday - Sunday) is 2, because it takes 2
+        // days to go from Sunday to Tuesday.
+        //
+        // So, we return (date of last day of the month) - (2 days)
+        i32 delta = i32( dowEOM - dow );
+
+        return d - delta;
+    }
+
 
     constexpr YMD getYMD_DOW_GE(
         i32 year, u32 month, u32 dom, DOW dow ) noexcept {
@@ -174,6 +278,10 @@ namespace vtz {
         return YMD{ year, u16( month ), u16( dom2 ) };
     }
 
+    constexpr sysseconds_t sysseconds( sysdays_t date, i32 offset ) {
+        return i64( date ) * 86400 + offset;
+    }
+
     static_assert(
         getYMD_DOW_LE( 2025, 10, 3, DOW::Sun ) == YMD{ 2025, 9, 28 } );
 
@@ -206,4 +314,38 @@ namespace vtz {
     static_assert( getLastDOWInMonth( 2025, 10, DOW::Thu ) == 30 );
     static_assert( getLastDOWInMonth( 2025, 10, DOW::Fri ) == 31 );
     static_assert( getLastDOWInMonth( 2025, 10, DOW::Sat ) == 25 );
+
+    constexpr static void writeTimestamp(
+        sysseconds_t T, char* p, char dateSep = '-', char dateTimeSep = ' ' ) {
+        auto dateAndTime = math::divFloor2<86400>( T );
+
+        auto date = sysdays_t( dateAndTime.quot );
+        auto t    = u32( dateAndTime.rem );
+
+        // Write the date
+        toCivil( date ).write( p, dateSep );
+
+        int h  = t / 3600;
+        t     %= 3600;
+        int m  = t / 60;
+        t     %= 60;
+        int s  = t;
+        p[10]  = dateTimeSep;
+        p[11]  = '0' + h / 10;
+        p[12]  = '0' + h % 10;
+        p[13]  = ':';
+        p[14]  = '0' + m / 10;
+        p[15]  = '0' + m % 10;
+        p[16]  = ':';
+        p[17]  = '0' + s / 10;
+        p[18]  = '0' + s % 10;
+    }
+
+    inline std::string utcToString(
+        sysseconds_t sec, char dateSep = '-', char dateTimeSep = ' ' ) {
+        char buff[20];
+        writeTimestamp( sec, buff, dateSep, dateTimeSep );
+        buff[19] = 'Z';
+        return std::string( buff, 20 );
+    }
 } // namespace vtz

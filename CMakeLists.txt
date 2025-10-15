@@ -72,7 +72,10 @@ if(PROJECT_IS_TOP_LEVEL)
     )
 
 
-    add_executable(test_vtz test/test_vtz.cpp)
+    add_executable(test_vtz
+        test/test_vtz.cpp
+        test/test_civil.cpp
+    )
     target_link_libraries(
         test_vtz
         PRIVATE

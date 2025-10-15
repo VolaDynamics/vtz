@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vtz/vtzdef.h>
 
 #include <optional>
 #include <string>
@@ -17,6 +18,30 @@ namespace vtz {
 
     /// Tokenize a line. Return a vector of tokens
     vector<string_view> tokenize( string_view line );
+
+
+    template<size_t N>
+    struct FixStr {
+        u8   size_{};
+        char buff_[N]{};
+
+
+        constexpr string_view sv() const noexcept { return { data(), size() }; }
+
+        explicit operator string_view() const noexcept { return sv(); }
+
+        constexpr size_t      size() const noexcept { return size_; }
+        constexpr char const* data() const noexcept { return buff_; }
+
+        constexpr bool operator==( FixStr const& rhs ) const noexcept {
+            return sv() == rhs.sv();
+        }
+
+        constexpr char const* begin() const noexcept { return buff_; }
+        constexpr char const* end() const noexcept { return buff_ + size_; }
+
+        using value_type = char;
+    };
 
 
     /// (linenumber, column) pair

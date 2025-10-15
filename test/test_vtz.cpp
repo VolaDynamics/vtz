@@ -352,12 +352,12 @@ Rule	US	1974	only	-	Jan	6	2:00	1:00	D
                 vector<RuleEntry>{
                     { 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
                     { 1918, 1919, M::Oct, lastSun, "2:00", "0", "S" },
-                    { 1942, Y_ONLY, M::Feb, on( 9 ), "2:00", "1:00", "W" },
-                    { 1945, Y_ONLY, M::Aug, on( 14 ), "23:00u", "1:00", "P" },
-                    { 1945, Y_ONLY, M::Sep, on( 30 ), "2:00", "0", "S" },
+                    { 1942, 1942, M::Feb, on( 9 ), "2:00", "1:00", "W" },
+                    { 1945, 1945, M::Aug, on( 14 ), "23:00u", "1:00", "P" },
+                    { 1945, 1945, M::Sep, on( 30 ), "2:00", "0", "S" },
                     { 1967, 2006, M::Oct, lastSun, "2:00", "0", "S" },
                     { 1967, 1973, M::Apr, lastSun, "2:00", "1:00", "D" },
-                    { 1974, Y_ONLY, M::Jan, on( 6 ), "2:00", "1:00", "D" },
+                    { 1974, 1974, M::Jan, on( 6 ), "2:00", "1:00", "D" },
                 },
             } },
             {
@@ -737,7 +737,7 @@ TEST( vtz_parser, parse_errors ) {
 
 
 namespace {
-    TZDataFile testLoadFile( char const* fp ) {
+    std::pair<string, TZDataFile> testLoadFile( char const* fp ) {
         using HRC = std::chrono::high_resolution_clock;
         using std::chrono::duration_cast;
 
@@ -758,7 +758,7 @@ namespace {
         TEST_LOG.logGood(
             "               total", duration_cast<msR>( t2 - t0 ) );
 
-        return result;
+        return { std::move( content ), std::move( result ) };
     }
 } // namespace
 
@@ -775,7 +775,7 @@ TEST( vtz_io, load_northamerica ) {
     testLoadFile( "build/data/tzdata/factory" );
     testLoadFile( "build/data/tzdata/northamerica" );
     testLoadFile( "build/data/tzdata/southamerica" );
-    auto allZones = testLoadFile( "build/data/tzdata/tzdata.zi" );
+    auto [file, allZones] = testLoadFile( "build/data/tzdata/tzdata.zi" );
 
     ASSERT_EQ( allZones.links["GMT"], "Etc/GMT" );
     ASSERT_EQ( allZones.links["EST5EDT"], "America/New_York" );

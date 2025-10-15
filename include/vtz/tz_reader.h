@@ -21,10 +21,9 @@ namespace vtz {
     using ankerl::unordered_dense::map;
     using std::string;
 
-    using rule_year_t            = i16;
-    constexpr rule_year_t Y_ONLY = -1;
-    constexpr rule_year_t Y_MAX  = -2;
-
+    using rule_year_t           = i16;
+    constexpr rule_year_t Y_MAX = -1;
+    static_assert( size_t( Y_MAX ) == ~size_t() );
 
     constexpr i32 OFFSET_NPOS = INT32_MIN;
 
@@ -37,51 +36,6 @@ namespace vtz {
     inline i32 parseSignedHHMMSSOffset( string_view sv ) noexcept {
         return parseSignedHHMMSSOffset( sv.data(), sv.size() );
     }
-
-
-    template<size_t N>
-    struct FixStr {
-        u8   size_{};
-        char buff_[N]{};
-
-
-        constexpr string_view sv() const noexcept { return { data(), size() }; }
-
-        explicit operator string_view() const noexcept { return sv(); }
-
-        constexpr size_t      size() const noexcept { return size_; }
-        constexpr char const* data() const noexcept { return buff_; }
-
-        constexpr bool operator==( FixStr const& rhs ) const noexcept {
-            return sv() == rhs.sv();
-        }
-
-        constexpr char const* begin() const noexcept { return buff_; }
-        constexpr char const* end() const noexcept { return buff_ + size_; }
-
-        using value_type = char;
-    };
-
-    struct alignas( 8 ) RuleLetter : FixStr<7> {
-        using FixStr = FixStr<7>;
-
-        using FixStr::FixStr;
-
-        RuleLetter() = default;
-        constexpr RuleLetter( FixStr const& rhs ) noexcept
-        : FixStr( rhs ) {}
-        constexpr RuleLetter( char const ( &arr )[2] ) noexcept
-        : FixStr{ 1, { arr[0] } } {}
-        constexpr RuleLetter( char const ( &arr )[3] ) noexcept
-        : FixStr{ 2, { arr[0], arr[1] } } {}
-        constexpr RuleLetter( char const ( &arr )[4] ) noexcept
-        : FixStr{ 3, { arr[0], arr[1], arr[2] } } {}
-
-
-        constexpr bool operator==( RuleLetter const& rhs ) const noexcept {
-            return sv() == sv();
-        }
-    };
 
     struct RuleSave {
         i32 save = 0;
@@ -109,6 +63,76 @@ namespace vtz {
         }
     };
     string format_as( RuleSave );
+
+    /// Consider an offset like `UTC-5:00`. This offset is _from_ UTC,
+    /// so to get to Local time, you take the UTC time, and add `-5:00`
+    /// (This is `utc + off`)
+    ///
+    /// Similarly, to get to UTC time, from local time, you _subtract_ `-5:00`
+    /// (This is `utc - off`)
+
+    struct FromUTC {
+        i32 off{};
+        FromUTC() = default;
+
+        /// Add offset to get from utc time to local time
+        constexpr i64 toLocal( i64 utc ) const noexcept { return utc + off; }
+
+        /// Subtract offset to get from local time to UTC time
+        constexpr i64 toUTC( i64 local ) const noexcept { return local - off; }
+
+        /// Consider America/New_York. When we 'save' 1 hour, our offset from
+        /// UTC goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
+        constexpr FromUTC save( RuleSave save ) const noexcept {
+            return { off + save.save };
+        }
+
+        /// Consider America/New_York. When we 'save' 1 hour, our offset from
+        /// UTC
+        /// goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
+        constexpr FromUTC save( i32 saveSeconds ) const noexcept {
+            return { off + saveSeconds };
+        }
+
+        constexpr FromUTC( i32 off ) noexcept
+        : off( off ) {}
+
+        explicit FromUTC( string_view sv )
+        : off( parseSignedHHMMSSOffset( sv ) ) {}
+
+        template<size_t N>
+        FromUTC( char const ( &arr )[N] )
+        : FromUTC( string_view( arr ) ) {}
+
+
+        constexpr bool operator==( FromUTC const& rhs ) const noexcept {
+            return off == rhs.off;
+        }
+    };
+    string format_as( FromUTC off );
+
+
+    struct alignas( 8 ) RuleLetter : FixStr<7> {
+        using FixStr = FixStr<7>;
+
+        using FixStr::FixStr;
+
+        RuleLetter() = default;
+        constexpr RuleLetter( FixStr const& rhs ) noexcept
+        : FixStr( rhs ) {}
+        constexpr RuleLetter( char const ( &arr )[2] ) noexcept
+        : FixStr{ 1, { arr[0] } } {}
+        constexpr RuleLetter( char const ( &arr )[3] ) noexcept
+        : FixStr{ 2, { arr[0], arr[1] } } {}
+        constexpr RuleLetter( char const ( &arr )[4] ) noexcept
+        : FixStr{ 3, { arr[0], arr[1], arr[2] } } {}
+
+
+        constexpr bool operator==( RuleLetter const& rhs ) const noexcept {
+            return sv() == sv();
+        }
+    };
+
 
     class RuleAt {
         i32 repr_{};
@@ -149,6 +173,28 @@ namespace vtz {
         }
         constexpr bool operator!=( RuleAt const& rhs ) const noexcept {
             return repr_ != rhs.repr_;
+        }
+
+        /// Returns the timestamp (in seconds from UTC) when the 'AT' time is
+        /// referring to, on the given date
+        constexpr sysseconds_t resolveAt(
+            sysdays_t date, FromUTC stdoff, FromUTC walloff ) const noexcept {
+            // Time when the date starts (midnight on that date)
+            i64 T = daysToSeconds( date );
+
+            // time of day -
+            i32 timeOfDay = offset();
+            switch( kind() )
+            {
+            /// Time of day represents an offset from the current local time in
+            /// the zone
+            case LOCAL_WALL: return T + walloff.toUTC( timeOfDay );
+            /// Time of day represents an offset from standard time within the
+            /// zone
+            case LOCAL_STANDARD: return T + stdoff.toUTC( timeOfDay );
+            /// Time of day represents an offset from UTC time within the zone
+            case UTC: return T + timeOfDay;
+            }
         }
 
         constexpr static RuleAt fromRepr( i32 repr ) noexcept {
@@ -213,6 +259,21 @@ namespace vtz {
             return RuleOn( repr );
         }
 
+        constexpr sysdays_t resolveDate( i32 year, Mon mon ) const noexcept {
+            return resolve( year, u32( mon ) );
+        }
+
+        constexpr sysdays_t resolve( i32 year, u32 mon ) const noexcept {
+            switch( kind() )
+            {
+            case DAY: return resolveCivil( year, mon, day() );
+            case DOW_LAST: return resolveLastDOW( year, mon, dow() );
+            case DOW_AFTER: return resolveDOW_GE( year, mon, day(), dow() );
+            case DOW_BEFORE: return resolveDOW_LE( year, mon, day(), dow() );
+            }
+        }
+
+
         /// Evaluate the rule for a given year/month in order to obtain an
         /// actual date
         constexpr YMD eval( i32 year, Mon mon ) const noexcept {
@@ -263,6 +324,12 @@ namespace vtz {
         RuleSave    save;
         RuleLetter  letter;
 
+        /// Resolve the DateTime (in sysseconds_t)
+        constexpr sysseconds_t resolveAt(
+            i32 year, FromUTC stdoff, FromUTC walloff ) const noexcept {
+            return at.resolveAt( on.resolveDate( year, in ), stdoff, walloff );
+        }
+
         bool operator==( RuleEntry const& rhs ) const noexcept {
             return from == rhs.from    //
                    && to == rhs.to     //
@@ -285,26 +352,6 @@ namespace vtz {
         }
     };
 
-    struct ZoneOff {
-        i32 offset{};
-        ZoneOff() = default;
-
-        constexpr ZoneOff( i32 offset ) noexcept
-        : offset( offset ) {}
-
-        explicit ZoneOff( string_view sv )
-        : offset( parseSignedHHMMSSOffset( sv ) ) {}
-
-        template<size_t N>
-        ZoneOff( char const ( &arr )[N] )
-        : ZoneOff( string_view( arr ) ) {}
-
-
-        constexpr bool operator==( ZoneOff const& rhs ) const noexcept {
-            return offset == rhs.offset;
-        }
-    };
-    string format_as( ZoneOff off );
 
     struct ZoneUntil {
         OptV<u16, 0> year; ///< year
@@ -335,14 +382,14 @@ namespace vtz {
     //             -8:00	US	P%sT
 
     struct ZoneEntry {
-        ZoneOff     stdoff;
+        FromUTC     stdoff;
         ZoneUntil   until;
         string_view rules;
         string_view format;
 
         ZoneEntry() = default;
 
-        constexpr ZoneEntry( ZoneOff stdoff,
+        constexpr ZoneEntry( FromUTC stdoff,
             string_view              rules,
             string_view              format,
             ZoneUntil                until ) noexcept
@@ -397,6 +444,8 @@ namespace vtz {
         ZoneMap zones;
         LinkMap links;
 
+        ZoneStates getZoneStates(
+            string_view name, i32 startYear, i32 endYear ) const;
 
         bool operator==( TZDataFile const& rhs ) const noexcept {
             return rules == rhs.rules    //

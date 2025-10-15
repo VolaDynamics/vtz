@@ -11,12 +11,12 @@
 #include <string_view>
 #include <tuple>
 
-#define DECLARE_STRINGLIKE( type )                                             \
-    namespace _test_vtz {                                                      \
-        template<>                                                             \
-        struct DebugTraits<type> {                                             \
-            constexpr static bool stringlike = true;                           \
-        };                                                                     \
+#define DECLARE_STRINGLIKE( type )                                                                 \
+    namespace _test_vtz {                                                                          \
+        template<>                                                                                 \
+        struct DebugTraits<type> {                                                                 \
+            constexpr static bool stringlike = true;                                               \
+        };                                                                                         \
     }
 
 namespace _test_vtz {
@@ -35,6 +35,40 @@ DECLARE_STRINGLIKE( std::string_view );
 DECLARE_STRINGLIKE( char const* );
 
 namespace _test_vtz {
+    constexpr auto BOLD_GREEN = fmt::emphasis::bold | fmt::fg( fmt::color::green );
+    constexpr auto BOLD_RED   = fmt::emphasis::bold | fmt::fg( fmt::color::red );
+    constexpr auto FAINT_GRAY = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
+
+
+    struct CountAssertionsNOOP {
+        constexpr void inc() const noexcept {}
+        constexpr void incFailed() const noexcept {};
+    };
+
+    struct CountAssertions {
+        std::string_view context;
+        size_t           count  = 0;
+        size_t           failed = 0;
+
+        void inc() noexcept { ++count; }
+        void incFailed() noexcept { ++failed; }
+
+        ~CountAssertions() {
+            if( failed )
+            {
+                fmt::println( "{}\n└── {} Assertions Checked - {}",
+                    fmt::styled( context, FAINT_GRAY ),
+                    count,
+                    fmt::styled( fmt::format( "{} assertions failed" ), BOLD_RED ) );
+            }
+            else
+            {
+                fmt::println( "{}\n└── {} Assertions Checked! (0 failed)",
+                    fmt::styled( context, FAINT_GRAY ),
+                    fmt::styled( count, BOLD_GREEN ) );
+            }
+        }
+    };
 
     using std::string_view;
     template<auto Mem>
@@ -52,36 +86,29 @@ namespace _test_vtz {
         constexpr static bool has = false;
     };
 
-    inline void printIndent( std::string& s, size_t indent ) {
-        s.resize( s.size() + indent, ' ' );
-    }
+    inline void printIndent( std::string& s, size_t indent ) { s.resize( s.size() + indent, ' ' ); }
 
     template<class T>
     void debugPrint( std::string& s, T const& value, size_t indent = 0 );
 
     template<class T>
-    void debugPrint(
-        std::string& s, std::vector<T> const& values, size_t indent = 0 );
+    void debugPrint( std::string& s, std::vector<T> const& values, size_t indent = 0 );
 
     template<class K, class V>
-    void debugPrint( std::string&                 s,
-        ankerl::unordered_dense::map<K, V> const& values,
-        size_t                                    indent );
+    void debugPrint(
+        std::string& s, ankerl::unordered_dense::map<K, V> const& values, size_t indent );
 
 
-    inline void debugPrint(
-        std::string& dest, std::string const& s, size_t indent = 0 ) {
+    inline void debugPrint( std::string& dest, std::string const& s, size_t indent = 0 ) {
         return debugPrint( dest, string_view( s ), indent );
     }
 
-    inline void debugPrint(
-        std::string& dest, char const* s, size_t indent = 0 ) {
+    inline void debugPrint( std::string& dest, char const* s, size_t indent = 0 ) {
         return debugPrint( dest, string_view( s ), indent );
     }
 
     template<class T>
-    void debugPrintField(
-        std::string& s, string_view name, T const& value, size_t indent ) {
+    void debugPrintField( std::string& s, string_view name, T const& value, size_t indent ) {
         printIndent( s, indent );
         s += ".";
         s += name;
@@ -91,8 +118,7 @@ namespace _test_vtz {
     }
 
     template<class T>
-    void debugPrint(
-        std::string& s, std::vector<T> const& values, size_t indent ) {
+    void debugPrint( std::string& s, std::vector<T> const& values, size_t indent ) {
         auto begin = values.begin();
         auto end   = values.end();
         if( begin == end )
@@ -115,9 +141,8 @@ namespace _test_vtz {
 
 
     template<class K, class V>
-    void debugPrint( std::string&                 s,
-        ankerl::unordered_dense::map<K, V> const& values,
-        size_t                                    indent ) {
+    void debugPrint(
+        std::string& s, ankerl::unordered_dense::map<K, V> const& values, size_t indent ) {
         auto begin = values.begin();
         auto end   = values.end();
         if( begin == end )
@@ -148,9 +173,7 @@ namespace _test_vtz {
             StructInfo<T>::apply( [&]( auto... fields ) {
                 s += StructInfo<T>::name;
                 s += " {\n";
-                ( debugPrintField(
-                      s, fields.name, fields( value ), indent + 4 ),
-                    ... );
+                ( debugPrintField( s, fields.name, fields( value ), indent + 4 ), ... );
                 printIndent( s, indent );
                 s += "}";
             } );
@@ -177,10 +200,9 @@ namespace _test_vtz {
         void logGood( string_view what, T const& value ) {
             auto bg = fmt::emphasis::bold | fmt::fg( fmt::color::green );
             auto bw = fmt::emphasis::bold;
-            auto grey
-                = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
+            ;
             fmt::println( "{} {}: {}",
-                fmt::styled( "[info]", grey ),
+                fmt::styled( "[info]", FAINT_GRAY ),
                 fmt::styled( what, bw ),
                 fmt::styled( debugToString( value ), bg ) );
         }
@@ -194,8 +216,7 @@ namespace _test_vtz {
             int                 line ) {
             if( print_expr )
             {
-                auto expr_style
-                    = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
+                auto expr_style = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
                 fmt::print( "{} == {}\n{}",
                     fmt::styled( lhs_expr, expr_style ),
                     fmt::styled( rhs_expr, expr_style ),
@@ -204,10 +225,10 @@ namespace _test_vtz {
 
             if( print_location ) { fmt::print( "({}:{}) ", filename, line ); }
             fmt::println( "{} == {}",
-                fmt::styled( debugToString( lhs ),
-                    fmt::emphasis::bold | fmt::fg( fmt::color::green ) ),
-                fmt::styled( debugToString( rhs ),
-                    fmt::emphasis::bold | fmt::fg( fmt::color::green ) ) );
+                fmt::styled(
+                    debugToString( lhs ), fmt::emphasis::bold | fmt::fg( fmt::color::green ) ),
+                fmt::styled(
+                    debugToString( rhs ), fmt::emphasis::bold | fmt::fg( fmt::color::green ) ) );
         }
     };
 
@@ -216,61 +237,73 @@ namespace _test_vtz {
 
 
     template<class A, class B>
-    static auto _eqFail( char const* lhs_expr,
-        char const*                  rhs_expr,
-        A const&                     lhs,
-        B const&                     rhs ) {
-        return testing::internal::EqFailure( lhs_expr,
-            rhs_expr,
-            debugToString( lhs ),
-            debugToString( rhs ),
-            false );
+    static auto _eqFail( char const* lhs_expr, char const* rhs_expr, A const& lhs, B const& rhs ) {
+        return testing::internal::EqFailure(
+            lhs_expr, rhs_expr, debugToString( lhs ), debugToString( rhs ), false );
     }
 } // namespace _test_vtz
 
-#define FIELD( type, member )                                                  \
+constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
+
+#define COUNT_ASSERTIONS()                                                                         \
+    _test_vtz::CountAssertions _test_count_assertions { __func__ }
+
+
+#define FIELD( type, member )                                                                      \
     _test_vtz::Field<&type::member> { #member }
 
-#define STRUCT_INFO( type, ... )                                               \
-    template<>                                                                 \
-    struct _test_vtz::StructInfo<type> {                                       \
-        constexpr static bool             has  = true;                         \
-        constexpr static std::string_view name = #type;                        \
-        template<class F>                                                      \
-        constexpr static void apply( F&& func ) {                              \
-            func( __VA_ARGS__ );                                               \
-        }                                                                      \
-    };                                                                         \
-    template<>                                                                 \
-    struct fmt::formatter<type> : fmt::formatter<std::string_view> {           \
-        auto format( type const& value, format_context& ctx ) const {          \
-            std::string s;                                                     \
-            _test_vtz::debugPrint( s, value );                                 \
-            return fmt::formatter<std::string_view>::format( s, ctx );         \
-        }                                                                      \
+#define STRUCT_INFO( type, ... )                                                                   \
+    template<>                                                                                     \
+    struct _test_vtz::StructInfo<type> {                                                           \
+        constexpr static bool             has  = true;                                             \
+        constexpr static std::string_view name = #type;                                            \
+        template<class F>                                                                          \
+        constexpr static void apply( F&& func ) {                                                  \
+            func( __VA_ARGS__ );                                                                   \
+        }                                                                                          \
+    };                                                                                             \
+    template<>                                                                                     \
+    struct fmt::formatter<type> : fmt::formatter<std::string_view> {                               \
+        auto format( type const& value, format_context& ctx ) const {                              \
+            std::string s;                                                                         \
+            _test_vtz::debugPrint( s, value );                                                     \
+            return fmt::formatter<std::string_view>::format( s, ctx );                             \
+        }                                                                                          \
     }
 
 #undef ASSERT_EQ
-#define ASSERT_EQ( lhs, rhs )                                                  \
-    {                                                                          \
-        auto const& _test_lhs = lhs;                                           \
-        auto const& _test_rhs = rhs;                                           \
-        if( _test_lhs == _test_rhs )                                           \
-        {                                                                      \
-            if( _test_vtz::TEST_LOG.print_on_success )                         \
-                _test_vtz::TEST_LOG.print( #lhs,                               \
-                    #rhs,                                                      \
-                    _test_lhs,                                                 \
-                    _test_rhs,                                                 \
-                    __FILE_NAME__,                                             \
-                    __LINE__ );                                                \
-        }                                                                      \
-        else                                                                   \
-            return ::testing ::internal ::AssertHelper(                        \
-                       ::testing ::TestPartResult ::kFatalFailure,             \
-                       __FILE__,                                               \
-                       __LINE__,                                               \
-                       _test_vtz::_eqFail( #lhs, #rhs, _test_lhs, _test_rhs )  \
-                           .failure_message() )                                \
-                   = ::testing ::Message();                                    \
+#define ASSERT_EQ( lhs, rhs )                                                                      \
+    {                                                                                              \
+        _test_count_assertions.inc();                                                              \
+        auto const& _test_lhs = lhs;                                                               \
+        auto const& _test_rhs = rhs;                                                               \
+        if( _test_lhs == _test_rhs )                                                               \
+        {                                                                                          \
+            if( _test_vtz::TEST_LOG.print_on_success )                                             \
+                _test_vtz::TEST_LOG.print(                                                         \
+                    #lhs, #rhs, _test_lhs, _test_rhs, __FILE_NAME__, __LINE__ );                   \
+        }                                                                                          \
+        else                                                                                       \
+            return _test_count_assertions.incFailed(),                                             \
+                   ::testing ::internal ::AssertHelper(                                            \
+                       ::testing ::TestPartResult ::kFatalFailure,                                 \
+                       __FILE__,                                                                   \
+                       __LINE__,                                                                   \
+                       _test_vtz::_eqFail( #lhs, #rhs, _test_lhs, _test_rhs ).failure_message() )  \
+                   = ::testing ::Message();                                                        \
+    }
+
+#define ASSERT_EQ_QUIET( lhs, rhs )                                                                \
+    {                                                                                              \
+        _test_count_assertions.inc();                                                              \
+        auto const& _test_lhs = lhs;                                                               \
+        auto const& _test_rhs = rhs;                                                               \
+        if( !( _test_lhs == _test_rhs ) )                                                          \
+            return _test_count_assertions.incFailed(),                                             \
+                   ::testing ::internal ::AssertHelper(                                            \
+                       ::testing ::TestPartResult ::kFatalFailure,                                 \
+                       __FILE__,                                                                   \
+                       __LINE__,                                                                   \
+                       _test_vtz::_eqFail( #lhs, #rhs, _test_lhs, _test_rhs ).failure_message() )  \
+                   = ::testing ::Message();                                                        \
     }

@@ -120,9 +120,9 @@ namespace vtz {
         };
     }
 
-    rule_year_t parseYearTo( OptTok tok ) {
+    rule_year_t parseYearTo( OptTok tok, rule_year_t only ) {
         if( tok == "ma" || tok == "max" ) { return Y_MAX; }
-        if( tok == "o" || tok == "only" ) { return Y_ONLY; }
+        if( tok == "o" || tok == "only" ) { return only; }
         char const* begin = tok.data();
         size_t      size  = tok.size();
 
@@ -381,12 +381,12 @@ namespace vtz {
             };
         }
 
-        ZoneOff parseZoneOff( OptTok tok ) {
+        FromUTC parseZoneOff( OptTok tok ) {
             size_t      size = tok.size();
             char const* p    = tok.data();
 
             auto result = parseSignedHHMMSSOffset( p, size );
-            if( result != OFFSET_NPOS ) return ZoneOff{ result };
+            if( result != OFFSET_NPOS ) return FromUTC{ result };
 
             // throw failure
             throw ParseError{
@@ -462,11 +462,12 @@ namespace vtz {
     }
 
     RuleEntry parseRuleEntry( TokenIter tok_iter ) {
+        rule_year_t from = parseYear( tok_iter.next() );
         return RuleEntry{
-            parseYear( tok_iter.next() ),
+            from,
             /// For the 'TO' year, the values 'only' and 'max' must also be
             /// accepted
-            parseYearTo( tok_iter.next() ),
+            parseYearTo( tok_iter.next(), from ),
             // The token immediately before the month was a placeholder that
             // used to be called 'TYPE', but is now just a '-' for backwards
             // compatibility reasons. drop it, then get the month
@@ -518,6 +519,7 @@ namespace vtz {
                 ZoneMap( 512 ),
                 LinkMap( 512 ),
             };
+
             while( auto nextLine = lines.next() )
             {
                 auto line = stripLeadingDelim( *nextLine );
@@ -637,7 +639,7 @@ namespace vtz {
         return toHHMMSS( s.save );
     }
 
-    std::string format_as( ZoneOff off ) { return toHHMMSS( off.offset ); }
+    std::string format_as( FromUTC off ) { return toHHMMSS( off.off ); }
 
 
     std::string format_as( RuleAt r ) {
@@ -693,5 +695,11 @@ namespace vtz {
             return fmt::format( "{:>4}", *until.year );
         }
         return "(none)";
+    }
+
+
+    ZoneStates TZDataFile::getZoneStates(
+        string_view name, i32 startYear, i32 endYear ) const {
+        //
     }
 } // namespace vtz

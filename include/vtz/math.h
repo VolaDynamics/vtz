@@ -1,0 +1,56 @@
+#pragma once
+
+#include <vtz/vtzdef.h>
+
+namespace vtz::math {
+    template <class Int>
+    struct div_t {
+        Int quot;
+        Int rem;
+
+        constexpr bool operator==(div_t const& rhs) const noexcept {
+            return quot == rhs.quot && rem == rhs.rem;
+        }
+        constexpr bool operator!=(div_t const& rhs) const noexcept { return !(*this == rhs); }
+    };
+    template<class Int>
+    div_t(Int, Int) -> div_t<Int>;
+
+    /// Computes the quotient and remainder using floor division.
+    ///
+    /// The remainder will always be positive after this operation
+    template <auto Divisor, class T>
+    constexpr inline div_t<T> divFloor2(T k) {
+        static_assert(Divisor > 0);
+        auto m = k % Divisor;
+        auto q = k / Divisor;
+
+        bool mNeg = m < 0;
+
+        return {
+            q - mNeg,
+            m + (mNeg ? Divisor : 0),
+        };
+    }
+
+
+    /// Computes k / Divisor using floor division
+    ///
+    /// This is floor(k / Divisor).
+    template <i32 Divisor>
+    constexpr i32 divFloor(i32 k) {
+        static_assert(Divisor > 0);
+        bool isNeg = k < 0;
+        return ((k + isNeg) / Divisor) - isNeg;
+    }
+
+    /// Computes k / Divisor using floor division
+    ///
+    /// This is floor(k / Divisor).
+    template <i64 Divisor>
+    constexpr i64 divFloor(i64 k) {
+        static_assert(Divisor > 0);
+        bool isNeg = k < 0;
+        return ((k + isNeg) / Divisor) - isNeg;
+    }
+} // namespace vtz::math

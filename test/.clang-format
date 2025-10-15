@@ -1,0 +1,2 @@
+BasedOnStyle: InheritParentConfig
+ColumnLimit: 100 # 120 # 0 = no limit
