@@ -1,10 +1,11 @@
+#include <vtz/civil.h>
 #include <vtz/date_types.h>
-
-#include <charconv>
-#include <cstdint>
-#include <cstdlib>
 #include <vtz/strings.h>
 #include <vtz/tz_reader.h>
+
+#include <algorithm>
+#include <charconv>
+#include <cstdlib>
 
 #include <fmt/format.h>
 #include <stdexcept>
@@ -120,9 +121,9 @@ namespace vtz {
         };
     }
 
-    rule_year_t parseYearTo( OptTok tok, rule_year_t only ) {
+    rule_year_t parseYearTo( OptTok tok, rule_year_t from ) {
         if( tok == "ma" || tok == "max" ) { return Y_MAX; }
-        if( tok == "o" || tok == "only" ) { return only; }
+        if( tok == "o" || tok == "only" ) { return from; }
         char const* begin = tok.data();
         size_t      size  = tok.size();
 
@@ -701,5 +702,179 @@ namespace vtz {
     ZoneStates TZDataFile::getZoneStates(
         string_view name, i32 startYear, i32 endYear ) const {
         //
+    }
+
+    namespace {
+        [[nodiscard]] constexpr RuleEntry const* findNewlyActive( size_t year,
+            RuleEntry const*                                             begin,
+            RuleEntry const* end ) noexcept {
+            RuleEntry const* cursor = begin;
+            while( cursor != end && cursor->from == year ) ++cursor;
+            return cursor;
+        }
+
+        [[nodiscard]] constexpr RuleEntry const* pullNewlyActive(
+            vector<RuleEntry>& active,
+            size_t             year,
+            RuleEntry const*   begin,
+            RuleEntry const*   end ) {
+            auto cursor = findNewlyActive( year, begin, end );
+            active.insert( active.end(), begin, cursor );
+            return cursor;
+        }
+
+        [[nodiscard]] constexpr size_t nextExpiryYear(
+            RuleEntry const* p, size_t size, size_t initial = -1 ) noexcept {
+            for( size_t i = 0; i < size; i++ )
+            {
+                size_t expiry = size_t( p[i].to );
+                initial       = std::min( initial, expiry );
+            }
+            return initial;
+        }
+
+        [[nodiscard]] constexpr size_t nextExpiryYear(
+            vector<RuleEntry> const& active,
+            size_t                   initialYear = -1 ) noexcept {
+            return nextExpiryYear( active.data(), active.size(), initialYear );
+        }
+
+
+        [[nodiscard]] size_t fillTransitionTable( RuleEntry const* active,
+            size_t                                                 activeCount,
+            size_t                                                 year,
+            size_t                                                 yearEnd,
+            vector<RuleTrans>&                                     dest ) {
+            // Number of new transitions we're adding
+            size_t transCount = activeCount * ( yearEnd - year );
+
+            size_t oldDestSize = dest.size();
+
+            // Make sure there's enough space for all the new rules
+            dest.resize( dest.size() + transCount );
+
+            // This is where we're putting all the new rules
+            RuleTrans* p = dest.data() + oldDestSize;
+
+            for( ; year < yearEnd; ++year )
+            {
+                // Compute transitions for all active rules for the given year
+                for( size_t i = 0; i < activeCount; i++ )
+                    p[i] = active[i].resolveTrans( year );
+
+                // Ensure the added transitions are sorted by date
+                std::sort( p, p + activeCount, RuleTrans::compareDate() );
+
+                // Advance the destination pointer
+                p += activeCount;
+            }
+
+            return yearEnd;
+        }
+
+
+        /// Fill the transition table with transitions pulled from the active
+        /// ruleset. Resulting entries will be sorted according to the date of
+        /// the transition.
+        ///
+        /// Transitions will be appended to the given dest.
+        ///
+        /// @return yearEnd
+        [[nodiscard]] size_t fillTransitionTable(
+            vector<RuleEntry> const& active,
+            size_t                   year,
+            size_t                   yearEnd,
+            vector<RuleTrans>&       dest ) {
+            return fillTransitionTable(
+                active.data(), active.size(), year, yearEnd, dest );
+        }
+    } // namespace
+
+    RuleEvalResult evaluateRules(
+        RuleEntry const* begin, RuleEntry const* end ) {
+        if( begin == end )
+            throw std::runtime_error(
+                "evaluateRules(): Error: given empty rule set" );
+
+        if( !std::is_sorted( begin, end, RuleEntry::compareFrom() ) )
+            throw std::runtime_error(
+                "Expected Rule to be sorted by 'FROM' year" );
+
+        auto active = vector<RuleEntry>(); ///< Current set of active rules
+        auto tt     = vector<RuleTrans>(); ///< Computed Transition Table
+
+        size_t year0 = begin->from;        ///< First year with a rule
+
+        size_t year   = year0;             ///< Cursor holding the current year
+        auto   cursor = begin;             ///< Cursor holding the next rule
+
+        // Get the initial set of active rules
+        cursor = pullNewlyActive( active, year, cursor, end );
+
+        // We're going to loop as long as there are rules that can expire
+        while( cursor != end )
+        {
+            // Figure out how long we can loop for. We need to stop when we
+            // either hit an expiry, or when a new rule is going to be added
+            auto endYear = nextExpiryYear( active, cursor->from - 1 ) + 1;
+
+            // Fill rules from the current year to the stop year
+            // (we add 1 to the stop year, because we want to include it)
+            year = fillTransitionTable( active, year, endYear, tt );
+
+            // Remove any rules that have expired
+            active.erase( std::remove_if( active.begin(),
+                              active.end(),
+                              RuleEntry::isExpired( year ) ),
+                active.end() );
+
+            // We have no active rules right now, so we should jump forward
+            // to the next year that has a rule.
+            //
+            // We know that cursor->from >= year, because
+            // `nextExpiryYear( ..., initial ) <= initial`
+            if( active.empty() ) year = cursor->from;
+
+            // Pull any rules that are newly active
+            cursor = pullNewlyActive( active, year, cursor, end );
+        }
+
+        static_assert( Y_MAX == -1 );
+        static_assert( nextExpiryYear( nullptr, 0 ) == -1 );
+
+        // We want to pull any remaining rules that have a fixed expiry date.
+        //
+        // When only rules with no expiry remain (or there are no more active
+        // rules), `nextExpiryYear( active )` will return -1, so endYear will be
+        // 0, so we will break out of the loop.
+        while( auto endYear = nextExpiryYear( active ) + 1 )
+        {
+            year = fillTransitionTable( active, year, endYear, tt );
+
+            // Remove any rules that have expired
+            active.erase( std::remove_if( active.begin(),
+                              active.end(),
+                              RuleEntry::isExpired( year ) ),
+                active.end() );
+        }
+
+        return {
+            std::move( tt ),
+            std::move( active ),
+            i32( year0 ),
+            i32( year ),
+        };
+    }
+
+    RuleEvalResult evaluateRules( vector<RuleEntry> const& rules ) {
+        return evaluateRules( rules.data(), rules.data() + rules.size() );
+    }
+
+    string RuleTrans::str() const {
+        return fmt::format( "{} @ {} SAVE={} LETTER='{}'",
+            toCivil( date ),
+            at,
+            save,
+            letter.sv() );
     }
 } // namespace vtz

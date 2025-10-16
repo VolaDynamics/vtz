@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vtz/inplace_optional.h"
 #include <ankerl/unordered_dense.h>
 #include <array>
 #include <cstdint>
@@ -302,6 +303,42 @@ namespace vtz {
 
     using OptRuleOn = OptClass<RuleOn>;
 
+    struct RuleTrans {
+        sysdays_t  date;
+        RuleAt     at;
+        RuleSave   save;
+        RuleLetter letter;
+
+        string str() const;
+
+        static RuleTrans fromCivil( int year,
+            u32                         mon,
+            u32                         day,
+            RuleAt                      at,
+            RuleSave                    save,
+            RuleLetter                  letter ) {
+            return RuleTrans{
+                resolveCivil( year, mon, day ), at, save, letter
+            };
+        }
+
+        constexpr bool operator==( RuleTrans const& rhs ) const noexcept {
+            return date == rhs.date    //
+                   && at == rhs.at     //
+                   && save == rhs.save //
+                   && letter == rhs.letter;
+        }
+
+
+        constexpr static auto compareDate() noexcept {
+            return []( RuleTrans const& lhs, RuleTrans const& rhs ) {
+                return lhs.date < rhs.date;
+            };
+        }
+    };
+
+    inline string format_as( RuleTrans const& rule ) { return rule.str(); }
+
 
     /// Example rules:
     ///
@@ -328,6 +365,24 @@ namespace vtz {
             return at.resolveAt( on.resolveDate( year, in ), stdoff, walloff );
         }
 
+        constexpr sysdays_t resolveDate( i32 year ) const noexcept {
+            return on.resolveDate( year, in );
+        }
+
+        // Resolve a transition for the given year
+        constexpr RuleTrans resolveTrans( i32 year ) const noexcept {
+            return { resolveDate( year ), at, save, letter };
+        }
+
+        /// Returns true if the rule has expired by the given year
+        constexpr bool expiresBefore( i64 year ) const noexcept {
+            // When cast to u64, Y_MAX should be the max possible u64
+            // This allows us to do this check without branching on whether or
+            // not 'to' == Y_MAX
+            static_assert( u64( rule_year_t( Y_MAX ) ) == ~u64() );
+            return u64( year ) > u64( to );
+        }
+
         bool operator==( RuleEntry const& rhs ) const noexcept {
             return from == rhs.from    //
                    && to == rhs.to     //
@@ -336,6 +391,23 @@ namespace vtz {
                    && at == rhs.at     //
                    && save == rhs.save //
                    && letter == rhs.letter;
+        }
+
+        constexpr static auto isExpired( i64 year ) noexcept {
+            return [year]( RuleEntry const& rule ) {
+                return rule.expiresBefore( year );
+            };
+        }
+
+
+        constexpr static auto compareFrom() noexcept {
+            return []( RuleEntry const& lhs, RuleEntry const& rhs ) {
+                return lhs.from < rhs.from;
+            };
+        }
+
+        constexpr static auto hasExpiry() noexcept {
+            return []( RuleEntry const& rule ) { return rule.to != Y_MAX; };
         }
     };
 
@@ -422,15 +494,66 @@ namespace vtz {
     using ZoneMap = map<string_view, vector<ZoneEntry>>;
     using LinkMap = map<string_view, string_view>;
 
-    struct ZoneState {
-        i32        offset; // offset from UTC
+
+    struct alignas( 8 ) ZoneState {
+        FromUTC    offset; // offset from UTC
         FixStr<11> abbr;
     };
+
 
     struct ZoneTransition {
         i64       when; // UTC time of change
         ZoneState state;
+
+        constexpr ZoneTransition( i64 when, ZoneState state ) noexcept
+        : when( when )
+        , state( state ) {}
+
+        constexpr ZoneTransition( NoneType ) noexcept
+        : when( INT64_MAX )
+        , state() {}
+
+        bool     has_value() const noexcept { return when < INT64_MAX; }
+        explicit operator bool() const noexcept { return when < INT64_MAX; }
     };
+
+    /// Holds 4 pieces of information:
+    ///
+    /// - List of known transitions. These come from rules that have some
+    /// finite end date (TO != max)
+    /// - List of active rules. These are rules that will be active
+    /// indefinitely, into the future (TO == max)
+    /// - yearStart (year when historical transitions start)
+    /// - yearEnd (year when historical transitions end)
+    ///
+    /// For instance, all rules up to 2007 are historical (TO != max),
+    /// And rules from 2007 onwards apply indefinitely into the future
+    /// (or until a glorious future government renders a judgement of
+    /// permanent daylight savings time)
+    ///
+    /// ```
+    /// Rule US 1918 1919 - Mar lastSun 2:00 1:00 D
+    /// Rule US 1918 1919 - Oct lastSun 2:00 0    S
+    /// ...
+    /// Rule US 1987 2006 - Apr Sun>=1  2:00 1:00 D
+    /// Rule US 2007 max  - Mar Sun>=8  2:00 1:00 D
+    /// Rule US 2007 max  - Nov Sun>=1  2:00 0    S
+    /// ```
+
+    struct RuleEvalResult {
+        /// Known transitions: contains all transitions up until the current
+        /// active rule set
+        vector<RuleTrans> historical;
+        // Rule Entries that are still active after evaluation (these are
+        // entries which have 'max' as the TO fields)
+        vector<RuleEntry> active;
+        // First year where there's a rule
+        i32 yearStart;
+        // Year where the historical rule transitions no longer apply
+        // (and we only care about active rules)
+        i32 yearEnd;
+    };
+    RuleEvalResult evaluateRules( vector<RuleEntry> const& entries );
 
     struct ZoneStates {
         ZoneState              initial;
@@ -442,6 +565,9 @@ namespace vtz {
         ZoneMap zones;
         LinkMap links;
 
+        RuleEvalResult evaluateRules( string_view rule ) const {
+            return vtz::evaluateRules( rules.at( rule ) );
+        }
         ZoneStates getZoneStates(
             string_view name, i32 startYear, i32 endYear ) const;
 

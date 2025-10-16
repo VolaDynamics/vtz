@@ -220,19 +220,13 @@ TEST( vtz_parser, lines ) {
                 "\n"
                 "The quick brown fox jumps over the lazy dogs.\n"
                 "End.\n",
-        vecSV( "hello",
-            "",
-            "The quick brown fox jumps over the lazy dogs.",
-            "End." ) );
+        vecSV( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
 
     checkLines( "hello\n"
                 "\n"
                 "The quick brown fox jumps over the lazy dogs.\n"
                 "End.",
-        vecSV( "hello",
-            "",
-            "The quick brown fox jumps over the lazy dogs.",
-            "End." ) );
+        vecSV( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
 
     checkLines( "hello\n"
                 "\n"
@@ -252,8 +246,7 @@ TEST( vtz_parser, strip_comments ) {
     ASSERT_EQ( stripComment( "        hello #STDOFF" ), "        hello " );
 }
 
-STRUCT_INFO(
-    vtz::Location, FIELD( vtz::Location, line ), FIELD( vtz::Location, col ) );
+STRUCT_INFO( vtz::Location, FIELD( vtz::Location, line ), FIELD( vtz::Location, col ) );
 
 STRUCT_INFO( vtz::RuleEntry,
     FIELD( vtz::RuleEntry, from ),
@@ -272,8 +265,7 @@ STRUCT_INFO( vtz::ZoneEntry,
 
 STRUCT_INFO( vtz::Zone, FIELD( vtz::Zone, name ), FIELD( vtz::Zone, ents ) );
 
-STRUCT_INFO(
-    vtz::Link, FIELD( vtz::Link, canonical ), FIELD( vtz::Link, alias ) );
+STRUCT_INFO( vtz::Link, FIELD( vtz::Link, canonical ), FIELD( vtz::Link, alias ) );
 
 STRUCT_INFO( vtz::TZDataFile,
     FIELD( vtz::TZDataFile, rules ),
@@ -533,8 +525,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 			-10:30	1:00	HDT	1933 May 21 12:00
 			-10:30	US	H%sT	1947 Jun  8  2:00
 			-10:00	-	HST)";
-    ASSERT_EQ( "3:6",
-        Location::where( body2, body2.find( "Pacific/Honolulu" ) ).str() );
+    ASSERT_EQ( "3:6", Location::where( body2, body2.find( "Pacific/Honolulu" ) ).str() );
 
     ASSERT_EQ( "18446744073709551615:18446744073709551615",
         Location( 18446744073709551615ul, 18446744073709551615ul ).str() );
@@ -751,19 +742,16 @@ namespace {
 
 
         TEST_LOG.logGood( " successfully loaded", fp );
-        TEST_LOG.logGood(
-            "    time read_file()", duration_cast<msR>( t1 - t0 ) );
-        TEST_LOG.logGood(
-            " time parse_tzdata()", duration_cast<msR>( t2 - t1 ) );
-        TEST_LOG.logGood(
-            "               total", duration_cast<msR>( t2 - t0 ) );
+        TEST_LOG.logGood( "    time read_file()", duration_cast<msR>( t1 - t0 ) );
+        TEST_LOG.logGood( " time parse_tzdata()", duration_cast<msR>( t2 - t1 ) );
+        TEST_LOG.logGood( "               total", duration_cast<msR>( t2 - t0 ) );
 
         return { std::move( content ), std::move( result ) };
     }
 } // namespace
 
 
-TEST( vtz_io, load_northamerica ) {
+TEST( vtz_io, load_all ) {
     testLoadFile( "build/data/tzdata/africa" );
     testLoadFile( "build/data/tzdata/antarctica" );
     testLoadFile( "build/data/tzdata/asia" );
@@ -780,6 +768,54 @@ TEST( vtz_io, load_northamerica ) {
     ASSERT_EQ( allZones.links["GMT"], "Etc/GMT" );
     ASSERT_EQ( allZones.links["EST5EDT"], "America/New_York" );
 }
+
+
+TEST( vtz_tz, US_rules ) {
+    auto [content, zones] = testLoadFile( "build/data/tzdata/northamerica" );
+
+    auto US = zones.evaluateRules( "US" );
+
+    using RE = RuleEntry;
+    using RT = RuleTrans;
+
+    // https://www.timeanddate.com/calendar/?year=1919&country=1
+    ASSERT_EQ( US.yearStart, 1918 );
+    ASSERT_EQ( US.yearEnd, 2007 );
+
+    // There were 7 transitions before 1967, and then 2 transitions a year between 1967 and 2007
+    // Transitions within or after 2007 are "active". We're currently using the 2007 rules,
+    // so they are not listed as historical.
+    ASSERT_EQ( US.historical.size(), 7 + ( 2007 - 1967 ) * 2 );
+
+    ASSERT_EQ( US.historical[0], RT::fromCivil( 1918, 3, 31, "2:00", "1:00", "D" ) );
+    ASSERT_EQ( US.historical[1], RT::fromCivil( 1918, 10, 27, "2:00", "0", "S" ) );
+    ASSERT_EQ( US.historical[2], RT::fromCivil( 1919, 3, 30, "2:00", "1:00", "D" ) );
+    ASSERT_EQ( US.historical[3], RT::fromCivil( 1919, 10, 26, "2:00", "0", "S" ) );
+
+    // Enter War Time on February 9th, 1942
+    ASSERT_EQ( US.historical[4], RT::fromCivil( 1942, 2, 9, "2:00", "1:00", "W" ) );
+    // Transition to Peace Time on August 14th, 1945
+    ASSERT_EQ( US.historical[5], RT::fromCivil( 1945, 8, 14, "23:00u", "1:00", "P" ) );
+
+    // On September 30th, 1945, the US moved back to Standard Time
+    ASSERT_EQ( US.historical[6], RT::fromCivil( 1945, 9, 30, "2:00", "0", "S" ) );
+
+    // We started to do Daylight Savings Time again for some fucking reasons
+    ASSERT_EQ( US.historical[7], RT::fromCivil( 1967, 4, 30, "2:00", "1:00", "D" ) );
+    ASSERT_EQ( US.historical[8], RT::fromCivil( 1967, 10, 29, "2:00", "0", "S" ) );
+
+    // Historical rules apply until 2006. From then onwards we started using the current set of
+    // rules!
+    size_t n = US.historical.size();
+    ASSERT_EQ( US.historical[n - 2], RT::fromCivil( 2006, 4, 2, "2:00", "1:00", "D" ) );
+    ASSERT_EQ( US.historical[n - 1], RT::fromCivil( 2006, 10, 29, "2:00", "0", "S" ) );
+
+    ASSERT_EQ( US.active.at( 0 ),
+        ( RE{ 2007, Y_MAX, Mon::Mar, RuleOn::ge( DOW::Sun, 8 ), "2:00", "1:00", "D" } ) );
+    ASSERT_EQ( US.active.at( 1 ),
+        ( RE{ 2007, Y_MAX, Mon::Nov, RuleOn::ge( DOW::Sun, 1 ), "2:00", "0", "S" } ) );
+}
+
 
 TEST( vtz_parser, basics ) {
     ASSERT_EQ( parseHHMMSSOffset( "0:12:12" ), 60 * 12 + 12 );
