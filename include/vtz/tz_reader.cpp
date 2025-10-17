@@ -11,12 +11,6 @@
 #include <stdexcept>
 
 namespace vtz {
-    struct ParseError {
-        char const* expected; ///< What was expected
-        char const* but;      ///< Reason why input was bad
-        OptTok      token;    ///< token where failure occurred
-    };
-
     namespace {
         constexpr char const* no_token = "no token was given";
         constexpr char const* bad_SAVE
@@ -446,6 +440,74 @@ namespace vtz {
     } // namespace
 
 
+    ZoneFormat parseZoneFormat( char const* p, size_t size ) {
+        if( !size )
+            throw ParseError{ "Expected ZoneFormat", no_token, OptTok( p, 0 ) };
+
+        if( size > 14 )
+            throw ParseError{
+                "Expected ZoneFormat",
+                "is too long to be a zone format (expected 14 characters or "
+                "less)",
+                OptTok( p, size ),
+            };
+
+        ZoneFormat result{};
+
+        for( size_t i = 0; i < size; i++ )
+        {
+            char ch = p[i];
+
+            bool isSpecial = ch == '%' || ch == '/';
+            if( !isSpecial )
+            {
+                result.buff[i] = ch;
+                continue;
+            }
+
+            if( ch == '/' )
+            {
+                size_t sz1 = size - ( i + 1 );
+                std::copy( p + i + 1, p + size, result.buff + i );
+                result.setFmt( ZoneFormat::SLASH, i, sz1 );
+                return result;
+            }
+            size_t i2 = i + 1;
+            if( i2 == size )
+            {
+                throw ParseError{
+                    "Expected ZoneFormat",
+                    "ended with a '%' (expected either a '%z' or a '%s', a "
+                    "isolated '%' is invalid)",
+                    OptTok( p, size ),
+                };
+            }
+            char fmtChar = p[i2];
+            if( !( fmtChar == 's' || fmtChar == 'z' ) )
+                throw ParseError{
+                    "Expected ZoneFormat",
+                    "is not a recognized specifier (expected either '%s' "
+                    "or '%z' if a '%' is present)",
+                    OptTok( p + i, 2 ),
+                };
+
+            auto fmt = fmtChar == 's' ? ZoneFormat::FMT_S : ZoneFormat::FMT_Z;
+
+            size_t sz1 = size - ( i + 2 );
+            std::copy( p + i + 2, p + size, result.buff + i );
+
+            result.setFmt( fmt, i, sz1 );
+            return result;
+        }
+
+        result.setFmt( ZoneFormat::LITERAL, size, 0 );
+        return result;
+    }
+    ZoneFormat parseZoneFormat( OptTok tok ) {
+        return parseZoneFormat( tok.data(), tok.size() );
+    }
+
+
     Link parseLink( TokenIter tok_iter ) {
         Link link;
         link.canonical = tok_iter.next();
@@ -457,7 +519,7 @@ namespace vtz {
         ZoneEntry e;
         e.stdoff = parseZoneOff( tok_iter.next() );
         e.rules  = tok_iter.next();
-        e.format = tok_iter.next();
+        e.format = parseZoneFormat( tok_iter.next() );
         e.until  = parseZoneUntil( tok_iter.rest() );
         return e;
     }
@@ -669,7 +731,7 @@ namespace vtz {
 
     : stdoff( stdoff )
     , rules( rules )
-    , format( format )
+    , format( parseZoneFormat( format ) )
     , until( parseZoneUntil( until ) ) {}
 
 
@@ -876,5 +938,20 @@ namespace vtz {
             at,
             save,
             letter.sv() );
+    }
+    string ZoneFormat::str() const {
+        size_t      sz0 = ( fmt_ >> 2 ) & 0xf;
+        size_t      sz1 = ( fmt_ >> 6 ) & 0xf;
+        string_view h0( buff, sz0 );
+        string_view h1( buff + sz0, sz1 );
+        string_view mid;
+        switch( tag() )
+        {
+        case LITERAL: mid = {}; break;
+        case SLASH: mid = "/"; break;
+        case FMT_S: mid = "%s"; break;
+        case FMT_Z: mid = "%z"; break;
+        }
+        return fmt::format( "{}{}{}", h0, mid, h1 );
     }
 } // namespace vtz

@@ -740,11 +740,23 @@ namespace {
 
         using msR = std::chrono::duration<double, std::micro>;
 
+        // Find longest rule name
+        string_view longestRuleName;
+        for( const auto& [ruleName, ruleEntries] : result.rules )
+        {
+            if( ruleName.size() > longestRuleName.size() ) { longestRuleName = ruleName; }
+        }
 
         TEST_LOG.logGood( " successfully loaded", fp );
         TEST_LOG.logGood( "    time read_file()", duration_cast<msR>( t1 - t0 ) );
         TEST_LOG.logGood( " time parse_tzdata()", duration_cast<msR>( t2 - t1 ) );
         TEST_LOG.logGood( "               total", duration_cast<msR>( t2 - t0 ) );
+
+        if( !longestRuleName.empty() )
+        {
+            TEST_LOG.logGood( "  longest rule name",
+                fmt::format( "{} (length={})", longestRuleName, longestRuleName.size() ) );
+        }
 
         return { std::move( content ), std::move( result ) };
     }
@@ -849,4 +861,49 @@ TEST( vtz_parser, basics ) {
     ASSERT_EQ( parseRuleOn( "Sat<=31" ).string(), "Sat<=31" );
 
     ASSERT_ANY_THROW( parseRuleOn( "Sun<=0" ); );
+}
+
+
+TEST( vtz_parser, zoneFormat ) {
+    // Test ZoneFormat
+    using ZF = ZoneFormat;
+    static_assert( ZF{ "GMT" }.with( ZF::LITERAL, 3, 0 ).format( 0, false, "S" ).sv() == "GMT" );
+
+    static_assert( ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ).tag() == ZF::FMT_S );
+    static_assert( ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ).format( 0, false, "S" ).sv() == "EST" );
+    static_assert( ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ).format( 0, false, "D" ).sv() == "EDT" );
+    static_assert( ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ).format( 0, false, "-xx-" ).sv() == "E-xx-T" );
+    static_assert( ZF{ "ET" }.with( ZF::FMT_S, 0, 2 ).format( 0, false, "-xx-" ).sv() == "-xx-ET" );
+    static_assert( ZF{ "ET" }.with( ZF::FMT_S, 2, 0 ).format( 0, false, "-xx-" ).sv() == "ET-xx-" );
+
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 0, false, "" ).sv() == "+00" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3600, false, "" ).sv() == "+01" );
+
+
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3600, false, "" ).sv() == "-01" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3660, false, "" ).sv() == "+01:01" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3660, false, "" ).sv() == "-01:01" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3697, false, "" ).sv() == "+01:01:37" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3697, false, "" ).sv() == "-01:01:37" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 5025, false, "" ).sv() == "+01:23:45" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -5025, false, "" ).sv() == "-01:23:45" );
+
+    static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 3, 0 ).format( 0, false, "" ).sv() == "xyz+00" );
+    static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 2, 1 ).format( 0, false, "" ).sv() == "xy+00z" );
+    static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 1, 2 ).format( 0, false, "" ).sv() == "x+00yz" );
+    static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 0, 3 ).format( 0, false, "" ).sv() == "+00xyz" );
+
+    static_assert(
+        ZF{ "he" }.with( ZF::FMT_Z, 2, 0 ).format( 5025, false, "" ).sv() == "he+01:23:45" );
+    static_assert(
+        ZF{ "hello" }.with( ZF::FMT_Z, 5, 0 ).format( 5025, false, "" ).sv() == "hello+01:23" );
+    static_assert(
+        ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv() == "h+01:23:45e" );
+
+    ASSERT_EQ( parseZoneFormat( "EST" ), ZF{ "EST" }.with( ZF::LITERAL, 3 ) );
+    ASSERT_EQ( parseZoneFormat( "E%sT" ), ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ) );
+    ASSERT_EQ( parseZoneFormat( "E%zT" ), ZF{ "ET" }.with( ZF::FMT_Z, 1, 1 ) );
+    ASSERT_EQ( parseZoneFormat( "%z" ), ZF{}.with( ZF::FMT_Z ) );
+    ASSERT_EQ( parseZoneFormat( "EST/EDT" ), ZF{ "ESTEDT" }.with( ZF::SLASH, 3, 3 ) );
+    ASSERT_EQ( parseZoneFormat( "GMT/BDST" ), ZF{ "GMTBDST" }.with( ZF::SLASH, 3, 4 ) );
 }

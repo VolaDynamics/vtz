@@ -36,6 +36,45 @@ namespace vtz {
         return i64( days ) * 86400;
     }
 
+    /// Write an offset (in seconds) as [+/-]HH[:MM[:SS]], writing the shortest
+    /// amount necessary.
+    ///
+    /// Examples:
+    /// - `writeShortestOffset(0, ...) -> "+00"`
+    /// - `writeShortestOffset(7200, ...) -> "+02"`
+    /// - `writeShortestOffset(7260, ...) -> "+02:01"`
+    /// - `writeShortestOffset(7201, ...) -> "+02:00:01"`
+    /// - `writeShortestOffset(7261, ...) -> "+02:01:01"`
+    /// - `writeShortestOffset(-7200, ...) -> "-02"`
+    /// - `writeShortestOffset(-7260, ...) -> "-02:01"`
+    /// - `writeShortestOffset(-7201, ...) -> "-02:00:01"`
+    /// - `writeShortestOffset(-7261, ...) -> "-02:01:01"`
+    constexpr size_t writeShortestOffset( i32 offset, char* p ) noexcept {
+        i32 absOffset = offset < 0 ? -offset : offset;
+        i32 hours     = absOffset / 3600;
+        i32 minutes   = ( absOffset % 3600 ) / 60;
+        i32 seconds   = absOffset % 60;
+        p[0]          = offset < 0 ? '-' : '+';
+        p[1]          = '0' + ( hours / 10 );
+        p[2]          = '0' + ( hours % 10 );
+        if( minutes || seconds )
+        {
+            p[3] = ':';
+            p[4] = '0' + ( minutes / 10 );
+            p[5] = '0' + ( minutes % 10 );
+
+            if( seconds )
+            {
+                p[6] = ':';
+                p[7] = '0' + ( seconds / 10 );
+                p[8] = '0' + ( seconds % 10 );
+                return 9;
+            }
+            return 6;
+        }
+        return 3;
+    }
+
     struct YMD {
         i32 year;
         u16 month;
