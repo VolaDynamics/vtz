@@ -865,10 +865,21 @@ TEST( vtz_parser, basics ) {
 
 
 TEST( vtz_parser, zoneFormat ) {
+    COUNT_ASSERTIONS();
+
     // Test ZoneFormat
     using ZF = ZoneFormat;
-    static_assert( ZF{ "GMT" }.with( ZF::LITERAL, 3, 0 ).format( 0, false, "S" ).sv() == "GMT" );
 
+    // === LITERAL format tests ===
+    static_assert( ZF{ "GMT" }.with( ZF::LITERAL, 3, 0 ).format( 0, false, "S" ).sv() == "GMT" );
+    ASSERT_EQ( parseZoneFormat( "EST" ), ZF{ "EST" }.with( ZF::LITERAL, 3 ) );
+    ASSERT_EQ( parseZoneFormat( "-00" ), ZF{ "-00" }.with( ZF::LITERAL, 3 ) );
+
+    // Longer literal formats
+    ASSERT_EQ( parseZoneFormat( "WEST" ), ZF{ "WEST" }.with( ZF::LITERAL, 4 ) );
+    ASSERT_EQ( parseZoneFormat( "ACST" ), ZF{ "ACST" }.with( ZF::LITERAL, 4 ) );
+
+    // === FMT_S (%s substitution) tests ===
     static_assert( ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ).tag() == ZF::FMT_S );
     static_assert( ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ).format( 0, false, "S" ).sv() == "EST" );
     static_assert( ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ).format( 0, false, "D" ).sv() == "EDT" );
@@ -876,10 +887,24 @@ TEST( vtz_parser, zoneFormat ) {
     static_assert( ZF{ "ET" }.with( ZF::FMT_S, 0, 2 ).format( 0, false, "-xx-" ).sv() == "-xx-ET" );
     static_assert( ZF{ "ET" }.with( ZF::FMT_S, 2, 0 ).format( 0, false, "-xx-" ).sv() == "ET-xx-" );
 
+    ASSERT_EQ( parseZoneFormat( "E%sT" ), ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ) );
+    ASSERT_EQ( parseZoneFormat( "C%sT" ), ZF{ "CT" }.with( ZF::FMT_S, 1, 1 ) );
+
+    // %s at the beginning
+    ASSERT_EQ( parseZoneFormat( "%sT" ), ZF{ "T" }.with( ZF::FMT_S, 0, 1 ) );
+    ASSERT_EQ( parseZoneFormat( "%sST" ), ZF{ "ST" }.with( ZF::FMT_S, 0, 2 ) );
+
+    // %s at the end
+    ASSERT_EQ( parseZoneFormat( "E%s" ), ZF{ "E" }.with( ZF::FMT_S, 1, 0 ) );
+    ASSERT_EQ( parseZoneFormat( "WE%s" ), ZF{ "WE" }.with( ZF::FMT_S, 2, 0 ) );
+
+    // %s in the middle with more context
+    ASSERT_EQ( parseZoneFormat( "AC%sT" ), ZF{ "ACT" }.with( ZF::FMT_S, 2, 1 ) );
+    ASSERT_EQ( parseZoneFormat( "AE%sST" ), ZF{ "AEST" }.with( ZF::FMT_S, 2, 2 ) );
+
+    // === FMT_Z (%z numeric offset) tests ===
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 0, false, "" ).sv() == "+00" );
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3600, false, "" ).sv() == "+01" );
-
-
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3600, false, "" ).sv() == "-01" );
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3660, false, "" ).sv() == "+01:01" );
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3660, false, "" ).sv() == "-01:01" );
@@ -900,10 +925,91 @@ TEST( vtz_parser, zoneFormat ) {
     static_assert(
         ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv() == "h+01:23:45e" );
 
-    ASSERT_EQ( parseZoneFormat( "EST" ), ZF{ "EST" }.with( ZF::LITERAL, 3 ) );
-    ASSERT_EQ( parseZoneFormat( "E%sT" ), ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ) );
     ASSERT_EQ( parseZoneFormat( "E%zT" ), ZF{ "ET" }.with( ZF::FMT_Z, 1, 1 ) );
     ASSERT_EQ( parseZoneFormat( "%z" ), ZF{}.with( ZF::FMT_Z ) );
+
+    // %z with prefixes
+    ASSERT_EQ( parseZoneFormat( "GMT%z" ), ZF{ "GMT" }.with( ZF::FMT_Z, 3, 0 ) );
+    ASSERT_EQ( parseZoneFormat( "UTC%z" ), ZF{ "UTC" }.with( ZF::FMT_Z, 3, 0 ) );
+
+    // %z with suffixes
+    ASSERT_EQ( parseZoneFormat( "%zST" ), ZF{ "ST" }.with( ZF::FMT_Z, 0, 2 ) );
+
+    // %z with both prefix and suffix
+    ASSERT_EQ( parseZoneFormat( "A%zB" ), ZF{ "AB" }.with( ZF::FMT_Z, 1, 1 ) );
+
+    // === SLASH format tests ===
     ASSERT_EQ( parseZoneFormat( "EST/EDT" ), ZF{ "ESTEDT" }.with( ZF::SLASH, 3, 3 ) );
     ASSERT_EQ( parseZoneFormat( "GMT/BDST" ), ZF{ "GMTBDST" }.with( ZF::SLASH, 3, 4 ) );
+    ASSERT_EQ( parseZoneFormat( "GMT/BST" ), ZF{ "GMTBST" }.with( ZF::SLASH, 3, 3 ) );
+    ASSERT_EQ( parseZoneFormat( "CET/CEST" ), ZF{ "CETCEST" }.with( ZF::SLASH, 3, 4 ) );
+    ASSERT_EQ( parseZoneFormat( "EET/EEST" ), ZF{ "EETEEST" }.with( ZF::SLASH, 3, 4 ) );
+
+    // Slash with asymmetric parts
+    ASSERT_EQ( parseZoneFormat( "A/BCDE" ), ZF{ "ABCDE" }.with( ZF::SLASH, 1, 4 ) );
+    ASSERT_EQ( parseZoneFormat( "A/BCDE" ).format( 0, false, "" ).sv(), "A" );
+    ASSERT_EQ( parseZoneFormat( "A/BCDE" ).format( 0, true, "" ).sv(), "BCDE" );
+
+    // === Round-trip tests (parse then format) ===
+
+    // Literal round-trips
+    auto lit1 = parseZoneFormat( "ACST" );
+    ASSERT_EQ( lit1, ZF{ "ACST" }.with( ZF::LITERAL, 4 ) );
+    static_assert( ZF{ "ACST" }.with( ZF::LITERAL, 4 ).format( 0, false, "" ).sv() == "ACST" );
+
+    ASSERT_EQ( lit1.format( 0, false, "" ).sv(), "ACST" );
+
+    // %s round-trips
+    auto fmts1 = parseZoneFormat( "WE%sT" );
+    ASSERT_EQ( fmts1.format( 0, false, "S" ).sv(), "WEST" );
+    ASSERT_EQ( fmts1.format( 0, false, "D" ).sv(), "WEDT" );
+
+    auto fmts2 = parseZoneFormat( "%sT" );
+    ASSERT_EQ( fmts2.format( 0, false, "ES" ).sv(), "EST" );
+    ASSERT_EQ( fmts2.format( 0, false, "ED" ).sv(), "EDT" );
+
+    // %z round-trips
+    auto fmtz1 = parseZoneFormat( "%z" );
+    ASSERT_EQ( fmtz1.format( -10800, false, "" ).sv(), "-03" );
+    ASSERT_EQ( fmtz1.format( 19800, false, "" ).sv(), "+05:30" );
+
+    auto fmtz2 = parseZoneFormat( "GMT%z" );
+    ASSERT_EQ( fmtz2.format( 0, false, "" ).sv(), "GMT+00" );
+    ASSERT_EQ( fmtz2.format( -3600, false, "" ).sv(), "GMT-01" );
+
+    // Slash round-trips
+    auto slash1 = parseZoneFormat( "CST/CDT" );
+    ASSERT_EQ( slash1.format( 0, false, "" ).sv(), "CST" );
+    ASSERT_EQ( slash1.format( 0, true, "" ).sv(), "CDT" );
+
+    // Test slash format selection based on isDST flag
+    auto slashFmt = parseZoneFormat( "PST/PDT" );
+    ASSERT_EQ( slashFmt.format( 0, false, "" ).sv(), "PST" ); // isDST=false
+    ASSERT_EQ( slashFmt.format( 0, true, "" ).sv(), "PDT" );  // isDST=true
+
+    // === Edge cases ===
+
+    // Empty format
+    ASSERT_ANY_THROW( parseZoneFormat( "" ) );
+
+    // Single character
+    ASSERT_EQ( parseZoneFormat( "A" ), ZF{ "A" }.with( ZF::LITERAL, 1 ) );
+
+    // Maximum reasonable length literal
+    ASSERT_EQ( parseZoneFormat( "VERYLONGZONE" ), ZF{ "VERYLONGZONE" }.with( ZF::LITERAL, 12 ) );
+
+    // === Format with offset tests (for %z) ===
+
+    // Test various offset values with %z format
+    auto zFmt = parseZoneFormat( "%z" );
+    ASSERT_EQ( zFmt.format( 0, false, "" ).sv(), "+00" );
+    ASSERT_EQ( zFmt.format( 1800, false, "" ).sv(), "+00:30" );   // Half hour offset
+    ASSERT_EQ( zFmt.format( 5400, false, "" ).sv(), "+01:30" );   // 1.5 hours
+    ASSERT_EQ( zFmt.format( 12600, false, "" ).sv(), "+03:30" );  // 3.5 hours (Iran)
+    ASSERT_EQ( zFmt.format( 20700, false, "" ).sv(), "+05:45" );  // Nepal
+    ASSERT_EQ( zFmt.format( -12600, false, "" ).sv(), "-03:30" ); // Newfoundland
+
+    // Test %z with seconds
+    ASSERT_EQ( zFmt.format( 3601, false, "" ).sv(), "+01:00:01" );
+    ASSERT_EQ( zFmt.format( -3661, false, "" ).sv(), "-01:01:01" );
 }

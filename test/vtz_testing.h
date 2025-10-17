@@ -1,3 +1,4 @@
+#include "gtest/gtest.h"
 #include <vtz/strings.h>
 
 #include <fmt/color.h>
@@ -241,6 +242,34 @@ namespace _test_vtz {
         return testing::internal::EqFailure(
             lhs_expr, rhs_expr, debugToString( lhs ), debugToString( rhs ), false );
     }
+
+    template<class LHS, class RHS, class TestCountAssertions>
+    bool _doAssertEq( LHS const& _test_lhs,
+        RHS const&               _test_rhs,
+        char const*              lhs,
+        char const*              rhs,
+        bool                     print_on_success,
+        char const*              filename,
+        int                      lineno,
+        TestCountAssertions&&    _test_count_assertions ) {
+        _test_count_assertions.inc();
+        if( _test_lhs == _test_rhs )
+        {
+            if( print_on_success )
+                _test_vtz::TEST_LOG.print( lhs, rhs, _test_lhs, _test_rhs, filename, lineno );
+            return true;
+        }
+        else
+        {
+            _test_count_assertions.incFailed();
+            ::testing::internal::AssertHelper( ::testing::TestPartResult::kFatalFailure,
+                filename,
+                lineno,
+                _test_vtz::_eqFail( lhs, rhs, _test_lhs, _test_rhs ).failure_message() )
+                = testing::Message();
+            return false;
+        }
+    }
 } // namespace _test_vtz
 
 constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
@@ -273,37 +302,17 @@ constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
 
 #undef ASSERT_EQ
 #define ASSERT_EQ( lhs, rhs )                                                                      \
-    {                                                                                              \
-        _test_count_assertions.inc();                                                              \
-        auto const& _test_lhs = lhs;                                                               \
-        auto const& _test_rhs = rhs;                                                               \
-        if( _test_lhs == _test_rhs )                                                               \
-        {                                                                                          \
-            if( _test_vtz::TEST_LOG.print_on_success )                                             \
-                _test_vtz::TEST_LOG.print(                                                         \
-                    #lhs, #rhs, _test_lhs, _test_rhs, __FILE_NAME__, __LINE__ );                   \
-        }                                                                                          \
-        else                                                                                       \
-            return _test_count_assertions.incFailed(),                                             \
-                   ::testing ::internal ::AssertHelper(                                            \
-                       ::testing ::TestPartResult ::kFatalFailure,                                 \
-                       __FILE__,                                                                   \
-                       __LINE__,                                                                   \
-                       _test_vtz::_eqFail( #lhs, #rhs, _test_lhs, _test_rhs ).failure_message() )  \
-                   = ::testing ::Message();                                                        \
-    }
+    if( !_test_vtz::_doAssertEq( lhs,                                                              \
+            rhs,                                                                                   \
+            #lhs,                                                                                  \
+            #rhs,                                                                                  \
+            _test_vtz::TEST_LOG.print_on_success,                                                  \
+            __FILE__,                                                                              \
+            __LINE__,                                                                              \
+            _test_count_assertions ) )                                                             \
+    return
 
 #define ASSERT_EQ_QUIET( lhs, rhs )                                                                \
-    {                                                                                              \
-        _test_count_assertions.inc();                                                              \
-        auto const& _test_lhs = lhs;                                                               \
-        auto const& _test_rhs = rhs;                                                               \
-        if( !( _test_lhs == _test_rhs ) )                                                          \
-            return _test_count_assertions.incFailed(),                                             \
-                   ::testing ::internal ::AssertHelper(                                            \
-                       ::testing ::TestPartResult ::kFatalFailure,                                 \
-                       __FILE__,                                                                   \
-                       __LINE__,                                                                   \
-                       _test_vtz::_eqFail( #lhs, #rhs, _test_lhs, _test_rhs ).failure_message() )  \
-                   = ::testing ::Message();                                                        \
-    }
+    if( !_test_vtz::_doAssertEq(                                                                   \
+            lhs, rhs, #lhs, #rhs, false, __FILE__, __LINE__, _test_count_assertions ) )            \
+    return
