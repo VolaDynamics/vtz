@@ -3,9 +3,12 @@
 #include <cstdint>
 #include <string_view>
 
-#include <vtz/vtzdef.h>
+#include <vtz/bit.h>
 
+#include <vtz/bit.h>
 #include <vtz/inplace_optional.h>
+
+
 namespace vtz {
     using std::string_view;
 
@@ -46,15 +49,7 @@ namespace vtz::_impl {
     constexpr inline char MONTH_NAMES[12][4]{ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
     constexpr inline char DOW_NAMES[7][4]{ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
-    /// Load 1 byte from the input and return the result as a u32
-    constexpr u32 _load1( char const* src ) noexcept { return u8( src[0] ); }
-    /// Load 2 bytes from the input and return the result as a u32.
-    constexpr u32 _load2( char const* src ) noexcept { return u8( src[0] ) | ( u8( src[1] ) << 8 ); }
-    /// Load 3 bytes from the input and return the result as a u32.
-    constexpr u32 _load3( char const* src ) noexcept { return u8( src[0] ) | ( u8( src[1] ) << 8 ) | ( u8( src[2] ) << 16 ); }
-    /// Load 4 bytes from the input and return the result as a u32.
-    constexpr u32 _load4( char const* src ) noexcept { return u8( src[0] ) | ( u8( src[1] ) << 8 ) | ( u8( src[2] ) << 16 ) | ( u8( src[3] ) << 24 ); }
-    // clang-format on
+
 
 
     constexpr OptMon _parseMon( char const* src, size_t len ) noexcept {

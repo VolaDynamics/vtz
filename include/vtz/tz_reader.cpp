@@ -1,3 +1,5 @@
+#include "vtz/tz_reader/FromUTC.h"
+#include "vtz/tz_reader/ZoneRule.h"
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
 #include <vtz/strings.h>
@@ -38,6 +40,23 @@ namespace vtz {
 
         constexpr char const* bad_LETTER
             = "is too large to be valid for the LETTER/S field.";
+
+        constexpr char const* bad_ZONE_RULE
+            = "is not a valid value for the 'RULES' column. A Zone Rule must "
+              "be either a hyphen (\"-\"), indicating a null value; it must be "
+              "an amount of time (eg, \"1:00\"), which we set our clocks ahead "
+              "by; or it must be an alphabetic string which names a rule.";
+
+
+        /// Return true if the character is an ascii letter (either lowercase or
+        /// uppercase)
+        constexpr auto isAlpha = []( char ch ) noexcept -> bool {
+            return ( 'a' <= ch && ch <= 'z' )    // ch is lowercase
+                   || ( 'A' <= ch && ch <= 'Z' ) // ch is uppercase
+                   || ( ch == '_' );             // ch is a '_'
+        };
+        constexpr auto isDigit
+            = []( char ch ) noexcept -> bool { return '0' <= ch && ch <= '9'; };
 
         constexpr inline bool isD10( int x ) noexcept {
             return 0 <= x && x < 10;
@@ -440,6 +459,56 @@ namespace vtz {
     } // namespace
 
 
+    ZoneRule parseZoneRule( char const* p, size_t size ) {
+        if( !size )
+            throw ParseError{ "Expected ZoneRule", no_token, OptTok( p, 0 ) };
+
+        if( size > 15 )
+            throw ParseError{ "Expected ZoneRule",
+                "is too long to be a zone rule (expected a name 15 characters "
+                "or less)",
+                OptTok( p, size ) };
+
+
+        if( p[0] == '-' && size == 1 )
+        {
+            /// From "How to Read the tz Database Source Files":
+            /// > A hyphen, a kind of null value, means that we have not set our
+            /// > clocks ahead of standard time.
+            return ZoneRule( ZoneRule::hyphen );
+        }
+        else if( isAlpha( p[0] ) )
+        {
+            // The documentation says that the rule name should be 'Alphabetic',
+            // but it does not clarify what this means. There are instances of
+            // rules which use characters other than letters. For instance:
+            //
+            // - `E-EurAsia` uses a '-'
+            // - `NT_YK` uses a '_'
+            // - There is a rule named `_` in tzdata.zi
+            //
+            // For now, we will allow anything that is not recognized as a
+            // offset or hyphen to be used as a rule name.
+
+            FixStr<15> name{};
+            _vtz_memcpy( name.buff_, p, size );
+            name.size_ = u8( size );
+            return ZoneRule( name );
+        }
+        else
+        {
+            auto offset = parseSignedHHMMSSOffset( p, size );
+            if( offset != OFFSET_NPOS ) return ZoneRule( offset );
+        }
+
+        throw ParseError{
+            "Expected ZoneRule", bad_ZONE_RULE, OptTok( p, size )
+        };
+    }
+
+    ZoneRule parseZoneRule( OptTok tok ) {
+        return parseZoneRule( tok.data(), tok.size() );
+    }
     ZoneFormat parseZoneFormat( char const* p, size_t size ) {
         if( !size )
             throw ParseError{ "Expected ZoneFormat", no_token, OptTok( p, 0 ) };
@@ -518,7 +587,7 @@ namespace vtz {
     ZoneEntry parseZoneEntry( TokenIter tok_iter ) {
         ZoneEntry e;
         e.stdoff = parseZoneOff( tok_iter.next() );
-        e.rules  = tok_iter.next();
+        e.rules  = parseZoneRule( tok_iter.next() );
         e.format = parseZoneFormat( tok_iter.next() );
         e.until  = parseZoneUntil( tok_iter.rest() );
         return e;
@@ -730,7 +799,7 @@ namespace vtz {
         string_view                   until )
 
     : stdoff( stdoff )
-    , rules( rules )
+    , rules( parseZoneRule( rules ) )
     , format( parseZoneFormat( format ) )
     , until( parseZoneUntil( until ) ) {}
 
@@ -760,11 +829,6 @@ namespace vtz {
         return "(none)";
     }
 
-
-    ZoneStates TZDataFile::getZoneStates(
-        string_view name, i32 startYear, i32 endYear ) const {
-        //
-    }
 
     namespace {
         [[nodiscard]] constexpr RuleEntry const* findNewlyActive( size_t year,
@@ -801,6 +865,18 @@ namespace vtz {
             return nextExpiryYear( active.data(), active.size(), initialYear );
         }
 
+        size_t dumpActive( RuleEntry const* active,
+            size_t                          activeCount,
+            size_t                          year,
+            RuleTrans*                      p ) {
+            // Compute transitions for all active rules for the given year
+            for( size_t i = 0; i < activeCount; i++ )
+                p[i] = active[i].resolveTrans( year );
+
+            // Ensure the added transitions are sorted by date
+            std::sort( p, p + activeCount, RuleTrans::compareDate() );
+            return activeCount;
+        }
 
         [[nodiscard]] size_t fillTransitionTable( RuleEntry const* active,
             size_t                                                 activeCount,
@@ -820,15 +896,8 @@ namespace vtz {
 
             for( ; year < yearEnd; ++year )
             {
-                // Compute transitions for all active rules for the given year
-                for( size_t i = 0; i < activeCount; i++ )
-                    p[i] = active[i].resolveTrans( year );
-
-                // Ensure the added transitions are sorted by date
-                std::sort( p, p + activeCount, RuleTrans::compareDate() );
-
                 // Advance the destination pointer
-                p += activeCount;
+                p += dumpActive( active, activeCount, year, p );
             }
 
             return yearEnd;
@@ -851,6 +920,106 @@ namespace vtz {
                 active.data(), active.size(), year, yearEnd, dest );
         }
     } // namespace
+
+
+    constexpr bool ruleNull( string_view rule ) noexcept {
+        return rule.size() == 1 && rule[0] == '-';
+    }
+    constexpr bool ruleNumeric( string_view rule ) noexcept {
+        char ch = rule.size() > 0 ? rule[0] : '\0';
+        return ch == '+' || ch == '-' || isD10( ch - '0' );
+    }
+    ZoneStates TZDataFile::getZoneStates(
+        string_view name, i32 startYear, i32 endYear ) const {
+        // Represents a map of rule names to evaluated rules
+        using RuleCache = map<string_view, RuleEvalResult>;
+
+        auto const& entries = zones.at( name );
+        if( entries.empty() )
+            throw std::runtime_error(
+                fmt::format( "Error: zone '{}' contained no entries",
+                    escapeString( name ) ) );
+
+        sysdays_t endDate = resolveCivil( endYear, 1, 1 );
+
+        FromUTC    stdoff  = entries.front().stdoff;
+        FromUTC    walloff = stdoff;
+        ZoneFormat format  = entries.front().format;
+        ZoneUntil  until   = entries.front().until;
+
+        vector<RuleTrans> transBuff;
+
+        // There is no 'until'. Therefore, just evaluate whatever rule is
+        // present until the end year is reached
+        if( !until.has_value() )
+        {
+            auto const& ent  = entries.front();
+            auto const& rule = ent.rules;
+            // If there is no associated rule, there are no state transitions -
+            // this zone is steady-state
+            if( rule.isHyphen() )
+            {
+                return ZoneStates{
+                    ZoneState{ stdoff, format.format( stdoff.off, false, {} ) },
+                };
+            }
+
+            if( rule.isOffset() )
+            {
+                i32  save   = rule.offset();
+                auto offset = stdoff.save( save );
+                return ZoneStates{
+                    ZoneState{ save, format.format( offset, save != 0, "-" ) },
+                };
+            }
+
+            auto ruleEval = evaluateRules( rule.name() );
+
+            ZoneStates result;
+            result.initial = ZoneState{
+                stdoff,
+                format.format( stdoff, false, ruleEval.getInitialLetter() ),
+            };
+
+            for( RuleTrans const& trans : ruleEval.historical )
+            {
+                // Exit early - we're past the end date
+                if( trans.date >= endDate ) return result;
+
+                result.transitions.push_back(
+                    trans.resolveTrans( stdoff, format ) );
+            }
+
+            transBuff.resize( ruleEval.active.size() );
+
+            // Just... fuck it. just dump the transitions, man. Over and over
+            // until the end year.
+            for( i32 year = ruleEval.yearEnd; year < endYear; ++year )
+            {
+                dumpActive( ruleEval.active.data(),
+                    ruleEval.active.size(),
+                    year,
+                    transBuff.data() );
+
+                for( auto const& trans : transBuff )
+                    result.transitions.push_back(
+                        trans.resolveTrans( stdoff, format ) );
+            }
+
+            return result;
+        }
+
+
+        auto ruleCache = RuleCache( 16 );
+
+        for( auto const& ent : entries )
+        {
+            if( !ent.until.has_value() ) break;
+
+            auto const& rule = ent.rules;
+        }
+    }
+
 
     RuleEvalResult evaluateRules(
         RuleEntry const* begin, RuleEntry const* end ) {
@@ -953,5 +1122,13 @@ namespace vtz {
         case FMT_Z: mid = "%z"; break;
         }
         return fmt::format( "{}{}{}", h0, mid, h1 );
+    }
+    string ZoneRule::str() const {
+        switch( kind() )
+        {
+        case HYPHEN: return "-";
+        case NAMED: return string( name() );
+        case OFFSET: return toHHMMSS( offset() );
+        }
     }
 } // namespace vtz

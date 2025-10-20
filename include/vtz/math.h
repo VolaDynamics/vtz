@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vtz/vtzdef.h>
+#include <vtz/bit.h>
 
 namespace vtz::math {
     template <class Int>

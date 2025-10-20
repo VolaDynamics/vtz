@@ -1,0 +1,97 @@
+#pragma once
+
+#include <vtz/civil.h>
+#include <vtz/date_types.h>
+#include <vtz/bit.h>
+
+namespace vtz {
+    class RuleOn {
+        u16 repr_;
+
+        constexpr explicit RuleOn( u16 repr ) noexcept
+        : repr_( repr ) {}
+
+      public:
+
+        enum Kind {
+            DAY,      ///< 'on' is a specific day of the month, eg '13'
+            DOW_LAST, ///< 'on' is, eg 'lastSun' or 'lastMon'
+            DOW_GE,   ///< 'on' is 'Sun>=13', for example
+            DOW_LE,   ///< 'on' is 'Fri<=1', for example
+        };
+
+        RuleOn() = default;
+
+        constexpr RuleOn( Kind kind, u8 day, DOW dow ) noexcept
+        : repr_( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) {}
+        constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
+        constexpr u32  day() const noexcept { return repr_ >> 5; }
+        constexpr DOW  dow() const noexcept {
+            return DOW( ( repr_ >> 2 ) & 0x7 );
+        }
+
+
+        constexpr static RuleOn on( u8 day ) noexcept {
+            return { DAY, day, {} };
+        }
+        constexpr static RuleOn last( DOW dow ) noexcept {
+            return { DOW_LAST, {}, dow };
+        }
+        constexpr static RuleOn ge( DOW dow, u8 day ) noexcept {
+            return { DOW_GE, day, dow };
+        }
+        constexpr static RuleOn le( DOW dow, u8 day ) noexcept {
+            return { DOW_LE, day, dow };
+        }
+
+        constexpr bool operator==( RuleOn const& rhs ) const noexcept {
+            return repr_ == rhs.repr_;
+        }
+
+        constexpr static RuleOn fromRepr( u16 repr ) noexcept {
+            return RuleOn( repr );
+        }
+
+        constexpr sysdays_t resolveDate( i32 year, Mon mon ) const noexcept {
+            return resolveDate( year, u32( mon ) );
+        }
+
+        constexpr sysdays_t resolveDate( i32 year, u32 mon ) const noexcept {
+            switch( kind() )
+            {
+            case DAY: return resolveCivil( year, mon, day() );
+            case DOW_LAST: return resolveLastDOW( year, mon, dow() );
+            case DOW_GE: return resolveDOW_GE( year, mon, day(), dow() );
+            case DOW_LE: return resolveDOW_LE( year, mon, day(), dow() );
+            }
+        }
+
+
+        /// Evaluate the rule for a given year/month in order to obtain an
+        /// actual date
+        constexpr YMD eval( i32 year, Mon mon ) const noexcept {
+            switch( kind() )
+            {
+            case DAY: return YMD( year, mon, day() );
+            case DOW_LAST:
+                return YMD(
+                    year, mon, getLastDOWInMonth( year, u32( mon ), dow() ) );
+            case DOW_GE: return getYMD_DOW_GE( year, u32( mon ), day(), dow() );
+            case DOW_LE: return getYMD_DOW_LE( year, u32( mon ), day(), dow() );
+            }
+        }
+
+        string string() const;
+    };
+    inline string format_as( RuleOn r ) { return r.string(); }
+
+
+    template<>
+    struct OptTraits<RuleOn> {
+        /// Corresponds to kind() == DAY, dow() == Sun, day() == 0, which is not
+        /// a valid day of the month
+        constexpr static RuleOn NULL_VALUE = RuleOn::fromRepr( 0 );
+    };
+
+    using OptRuleOn = OptClass<RuleOn>;
+} // namespace vtz

@@ -6,6 +6,14 @@
 #include <vtz/inplace_optional.h>
 #include <vtz/strings.h>
 
+#include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/RuleAt.h>
+#include <vtz/tz_reader/RuleLetter.h>
+#include <vtz/tz_reader/RuleOn.h>
+#include <vtz/tz_reader/RuleSave.h>
+#include <vtz/tz_reader/ZoneFormat.h>
+#include <vtz/tz_reader/ZoneRule.h>
+
 #include <ankerl/unordered_dense.h>
 #include <array>
 #include <cstdint>
@@ -30,286 +38,57 @@ namespace vtz {
         OptTok      token;    ///< token where failure occurred
     };
 
-    i32 parseHHMMSSOffset( char const* p, size_t size, int sign = 1 ) noexcept;
-    i32 parseSignedHHMMSSOffset( char const* p, size_t size ) noexcept;
 
-    inline i32 parseHHMMSSOffset( string_view sv ) noexcept {
-        return parseHHMMSSOffset( sv.data(), sv.size(), 1 );
-    }
-    inline i32 parseSignedHHMMSSOffset( string_view sv ) noexcept {
-        return parseSignedHHMMSSOffset( sv.data(), sv.size() );
-    }
+    struct alignas( 8 ) ZoneState {
+        FromUTC    offset; // offset from UTC
+        FixStr<11> abbr;
 
-    struct RuleSave {
-        i32 save = 0;
-
-        constexpr RuleSave() = default;
-        constexpr RuleSave( i32 save ) noexcept
-        : save( save ) {}
-
-        template<size_t N>
-        RuleSave( char const ( &arr )[N] )
-        : RuleSave( string_view( arr ) ) {}
-
-        RuleSave( string_view text );
-
-        static auto HHMM( int sign, i32 hour, i32 min ) noexcept -> RuleSave {
-            return { sign * ( 3600 * hour + 60 * min ) };
+        bool operator==( ZoneState const& rhs ) const noexcept {
+            return B16( *this ) == B16( rhs );
         }
-        static auto HHMMSS( int sign, i32 hour, i32 min, i32 sec ) noexcept
-            -> RuleSave {
-            return { sign * ( 3600 * hour + 60 * min + sec ) };
-        }
-
-        bool operator==( RuleSave rhs ) const noexcept {
-            return save == rhs.save;
-        }
-    };
-    string format_as( RuleSave );
-
-    /// Consider an offset like `UTC-5:00`. This offset is _from_ UTC,
-    /// so to get to Local time, you take the UTC time, and add `-5:00`
-    /// (This is `utc + off`)
-    ///
-    /// Similarly, to get to UTC time, from local time, you _subtract_ `-5:00`
-    /// (This is `utc - off`)
-
-    struct FromUTC {
-        i32 off{};
-        FromUTC() = default;
-
-        /// Add offset to get from utc time to local time
-        constexpr i64 toLocal( i64 utc ) const noexcept { return utc + off; }
-
-        /// Subtract offset to get from local time to UTC time
-        constexpr i64 toUTC( i64 local ) const noexcept { return local - off; }
-
-        /// Consider America/New_York. When we 'save' 1 hour, our offset from
-        /// UTC goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
-        constexpr FromUTC save( RuleSave save ) const noexcept {
-            return { off + save.save };
-        }
-
-        /// Consider America/New_York. When we 'save' 1 hour, our offset from
-        /// UTC
-        /// goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
-        constexpr FromUTC save( i32 saveSeconds ) const noexcept {
-            return { off + saveSeconds };
-        }
-
-        constexpr FromUTC( i32 off ) noexcept
-        : off( off ) {}
-
-        explicit FromUTC( string_view sv )
-        : off( parseSignedHHMMSSOffset( sv ) ) {}
-
-        template<size_t N>
-        FromUTC( char const ( &arr )[N] )
-        : FromUTC( string_view( arr ) ) {}
-
-
-        constexpr bool operator==( FromUTC const& rhs ) const noexcept {
-            return off == rhs.off;
-        }
-    };
-    string format_as( FromUTC off );
-
-
-    struct alignas( 8 ) RuleLetter : FixStr<7> {
-        using FixStr = FixStr<7>;
-
-        using FixStr::FixStr;
-
-        RuleLetter() = default;
-        constexpr RuleLetter( FixStr const& rhs ) noexcept
-        : FixStr( rhs ) {}
-        constexpr RuleLetter( char const ( &arr )[2] ) noexcept
-        : FixStr{ 1, { arr[0] } } {}
-        constexpr RuleLetter( char const ( &arr )[3] ) noexcept
-        : FixStr{ 2, { arr[0], arr[1] } } {}
-        constexpr RuleLetter( char const ( &arr )[4] ) noexcept
-        : FixStr{ 3, { arr[0], arr[1], arr[2] } } {}
-
-
-        constexpr bool operator==( RuleLetter const& rhs ) const noexcept {
-            return sv() == sv();
+        bool operator!=( ZoneState const& rhs ) const noexcept {
+            return B16( *this ) != B16( rhs );
         }
     };
 
 
-    class RuleAt {
-        i32 repr_{};
+    struct ZoneTransition {
+        sysseconds_t when; // UTC time of change
+        ZoneState    state;
 
-        constexpr explicit RuleAt( i32 repr ) noexcept
-        : repr_( repr ) {}
+        constexpr ZoneTransition( i64 when, ZoneState state ) noexcept
+        : when( when )
+        , state( state ) {}
 
-      public:
+        constexpr ZoneTransition( NoneType ) noexcept
+        : when( INT64_MAX )
+        , state() {}
 
-        enum Kind : u8 {
-            /// 'AT' field corresponds to local WALL time (this is the default)
-            /// suffix _may_ be 'w', but also may not be present
-            LOCAL_WALL,
-            /// 'AT' field corresponds to local standard time ('s' suffix)
-            LOCAL_STANDARD,
-            /// 'AT' field corresponds to standard time at the prime meridian
-            /// suffix can be g, u, or z
-            UTC,
-        };
-
-
-        constexpr i32  offset() const noexcept { return repr_ >> 2; }
-        constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
-
-        RuleAt() = default;
-
-        constexpr RuleAt( i32 time_, Kind kind ) noexcept
-        : repr_( time_ << 2 | i32( kind ) ) {}
-
-        template<size_t N>
-        RuleAt( char const ( &arr )[N] )
-        : RuleAt( string_view( arr ) ) {}
-
-        RuleAt( string_view text );
-
-        constexpr bool operator==( RuleAt const& rhs ) const noexcept {
-            return repr_ == rhs.repr_;
-        }
-        constexpr bool operator!=( RuleAt const& rhs ) const noexcept {
-            return repr_ != rhs.repr_;
-        }
-
-        /// Returns the timestamp (in seconds from UTC) when the 'AT' time is
-        /// referring to, on the given date
-        constexpr sysseconds_t resolveAt(
-            sysdays_t date, FromUTC stdoff, FromUTC walloff ) const noexcept {
-            // Time when the date starts (midnight on that date)
-            i64 T = daysToSeconds( date );
-
-            // time of day -
-            i32 timeOfDay = offset();
-            switch( kind() )
-            {
-            /// Time of day represents an offset from the current local time in
-            /// the zone
-            case LOCAL_WALL: return T + walloff.toUTC( timeOfDay );
-            /// Time of day represents an offset from standard time within the
-            /// zone
-            case LOCAL_STANDARD: return T + stdoff.toUTC( timeOfDay );
-            /// Time of day represents an offset from UTC time within the zone
-            case UTC: return T + timeOfDay;
-            }
-        }
-
-        constexpr static RuleAt fromRepr( i32 repr ) noexcept {
-            return RuleAt( repr );
-        }
+        bool     has_value() const noexcept { return when < INT64_MAX; }
+        explicit operator bool() const noexcept { return when < INT64_MAX; }
     };
 
-    template<>
-    struct OptTraits<RuleAt> {
-        constexpr static RuleAt NULL_VALUE = RuleAt::fromRepr( INT32_MIN );
-    };
-
-    using OptRuleAt = OptClass<RuleAt>;
-
-    string format_as( RuleAt r );
-
-
-    class RuleOn {
-        u16 repr_;
-
-        constexpr explicit RuleOn( u16 repr ) noexcept
-        : repr_( repr ) {}
-
-      public:
-
-        enum Kind {
-            DAY,      ///< 'on' is a specific day of the month, eg '13'
-            DOW_LAST, ///< 'on' is, eg 'lastSun' or 'lastMon'
-            DOW_GE,   ///< 'on' is 'Sun>=13', for example
-            DOW_LE,   ///< 'on' is 'Fri<=1', for example
-        };
-
-        RuleOn() = default;
-
-        constexpr RuleOn( Kind kind, u8 day, DOW dow ) noexcept
-        : repr_( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) {}
-        constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
-        constexpr u32  day() const noexcept { return repr_ >> 5; }
-        constexpr DOW  dow() const noexcept {
-            return DOW( ( repr_ >> 2 ) & 0x7 );
-        }
-
-
-        constexpr static RuleOn on( u8 day ) noexcept {
-            return { DAY, day, {} };
-        }
-        constexpr static RuleOn last( DOW dow ) noexcept {
-            return { DOW_LAST, {}, dow };
-        }
-        constexpr static RuleOn ge( DOW dow, u8 day ) noexcept {
-            return { DOW_GE, day, dow };
-        }
-        constexpr static RuleOn le( DOW dow, u8 day ) noexcept {
-            return { DOW_LE, day, dow };
-        }
-
-        constexpr bool operator==( RuleOn const& rhs ) const noexcept {
-            return repr_ == rhs.repr_;
-        }
-
-        constexpr static RuleOn fromRepr( u16 repr ) noexcept {
-            return RuleOn( repr );
-        }
-
-        constexpr sysdays_t resolveDate( i32 year, Mon mon ) const noexcept {
-            return resolveDate( year, u32( mon ) );
-        }
-
-        constexpr sysdays_t resolveDate( i32 year, u32 mon ) const noexcept {
-            switch( kind() )
-            {
-            case DAY: return resolveCivil( year, mon, day() );
-            case DOW_LAST: return resolveLastDOW( year, mon, dow() );
-            case DOW_GE: return resolveDOW_GE( year, mon, day(), dow() );
-            case DOW_LE: return resolveDOW_LE( year, mon, day(), dow() );
-            }
-        }
-
-
-        /// Evaluate the rule for a given year/month in order to obtain an
-        /// actual date
-        constexpr YMD eval( i32 year, Mon mon ) const noexcept {
-            switch( kind() )
-            {
-            case DAY: return YMD( year, mon, day() );
-            case DOW_LAST:
-                return YMD(
-                    year, mon, getLastDOWInMonth( year, u32( mon ), dow() ) );
-            case DOW_GE: return getYMD_DOW_GE( year, u32( mon ), day(), dow() );
-            case DOW_LE: return getYMD_DOW_LE( year, u32( mon ), day(), dow() );
-            }
-        }
-
-        string string() const;
-    };
-    inline string format_as( RuleOn r ) { return r.string(); }
-
-
-    template<>
-    struct OptTraits<RuleOn> {
-        /// Corresponds to kind() == DAY, dow() == Sun, day() == 0, which is not
-        /// a valid day of the month
-        constexpr static RuleOn NULL_VALUE = RuleOn::fromRepr( 0 );
-    };
-
-    using OptRuleOn = OptClass<RuleOn>;
 
     struct RuleTrans {
         sysdays_t  date;
         RuleAt     at;
         RuleSave   save;
         RuleLetter letter;
+
+        constexpr sysseconds_t resolve(
+            FromUTC stdoff, FromUTC walloff ) const noexcept {
+            return at.resolveAt( date, stdoff, walloff );
+        }
+
+        constexpr ZoneTransition resolveTrans(
+            FromUTC stdoff, ZoneFormat format ) const noexcept {
+            FromUTC walloff = stdoff.save( save );
+            return ZoneTransition{
+                resolve( stdoff, walloff ),
+                ZoneState{ walloff,
+                    format.format( date, save.save != 0, letter.sv() ) },
+            };
+        }
 
         string str() const;
 
@@ -431,6 +210,25 @@ namespace vtz {
         OptV<u8, 0>  day;  ///< Day of the month (1-31)
         OptRuleAt    at;   ///< Time of day when it ends
 
+
+        /// Return the date referred to by this ZoneUntil
+        constexpr sysdays_t resolveDate() const noexcept {
+            return resolveCivil(
+                *year, mon.value_or( Mon::Jan ), day.value_or( 1 ) );
+        }
+
+        /// Return the time this 'until' refers to
+        constexpr sysseconds_t resolve(
+            FromUTC stdoff, FromUTC walloff ) const noexcept {
+            // Choose a default 'at' of 12:00 noon
+            // TODO: check if this is correct
+            constexpr RuleAt DEFAULT_AT
+                = RuleAt::hhmmss( RuleAt::LOCAL_WALL, 12 );
+
+            return at.value_or( DEFAULT_AT )
+                .resolveAt( resolveDate(), stdoff, walloff );
+        }
+
         u64 _repr() const noexcept {
             u64 result{};
             static_assert( sizeof( ZoneUntil ) == sizeof( u64 ) );
@@ -447,152 +245,6 @@ namespace vtz {
 
     string format_as( ZoneUntil );
 
-    /// ZoneFormat holds timezone format strings with efficient representation
-    /// Supports four format types:
-    /// - LITERAL: Simple string (e.g., "GMT", "PST", "-00")
-    /// - PERCENT_S: Contains %s substitution (e.g., "E%sT" -> "EST" or "EDT")
-    /// - SLASH: Two alternatives separated by / (e.g., "GMT/BST")
-    /// - PERCENT_Z: Use numeric offset (e.g., "%z" -> "-03" or "-04")
-    struct alignas( 8 ) ZoneFormat {
-        enum Tag {
-            LITERAL = 0, // Interpret string literally
-            SLASH   = 1, // Slash-separated alternatives
-            FMT_S   = 2, // Use %s substitution
-            FMT_Z   = 3, // Use numeric offset format
-        };
-
-        // Buffer for format string (max 11 chars + room for growth)
-        char buff[14];
-        /// bits 0-2: Tag
-        /// bits 2-6: size before split (or size if literal)
-        /// bits 6-10: size after split (or 0 if literal)
-        u16 fmt_;
-
-        ZoneFormat() = default;
-
-        constexpr Tag tag() const noexcept { return Tag( fmt_ & 0x3 ); }
-
-        constexpr void setFmt( Tag tag, size_t sz0, size_t sz1 ) noexcept {
-            fmt_ = u16( ( sz0 << 2 ) | ( sz1 << 6 ) | tag );
-        }
-
-        [[nodiscard]] constexpr ZoneFormat with(
-            Tag tag, size_t sz0 = 0, size_t sz1 = 0 ) const noexcept {
-            auto result = *this;
-            result.setFmt( tag, sz0, sz1 );
-            return result;
-        }
-
-        /// Format the abbreviation using the given letter (for PERCENT_S) or
-        /// selecting standard/DST (for SLASH based on whether DST is active)
-        /// For PERCENT_Z, pass the offset in seconds via the offset parameter
-        template<size_t N>
-        constexpr size_t writeN( char* dest,
-            i32                        off,
-            bool                       isDST,
-            char const*                letter,
-            size_t                     letterSize ) const noexcept {
-            size_t sz0 = ( fmt_ >> 2 ) & 0xf;
-            size_t sz1 = ( fmt_ >> 6 ) & 0xf;
-
-            /// Buffer to place offset (if the format contained a '%z')
-            char zBuff[16]{};
-
-            switch( tag() )
-            {
-            case LITERAL:
-                {
-                    // Truncate if necessary
-                    if( sz0 > N ) sz0 = N;
-                    // Perform copy
-                    for( size_t i = 0; i < sz0; ++i ) dest[i] = buff[i];
-                    return sz0;
-                }
-            case SLASH:
-                {
-                    // Select which half to copy
-                    size_t s = isDST ? sz1 : sz0;
-                    auto*  p = buff + ( isDST ? sz0 : 0 );
-                    // Truncate if necessary
-                    if( s > N ) s = N;
-                    // Perform copy
-                    for( size_t i = 0; i < s; ++i ) dest[i] = p[i];
-                    return s;
-                }
-            case FMT_Z:
-                // Ignore the letter, use shortest offset instead
-                letter     = zBuff;
-                letterSize = writeShortestOffset( off, zBuff );
-
-                [[fallthrough]];
-            case FMT_S:
-                {
-                    // Get parts
-                    char const* src0 = buff;
-                    char const* src1 = buff + sz0;
-                    size_t      rem  = N; // Remaining space in dest buffer
-
-                    // Truncate if necessary
-                    if( sz0 > rem ) sz0 = rem;
-                    // Perform copy of first part
-                    for( size_t i = 0; i < sz0; ++i ) dest[i] = src0[i];
-                    dest += sz0;
-                    rem  -= sz0;
-
-                    // Truncate if necessary
-                    if( letterSize > rem ) letterSize = rem;
-                    for( size_t i = 0; i < letterSize; ++i )
-                        dest[i] = letter[i];
-                    dest += letterSize;
-                    rem  -= letterSize;
-
-                    // Truncate if necessary
-                    if( sz1 > rem ) sz1 = rem;
-                    for( size_t i = 0; i < sz1; ++i ) dest[i] = src1[i];
-                    dest += sz1;
-                    rem  -= sz1;
-
-                    // Number of bytes written is N - (remaining bytes left to
-                    // write)
-                    return N - rem;
-                }
-            }
-        }
-
-        template<size_t N>
-        constexpr size_t writeN( char* dest,
-            i32                        off,
-            bool                       isDST,
-            string_view                letter ) const noexcept {
-            return writeN<N>( dest, off, isDST, letter.data(), letter.size() );
-        }
-
-        template<size_t N>
-        constexpr void format( FixStr<N>& dest,
-            i32                           off,
-            bool                          isDST,
-            string_view                   letter ) const noexcept {
-            dest.size_ = writeN<N>( dest.buff_, off, isDST, letter );
-        }
-
-        constexpr FixStr<11> format(
-            i32 off, bool isDST, string_view letter ) const noexcept {
-            FixStr<11> result{};
-            format( result, off, isDST, letter );
-            return result;
-        }
-
-        bool operator==( ZoneFormat const& rhs ) const noexcept {
-            return B16( *this ) == B16( rhs );
-        }
-        bool operator!=( ZoneFormat const& rhs ) const noexcept {
-            return B16( *this ) != B16( rhs );
-        }
-
-        string str() const;
-    };
-    inline string format_as( ZoneFormat const& f ) { return f.str(); }
-
 
     // # Zone	NAME		STDOFF	RULES	FORMAT	[UNTIL]
     // Zone America/Los_Angeles -7:52:58 -	LMT	1883 Nov 18 20:00u
@@ -601,15 +253,15 @@ namespace vtz {
     //             -8:00	US	P%sT
 
     struct ZoneEntry {
-        FromUTC     stdoff;
-        ZoneUntil   until;
-        string_view rules;
-        ZoneFormat  format;
+        FromUTC    stdoff;
+        ZoneUntil  until;
+        ZoneRule   rules;
+        ZoneFormat format;
 
         ZoneEntry() = default;
 
         constexpr ZoneEntry( FromUTC stdoff,
-            string_view              rules,
+            ZoneRule                 rules,
             ZoneFormat               format,
             ZoneUntil                until ) noexcept
         : stdoff( stdoff )
@@ -644,27 +296,20 @@ namespace vtz {
     using LinkMap = map<string_view, string_view>;
 
 
-    struct alignas( 8 ) ZoneState {
-        FromUTC    offset; // offset from UTC
-        FixStr<11> abbr;
-    };
-
-
-    struct ZoneTransition {
-        i64       when; // UTC time of change
-        ZoneState state;
-
-        constexpr ZoneTransition( i64 when, ZoneState state ) noexcept
-        : when( when )
-        , state( state ) {}
-
-        constexpr ZoneTransition( NoneType ) noexcept
-        : when( INT64_MAX )
-        , state() {}
-
-        bool     has_value() const noexcept { return when < INT64_MAX; }
-        explicit operator bool() const noexcept { return when < INT64_MAX; }
-    };
+    /// Get's the initial state, before any transition has happened.
+    ///
+    /// From 'How to Read the tz Database Source Files':
+    /// > If switching to a named rule before any transition has happened,
+    /// > assume standard time (SAVE zero), and use the LETTER data from
+    /// > the earliest transition with a SAVE of zero.
+    [[nodiscard]] inline std::optional<RuleLetter> getInitialLetter(
+        RuleTrans const* trans, size_t transSize ) {
+        for( size_t i = 0; i < transSize; ++i )
+        {
+            if( trans[i].save == 0 ) { return trans[i].letter; }
+        }
+        return std::nullopt;
+    }
 
     /// Holds 4 pieces of information:
     ///
@@ -701,7 +346,32 @@ namespace vtz {
         // Year where the historical rule transitions no longer apply
         // (and we only care about active rules)
         i32 yearEnd;
+
+        /// Get's the initial state, before any transition has happened.
+        ///
+        /// From 'How to Read the tz Database Source Files':
+        /// > If switching to a named rule before any transition has happened,
+        /// > assume standard time (SAVE zero), and use the LETTER data from
+        /// > the earliest transition with a SAVE of zero.
+        ///
+        /// This obtains the initial letter
+        RuleLetter getInitialLetter() const noexcept {
+            for( auto const& ent : historical )
+            {
+                if( ent.save == 0 ) { return ent.letter; }
+            }
+
+            for( auto const& rule : active )
+            {
+                if( rule.save == 0 ) { return rule.letter; }
+            }
+
+            // Indicates empty letter
+            return RuleLetter();
+        }
     };
+
+
     RuleEvalResult evaluateRules( vector<RuleEntry> const& entries );
 
     struct ZoneStates {
@@ -732,6 +402,14 @@ namespace vtz {
     Mon         parseMonth( OptTok tok );
     u8          parseDayOfMonth( OptTok tok );
     RuleOn      parseRuleOn( OptTok tok );
+
+    /// Parse a Zone Rule entry
+    ///
+    /// This can be either:
+    /// - A '-', indicating that there is no associated rule
+    /// - A named rule, such as 'US' or 'Indianapolis'
+    /// - A offset, such as 1:00
+    ZoneRule parseZoneRule( OptTok tok );
 
     /// Parse a zone format
     ZoneFormat parseZoneFormat( OptTok tok );

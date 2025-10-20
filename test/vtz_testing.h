@@ -40,6 +40,11 @@ namespace _test_vtz {
     constexpr auto BOLD_RED   = fmt::emphasis::bold | fmt::fg( fmt::color::red );
     constexpr auto FAINT_GRAY = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
 
+    template<class Enum>
+    std::string enumToString( std::string_view typeName, Enum value ) {
+        static_assert( std::is_enum_v<Enum> );
+        return fmt::format( "{}({})", typeName, std::int64_t( value ) );
+    }
 
     struct CountAssertionsNOOP {
         constexpr void inc() const noexcept {}
@@ -273,6 +278,15 @@ namespace _test_vtz {
 } // namespace _test_vtz
 
 constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
+
+#define FMT_ENUM_PLAIN( type )                                                                     \
+    template<>                                                                                     \
+    struct fmt::formatter<type> : fmt::formatter<std::string> {                                    \
+        auto format( type const& value, format_context& ctx ) const {                              \
+            return fmt::formatter<std::string>::format(                                            \
+                _test_vtz::enumToString( #type, value ), ctx );                                    \
+        }                                                                                          \
+    }
 
 #define COUNT_ASSERTIONS()                                                                         \
     _test_vtz::CountAssertions _test_count_assertions { __func__ }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vtz/vtzdef.h>
+#include <vtz/bit.h>
 
 #include <optional>
 #include <string>
@@ -9,6 +9,7 @@
 
 namespace vtz {
     using std::string_view;
+    using std::string;
     using std::vector;
 
     [[nodiscard]] size_t countLines( string_view input );

@@ -103,6 +103,8 @@ static_assert( RuleLetter( "x" ) == RuleLetter( "x" ) );
 
 DECLARE_STRINGLIKE( RuleLetter );
 
+FMT_ENUM_PLAIN( vtz::ZoneRule::Kind );
+
 namespace {
     template<size_t... N>
     std::vector<string_view> vecSV( char const ( &... arr )[N] ) {
@@ -861,6 +863,46 @@ TEST( vtz_parser, basics ) {
     ASSERT_EQ( parseRuleOn( "Sat<=31" ).string(), "Sat<=31" );
 
     ASSERT_ANY_THROW( parseRuleOn( "Sun<=0" ); );
+
+    auto E_EurAsia    = parseZoneRule( "E-EurAsia" );
+    auto NT_YK        = parseZoneRule( "NT_YK" );
+    auto Indianapolis = parseZoneRule( "Indianapolis" );
+    auto hyphen       = parseZoneRule( "-" );
+    auto off1         = parseZoneRule( "1:23" );
+    auto off2         = parseZoneRule( "+1:23" );
+    auto off3         = parseZoneRule( "-1:23" );
+
+    ASSERT_EQ( NT_YK.kind(), ZoneRule::NAMED );
+    ASSERT_EQ( NT_YK.name(), "NT_YK" );
+
+    ASSERT_EQ( Indianapolis.name(), "Indianapolis" );
+
+    ASSERT_EQ( E_EurAsia.isNamed(), true );
+    ASSERT_EQ( E_EurAsia.isHyphen(), false );
+    ASSERT_EQ( E_EurAsia.isOffset(), false );
+    ASSERT_EQ( E_EurAsia.kind(), ZoneRule::NAMED );
+    ASSERT_EQ( E_EurAsia.name(), "E-EurAsia" );
+
+    ASSERT_EQ( hyphen.isNamed(), false );
+    ASSERT_EQ( hyphen.isHyphen(), true );
+    ASSERT_EQ( hyphen.isOffset(), false );
+    ASSERT_EQ( hyphen.kind(), ZoneRule::HYPHEN );
+    ASSERT_EQ( hyphen.name(), "-" );
+
+    ASSERT_EQ( off1.isNamed(), false );
+    ASSERT_EQ( off1.isHyphen(), false );
+    ASSERT_EQ( off1.isOffset(), true );
+    ASSERT_EQ( off1.kind(), ZoneRule::OFFSET );
+    ASSERT_EQ( off1.offset(), 4980 );
+    ASSERT_EQ( off1.str(), "01:23" );
+
+    ASSERT_EQ( off2.kind(), ZoneRule::OFFSET );
+    ASSERT_EQ( off2.offset(), 4980 );
+    ASSERT_EQ( off2.str(), "01:23" );
+
+    ASSERT_EQ( off3.kind(), ZoneRule::OFFSET );
+    ASSERT_EQ( off3.offset(), -4980 );
+    ASSERT_EQ( off3.str(), "-01:23" );
 }
 
 

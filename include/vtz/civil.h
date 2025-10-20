@@ -186,6 +186,18 @@ namespace vtz {
         return era * 146097 + static_cast<i32>( doe ) - 719468;
     }
 
+    /// Given a year, month, and day, obtain the number of days since the epoch
+    ///
+    /// Based on reference implementation by Howard Hinnant provided here:
+    /// https://howardhinnant.github.io/date_algorithms.html#days_from_civil
+    ///
+    /// @param y year
+    /// @param m month
+    /// @param d day
+    constexpr sysdays_t resolveCivil( i32 y, Mon m, u32 d ) noexcept {
+        return resolveCivil( y, u32( m ), d );
+    }
+
     /// Get a date as a year, month, and day. The return value is YMD, which
     /// holds a Year/Month/Day triplet
     ///
