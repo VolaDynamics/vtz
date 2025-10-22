@@ -11,8 +11,8 @@
 #include <fmt/color.h>
 #include <fmt/format.h>
 
-#include <vtz/civil.h>
 #include "vtz_testing.h"
+#include <vtz/civil.h>
 
 using namespace vtz;
 using _test_vtz::TEST_LOG;
@@ -835,8 +835,8 @@ TEST( vtz_tz, America_NewYork ) {
     using HRC             = std::chrono::high_resolution_clock;
     auto [content, zones] = testLoadFile( "build/data/tzdata/northamerica" );
     auto t0               = HRC::now();
-    for( int i = 0; i < 1000; i++ ) zones.getZoneStates( "America/New_York", 9999 );
-    auto times = zones.getZoneStates( "America/New_York", 9999 );
+
+    auto times = zones.getZoneStates( "America/New_York", 2050 );
 
     auto t1 = HRC::now();
 
@@ -851,13 +851,13 @@ TEST( vtz_tz, America_NewYork ) {
 
     for( auto const& trans : times.transitions )
     {
-        // fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
-        //     fmt::styled( utcToString( trans.when ), FAINT_GRAY ),
-        //     fmt::styled(
-        //         localToString( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
-        //     trans.state.stdoff,
-        //     trans.state.save(),
-        //     trans.state.abbr.sv() );
+        fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
+            fmt::styled( utcToString( trans.when ), FAINT_GRAY ),
+            fmt::styled(
+                localToString( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
+            trans.state.stdoff,
+            trans.state.save(),
+            trans.state.abbr.sv() );
     }
 }
 

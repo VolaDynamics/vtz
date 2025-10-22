@@ -1,11 +1,11 @@
-#include <vtz/tz_reader/FromUTC.h>
-#include <vtz/tz_reader/ZoneFormat.h>
-#include <vtz/tz_reader/ZoneRule.h>
 #include <fmt/base.h>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader.h>
+#include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/ZoneFormat.h>
+#include <vtz/tz_reader/ZoneRule.h>
 
 #include <algorithm>
 #include <charconv>
@@ -411,6 +411,8 @@ namespace vtz {
         }
 
         ZoneUntil parseZoneUntil( string_view sv ) {
+            constexpr RuleAt midnight = RuleAt( 0, RuleAt::LOCAL_WALL );
+
             TokenIter iter( sv );
 
             if( auto year = iter.nextNonComment() )
@@ -423,10 +425,7 @@ namespace vtz {
                     {
                         auto on = parseRuleOn( day );
 
-                        auto ymd = on.eval( y, m );
-                        y        = ymd.year;
-                        m        = ymd.mon();
-                        u8 d     = u8( ymd.day );
+                        auto date = on.resolveDate( y, m );
 
                         if( auto stdoff = iter.nextNonComment() )
                         {
@@ -441,22 +440,23 @@ namespace vtz {
                                     extraToken,
                                 };
                             }
-                            return ZoneUntil{
-                                y, m, d, at
-                            }; // 'UNTIL' field given year, month, day, and
-                               // STDOFF
+                            // 'UNTIL' field given year, month, day, and STDOFF
+                            return ZoneUntil{ date, at };
                         }
-                        return ZoneUntil{
-                            y, m, d
-                        }; // 'UNTIL' field given year, month, day
+                        // 'UNTIL' field given year, month, and day, but no time
+                        // use midnight local time
+                        return ZoneUntil{ date, midnight };
                     }
-                    return ZoneUntil{ y,
-                        m }; // 'UNTIL' field only given a year and month
+                    // 'UNTIL' field given a year and month - use midnight and
+                    // the first day of the month
+                    return ZoneUntil{ resolveCivil( y, m, 1 ), midnight };
                 }
-                return ZoneUntil{ y }; // 'UNTIL' field only given a year
+                // 'UNTIL' field only given a year
+                return ZoneUntil{ resolveCivil( y, 1, 1 ), midnight };
             }
-            return ZoneUntil{};        // 'UNTIL' field is empty; reached end of
-                                       // Zone entry
+            // 'UNTIL' field is empty; reached end of
+            // Zone entry
+            return ZoneUntil::none();
         }
     } // namespace
 
@@ -807,27 +807,13 @@ namespace vtz {
 
 
     std::string format_as( ZoneUntil until ) {
-        if( until.year )
+        if( until.has_value() )
         {
-            if( until.mon )
-            {
-                if( until.day )
-                {
-                    if( until.at )
-                    {
-                        return fmt::format( "{:>4} {} {:>2} {}",
-                            *until.year,
-                            *until.mon,
-                            *until.day,
-                            *until.at );
-                    }
-                    return fmt::format(
-                        "{:>4} {} {:>2}", *until.year, *until.mon, *until.day );
-                }
-                return fmt::format( "{:>4} {}", *until.year, *until.mon );
-            }
-            return fmt::format( "{:>4}", *until.year );
+            auto ymd = toCivil( until.date );
+            return fmt::format(
+                "{:>4} {} {:>2} {}", ymd.year, ymd.mon(), ymd.day, until.at );
         }
+
         return "(none)";
     }
 
@@ -1052,7 +1038,8 @@ namespace vtz {
             auto const& format = ent.format;
             auto        until  = ent.until;
 
-            if( !until.has_value() ) { until = ZoneUntil{ u16( endYear ) }; }
+            if( !until.has_value() )
+                until = ZoneUntil{ resolveCivil( endYear, 1, 1 ) };
 
             if( rule.isHyphen() )
             {
