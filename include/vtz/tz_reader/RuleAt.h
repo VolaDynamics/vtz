@@ -1,8 +1,9 @@
 #pragma once
 
 #include <vtz/bit.h>
-#include <vtz/tz_reader/FromUTC.h>
 #include <vtz/civil.h>
+#include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/ZoneTime.h>
 
 #include <vtz/inplace_optional.h>
 
@@ -80,6 +81,14 @@ namespace vtz {
             /// Time of day represents an offset from UTC time within the zone
             case UTC: return T + timeOfDay;
             }
+        }
+
+
+        /// Returns the timestamp (in seconds from UTC) when the 'AT' time is
+        /// referring to, on the given date
+        constexpr sysseconds_t resolveAt(
+            sysdays_t date, ZoneTime time ) const noexcept {
+            return resolveAt( date, time.stdoff, time.walloff );
         }
 
         constexpr static RuleAt fromRepr( i32 repr ) noexcept {
