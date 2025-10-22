@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <vtz/bit.h>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
@@ -593,6 +594,23 @@ namespace vtz {
     struct ZoneStates {
         ZoneState              initial;
         vector<ZoneTransition> transitions;
+
+        ZoneState const& getState( sysseconds_t time ) const {
+            auto begin = transitions.data();
+            auto end   = transitions.data() + transitions.size();
+
+            auto it = std::upper_bound( begin,
+                end,
+                time,
+                []( sysseconds_t lhs, ZoneTransition const& rhs ) {
+                    return lhs < rhs.when;
+                } );
+
+            size_t i = it - begin;
+
+            if( i == 0 ) return initial;
+            return transitions[i - 1].state;
+        }
     };
 
     struct TZDataFile {
