@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vtz/tz_reader/RuleSave.h>
 #include <vtz/bit.h>
+#include <vtz/tz_reader/RuleSave.h>
 
 #include <string>
 #include <string_view>
@@ -61,6 +61,9 @@ namespace vtz {
 
         constexpr bool operator==( FromUTC const& rhs ) const noexcept {
             return off == rhs.off;
+        }
+        constexpr bool operator!=( FromUTC const& rhs ) const noexcept {
+            return off != rhs.off;
         }
     };
     string format_as( FromUTC off );
