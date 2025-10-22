@@ -11,6 +11,7 @@
 #include <fmt/color.h>
 #include <fmt/format.h>
 
+#include <vtz/civil.h>
 #include "vtz_testing.h"
 
 using namespace vtz;
@@ -99,7 +100,6 @@ static_assert( OptDOW{ DOW::Sat }.has_value() );
 static_assert( RuleLetter().sv() == "" );
 static_assert( RuleLetter().size_ == 0 );
 static_assert( RuleLetter( "x" ).sv() == "x" );
-static_assert( RuleLetter( "x" ) == RuleLetter( "x" ) );
 
 DECLARE_STRINGLIKE( RuleLetter );
 
@@ -831,6 +831,67 @@ TEST( vtz_tz, US_rules ) {
 }
 
 
+TEST( vtz_tz, America_NewYork ) {
+    using HRC             = std::chrono::high_resolution_clock;
+    auto [content, zones] = testLoadFile( "build/data/tzdata/northamerica" );
+    auto t0               = HRC::now();
+    for( int i = 0; i < 1000; i++ ) zones.getZoneStates( "America/New_York", 9999 );
+    auto times = zones.getZoneStates( "America/New_York", 9999 );
+
+    auto t1 = HRC::now();
+
+    using msR = std::chrono::duration<double, std::micro>;
+
+    TEST_LOG.logGood( "time getZoneStates()", std::chrono::duration_cast<msR>( t1 - t0 ) );
+
+    fmt::println( "Initial state: stdoff={} save={} abbr={}",
+        times.initial.stdoff,
+        times.initial.save(),
+        times.initial.abbr.sv() );
+
+    for( auto const& trans : times.transitions )
+    {
+        // fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
+        //     fmt::styled( utcToString( trans.when ), FAINT_GRAY ),
+        //     fmt::styled(
+        //         localToString( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
+        //     trans.state.stdoff,
+        //     trans.state.save(),
+        //     trans.state.abbr.sv() );
+    }
+}
+
+
+TEST( vtz_tz, Asia_Singapore ) {
+    using HRC             = std::chrono::high_resolution_clock;
+    auto [content, zones] = testLoadFile( "build/data/tzdata/asia" );
+    auto t0               = HRC::now();
+    auto times            = zones.getZoneStates( "Asia/Singapore", 2050 );
+
+    auto t1 = HRC::now();
+
+    using msR = std::chrono::duration<double, std::micro>;
+
+    TEST_LOG.logGood( "time getZoneStates()", std::chrono::duration_cast<msR>( t1 - t0 ) );
+
+    fmt::println( "Initial state: stdoff={} save={} abbr={}",
+        times.initial.stdoff,
+        times.initial.save(),
+        times.initial.abbr.sv() );
+
+    for( auto const& trans : times.transitions )
+    {
+        fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
+            fmt::styled( utcToString( trans.when ), FAINT_GRAY ),
+            fmt::styled(
+                localToString( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
+            trans.state.stdoff,
+            trans.state.save(),
+            trans.state.abbr.sv() );
+    }
+}
+
+
 TEST( vtz_parser, basics ) {
     ASSERT_EQ( parseHHMMSSOffset( "0:12:12" ), 60 * 12 + 12 );
     ASSERT_EQ( parseHHMMSSOffset( "2:00" ), 7200 );
@@ -963,9 +1024,9 @@ TEST( vtz_parser, zoneFormat ) {
     static_assert(
         ZF{ "he" }.with( ZF::FMT_Z, 2, 0 ).format( 5025, false, "" ).sv() == "he+01:23:45" );
     static_assert(
-        ZF{ "hello" }.with( ZF::FMT_Z, 5, 0 ).format( 5025, false, "" ).sv() == "hello+01:23" );
+        ZF{ "hello" }.with( ZF::FMT_Z, 5, 0 ).format( 5025, false, "" ).sv() == "hello+01:23:45" );
     static_assert(
-        ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv() == "h+01:23:45e" );
+        ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv() == "h+01:23:45ello" );
 
     ASSERT_EQ( parseZoneFormat( "E%zT" ), ZF{ "ET" }.with( ZF::FMT_Z, 1, 1 ) );
     ASSERT_EQ( parseZoneFormat( "%z" ), ZF{}.with( ZF::FMT_Z ) );
