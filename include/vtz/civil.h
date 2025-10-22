@@ -3,6 +3,8 @@
 #include <string>
 #include <vtz/date_types.h>
 #include <vtz/math.h>
+#include <vtz/strings.h>
+#include <vtz/tz_reader/FromUTC.h>
 
 namespace vtz::detail {
     // clang-format off
@@ -31,6 +33,8 @@ namespace vtz {
     using sysdays_t = i32;
     /// Seconds from epoch
     using sysseconds_t = i64;
+
+    constexpr inline sysdays_t MAX_DAYS = INT32_MAX;
 
     constexpr sysseconds_t daysToSeconds( sysdays_t days ) noexcept {
         return i64( days ) * 86400;
@@ -366,7 +370,10 @@ namespace vtz {
     static_assert( getLastDOWInMonth( 2025, 10, DOW::Fri ) == 31 );
     static_assert( getLastDOWInMonth( 2025, 10, DOW::Sat ) == 25 );
 
-    constexpr static void writeTimestamp(
+    /// Writes a timestamp as `YYYY-MM-DD HH:MM:SS`.
+    ///
+    /// Writes precisely 19 characters to the given buffer.
+    constexpr void writeTimestamp(
         sysseconds_t T, char* p, char dateSep = '-', char dateTimeSep = ' ' ) {
         auto dateAndTime = math::divFloor2<86400>( T );
 
@@ -392,11 +399,27 @@ namespace vtz {
         p[18]  = '0' + s % 10;
     }
 
+    constexpr std::string_view writeTimestampToSV(
+        sysseconds_t T, char* p, char dateSep = '-', char dateTimeSep = ' ' ) {
+        writeTimestamp( T, p, dateSep, dateTimeSep );
+        return std::string_view( p, 19 );
+    }
+
     inline std::string utcToString(
         sysseconds_t sec, char dateSep = '-', char dateTimeSep = ' ' ) {
         char buff[20];
         writeTimestamp( sec, buff, dateSep, dateTimeSep );
         buff[19] = 'Z';
         return std::string( buff, 20 );
+    }
+
+    template<size_t N>
+    inline std::string localToString(
+        sysseconds_t sec, FromUTC off, FixStr<N> const& abbr ) {
+        char buff[20 + N];
+        writeTimestamp( off.toLocal( sec ), buff, '-', ' ' );
+        buff[19] = ' ';
+        _vtz_memcpy( buff + 20, abbr.buff_, N );
+        return std::string( buff, 20 + abbr.size() );
     }
 } // namespace vtz
