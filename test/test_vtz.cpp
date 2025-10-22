@@ -1009,12 +1009,12 @@ TEST( vtz_parser, zoneFormat ) {
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 0, false, "" ).sv() == "+00" );
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3600, false, "" ).sv() == "+01" );
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3600, false, "" ).sv() == "-01" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3660, false, "" ).sv() == "+01:01" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3660, false, "" ).sv() == "-01:01" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3697, false, "" ).sv() == "+01:01:37" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3697, false, "" ).sv() == "-01:01:37" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 5025, false, "" ).sv() == "+01:23:45" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -5025, false, "" ).sv() == "-01:23:45" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3660, false, "" ).sv() == "+0101" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3660, false, "" ).sv() == "-0101" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3697, false, "" ).sv() == "+010137" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3697, false, "" ).sv() == "-010137" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 5025, false, "" ).sv() == "+012345" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -5025, false, "" ).sv() == "-012345" );
 
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 3, 0 ).format( 0, false, "" ).sv() == "xyz+00" );
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 2, 1 ).format( 0, false, "" ).sv() == "xy+00z" );
@@ -1022,11 +1022,11 @@ TEST( vtz_parser, zoneFormat ) {
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 0, 3 ).format( 0, false, "" ).sv() == "+00xyz" );
 
     static_assert(
-        ZF{ "he" }.with( ZF::FMT_Z, 2, 0 ).format( 5025, false, "" ).sv() == "he+01:23:45" );
+        ZF{ "he" }.with( ZF::FMT_Z, 2, 0 ).format( 5025, false, "" ).sv() == "he+012345" );
     static_assert(
-        ZF{ "hello" }.with( ZF::FMT_Z, 5, 0 ).format( 5025, false, "" ).sv() == "hello+01:23:45" );
+        ZF{ "hello" }.with( ZF::FMT_Z, 5, 0 ).format( 5025, false, "" ).sv() == "hello+012345" );
     static_assert(
-        ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv() == "h+01:23:45ello" );
+        ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv() == "h+012345ello" );
 
     ASSERT_EQ( parseZoneFormat( "E%zT" ), ZF{ "ET" }.with( ZF::FMT_Z, 1, 1 ) );
     ASSERT_EQ( parseZoneFormat( "%z" ), ZF{}.with( ZF::FMT_Z ) );
@@ -1074,7 +1074,7 @@ TEST( vtz_parser, zoneFormat ) {
     // %z round-trips
     auto fmtz1 = parseZoneFormat( "%z" );
     ASSERT_EQ( fmtz1.format( -10800, false, "" ).sv(), "-03" );
-    ASSERT_EQ( fmtz1.format( 19800, false, "" ).sv(), "+05:30" );
+    ASSERT_EQ( fmtz1.format( 19800, false, "" ).sv(), "+0530" );
 
     auto fmtz2 = parseZoneFormat( "GMT%z" );
     ASSERT_EQ( fmtz2.format( 0, false, "" ).sv(), "GMT+00" );
@@ -1106,13 +1106,13 @@ TEST( vtz_parser, zoneFormat ) {
     // Test various offset values with %z format
     auto zFmt = parseZoneFormat( "%z" );
     ASSERT_EQ( zFmt.format( 0, false, "" ).sv(), "+00" );
-    ASSERT_EQ( zFmt.format( 1800, false, "" ).sv(), "+00:30" );   // Half hour offset
-    ASSERT_EQ( zFmt.format( 5400, false, "" ).sv(), "+01:30" );   // 1.5 hours
-    ASSERT_EQ( zFmt.format( 12600, false, "" ).sv(), "+03:30" );  // 3.5 hours (Iran)
-    ASSERT_EQ( zFmt.format( 20700, false, "" ).sv(), "+05:45" );  // Nepal
-    ASSERT_EQ( zFmt.format( -12600, false, "" ).sv(), "-03:30" ); // Newfoundland
+    ASSERT_EQ( zFmt.format( 1800, false, "" ).sv(), "+0030" );   // Half hour offset
+    ASSERT_EQ( zFmt.format( 5400, false, "" ).sv(), "+0130" );   // 1.5 hours
+    ASSERT_EQ( zFmt.format( 12600, false, "" ).sv(), "+0330" );  // 3.5 hours (Iran)
+    ASSERT_EQ( zFmt.format( 20700, false, "" ).sv(), "+0545" );  // Nepal
+    ASSERT_EQ( zFmt.format( -12600, false, "" ).sv(), "-0330" ); // Newfoundland
 
     // Test %z with seconds
-    ASSERT_EQ( zFmt.format( 3601, false, "" ).sv(), "+01:00:01" );
-    ASSERT_EQ( zFmt.format( -3661, false, "" ).sv(), "-01:01:01" );
+    ASSERT_EQ( zFmt.format( 3601, false, "" ).sv(), "+010001" );
+    ASSERT_EQ( zFmt.format( -3661, false, "" ).sv(), "-010101" );
 }
