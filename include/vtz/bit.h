@@ -1,8 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
-#include <cstddef>
 
 #if __has_builtin( __builtin_memcpy )
     #define _vtz_memcpy __builtin_memcpy
@@ -35,23 +35,51 @@ namespace vtz {
         return dest;
     }
 
-    struct B16 {
+    struct B8 {
         uint64_t a;
-        uint64_t b;
+
+        B8() = default;
+        template<class Src>
+        explicit B8( Src const& s )
+        : B8( bit_cast<B8>( s ) ) {}
+
+        constexpr bool operator==( B8 rhs ) const noexcept {
+            return a == rhs.a;
+        }
+        constexpr bool operator!=( B8 rhs ) const noexcept {
+            return a != rhs.a;
+        }
+    };
+
+    struct B16 {
+        uint64_t a, b;
 
         B16() = default;
         template<class Src>
         explicit B16( Src const& s )
-        : B16( bit_cast<B16>( s ) ) {
-            static_assert( alignof( Src ) == alignof( B16 ),
-                "We recommend ensuring your type is properly aligned!" );
-        }
+        : B16( bit_cast<B16>( s ) ) {}
 
-        constexpr bool operator==( B16 rhs ) const noexcept {
+        constexpr bool operator==( B16 const& rhs ) const noexcept {
             return a == rhs.a && b == rhs.b;
         }
-        constexpr bool operator!=( B16 rhs ) const noexcept {
+        constexpr bool operator!=( B16 const& rhs ) const noexcept {
             return !( a == rhs.a && b == rhs.b );
+        }
+    };
+
+    struct B24 {
+        uint64_t a, b, c;
+
+        B24() = default;
+        template<class Src>
+        explicit B24( Src const& s )
+        : B24( bit_cast<B24>( s ) ) {}
+
+        constexpr bool operator==( B24 const& rhs ) const noexcept {
+            return a == rhs.a && b == rhs.b && c == rhs.c;
+        }
+        constexpr bool operator!=( B24 const& rhs ) const noexcept {
+            return !( a == rhs.a && b == rhs.b && c == rhs.c );
         }
     };
 } // namespace vtz
