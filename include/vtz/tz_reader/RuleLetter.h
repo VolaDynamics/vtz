@@ -21,8 +21,8 @@ namespace vtz {
 
         constexpr operator string_view() const noexcept { return sv(); }
 
-        constexpr bool operator==( RuleLetter const& rhs ) const noexcept {
-            return sv() == sv();
+        bool operator==( RuleLetter const& rhs ) const noexcept {
+            return B8( *this ) == B8( rhs );
         }
     };
 } // namespace vtz
