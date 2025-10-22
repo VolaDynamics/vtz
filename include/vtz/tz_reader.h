@@ -633,6 +633,14 @@ namespace vtz {
                    && zones == rhs.zones //
                    && links == rhs.links;
         }
+
+        /// List all zones by name
+        vector<string> listZones() const {
+            vector<string> result( zones.size() );
+            size_t         i = 0;
+            for( auto const& [name, _] : zones ) result[i++] = string( name );
+            return result;
+        }
     };
 
     rule_year_t parseYear( OptTok tok );
