@@ -378,6 +378,8 @@ namespace vtz {
         }
 
         RuleLetter parseRuleLetter( OptTok tok ) {
+            constexpr RuleLetter hyphen = RuleLetter( "-" );
+
             size_t      size = tok.size();
             char const* p    = tok.data();
             if( size )
@@ -387,6 +389,12 @@ namespace vtz {
                     RuleLetter r{};
                     memcpy( r.buff_, p, size );
                     r.size_ = size;
+                    // Special case - if the rule letter is "-", then
+                    // the thing we insert into our format string should be ""
+                    //
+                    // This is because the file format requires a token here,
+                    // and "-" was chosen to represent a LETTER that is empty.
+                    if( r == hyphen ) { r = RuleLetter{}; }
                     return r;
                 }
             }
