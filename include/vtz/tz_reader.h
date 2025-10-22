@@ -611,6 +611,11 @@ namespace vtz {
             if( i == 0 ) return initial;
             return transitions[i - 1].state;
         }
+
+        string formatLocal( sysseconds_t time ) const {
+            auto const& state = getState( time );
+            return localToString( time, state.walloff, state.abbr );
+        }
     };
 
     struct TZDataFile {
