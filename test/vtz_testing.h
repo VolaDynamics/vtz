@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include <vtz/strings.h>
 
 #include <fmt/color.h>
@@ -35,10 +35,15 @@ DECLARE_STRINGLIKE( std::string );
 DECLARE_STRINGLIKE( std::string_view );
 DECLARE_STRINGLIKE( char const* );
 
+constexpr auto BOLD_GREEN = fmt::emphasis::bold | fmt::fg( fmt::color::green );
+constexpr auto BOLD_RED   = fmt::emphasis::bold | fmt::fg( fmt::color::red );
+constexpr auto BOLD_CYAN  = fmt::emphasis::bold | fmt::fg( fmt::color::cyan );
+constexpr auto BOLD_BLUE  = fmt::emphasis::bold | fmt::fg( fmt::color::blue );
+constexpr auto BOLD_YELLOW  = fmt::emphasis::bold | fmt::fg( fmt::color::yellow );
+constexpr auto FAINT_GRAY = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
+
 namespace _test_vtz {
-    constexpr auto BOLD_GREEN = fmt::emphasis::bold | fmt::fg( fmt::color::green );
-    constexpr auto BOLD_RED   = fmt::emphasis::bold | fmt::fg( fmt::color::red );
-    constexpr auto FAINT_GRAY = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
+
 
     template<class Enum>
     std::string enumToString( std::string_view typeName, Enum value ) {
