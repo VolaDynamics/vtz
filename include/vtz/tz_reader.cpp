@@ -709,6 +709,25 @@ namespace vtz {
                     { line },
                 };
             }
+
+            for( auto& [_, ruleEntries] : file.rules )
+            {
+                auto begin = ruleEntries.data();
+                auto end   = ruleEntries.data() + ruleEntries.size();
+
+                if( !std::is_sorted( begin, end, RuleEntry::compareFrom() ) )
+                {
+                    // This is very rare, but occasionally we end up with Rule
+                    // entries which _aren't_ sorted by year (one example being
+                    // SanLuis):
+                    //
+                    // Rule SanLuis 2008 2009 - Mar Sun>=8 0:00 0 -
+                    // Rule SanLuis 2007 2008 - Oct Sun>=8 0:00 1:00 -
+                    //
+                    // These should be sorted by year
+                    std::sort( begin, end, RuleEntry::compareFrom() );
+                }
+            }
             return file;
         }
         catch( ParseError err )
