@@ -39,15 +39,46 @@ namespace vtz {
     };
 
 
-    struct alignas( 8 ) ZoneState {
-        FromUTC    offset; // offset from UTC
-        FixStr<11> abbr;
+    struct alignas( 8 ) ZoneState : ZoneTime {
+        FixStr<15> abbr; ///< Zone abbreviation
+
+        ZoneState() = default;
+
+        constexpr ZoneState(
+            FromUTC stdoff, RuleSave save, FixStr<15> const& abbr ) noexcept
+        : ZoneTime{ stdoff, stdoff.save( save ) }
+        , abbr( abbr ) {}
+
+        /// Create a ZoneState where stdoff==walloff.
+        constexpr ZoneState(
+            FromUTC stdoff, ZoneFormat const& fmt, RuleLetter letter ) noexcept
+        : ZoneTime{ stdoff, stdoff }
+        , abbr( fmt.format( walloff, false, letter ) ) {}
+
+        constexpr ZoneState( FromUTC stdoff,
+            FromUTC                  walloff,
+            ZoneFormat const&        fmt,
+            RuleLetter               letter ) noexcept
+        : ZoneTime{ stdoff, walloff }
+        , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
+
+        constexpr ZoneState( FromUTC stdoff,
+            RuleSave                 save,
+            ZoneFormat const&        fmt,
+            RuleLetter               letter ) noexcept
+        : ZoneTime{ stdoff, stdoff.save( save ) }
+        , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
+
+        constexpr ZoneState(
+            FromUTC stdoff, FromUTC walloff, FixStr<15> const& abbr )
+        : ZoneTime{ stdoff, walloff }
+        , abbr( abbr ) {}
 
         bool operator==( ZoneState const& rhs ) const noexcept {
-            return B16( *this ) == B16( rhs );
+            return B24( *this ) == B24( rhs );
         }
         bool operator!=( ZoneState const& rhs ) const noexcept {
-            return B16( *this ) != B16( rhs );
+            return B24( *this ) != B24( rhs );
         }
     };
 
@@ -56,6 +87,7 @@ namespace vtz {
         sysseconds_t when; // UTC time of change
         ZoneState    state;
 
+        ZoneTransition() = default;
         constexpr ZoneTransition( i64 when, ZoneState state ) noexcept
         : when( when )
         , state( state ) {}
@@ -75,18 +107,27 @@ namespace vtz {
         RuleSave   save;
         RuleLetter letter;
 
-        constexpr sysseconds_t resolve(
-            FromUTC stdoff, FromUTC walloff ) const noexcept {
-            return at.resolveAt( date, stdoff, walloff );
+        /// Resolve the time when the rule would take effect, based on the
+        /// current state of the zone
+        constexpr sysseconds_t resolve( ZoneTime time ) const noexcept {
+            return at.resolveAt( date, time );
         }
 
+        /// Resolve the ZoneTransition when the rule would take effect, based
+        /// on the current state of the zone.
+        ///
+        /// The rule will take effect based on the zone's _CURRENT_ stdoff or
+        /// walloff, so we need to pass in the full ZoneTime object.
         constexpr ZoneTransition resolveTrans(
-            FromUTC stdoff, ZoneFormat format ) const noexcept {
-            FromUTC walloff = stdoff.save( save );
+            ZoneTime time, ZoneFormat format ) const noexcept {
             return ZoneTransition{
-                resolve( stdoff, walloff ),
-                ZoneState{ walloff,
-                    format.format( date, save.save != 0, letter.sv() ) },
+                resolve( time ),
+                ZoneState{
+                    time.stdoff,
+                    time.stdoff.save( save ),
+                    format,
+                    letter,
+                },
             };
         }
 
@@ -218,15 +259,12 @@ namespace vtz {
         }
 
         /// Return the time this 'until' refers to
-        constexpr sysseconds_t resolve(
-            FromUTC stdoff, FromUTC walloff ) const noexcept {
+        constexpr sysseconds_t resolve( ZoneTime time ) const noexcept {
             // Choose a default 'at' of 12:00 noon
             // TODO: check if this is correct
-            constexpr RuleAt DEFAULT_AT
-                = RuleAt::hhmmss( RuleAt::LOCAL_WALL, 12 );
+            constexpr RuleAt DEFAULT_AT = RuleAt( 0, RuleAt::LOCAL_WALL );
 
-            return at.value_or( DEFAULT_AT )
-                .resolveAt( resolveDate(), stdoff, walloff );
+            return at.value_or( DEFAULT_AT ).resolveAt( resolveDate(), time );
         }
 
         u64 _repr() const noexcept {
@@ -346,28 +384,244 @@ namespace vtz {
         // Year where the historical rule transitions no longer apply
         // (and we only care about active rules)
         i32 yearEnd;
+    };
 
-        /// Get's the initial state, before any transition has happened.
-        ///
+
+    size_t dumpActive( RuleEntry const* active,
+        size_t                          activeCount,
+        size_t                          year,
+        RuleTrans*                      p );
+
+    /// Return the earliest active rule with a save of 0. Returns nullptr
+    /// if no active rule with a save of 0 is found
+    inline RuleEntry const* earliestActiveWithSaveZero(
+        RuleEntry const* active, size_t activeCount, i32 year ) noexcept {
+        size_t    result       = -1;
+        sysdays_t earliestDate = MAX_DAYS;
+        for( size_t i = 0; i < activeCount; ++i )
+        {
+            if( active[i].save.save != 0 ) continue;
+            auto date = active[i].resolveDate( year );
+            if( date <= earliestDate )
+            {
+                earliestDate = date;
+                result       = i;
+            }
+        }
+        return result < activeCount  // did we find an entry?
+                   ? active + result // yes: return pointer to entry
+                   : nullptr         // no: return nullptr
+            ;
+    }
+
+    /// Implements a State Machine such that we can pull rule transitions
+    struct RuleTransIter {
+        /// Index (if iterating through historical transitions, holds index into
+        /// historical buffer. If iterating through active transitions, holds
+        /// index into active buffer.)
+        size_t i;
+
+        /// true if we're still pulling historical rules
+        bool inHistorical;
+
+        /// Holds the current year when we're iterating through active entries.
+        /// Initialized to the first active year.
+        i32 year;
+
+        /// Historical entries buffer
+        RuleTrans const* hist_;
+        size_t           histSize_;
+
+        /// Rules which are active going forward into perpetuity
+        RuleEntry const* active_;
+        size_t           activeSize_;
+
+        /// Saves the first active year (for record keeping purposes, eg when
+        /// it's necessary to retrieve the initial letter)
+        i32 firstActiveYear_;
+
+        /// Evaluated transitions from active entries buffer
+        std::unique_ptr<RuleTrans[]> activeBuff;
+
+        RuleTransIter( RuleTrans const* hist,
+            size_t                      histSize,
+            RuleEntry const*            active,
+            size_t                      activeSize,
+            int                         firstActiveYear ) noexcept
+        : i( 0 )
+        , inHistorical( true )
+        , year( firstActiveYear )
+        , hist_( hist )
+        , histSize_( histSize )
+        , active_( active )
+        , activeSize_( activeSize )
+        , firstActiveYear_( firstActiveYear ) {}
+
+        RuleTransIter( RuleEvalResult const& r ) noexcept
+        : RuleTransIter{
+            r.historical.data(),
+            r.historical.size(),
+            r.active.data(),
+            r.active.size(),
+            r.yearEnd,
+        } {}
+
+
         /// From 'How to Read the tz Database Source Files':
         /// > If switching to a named rule before any transition has happened,
         /// > assume standard time (SAVE zero), and use the LETTER data from
         /// > the earliest transition with a SAVE of zero.
         ///
-        /// This obtains the initial letter
-        RuleLetter getInitialLetter() const noexcept {
-            for( auto const& ent : historical )
+        /// This obtains the initial letter, corresponding to the first entry
+        /// with a SAVE of 0.
+        ///
+        /// Returns `RuleLetter("-")` if there are no entries with a save of 0
+        RuleLetter initialLetter() const noexcept {
+            for( size_t i = 0; i < histSize_; ++i )
             {
-                if( ent.save == 0 ) { return ent.letter; }
+                if( hist_[i].save.save == 0 ) { return hist_[i].letter; }
             }
+            /// NOTE: we are living in a state of sin by doing this... active
+            /// transitions are not necessarily sorted by the one we enter
+            /// earliest
+            if( auto* result = earliestActiveWithSaveZero(
+                    active_, activeSize_, firstActiveYear_ ) )
+                return result->letter;
 
-            for( auto const& rule : active )
+            return RuleLetter( "-" );
+        }
+
+
+        std::optional<RuleTrans> next() {
+            if( inHistorical )
             {
-                if( rule.save == 0 ) { return rule.letter; }
+                // If we have historical rules, then we can just pull from that
+                if( i < histSize_ ) return hist_[i++];
+                i            = activeSize_;
+                inHistorical = false;
+                activeBuff.reset( new RuleTrans[activeSize_] );
             }
+            // If index == activeSize_, we need to refill the 'active' buffer
+            // so that we have more values to pull from
+            if( i == activeSize_ )
+            {
+                if( activeSize_ == 0 )
+                {
+                    // Because there are no active entries, there are no more
+                    // transitions in this rule.
+                    return std::nullopt;
+                }
 
-            // Indicates empty letter
-            return RuleLetter();
+                dumpActive( active_, activeSize_, year++, activeBuff.get() );
+                i = 0;
+            }
+            return activeBuff[i++];
+        }
+    };
+
+
+    class ZoneTransIter {
+        RuleTransIter ruleIter_;
+        RuleTrans     next_;
+        RuleLetter    currentLetter_;
+        RuleSave      currentSave_;
+        bool          isDone;
+
+      public:
+
+        ZoneTransIter( RuleEvalResult const& r )
+        : ruleIter_( r )
+        , currentLetter_( ruleIter_.initialLetter() )
+        , currentSave_( 0 )
+        , isDone( false ) {
+            if( auto next = ruleIter_.next() )
+            {
+                // We need to keep track of the last transition state
+                next_ = *next;
+            }
+            else
+            {
+                // A rule without any entries is erroneous
+                throw std::runtime_error( "Rule contained no entries" );
+            }
+        }
+
+        /// Advance the iterator until the next state is strictly after the
+        /// current state.
+        ///
+        /// Return the current state - the one prescribed by the rule at the
+        /// given input time
+        [[nodiscard]] ZoneState advanceTo(
+            sysseconds_t when, FromUTC stdoff, ZoneFormat const& format ) {
+            // We are going to advance until the next state is strictly after
+            // 'when'
+            for( ;; )
+            {
+                // The current wall offset is determined by the current save.
+                // We need this to determine the time when the next transition
+                // will occur.
+                auto walloff = stdoff.save( currentSave_ );
+
+                auto nextTransTime = next_.resolve( { stdoff, walloff } );
+                if( nextTransTime >= when ) break;
+
+                // Update the current state
+                currentSave_   = next_.save;
+                currentLetter_ = next_.letter;
+
+                // Try to advance
+                if( auto x = ruleIter_.next() )
+                {
+                    // We have a value; we can update 'next_'
+                    next_ = *x;
+                }
+                else
+                {
+                    // We're done - no more values
+                    isDone = true;
+                    break;
+                }
+            }
+            // Return the current state
+            return ZoneState( stdoff, currentSave_, format, currentLetter_ );
+        }
+
+        RuleSave   currentSave() const noexcept { return currentSave_; }
+        RuleLetter currentLetter() const noexcept { return currentLetter_; }
+
+        /// Return the next ZoneTransition, if one exists prior to the untilTime
+        std::optional<ZoneTransition> next(
+            sysseconds_t untilTime, FromUTC stdoff, ZoneFormat const& format ) {
+            // Record the current walloff. This is needed because the time
+            // when the next transition will occur will be in terms of the
+            // current walloff.
+            FromUTC walloff = stdoff.save( currentSave_ );
+
+            // If the next time would be after the untilTime, we don't have a
+            // value. Do not update the iterator
+            if( next_.resolve( { stdoff, walloff } ) >= untilTime )
+                return std::nullopt;
+
+            // Update the current save and letter
+            currentSave_   = next_.save;
+            currentLetter_ = next_.letter;
+
+            // We will be returning 'next' as the result, and then updating
+            // 'next_'
+            auto tmp = next_;
+
+            if( auto x = ruleIter_.next() )
+            {
+                // We have a value, so: we can update next_ to be that value
+                next_ = *x;
+            }
+            else
+            {
+                // Mark ourselves as done
+                if( isDone ) { return std::nullopt; }
+                isDone = true;
+            }
+            return tmp.resolveTrans( { stdoff, walloff }, format );
         }
     };
 
@@ -387,8 +641,7 @@ namespace vtz {
         RuleEvalResult evaluateRules( string_view rule ) const {
             return vtz::evaluateRules( rules.at( rule ) );
         }
-        ZoneStates getZoneStates(
-            string_view name, i32 startYear, i32 endYear ) const;
+        ZoneStates getZoneStates( string_view name, i32 endYear ) const;
 
         bool operator==( TZDataFile const& rhs ) const noexcept {
             return rules == rhs.rules    //

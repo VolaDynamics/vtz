@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vtz/tz_reader/RuleSave.h>
 #include <vtz/bit.h>
 #include <vtz/strings.h>
 
@@ -58,10 +59,14 @@ namespace vtz {
             return string_view( data_.buff_, data_.size_ & 0xf );
         }
 
+        /// Return the offset. This is the 'save' of the zone at the current moment.
         constexpr i32 offset() const noexcept {
             static_assert( offsetof( FixStr<15>, buff_ ) == 1 );
             return i32( _impl::_load4( data_.buff_ + 3 ) );
         }
+
+        /// Return the offset as a RuleSave
+        constexpr RuleSave save() const noexcept { return offset(); }
 
         string str() const;
 

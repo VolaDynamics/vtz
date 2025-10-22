@@ -4,7 +4,6 @@
 #include <vtz/civil.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader/FromUTC.h>
-#include <vtz/bit.h>
 
 namespace vtz {
 
@@ -136,14 +135,14 @@ namespace vtz {
             dest.size_ = writeN<N>( dest.buff_, off, isDST, letter );
         }
 
-        constexpr FixStr<11> format(
+        constexpr FixStr<15> format(
             i32 off, bool isDST, string_view letter ) const noexcept {
-            FixStr<11> result{};
+            FixStr<15> result{};
             format( result, off, isDST, letter );
             return result;
         }
 
-        constexpr FixStr<11> format(
+        constexpr FixStr<15> format(
             FromUTC off, bool isDST, string_view letter ) const noexcept {
             return format( off.off, isDST, letter );
         }

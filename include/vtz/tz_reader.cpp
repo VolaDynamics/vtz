@@ -1,5 +1,7 @@
-#include "vtz/tz_reader/FromUTC.h"
-#include "vtz/tz_reader/ZoneRule.h"
+#include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/ZoneFormat.h>
+#include <vtz/tz_reader/ZoneRule.h>
+#include <fmt/base.h>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
 #include <vtz/strings.h>
@@ -830,6 +832,20 @@ namespace vtz {
     }
 
 
+    size_t dumpActive( RuleEntry const* active,
+        size_t                          activeCount,
+        size_t                          year,
+        RuleTrans*                      p ) {
+        // Compute transitions for all active rules for the given year
+        for( size_t i = 0; i < activeCount; i++ )
+            p[i] = active[i].resolveTrans( year );
+
+        // Ensure the added transitions are sorted by date
+        std::sort( p, p + activeCount, RuleTrans::compareDate() );
+        return activeCount;
+    }
+
+
     namespace {
         [[nodiscard]] constexpr RuleEntry const* findNewlyActive( size_t year,
             RuleEntry const*                                             begin,
@@ -863,19 +879,6 @@ namespace vtz {
             vector<RuleEntry> const& active,
             size_t                   initialYear = -1 ) noexcept {
             return nextExpiryYear( active.data(), active.size(), initialYear );
-        }
-
-        size_t dumpActive( RuleEntry const* active,
-            size_t                          activeCount,
-            size_t                          year,
-            RuleTrans*                      p ) {
-            // Compute transitions for all active rules for the given year
-            for( size_t i = 0; i < activeCount; i++ )
-                p[i] = active[i].resolveTrans( year );
-
-            // Ensure the added transitions are sorted by date
-            std::sort( p, p + activeCount, RuleTrans::compareDate() );
-            return activeCount;
         }
 
         [[nodiscard]] size_t fillTransitionTable( RuleEntry const* active,
@@ -929,10 +932,20 @@ namespace vtz {
         char ch = rule.size() > 0 ? rule[0] : '\0';
         return ch == '+' || ch == '-' || isD10( ch - '0' );
     }
+
+    struct UntilDate {
+        sysdays_t    date; ///< Date, as days since epoch
+        sysseconds_t T;    ///< DateTime when current state ends
+    };
+
+
     ZoneStates TZDataFile::getZoneStates(
-        string_view name, i32 startYear, i32 endYear ) const {
+        string_view name, i32 endYear ) const {
         // Represents a map of rule names to evaluated rules
-        using RuleCache = map<string_view, RuleEvalResult>;
+        using RuleCache = map<string_view, ZoneTransIter>;
+
+        sysseconds_t STOP_TIME = daysToSeconds( resolveCivil( endYear, 1, 1 ) );
+
 
         auto const& entries = zones.at( name );
         if( entries.empty() )
@@ -940,84 +953,137 @@ namespace vtz {
                 fmt::format( "Error: zone '{}' contained no entries",
                     escapeString( name ) ) );
 
-        sysdays_t endDate = resolveCivil( endYear, 1, 1 );
+        auto result  = ZoneStates();
+        auto cache   = RuleCache( 16 );
+        auto storage = vector<RuleEvalResult>();
 
-        FromUTC    stdoff  = entries.front().stdoff;
-        FromUTC    walloff = stdoff;
-        ZoneFormat format  = entries.front().format;
-        ZoneUntil  until   = entries.front().until;
 
-        vector<RuleTrans> transBuff;
+        for( auto const& ent : entries )
+        {
+            auto const& rule = ent.rules;
+            if( rule.isNamed() )
+            {
+                auto name = rule.name();
+                if( !cache.contains( name ) )
+                {
+                    storage.push_back( evaluateRules( name ) );
+                    cache.emplace( name, storage.back() );
+                }
+            }
+        }
 
         // There is no 'until'. Therefore, just evaluate whatever rule is
         // present until the end year is reached
-        if( !until.has_value() )
+        if( entries.size() == 1 )
         {
-            auto const& ent  = entries.front();
-            auto const& rule = ent.rules;
+            auto const& ent    = entries.front();
+            auto const& rule   = ent.rules;
+            FromUTC     stdoff = ent.stdoff;
+            ZoneFormat  format = ent.format;
             // If there is no associated rule, there are no state transitions -
             // this zone is steady-state
             if( rule.isHyphen() )
             {
-                return ZoneStates{
-                    ZoneState{ stdoff, format.format( stdoff.off, false, {} ) },
-                };
+                result.initial = ZoneState{ stdoff, format, "-" };
+                return result;
             }
 
             if( rule.isOffset() )
             {
-                i32  save   = rule.offset();
-                auto offset = stdoff.save( save );
-                return ZoneStates{
-                    ZoneState{ save, format.format( offset, save != 0, "-" ) },
-                };
+                result.initial = ZoneState{ stdoff, rule.save(), format, "-" };
+                return result;
             }
 
-            auto ruleEval = evaluateRules( rule.name() );
+            auto& iter = cache.at( rule.name() );
 
-            ZoneStates result;
-            result.initial = ZoneState{
-                stdoff,
-                format.format( stdoff, false, ruleEval.getInitialLetter() ),
-            };
+            result.initial = ZoneState{ stdoff, format, iter.currentLetter() };
 
-            for( RuleTrans const& trans : ruleEval.historical )
+            while( auto const& maybeTrans
+                   = iter.next( STOP_TIME, stdoff, format ) )
             {
-                // Exit early - we're past the end date
-                if( trans.date >= endDate ) return result;
-
-                result.transitions.push_back(
-                    trans.resolveTrans( stdoff, format ) );
-            }
-
-            transBuff.resize( ruleEval.active.size() );
-
-            // Just... fuck it. just dump the transitions, man. Over and over
-            // until the end year.
-            for( i32 year = ruleEval.yearEnd; year < endYear; ++year )
-            {
-                dumpActive( ruleEval.active.data(),
-                    ruleEval.active.size(),
-                    year,
-                    transBuff.data() );
-
-                for( auto const& trans : transBuff )
-                    result.transitions.push_back(
-                        trans.resolveTrans( stdoff, format ) );
+                auto const& trans = *maybeTrans;
+                result.transitions.push_back( trans );
             }
 
             return result;
         }
 
+        sysseconds_t untilT;
+        // Handle first rule
 
-        auto ruleCache = RuleCache( 16 );
-
-        for( auto const& ent : entries )
         {
-            if( !ent.until.has_value() ) break;
+            auto const& ent    = entries.front();
+            auto const& rule   = ent.rules;
+            auto const& stdoff = ent.stdoff;
+            auto const& format = ent.format;
+            auto const& until  = ent.until;
+            if( rule.isHyphen() )
+            {
+                result.initial = { stdoff, format, "-" };
+                untilT         = until.resolve( result.initial );
+            }
+            else if( rule.isOffset() )
+            {
+                result.initial = { stdoff, rule.save(), format, "-" };
+                untilT         = until.resolve( result.initial );
+            }
+            else
+            {
+                auto& iter = cache.at( rule.name() );
 
-            auto const& rule = ent.rules;
+                result.initial = { stdoff, format, iter.currentLetter() };
+                untilT         = until.resolve( result.initial );
+
+                while( auto const& maybeTrans
+                       = iter.next( untilT, stdoff, format ) )
+                {
+                    auto const& trans = *maybeTrans;
+                    result.transitions.push_back( trans );
+                    untilT = until.resolve( trans.state );
+                }
+            }
         }
+
+        for( size_t i = 1; i < entries.size(); i++ )
+        {
+            auto const& ent    = entries[i];
+            auto const& rule   = ent.rules;
+            auto const& stdoff = ent.stdoff;
+            auto const& format = ent.format;
+            auto        until  = ent.until;
+
+            if( !until.has_value() ) { until = ZoneUntil{ u16( endYear ) }; }
+
+            if( rule.isHyphen() )
+            {
+                auto state = ZoneState{ stdoff, format, "-" };
+                result.transitions.emplace_back( untilT, state );
+                untilT = until.resolve( state );
+            }
+            else if( rule.isOffset() )
+            {
+                auto state = ZoneState{ stdoff, rule.save(), format, "-" };
+                result.transitions.emplace_back( untilT, state );
+                untilT = until.resolve( state );
+            }
+            else
+            {
+                auto& iter  = cache.at( rule.name() );
+                auto  state = iter.advanceTo( untilT, stdoff, format );
+                result.transitions.emplace_back( untilT, state );
+                untilT = until.resolve( state );
+
+                while( auto const& maybeTrans
+                       = iter.next( untilT, stdoff, format ) )
+                {
+                    auto const& trans = *maybeTrans;
+                    result.transitions.push_back( trans );
+                    untilT = until.resolve( trans.state );
+                }
+            }
+        }
+
+        return result;
     }
 
 
