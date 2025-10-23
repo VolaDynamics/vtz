@@ -514,8 +514,10 @@ namespace vtz {
         ///
         /// Return the current state - the one prescribed by the rule at the
         /// given input time
-        [[nodiscard]] ZoneState advanceTo(
-            sysseconds_t when, FromUTC stdoff, ZoneFormat const& format ) {
+        [[nodiscard]] ZoneState advanceTo( sysseconds_t when,
+            FromUTC                                     stdoff,
+            ZoneFormat const&                           format,
+            ZoneTime                                    oldTime ) {
             // We are going to advance until the next state is strictly after
             // 'when'
             for( ;; )
@@ -525,8 +527,8 @@ namespace vtz {
                 // will occur.
                 auto walloff = stdoff.save( currentSave_ );
 
-                auto nextTransTime = next_.resolve( { stdoff, walloff } );
-                if( nextTransTime >= when ) break;
+                auto nextTransTime = next_.resolve( oldTime );
+                if( nextTransTime > when ) break;
 
                 // Update the current state
                 currentSave_   = next_.save;

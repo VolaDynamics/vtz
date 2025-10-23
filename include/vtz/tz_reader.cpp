@@ -951,6 +951,36 @@ namespace vtz {
         sysseconds_t T;    ///< DateTime when current state ends
     };
 
+    struct ZTAgglomerator {
+      private:
+
+        ZoneState initial_;
+        ZoneState current_;
+
+        vector<ZoneTransition> tt;
+
+      public:
+
+        ZoneState const& current() const noexcept { return current_; }
+        ZoneState const& initial() const noexcept { return initial_; }
+
+        void setInitial( ZoneState state ) noexcept {
+            current_ = state;
+            initial_ = state;
+        }
+
+        void add( ZoneTransition const& trans ) {
+            if( trans.state != current_ )
+            {
+                current_ = trans.state;
+                tt.push_back( trans );
+            }
+        }
+
+        ZoneStates getStates() && noexcept {
+            return { initial_, std::move( tt ) };
+        }
+    };
 
     ZoneStates TZDataFile::getZoneStates(
         string_view name, i32 endYear ) const {
@@ -966,10 +996,10 @@ namespace vtz {
                 fmt::format( "Error: zone '{}' contained no entries",
                     escapeString( name ) ) );
 
-        auto result  = ZoneStates();
         auto cache   = RuleCache( 16 );
         auto storage = vector<RuleEvalResult>();
 
+        ZTAgglomerator agg;
 
         for( auto const& ent : entries )
         {
@@ -997,28 +1027,31 @@ namespace vtz {
             // this zone is steady-state
             if( rule.isHyphen() )
             {
-                result.initial = ZoneState{ stdoff, format, "-" };
-                return result;
+                // We only have one entry in the zone, and also there is no
+                // associated rule, so there are no state changes.
+                return ZoneStates{ ZoneState{ stdoff, format, "-" } };
             }
 
             if( rule.isOffset() )
             {
-                result.initial = ZoneState{ stdoff, rule.save(), format, "-" };
-                return result;
+                // The rule only contains an offset. Again, no other entries, so
+                // no state changes, so... it's a steady-state zone
+                return ZoneStates{ ZoneState{
+                    stdoff, rule.save(), format, "-" } };
             }
 
             auto& iter = cache.at( rule.name() );
 
-            result.initial = ZoneState{ stdoff, format, iter.currentLetter() };
+            agg.setInitial( ZoneState{ stdoff, format, iter.currentLetter() } );
 
             while( auto const& maybeTrans
                    = iter.next( STOP_TIME, stdoff, format ) )
             {
-                auto const& trans = *maybeTrans;
-                result.transitions.push_back( trans );
+                // As long as we have transitions, add them.
+                agg.add( *maybeTrans );
             }
 
-            return result;
+            return std::move( agg ).getStates();
         }
 
         sysseconds_t untilT;
@@ -1032,26 +1065,26 @@ namespace vtz {
             auto const& until  = ent.until;
             if( rule.isHyphen() )
             {
-                result.initial = { stdoff, format, "-" };
-                untilT         = until.resolve( result.initial );
+                agg.setInitial( { stdoff, format, "-" } );
+                untilT = until.resolve( agg.initial() );
             }
             else if( rule.isOffset() )
             {
-                result.initial = { stdoff, rule.save(), format, "-" };
-                untilT         = until.resolve( result.initial );
+                agg.setInitial( { stdoff, rule.save(), format, "-" } );
+                untilT = until.resolve( agg.initial() );
             }
             else
             {
                 auto& iter = cache.at( rule.name() );
 
-                result.initial = { stdoff, format, iter.currentLetter() };
-                untilT         = until.resolve( result.initial );
+                agg.setInitial( { stdoff, format, iter.currentLetter() } );
+                untilT = until.resolve( agg.initial() );
 
                 while( auto const& maybeTrans
                        = iter.next( untilT, stdoff, format ) )
                 {
                     auto const& trans = *maybeTrans;
-                    result.transitions.push_back( trans );
+                    agg.add( trans );
                     untilT = until.resolve( trans.state );
                 }
             }
@@ -1071,33 +1104,34 @@ namespace vtz {
             if( rule.isHyphen() )
             {
                 auto state = ZoneState{ stdoff, format, "-" };
-                result.transitions.emplace_back( untilT, state );
+                agg.add( { untilT, state } );
                 untilT = until.resolve( state );
             }
             else if( rule.isOffset() )
             {
                 auto state = ZoneState{ stdoff, rule.save(), format, "-" };
-                result.transitions.emplace_back( untilT, state );
+                agg.add( { untilT, state } );
                 untilT = until.resolve( state );
             }
             else
             {
-                auto& iter  = cache.at( rule.name() );
-                auto  state = iter.advanceTo( untilT, stdoff, format );
-                result.transitions.emplace_back( untilT, state );
+                auto& iter = cache.at( rule.name() );
+                auto  state
+                    = iter.advanceTo( untilT, stdoff, format, agg.current() );
+                agg.add( { untilT, state } );
                 untilT = until.resolve( state );
 
                 while( auto const& maybeTrans
                        = iter.next( untilT, stdoff, format ) )
                 {
                     auto const& trans = *maybeTrans;
-                    result.transitions.push_back( trans );
+                    agg.add( trans );
                     untilT = until.resolve( trans.state );
                 }
             }
         }
 
-        return result;
+        return std::move( agg ).getStates();
     }
 
 
