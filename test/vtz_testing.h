@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <gtest/gtest.h>
+#include <vector>
 #include <vtz/strings.h>
 
 #include <fmt/color.h>
@@ -35,14 +37,52 @@ DECLARE_STRINGLIKE( std::string );
 DECLARE_STRINGLIKE( std::string_view );
 DECLARE_STRINGLIKE( char const* );
 
-constexpr auto BOLD_GREEN = fmt::emphasis::bold | fmt::fg( fmt::color::green );
-constexpr auto BOLD_RED   = fmt::emphasis::bold | fmt::fg( fmt::color::red );
-constexpr auto BOLD_CYAN  = fmt::emphasis::bold | fmt::fg( fmt::color::cyan );
-constexpr auto BOLD_BLUE  = fmt::emphasis::bold | fmt::fg( fmt::color::blue );
-constexpr auto BOLD_YELLOW  = fmt::emphasis::bold | fmt::fg( fmt::color::yellow );
-constexpr auto FAINT_GRAY = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
+constexpr auto BOLD        = fmt::emphasis::bold;
+constexpr auto BOLD_GREEN  = fmt::emphasis::bold | fmt::fg( fmt::color::green );
+constexpr auto BOLD_RED    = fmt::emphasis::bold | fmt::fg( fmt::color::red );
+constexpr auto BOLD_CYAN   = fmt::emphasis::bold | fmt::fg( fmt::color::cyan );
+constexpr auto BOLD_BLUE   = fmt::emphasis::bold | fmt::fg( fmt::color::blue );
+constexpr auto BOLD_YELLOW = fmt::emphasis::bold | fmt::fg( fmt::color::yellow );
+constexpr auto GREEN       = fmt::fg( fmt::color::green );
+constexpr auto RED         = fmt::fg( fmt::color::red );
+constexpr auto CYAN        = fmt::fg( fmt::color::cyan );
+constexpr auto BLUE        = fmt::fg( fmt::color::blue );
+constexpr auto YELLOW      = fmt::fg( fmt::color::yellow );
+constexpr auto FAINT_RED   = fmt::emphasis::faint | fmt::fg( fmt::color::red );
+constexpr auto FAINT_GRAY  = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
 
 namespace _test_vtz {
+    using std::vector;
+
+    struct TestContextI {
+        TestContextI const* prev = nullptr;
+        char const*         header;
+
+        constexpr TestContextI( TestContextI const* prev, char const* header ) noexcept
+        : prev( prev )
+        , header( header ) {}
+
+        virtual std::string printFrame( size_t indent ) const = 0;
+    };
+
+    template<class F>
+    struct TestContext : TestContextI {
+        F func;
+
+        TestContext( TestContextI const* prev, char const* header, F&& func )
+        : TestContextI( prev, header )
+        , func( std::move( func ) ) {}
+
+        std::string printFrame( size_t indent ) const override { return func( indent ); }
+    };
+    template<class F>
+    TestContext( TestContextI const* prev, char const*, F func ) -> TestContext<F>;
+
+    struct NoopContext {
+        constexpr TestContextI const* operator&() const noexcept { return nullptr; }
+    };
+
+    constexpr NoopContext _current_test_context;
 
 
     template<class Enum>
@@ -129,6 +169,11 @@ namespace _test_vtz {
     }
 
     template<class T>
+    void debugPrint( std::string& s, T const* p, size_t ) {
+        s += fmt::format( "{}", (void const*)p );
+    }
+
+    template<class T>
     void debugPrint( std::string& s, std::vector<T> const& values, size_t indent ) {
         auto begin = values.begin();
         auto end   = values.end();
@@ -209,13 +254,10 @@ namespace _test_vtz {
 
         template<class T>
         void logGood( string_view what, T const& value ) {
-            auto bg = fmt::emphasis::bold | fmt::fg( fmt::color::green );
-            auto bw = fmt::emphasis::bold;
-            ;
             fmt::println( "{} {}: {}",
                 fmt::styled( "[info]", FAINT_GRAY ),
-                fmt::styled( what, bw ),
-                fmt::styled( debugToString( value ), bg ) );
+                fmt::styled( what, BOLD ),
+                fmt::styled( debugToString( value ), BOLD_GREEN ) );
         }
 
         template<class A, class B>
@@ -247,6 +289,96 @@ namespace _test_vtz {
     inline TestPrinter TEST_LOG{};
 
 
+    /// Find the enclosing parenthesis (returns one past the paren, or the 'end' if no paren is
+    /// found)
+    constexpr char const* findEnclosingParen( char const* p, char const* end ) noexcept {
+        int depth = 1;
+        for( ; p != end; ++p )
+        {
+            char ch = *p;
+            if( ch == '(' )
+            {
+                // Go deeper - we still need a closing paren
+                ++depth;
+            }
+            else if( ch == ')' )
+            {
+                // Decrement depth - things are good
+                --depth;
+                // We found the last paren
+                if( depth == 0 ) { return p + 1; }
+            }
+        }
+        return end;
+    }
+
+    inline vector<string_view> splitMacroArgs( string_view args ) {
+        char const* p   = args.data();
+        char const* p0  = p;
+        char const* end = p + args.size();
+        if( p == end ) return vector<string_view>();
+
+        vector<string_view> result;
+        while( p != end )
+        {
+            if( *p == ',' )
+            {
+                result.emplace_back( p0, size_t( p - p0 ) );
+                ++p;
+                p0 = p;
+                continue;
+            }
+            else if( *p == '(' )
+            {
+                // p will be set to either end, or one past the enclosing parenthesis
+                p = findEnclosingParen( p + 1, end );
+            }
+            else
+            {
+                // p is not a special character - just increment it
+                ++p;
+            }
+        }
+
+        result.emplace_back( p0, size_t( p - p0 ) );
+        for( auto& s : result )
+        {
+            char const* p   = s.data();
+            char const* end = p + s.size();
+            while( p != end && *p == ' ' ) ++p;
+            s = string_view( p, size_t( end - p ) );
+        }
+        return result;
+    }
+
+    template<class First, class... T>
+    std::string printValues( size_t indent, string_view macroArgs, First&& first, T&&... values ) {
+        auto args = splitMacroArgs( macroArgs );
+        if( args.size() != sizeof...( values ) + 1 )
+        {
+            throw std::runtime_error(
+                fmt::format( "printValues(): '{}' contained too many or too few arguments "
+                             "(expected {} args), split was [{}]",
+                    macroArgs,
+                    sizeof...( values ),
+                    fmt::join( args, ", " ) ) );
+        }
+        std::string s;
+        auto        ind        = std::string( indent, ' ' );
+        auto        printValue = [&, i = 0]( auto const& value ) mutable {
+            s += args[i];
+            s += " = ";
+            debugPrint( s, value );
+            ++i;
+        };
+
+        printValue( first );
+
+
+        ( ( ( s += '\n', s += ind ), printValue( values ) ), ... );
+        return s;
+    }
+
     template<class A, class B>
     static auto _eqFail( char const* lhs_expr, char const* rhs_expr, A const& lhs, B const& rhs ) {
         return testing::internal::EqFailure(
@@ -261,6 +393,7 @@ namespace _test_vtz {
         bool                     print_on_success,
         char const*              filename,
         int                      lineno,
+        TestContextI const*      ctx,
         TestCountAssertions&&    _test_count_assertions ) {
         _test_count_assertions.inc();
         if( _test_lhs == _test_rhs )
@@ -271,16 +404,41 @@ namespace _test_vtz {
         }
         else
         {
+            std::string extraCtx;
+            if( ctx )
+            {
+                extraCtx += "\n\nAdditional context for failure:\n\n";
+                while( ctx )
+                {
+                    extraCtx += fmt::format( "{}\n└── {}\n",
+                        fmt::styled( ctx->header, FAINT_GRAY ),
+                        ctx->printFrame( 4 ) );
+
+                    ctx = ctx->prev;
+                }
+                fmt::println( "" );
+            }
+
             _test_count_assertions.incFailed();
             ::testing::internal::AssertHelper( ::testing::TestPartResult::kFatalFailure,
                 filename,
                 lineno,
                 _test_vtz::_eqFail( lhs, rhs, _test_lhs, _test_rhs ).failure_message() )
-                = testing::Message();
+                = testing::Message() << extraCtx;
             return false;
         }
     }
 } // namespace _test_vtz
+
+using _test_vtz::_current_test_context;
+
+#define ADD_CONTEXT( header, ... )                                                                 \
+    auto _test_context_ptr = &_current_test_context;                                               \
+    auto _current_test_context                                                                     \
+        = _test_vtz::TestContext( _test_context_ptr, header, [&]( size_t indent ) {                \
+              return _test_vtz::printValues( indent, #__VA_ARGS__, __VA_ARGS__ );                  \
+          } )
+
 
 constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
 
@@ -328,10 +486,18 @@ constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
             _test_vtz::TEST_LOG.print_on_success,                                                  \
             __FILE__,                                                                              \
             __LINE__,                                                                              \
+            &_current_test_context,                                                                \
             _test_count_assertions ) )                                                             \
     return
 
 #define ASSERT_EQ_QUIET( lhs, rhs )                                                                \
-    if( !_test_vtz::_doAssertEq(                                                                   \
-            lhs, rhs, #lhs, #rhs, false, __FILE__, __LINE__, _test_count_assertions ) )            \
+    if( !_test_vtz::_doAssertEq( lhs,                                                              \
+            rhs,                                                                                   \
+            #lhs,                                                                                  \
+            #rhs,                                                                                  \
+            false,                                                                                 \
+            __FILE__,                                                                              \
+            __LINE__,                                                                              \
+            &_current_test_context,                                                                \
+            _test_count_assertions ) )                                                             \
     return
