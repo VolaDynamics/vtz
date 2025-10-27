@@ -44,8 +44,15 @@ if(PROJECT_IS_TOP_LEVEL)
     include(cmake/get_cpm.cmake)
 
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
-    CPMAddPackage("gh:google/googletest@1.17.0")
     CPMAddPackage("gh:martinus/unordered_dense@4.7.0")
+
+    # Test dependencies
+    CPMAddPackage("gh:google/googletest@1.17.0")
+    CPMAddPackage(
+        URI gh:HowardHinnant/date@3.0.4
+        OPTIONS
+            "BUILD_TZ_LIB ON"
+    )
 
     file(GLOB_RECURSE sources include/*.cpp)
     add_library(
@@ -75,6 +82,8 @@ if(PROJECT_IS_TOP_LEVEL)
     add_executable(test_vtz
         test/test_vtz.cpp
         test/test_civil.cpp
+        test/test_math.cpp
+        test/test_versus_hinnant_tz.cpp
     )
     target_link_libraries(
         test_vtz
@@ -82,5 +91,7 @@ if(PROJECT_IS_TOP_LEVEL)
             GTest::gtest_main
             vtz::vtz
             fmt::fmt
+            date::date
+            date::date-tz
     )
 endif()
