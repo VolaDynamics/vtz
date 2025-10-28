@@ -69,6 +69,10 @@ if(PROJECT_IS_TOP_LEVEL)
     )
     add_library(vtz::vtz ALIAS vtz)
 
+    if(UNIX)
+        target_compile_options(vtz PRIVATE -Werror=uninitialized)
+    endif()
+
     file(GLOB_RECURSE headers include/*.h)
     target_sources(
         vtz
