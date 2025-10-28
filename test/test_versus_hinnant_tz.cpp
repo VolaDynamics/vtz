@@ -1,3 +1,4 @@
+#include <string>
 #include <vtz/date_types.h>
 #include <vtz/files.h>
 #include <vtz/strings.h>
@@ -12,6 +13,7 @@
 
 #include "vtz_testing.h"
 #include <vtz/civil.h>
+#include <vtz/tz.h>
 
 #include <date/date.h>
 #include <date/tz.h>
@@ -166,4 +168,70 @@ TEST( vtz, all_timezones ) {
         }
         // Load zones from Howard Hinnant TZ library
     }
+}
+
+
+TEST( vtz, TimeZone ) {
+    COUNT_ASSERTIONS();
+
+    using sec      = std::chrono::seconds;
+    auto const& fp = "build/data/tzdata/tzdata.zi";
+
+    constexpr sysseconds_t startT = daysToSeconds( resolveCivil( 1600, 1, 1 ) );
+    constexpr sysseconds_t endT   = daysToSeconds( resolveCivil( 2900, 1, 1 ) );
+
+
+    fmt::println( "Start time: {}", utcToString( startT ) );
+    fmt::println( "End time:   {}", utcToString( endT ) );
+
+    auto content = readFile( fp );
+    auto file    = parseTZData( content, fp );
+
+    auto zones = file.listZones();
+
+    auto checkZone = [&]( std::string const& zone ) {
+        fmt::println( "Checking transitions within zone {}", zone );
+
+        ADD_CONTEXT( "Checking timezone", zone );
+        // Get all the zone states
+        auto        zoneStates = file.getZoneStates( zone, 2900 );
+        auto const& tt         = zoneStates.transitions;
+
+        auto tz = TimeZone( zone, zoneStates );
+
+        ZoneState prev = zoneStates.initial;
+        for( size_t zi = 0; zi < tt.size(); ++zi )
+        {
+            auto const& trans = tt[zi];
+            ADD_CONTEXT( "Checking transition", utcToString( trans.when ), zi );
+
+            ASSERT_EQ_QUIET( tz.offsetFromUTC( trans.when - 1 ), prev.walloff.off );
+            ASSERT_EQ_QUIET( tz.offsetFromUTC( trans.when ), trans.state.walloff.off );
+            prev = trans.state;
+        }
+
+        if( tt.size() > 0 )
+        {
+            int64_t T0   = daysToSeconds( resolveCivil( 1700, 1, 1 ) );
+            int64_t TMax = tt.back().when;
+            auto    st   = zoneStates.initial;
+            auto    it   = tt.data();
+            // loop through times in 1h intervals until we get to the end of the states we
+            // calculated
+            for( ; T0 < TMax; T0 += 3600 )
+            {
+                while( T0 >= it->when )
+                {
+                    st = it->state;
+                    ++it;
+                }
+
+                ASSERT_EQ_QUIET( tz.offsetFromUTC( T0 ), st.walloff.off );
+            }
+        }
+    };
+
+    checkZone( "America/Ciudad_Juarez" );
+    checkZone( "America/New_York" );
+    for( auto const& zone : zones ) { checkZone( zone ); }
 }
