@@ -11,6 +11,14 @@
     #define _vtz_memcpy memcpy
 #endif
 
+#if _MSC_VER
+    #define VTZ_INLINE            __forceinline
+    #define VTZ_IS_LIKELY( expr ) bool( expr )
+#else
+    #define VTZ_INLINE            [[gnu::always_inline]] inline
+    #define VTZ_IS_LIKELY( expr ) __builtin_expect( bool( expr ), 1 )
+#endif
+
 namespace vtz {
     using u8  = uint8_t;
     using u16 = uint16_t;
@@ -24,6 +32,36 @@ namespace vtz {
 
     using uint  = unsigned;
     using usize = size_t;
+
+    /// blog2: computes `floor(log2(x))`, returns an integer
+    ///
+    /// This is a pure-C++ fallback implementation
+    constexpr int _blog2_fallback( u64 x ) noexcept {
+        int r = 0;
+        int p = 0;
+        // clang-format off
+        p = r + 32; r = x >> p ? p : r;
+        p = r + 16; r = x >> p ? p : r;
+        p = r + 8;  r = x >> p ? p : r;
+        p = r + 4;  r = x >> p ? p : r;
+        p = r + 2;  r = x >> p ? p : r;
+        p = r + 1;  r = x >> p ? p : r;
+        // clang-format on
+        return r;
+    }
+
+
+    /// blog2: computes `floor(log2(x))`, returns an integer.
+    ///
+    /// Uses __builtin_clzll if available
+    constexpr int _blog2( u64 x ) noexcept {
+#if __has_builtin( __builtin_clzll )
+        return 63 - __builtin_clzll( x );
+#else
+        return _blog2_fallback( x );
+#endif
+    }
+
 
     template<class To, class From>
     To bit_cast( From const& from ) noexcept {
