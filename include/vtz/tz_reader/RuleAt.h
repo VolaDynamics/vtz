@@ -46,7 +46,7 @@ namespace vtz {
         RuleAt() = default;
 
         constexpr RuleAt( i32 time_, Kind kind ) noexcept
-        : repr_( time_ << 2 | i32( kind ) ) {}
+        : repr_( i32( u32( time_ ) << 2 ) | i32( kind ) ) {}
 
         template<size_t N>
         RuleAt( char const ( &arr )[N] )
