@@ -110,7 +110,7 @@ namespace _test_vtz {
                 fmt::println( "{}\n└── {} Assertions Checked - {}",
                     fmt::styled( context, FAINT_GRAY ),
                     count,
-                    fmt::styled( fmt::format( "{} assertions failed" ), BOLD_RED ) );
+                    fmt::styled( fmt::format( "{} assertions failed", failed ), BOLD_RED ) );
             }
             else
             {
