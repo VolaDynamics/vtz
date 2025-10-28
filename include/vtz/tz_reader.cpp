@@ -1,6 +1,7 @@
 #include <fmt/base.h>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
+#include <vtz/span.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader.h>
 #include <vtz/tz_reader/FromUTC.h>
@@ -977,10 +978,49 @@ namespace vtz {
             }
         }
 
-        ZoneStates getStates() && noexcept {
-            return { initial_, std::move( tt ) };
+        ZoneStates getStates( i64 safeCycleTime ) && noexcept {
+            return { initial_, std::move( tt ), safeCycleTime };
         }
     };
+
+    static i64 getSafeCycleTime( span<ZoneEntry const> zoneEntries,
+        map<string_view, RuleEvalResult> const&        ruleTable ) {
+        // No entries, doesn't matter
+        size_t n = zoneEntries.size();
+        if( n == 0 ) return 0;
+
+        auto const& lastRule = zoneEntries[n - 1].rules;
+
+        sysdays_t lastRuleCycleDate;
+
+        if( lastRule.isNamed() )
+        {
+            // If the last entry in the zone refers to a named rule, figure out
+            // the date that rule becomes cyclic
+            lastRuleCycleDate
+                = resolveCivil( ruleTable.at( lastRule.name() ).yearEnd, 1, 1 );
+        }
+        else
+        {
+            // The rule does not become cyclic
+            lastRuleCycleDate = 0;
+        }
+
+
+        // If there's only one rule, just return the last rule cycle date,
+        // converted to seconds If this number is 0, that's fine, we don't care
+        if( n == 1 ) { return daysToSeconds( lastRuleCycleDate ); }
+
+        auto untilDate = zoneEntries[n - 2].until.date;
+
+        auto cycleDate = std::max( {
+            0,
+            2 + untilDate,
+            2 + lastRuleCycleDate,
+        } );
+
+        return daysToSeconds( cycleDate );
+    }
 
     ZoneStates TZDataFile::getZoneStates(
         string_view name, i32 endYear ) const {
@@ -996,8 +1036,8 @@ namespace vtz {
                 fmt::format( "Error: zone '{}' contained no entries",
                     escapeString( name ) ) );
 
-        auto cache   = RuleCache( 16 );
-        auto storage = vector<RuleEvalResult>();
+
+        auto rules = map<string_view, RuleEvalResult>( 16 );
 
         ZTAgglomerator agg;
 
@@ -1007,13 +1047,15 @@ namespace vtz {
             if( rule.isNamed() )
             {
                 auto name = rule.name();
-                if( !cache.contains( name ) )
-                {
-                    storage.push_back( evaluateRules( name ) );
-                    cache.emplace( name, storage.back() );
-                }
+                if( !rules.contains( name ) )
+                    rules.emplace( name, evaluateRules( name ) );
             }
         }
+
+        auto cache = RuleCache( 16 );
+        for( auto const& [k, rule] : rules ) { cache.emplace( k, rule ); }
+
+        i64 safeCycleTime = getSafeCycleTime( entries, rules );
 
         // There is no 'until'. Therefore, just evaluate whatever rule is
         // present until the end year is reached
@@ -1051,7 +1093,7 @@ namespace vtz {
                 agg.add( *maybeTrans );
             }
 
-            return std::move( agg ).getStates();
+            return std::move( agg ).getStates( safeCycleTime );
         }
 
         sysseconds_t untilT;
@@ -1099,7 +1141,10 @@ namespace vtz {
             auto        until  = ent.until;
 
             if( !until.has_value() )
+            {
+                // We're going from here, until the end year
                 until = ZoneUntil{ resolveCivil( endYear, 1, 1 ) };
+            }
 
             if( rule.isHyphen() )
             {
@@ -1131,7 +1176,7 @@ namespace vtz {
             }
         }
 
-        return std::move( agg ).getStates();
+        return std::move( agg ).getStates( safeCycleTime );
     }
 
 

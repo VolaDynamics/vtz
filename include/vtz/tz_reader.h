@@ -554,6 +554,8 @@ namespace vtz {
         ZoneState              initial;
         vector<ZoneTransition> transitions;
 
+        sysseconds_t safeCycleTime;
+
         ZoneState const& getState( sysseconds_t time ) const {
             auto begin = transitions.data();
             auto end   = transitions.data() + transitions.size();
