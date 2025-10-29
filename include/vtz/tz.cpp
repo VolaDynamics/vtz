@@ -1,9 +1,40 @@
 #include <algorithm>
+#include <initializer_list>
 #include <vtz/tz.h>
 
 #include <vtz/tz_reader.h>
 
 namespace vtz {
+    template<class T>
+    std::unique_ptr<T[]> _copyUnique( T const* data, size_t count ) {
+        // We use memcpy here, so we expect the input to be trivially copyable
+        static_assert( std::is_trivially_copyable_v<T> );
+
+        T* buff = new T[count];
+        memcpy( buff, data, count * sizeof( T ) );
+        return std::unique_ptr<T[]>( buff );
+    }
+
+    template<class T>
+    auto _copyUnique( span<T> values ) {
+        return _copyUnique( values.data(), values.size() );
+    }
+
+
+    /// Return a new (uninitialized) array of the desired size,
+    /// containing elements of the desired type
+    template<class T>
+    std::unique_ptr<T[]> _new( size_t count ) {
+        return std::unique_ptr<T[]>{ new T[count] };
+    }
+
+    /// Return a new (initialized) array of the desired size,
+    /// containing elements of the desired type
+    template<class T, class... Args>
+    std::unique_ptr<T[]> _init( Args&&... args ) {
+        return std::unique_ptr<T[]>{ new T[]{
+            T( static_cast<Args&&>( args ) )... } };
+    }
 
     template<class T>
     using UP = std::unique_ptr<T>;
@@ -12,15 +43,13 @@ namespace vtz {
     /// Construct a lookup table corresponding to a constant state (eg, a
     /// timezone with no zone transitions)
     S32Table table1( u32 x ) {
-        auto   block = _join32( x, x );
-        size_t off   = 1;
+        auto block = _join32( x, x );
         return S32Table{
-            S32TableView{
-                63,
-                off + new i64[2]{ 0, 0 },
-                off + new u64[2]{ block, block },
-            },
-            off,
+            63,
+            _init<i64>( 0, 0 ),
+            _init<u64>( block, block ),
+            -1,
+            2,
         };
     }
 
@@ -28,15 +57,13 @@ namespace vtz {
     /// Construct a lookup table with two possible values and one transition
     /// time
     S32Table table2( i64 trans, u32 initial, u32 final ) {
-        auto   block = _join32( initial, final );
-        size_t off   = 1;
+        auto block = _join32( initial, final );
         return S32Table{
-            S32TableView{
-                63,
-                off + new i64[2]{ trans, trans },
-                off + new u64[2]{ block, block },
-            },
-            off,
+            63,
+            _init<i64>( trans, trans ),
+            _init<u64>( block, block ),
+            -1,
+            2,
         };
     }
 
@@ -50,7 +77,7 @@ namespace vtz {
 
             // Abbreviation table contains one entry, which is the initial
             // abbreviation
-            abbrTable = UP<Abbr[]>( new Abbr[]{ states.initial.abbr } );
+            abbrTable = _init<Abbr>( states.initial.abbr );
             // '0' points to the initial abbreviation here
             abbr = table1( 0 );
 
@@ -74,7 +101,7 @@ namespace vtz {
             i32 off0 = initial.walloff.off;
             i32 off1 = final.walloff.off;
 
-            abbrTable = UP<Abbr[]>( new Abbr[]{ initial.abbr, final.abbr } );
+            abbrTable = _init<Abbr>( initial.abbr, final.abbr );
             abbr      = table2( when, 0, 1 );
 
             utcOff           = table2( when, off0, off1 );
@@ -129,8 +156,8 @@ namespace vtz {
         size_t buffCount = ( maxIndex - minIndex ) + 1;
 
 
-        i64* ttTimes = new i64[buffCount];
-        u64* blocks  = new u64[buffCount];
+        auto ttTimes = _new<i64>( buffCount );
+        auto blocks  = _new<u64>( buffCount );
 
         i32 off0  = states.initial.walloff.off;
         i32 off1  = tt[0].state.walloff.off;
@@ -168,14 +195,12 @@ namespace vtz {
             }
         }
 
-        size_t off = size_t( -minIndex );
-        utcOff     = S32Table{
-            S32TableView{
-                g,
-                off + ttTimes,
-                off + blocks,
-            },
-            off,
+        utcOff = S32Table{
+            g,
+            std::move( ttTimes ),
+            std::move( blocks ),
+            minIndex,
+            buffCount,
         };
 
         tz0_   = -u64( minT );

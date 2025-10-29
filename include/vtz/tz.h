@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vtz/span.h"
 #include <climits>
 #include <cstdint>
 #include <fmt/format.h>
@@ -20,11 +21,22 @@ namespace vtz {
         int  g;
         i64* tt;
         u64* bb;
+        i32  start_;
+        u32  size_;
+
+        i64 const* data_tt() const noexcept { return tt + start_; }
+        u64 const* data_bb() const noexcept { return bb + start_; }
 
         VTZ_INLINE constexpr void swap( S32TableView& rhs ) noexcept {
-            std::swap( tt, rhs.tt );
-            std::swap( bb, rhs.bb );
-            std::swap( g, rhs.g );
+            auto tmp = *this;
+            *this    = rhs;
+            rhs      = tmp;
+        }
+
+        /// Return the first value in the table
+        constexpr i64 initial() const noexcept {
+            u64 block = *data_bb();
+            return i64( block << 32 ) >> 32;
         }
 
         /// if t >= tt[i], return the low 32 bits of bb[i], else obtain the hi
@@ -52,50 +64,46 @@ namespace vtz {
 
     // Represents an owning S32Table
     class S32Table : private S32TableView {
-        size_t off;
+        using Base = S32TableView;
 
       public:
 
         constexpr S32Table() noexcept
-        : S32TableView()
-        , off() {}
+        : S32TableView() {}
 
-        S32Table( S32TableView const& data, size_t off )
-        : S32TableView( data )
-        , off( off ) {}
+        S32Table( int                g,
+            std::unique_ptr<i64[]>&& tt,
+            std::unique_ptr<u64[]>&& bb,
+            i64                      start,
+            size_t                   size ) noexcept
+        : S32TableView{
+            g,
+            tt.release() - start,
+            bb.release() - start,
+            i32( start ),
+            u32( size ),
+        } {}
 
         S32Table( S32Table&& rhs ) noexcept
-        : S32TableView( rhs )
-        , off( rhs.off ) {
-            rhs.tt = nullptr;
-            rhs.bb = nullptr;
-            rhs.g  = 0;
+        : S32Table() {
+            swap( rhs );
         }
 
-        using S32TableView::lookup;
-        using S32TableView::lookupU32;
+        using Base::lookup;
+        using Base::lookupU32;
+        using Base::initial;
 
         VTZ_INLINE S32TableView view() const noexcept { return *this; }
 
-        /// Return the first value in the table
-        constexpr i64 initial() const noexcept {
-            u64 block = *( bb - off );
-            return i64( block << 32 ) >> 32;
-        }
-
-        VTZ_INLINE void swap( S32Table& rhs ) noexcept {
-            S32TableView::swap( rhs );
-            std::swap( off, rhs.off );
-        }
+        VTZ_INLINE void swap( S32Table& rhs ) noexcept { Base::swap( rhs ); }
 
         S32Table& operator=( S32Table rhs ) noexcept {
-            swap( rhs );
-            return *this;
+            return swap( rhs ), *this;
         }
 
         ~S32Table() {
-            if( tt ) delete[]( tt - off );
-            if( bb ) delete[]( bb - off );
+            if( tt ) delete[]( tt + start_ );
+            if( bb ) delete[]( bb + start_ );
         }
     };
 
