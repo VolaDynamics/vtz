@@ -48,6 +48,25 @@ namespace vtz {
         using const_iterator = T const*;
         using value_type     = std::remove_const_t<T>;
 
+        /// Return the first element, or the given alternative
+        VTZ_INLINE constexpr T const& front_or(
+            T const& alternative ) const noexcept {
+            return count ? *p : alternative;
+        }
+
+        /// Return the last element, or the given alternative
+        VTZ_INLINE constexpr T const& back_or(
+            T const& alternative ) const noexcept {
+            return count ? p[count - 1] : alternative;
+        }
+
+        /// Return the value at the given index, if the index is in-bounds,
+        /// or the given alternative
+        VTZ_INLINE constexpr T const& value_or(
+            size_t i, T const& alternative ) const noexcept {
+            return i < count ? p[i] : alternative;
+        }
+
       private:
 
         T*     p;
