@@ -77,7 +77,7 @@ namespace vtz {
 
             // Abbreviation table contains one entry, which is the initial
             // abbreviation
-            abbrTable = _init<Abbr>( states.initial.abbr );
+            abbrTable = _init<ZoneAbbr>( states.initial.abbr );
             // '0' points to the initial abbreviation here
             abbr = table1( 0 );
 
@@ -101,7 +101,7 @@ namespace vtz {
             i32 off0 = initial.walloff.off;
             i32 off1 = final.walloff.off;
 
-            abbrTable = _init<Abbr>( initial.abbr, final.abbr );
+            abbrTable = _init<ZoneAbbr>( initial.abbr, final.abbr );
             abbr      = table2( when, 0, 1 );
 
             utcOff           = table2( when, off0, off1 );

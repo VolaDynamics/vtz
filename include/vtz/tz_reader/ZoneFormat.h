@@ -6,6 +6,7 @@
 #include <vtz/tz_reader/FromUTC.h>
 
 namespace vtz {
+    using ZoneAbbr = FixStr<15>;
 
     /// ZoneFormat holds timezone format strings with efficient representation
     /// Supports four format types:
@@ -135,14 +136,14 @@ namespace vtz {
             dest.size_ = writeN<N>( dest.buff_, off, isDST, letter );
         }
 
-        constexpr FixStr<15> format(
+        constexpr ZoneAbbr format(
             i32 off, bool isDST, string_view letter ) const noexcept {
-            FixStr<15> result{};
+            ZoneAbbr result{};
             format( result, off, isDST, letter );
             return result;
         }
 
-        constexpr FixStr<15> format(
+        constexpr ZoneAbbr format(
             FromUTC off, bool isDST, string_view letter ) const noexcept {
             return format( off.off, isDST, letter );
         }

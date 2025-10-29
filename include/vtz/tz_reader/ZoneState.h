@@ -6,13 +6,14 @@
 #include <vtz/tz_reader/ZoneTime.h>
 
 namespace vtz {
+
     struct alignas( 8 ) ZoneState : ZoneTime {
-        FixStr<15> abbr; ///< Zone abbreviation
+        ZoneAbbr abbr; ///< Zone abbreviation
 
         ZoneState() = default;
 
         constexpr ZoneState(
-            FromUTC stdoff, RuleSave save, FixStr<15> const& abbr ) noexcept
+            FromUTC stdoff, RuleSave save, ZoneAbbr const& abbr ) noexcept
         : ZoneTime{ stdoff, stdoff.save( save ) }
         , abbr( abbr ) {}
 
@@ -37,7 +38,7 @@ namespace vtz {
         , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
 
         constexpr ZoneState(
-            FromUTC stdoff, FromUTC walloff, FixStr<15> const& abbr )
+            FromUTC stdoff, FromUTC walloff, ZoneAbbr const& abbr )
         : ZoneTime{ stdoff, walloff }
         , abbr( abbr ) {}
 

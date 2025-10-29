@@ -1,13 +1,14 @@
 #pragma once
 
-#include "vtz/span.h"
 #include <climits>
 #include <cstdint>
 #include <fmt/format.h>
 #include <memory>
 #include <string_view>
 #include <utility>
+#include <vtz/span.h>
 #include <vtz/strings.h>
+#include <vtz/tz_reader/ZoneFormat.h>
 
 #include <vtz/bit.h>
 
@@ -89,9 +90,9 @@ namespace vtz {
             swap( rhs );
         }
 
+        using Base::initial;
         using Base::lookup;
         using Base::lookupU32;
-        using Base::initial;
 
         VTZ_INLINE S32TableView view() const noexcept { return *this; }
 
@@ -117,8 +118,6 @@ namespace vtz {
     using std::string_view;
     class TimeZone {
       public:
-
-        using Abbr = FixStr<15>;
 
         TimeZone( string name, ZoneStates const& states );
 
@@ -251,7 +250,7 @@ namespace vtz {
         S32Table localOffEarliest;
 
 
-        std::unique_ptr<Abbr[]> abbrTable;
+        std::unique_ptr<ZoneAbbr[]> abbrTable;
 
         i64 cycleTime;
 

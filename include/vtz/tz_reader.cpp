@@ -501,7 +501,7 @@ namespace vtz {
             // For now, we will allow anything that is not recognized as a
             // offset or hyphen to be used as a rule name.
 
-            FixStr<15> name{};
+            RuleName name{};
             _vtz_memcpy( name.buff_, p, size );
             name.size_ = u8( size );
             return ZoneRule( name );
