@@ -1,3 +1,4 @@
+#include "vtz/civil.h"
 #include <algorithm>
 #include <initializer_list>
 #include <vtz/tz.h>
@@ -67,67 +68,17 @@ namespace vtz {
         };
     }
 
-
-    TimeZone::TimeZone( string name, ZoneStates const& states )
-    : name_( std::move( name ) ) {
-        auto const& tt = states.transitions;
-        if( tt.empty() )
-        {
-            i32 walloff = states.initial.walloff.off;
-
-            // Abbreviation table contains one entry, which is the initial
-            // abbreviation
-            abbrTable = _init<ZoneAbbr>( states.initial.abbr );
-            // '0' points to the initial abbreviation here
-            abbr = table1( 0 );
-
-            utcOff           = table1( u32( walloff ) );
-            localOffEarliest = table1( u32( -walloff ) );
-            localOffLatest   = table1( u32( -walloff ) );
-
-            // We don't have to worry about cycling - all inputs are valid
-            tz0_      = 0;
-            tzMax_    = ~u64();
-            cycleTime = 0;
-            return;
-        }
-
-        if( tt.size() == 1 )
-        {
-            ZoneState const& initial = states.initial;
-            ZoneState const& final   = tt[0].state;
-            i64              when    = tt[0].when;
-
-            i32 off0 = initial.walloff.off;
-            i32 off1 = final.walloff.off;
-
-            abbrTable = _init<ZoneAbbr>( initial.abbr, final.abbr );
-            abbr      = table2( when, 0, 1 );
-
-            utcOff           = table2( when, off0, off1 );
-            localOffEarliest = table2( when + off0, -off0, -off1 );
-            localOffLatest   = table2( when + off1, -off0, -off1 );
-
-            // We don't have to worry about cycling - all inputs are valid
-            tz0_      = 0;
-            tzMax_    = ~u64();
-            cycleTime = 0;
-            return;
-        }
-
-
+    int computeG( span<sysseconds_t const> tt ) {
         u64 minDelta = UINT64_MAX;
 
         for( size_t i = 1; i < tt.size(); ++i )
         {
-            auto const& t0 = tt[i - 1].when;
-            auto const& t1 = tt[i].when;
+            auto const& t0 = tt[i - 1];
+            auto const& t1 = tt[i];
             if( t1 <= t0 )
             {
                 throw std::runtime_error(
-                    fmt::format( "TimeZone(): zone transitions were not "
-                                 "ordered (when instantiating {})",
-                        name_ ) );
+                    "TimeZone(): zone transitions were not ordered" );
             }
             auto delta = u64( t1 ) - u64( t0 );
 
@@ -138,32 +89,63 @@ namespace vtz {
 
         if( g < 16 )
         {
-            throw std::runtime_error(
-                fmt::format( "Error: multiple transition times occur very "
-                             "close together (why?) zone={} minDelta={}s",
-                    name_,
-                    minDelta ) );
+            throw std::runtime_error( "Error: multiple transition times occur "
+                                      "very close together (why?)" );
         }
 
-        cycleTime = states.safeCycleTime;
+        return g;
+    }
 
-        auto minT = std::min( tt.front().when, i64( 0 ) );
-        auto maxT = cycleTime + 12622780800;
+    OffTables makeOffTables( i32 off0,
+        span<sysseconds_t const> tt,
+        span<i32 const>          off,
+        sec_t                    cycleTime ) {
+        if( tt.size() == 0 )
+        {
+            // The zone is contains no transitions, so all of the tables are
+            // valid for the full range of possible inputs.
+            return {
+                0,
+                ~u64(),
+                table1( off0 ),
+                table1( -off0 ),
+                table1( -off0 ),
+                0, // The cycle time doesn't matter.
+            };
+        }
+
+        if( tt.size() == 1 )
+        {
+            auto off1 = off[0];
+            // The zone contains a single transition. All tables are valid for
+            // the full range of possible inputs.
+            return {
+                0,
+                ~u64(),
+                table2( tt[0], off0, off1 ),
+                table2( tt[0] + off0, off0, off1 ),
+                table2( tt[0] + off1, off0, off1 ),
+                0, // The cycle time doesn't matter
+            };
+        }
+
+        int g = computeG( tt );
+
+        sysseconds_t minT = std::min( tt.front(), sysseconds_t( 0 ) );
+        sysseconds_t maxT = cycleTime + 12622780800;
 
         i64 minIndex = minT >> g;
         i64 maxIndex = 1 + ( maxT >> g );
 
         size_t buffCount = ( maxIndex - minIndex ) + 1;
 
-
         auto ttTimes = _new<i64>( buffCount );
         auto blocks  = _new<u64>( buffCount );
 
-        i32 off0  = states.initial.walloff.off;
-        i32 off1  = tt[0].state.walloff.off;
+        i32 off1  = off[0];
         u64 block = _join32( u32( off0 ), u32( off1 ) );
 
-        i64 when = tt[0].when;
+        i64 when = tt[0];
 
         i64 blockT = i64( u64( minIndex ) << g ); // current start time of block
         i64 blockSize = i64( 1 ) << g;            // Block size (in seconds)
@@ -178,8 +160,8 @@ namespace vtz {
                 zi++;
                 if( zi < tt.size() )
                 {
-                    when     = tt[zi].when;
-                    i32 off1 = tt[zi].state.walloff.off;
+                    when     = tt[zi];
+                    i32 off1 = off[zi];
                     block    = block >> 32 | ( u64( u32( off1 ) ) << 32 );
                 }
                 else
@@ -195,15 +177,39 @@ namespace vtz {
             }
         }
 
-        utcOff = S32Table{
-            g,
-            std::move( ttTimes ),
-            std::move( blocks ),
-            minIndex,
-            buffCount,
-        };
-
-        tz0_   = -u64( minT );
-        tzMax_ = u64( maxT ) + tz0_;
+        auto tz0_   = -u64( minT );
+        auto tzMax_ = u64( maxT ) + tz0_;
+        return { tz0_,
+            tzMax_,
+            S32Table{
+                g,
+                std::move( ttTimes ),
+                std::move( blocks ),
+                minIndex,
+                buffCount,
+            },
+            {},
+            {},
+            cycleTime };
     }
+
+    OffTables makeOffTables( ZoneStates const& s ) {
+        return makeOffTables(
+            s.walloffInitial_, s.walloffTrans_, s.walloff_, s.safeCycleTime );
+    }
+
+    AbbrTable makeAbbrTable( ZoneStates const& s ) {
+        // TODO
+        return {};
+    }
+
+    StdoffTable makeStdoffTable( ZoneStates const& s ) {
+        // TODO
+        return {};
+    }
+    TimeZone::TimeZone( string_view name, ZoneStates const& states )
+    : OffTables( makeOffTables( states ) )
+    , AbbrTable( makeAbbrTable( states ) )
+    , StdoffTable( makeStdoffTable( states ) )
+    , name_( name ) {}
 } // namespace vtz

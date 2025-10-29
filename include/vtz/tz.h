@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vtz/civil.h"
 #include <climits>
 #include <cstdint>
 #include <fmt/format.h>
@@ -116,18 +117,47 @@ namespace vtz {
     struct ZoneStates;
 
     using std::string_view;
-    class TimeZone {
-      public:
 
-        TimeZone( string name, ZoneStates const& states );
+    /// Takes a `t` that is out of range, and converts it to a `t` that
+    /// is in-range of the lookup table, such that the result of functions
+    /// like `offsetFromUTC` will be the same.
+    ///
+    /// A Proleptic Civil Calendar follows a 400 year cycle.
+    ///
+    /// - Each 400-year cycle contains the same number of days
+    ///   (146097 days),
+    /// - Whatever the given day of the week is (eg, Monday), this
+    ///   date 400 years from now will also be a Monday.
+    /// - If the last sunday of the month is the 26th, the last
+    ///   sunday of that same month 400 years from now will also
+    ///   be the 26th, etc
+    ///
+    /// This means that when daylight savings time starts, ends, etc
+    /// will _also_ be the same in 400 years, at least based on all
+    /// the rules currently supported by the timezone database source
+    /// files.
+    constexpr sec_t getCyclic( sec_t t, sec_t cycleTime ) noexcept {
+        // 12622780800 is the number of seconds in 400 years.
+        //
+        // There are _always_ 97 leap days in _any_ given 400 year period
+        // within the civil calendar, so the number of seconds in 400 years
+        // is given by (365 * 400 + 97) * 24 * 3600, which is 12622780800
+        return ( ( t - cycleTime ) % 12622780800 ) + cycleTime;
+    }
 
-        string_view name() const noexcept { return name_; }
+
+    struct OffTables {
+        u64      tz0_;
+        u64      tzMax_;
+        S32Table utcOff;
+        S32Table localE;
+        S32Table localL;
+        sec_t    cycleTime;
 
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t offsetFromUTC( sec_t t ) const noexcept {
-            u64 i = u64( t ) + tz0_;
-            if( i <= tzMax_ )
+            if( u64( t ) + tz0_ <= tzMax_ )
             {
                 // We can use the lookup table, which is very fast
                 return utcOff.lookup( t );
@@ -137,8 +167,72 @@ namespace vtz {
             if( t < 0 ) return utcOff.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return utcOff.lookup( getCyclic( t ) );
+            return utcOff.lookup( getCyclic( t, cycleTime ) );
         }
+
+        /// For a given system time T, represented as "offsets from UTC", return
+        /// the timezone's current offset from UTC, in seconds.
+        VTZ_INLINE sec_t toLocal( sec_t t ) const noexcept {
+            if( u64( t ) + tz0_ <= tzMax_ )
+            {
+                // We can use the lookup table, which is very fast
+                return t + utcOff.lookup( t );
+            }
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return t + utcOff.initial();
+
+            // use zone symmetry to compute state for equivalent time
+            return t + utcOff.lookup( getCyclic( t, cycleTime ) );
+        }
+
+        /// Returns the UTC time represented by a given input local time.
+        ///
+        /// If the local time is ambiguous (referring to potentially two system
+        /// times), returns the later of the two.
+        ///
+        /// For nonexistant times, returns:
+        ///
+        ///     (time since last existant time) + (systime of last existant
+        ///     time)
+        ///
+        /// Which is the correct interpretation if, eg, someone had forgotten to
+        /// set their clock forward.
+        VTZ_INLINE sec_t toUTCLatest( sec_t t ) const noexcept {
+            if( u64( t ) + tz0_ <= tzMax_ )
+            {
+                // We can use the lookup table, which is very fast
+                return t + localL.lookup( t );
+            }
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return t + localL.initial();
+
+            // use zone symmetry to compute state for equivalent time
+            return t + localL.lookup( getCyclic( t, cycleTime ) );
+        }
+    };
+
+    struct StdoffTable {
+        sysseconds_t tMin;
+        sysseconds_t tMax;
+        S32Table     stdoff;
+
+        VTZ_INLINE i32 zoneStdoff( sysseconds_t t ) const noexcept {
+            if( t < tMin ) t = tMin;
+            if( t > tMax ) t = tMax;
+            return stdoff.lookup( t );
+        }
+    };
+
+    struct AbbrTable {
+        u64 tz0_;
+        u64 tzMax_;
+
+        S32Table abbr;
+        sec_t    cycleTime;
+
+        std::unique_ptr<ZoneAbbr[]> abbrTable;
 
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
@@ -154,83 +248,7 @@ namespace vtz {
             if( t < 0 ) return abbrFromBlock( abbr.initial() );
 
             // use zone symmetry to compute state for equivalent time
-            return abbrFromBlock( abbr.lookup( getCyclic( t ) ) );
-        }
-
-
-        /// For a given system time T, represented as "offsets from UTC", return
-        /// the timezone's current offset from UTC, in seconds.
-        VTZ_INLINE sec_t toLocal( sec_t t ) const noexcept {
-            u64 i = u64( t ) + tz0_;
-            if( i <= tzMax_ )
-            {
-                // We can use the lookup table, which is very fast
-                return t + utcOff.lookup( t );
-            }
-
-            // t is _early_: use initial zone state
-            if( t < 0 ) return t + utcOff.initial();
-
-            // use zone symmetry to compute state for equivalent time
-            return t + utcOff.lookup( getCyclic( t ) );
-        }
-
-
-        /// Returns the UTC time represented by a given input local time.
-        ///
-        /// If the local time is ambiguous (referring to potentially two system
-        /// times), returns the later of the two.
-        ///
-        /// For nonexistant times, returns:
-        ///
-        ///     (time since last existant time) + (systime of last existant
-        ///     time)
-        ///
-        /// Which is the correct interpretation if, eg, someone had forgotten to
-        /// set their clock forward.
-        VTZ_INLINE sec_t toUTCLatest( sec_t t ) const noexcept {
-            u64 i = u64( t ) + tz0_;
-            if( i <= tzMax_ )
-            {
-                // We can use the lookup table, which is very fast
-                return t + localOffLatest.lookup( t );
-            }
-
-            // t is _early_: use initial zone state
-            if( t < 0 ) return t + localOffLatest.initial();
-
-            // use zone symmetry to compute state for equivalent time
-            return t + localOffLatest.lookup( getCyclic( t ) );
-        }
-
-
-      private:
-
-        /// Takes a `t` that is out of range, and converts it to a `t` that
-        /// is in-range of the lookup table, such that the result of functions
-        /// like `offsetFromUTC` will be the same.
-        ///
-        /// A Proleptic Civil Calendar follows a 400 year cycle.
-        ///
-        /// - Each 400-year cycle contains the same number of days
-        ///   (146097 days),
-        /// - Whatever the given day of the week is (eg, Monday), this
-        ///   date 400 years from now will also be a Monday.
-        /// - If the last sunday of the month is the 26th, the last
-        ///   sunday of that same month 400 years from now will also
-        ///   be the 26th, etc
-        ///
-        /// This means that when daylight savings time starts, ends, etc
-        /// will _also_ be the same in 400 years, at least based on all
-        /// the rules currently supported by the timezone database source
-        /// files.
-        sec_t getCyclic( sec_t t ) const noexcept {
-            // 12622780800 is the number of seconds in 400 years.
-            //
-            // There are _always_ 97 leap days in _any_ given 400 year period
-            // within the civil calendar, so the number of seconds in 400 years
-            // is given by (365 * 400 + 97) * 24 * 3600, which is 12622780800
-            return ( ( t - cycleTime ) % 12622780800 ) + cycleTime;
+            return abbrFromBlock( abbr.lookup( getCyclic( t, cycleTime ) ) );
         }
 
         string_view abbrFromBlock( u32 block ) const noexcept {
@@ -238,21 +256,23 @@ namespace vtz {
             char const* data = abbrTable[block >> 4].buff_;
             return string_view( data, size );
         }
+    };
 
+    class TimeZone
+    : public OffTables
+    , public AbbrTable
+    , public StdoffTable {
+      public:
 
-        u64 tz0_;
-        u64 tzMax_;
+        TimeZone( string_view name, ZoneStates const& states );
 
-        S32Table utcOff;
-        S32Table abbr;
+        string_view name() const noexcept { return name_; }
 
-        S32Table localOffLatest;
-        S32Table localOffEarliest;
+        VTZ_INLINE i32 zoneSave( sysseconds_t t ) const noexcept {
+            return offsetFromUTC( t ) - zoneStdoff( t );
+        }
 
-
-        std::unique_ptr<ZoneAbbr[]> abbrTable;
-
-        i64 cycleTime;
+      private:
 
         string name_;
     };

@@ -31,12 +31,12 @@ struct entry {
     RuleSave     save;
 
     template<size_t N>
-    FixStr<N> fixAbbr() const {
+    ZoneAbbr fixAbbr() const {
         FixStr<N> result{};
         if( abbr.size() > N ) { throw std::runtime_error( "fixAbbr(): abbreviation too big!" ); }
         memcpy( result.buff_, abbr.data(), abbr.size() );
         result.size_ = abbr.size();
-        return result;
+        return { result };
     }
 
     FromUTC getStdoff() const { return offset.off - save.save; }
@@ -157,7 +157,19 @@ TEST( vtz, all_timezones ) {
             // Check that the zone matches from begin to end-1
             auto const& s1 = zoneStates.getState( e.begin );
             auto const& s2 = zoneStates.getState( e.end - 1 );
-            ASSERT_EQ_QUIET( &s1, &s2 );
+
+            auto const& off1    = zoneStates.walloff( e.begin );
+            auto const& stdoff1 = zoneStates.stdoff( e.begin );
+            auto const& abbr1   = zoneStates.abbr( e.begin );
+
+            auto const& off2    = zoneStates.walloff( e.end - 1 );
+            auto const& stdoff2 = zoneStates.stdoff( e.end - 1 );
+            auto const& abbr2   = zoneStates.abbr( e.end - 1 );
+
+            ASSERT_EQ_QUIET( &off1, &off2 );
+            ASSERT_EQ_QUIET( &stdoff1, &stdoff2 );
+            ASSERT_EQ_QUIET( &abbr1, &abbr2 );
+
             ASSERT_EQ_QUIET( s1.walloff, e.offset );
             ASSERT_EQ_QUIET( s1.save(), e.save );
             ASSERT_EQ_QUIET( s1.abbr.sv(), e.abbr );
@@ -195,38 +207,40 @@ TEST( vtz, TimeZone ) {
         ADD_CONTEXT( "Checking timezone", zone );
         // Get all the zone states
         auto        zoneStates = file.getZoneStates( zone, 2900 );
-        auto const& tt         = zoneStates.transitions;
+        auto const& tt         = zoneStates.walloffTrans_;
+
 
         auto tz = TimeZone( zone, zoneStates );
 
-        ZoneState prev = zoneStates.initial;
+        i32 off0 = zoneStates.walloffInitial_;
         for( size_t zi = 0; zi < tt.size(); ++zi )
         {
-            auto const& trans = tt[zi];
-            ADD_CONTEXT( "Checking transition", utcToString( trans.when ), zi );
+            auto const& t   = zoneStates.walloffTrans_[zi];
+            auto const& off = zoneStates.walloff_[zi];
+            ADD_CONTEXT( "Checking transition", utcToString( t ), zi );
 
-            ASSERT_EQ_QUIET( tz.offsetFromUTC( trans.when - 1 ), prev.walloff.off );
-            ASSERT_EQ_QUIET( tz.offsetFromUTC( trans.when ), trans.state.walloff.off );
-            prev = trans.state;
+            ASSERT_EQ_QUIET( tz.offsetFromUTC( t - 1 ), off0 );
+            ASSERT_EQ_QUIET( tz.offsetFromUTC( t ), off );
+            off0 = off;
         }
 
         if( tt.size() > 0 )
         {
-            int64_t T0   = daysToSeconds( resolveCivil( 1700, 1, 1 ) );
-            int64_t TMax = tt.back().when;
-            auto    st   = zoneStates.initial;
-            auto    it   = tt.data();
+            int64_t T0         = daysToSeconds( resolveCivil( 1700, 1, 1 ) );
+            int64_t TMax       = tt.back();
+            auto    currentOff = zoneStates.walloffInitial_;
+            size_t  zi         = 0;
             // loop through times in 1h intervals until we get to the end of the states we
             // calculated
             for( ; T0 < TMax; T0 += 3600 )
             {
-                while( T0 >= it->when )
+                while( T0 >= tt[zi] )
                 {
-                    st = it->state;
-                    ++it;
+                    currentOff = zoneStates.walloff_[zi];
+                    ++zi;
                 }
 
-                ASSERT_EQ_QUIET( tz.offsetFromUTC( T0 ), st.walloff.off );
+                ASSERT_EQ_QUIET( tz.offsetFromUTC( T0 ), currentOff );
             }
         }
     };

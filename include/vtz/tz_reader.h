@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vtz/span.h"
 #include <algorithm>
 #include <vtz/bit.h>
 #include <vtz/civil.h>
@@ -550,32 +551,89 @@ namespace vtz {
 
     RuleEvalResult evaluateRules( vector<RuleEntry> const& entries );
 
+    struct AbbrBlock {
+        u32 data_;
+
+        constexpr size_t index() const noexcept { return data_ >> 4; }
+        constexpr size_t size() const noexcept { return data_ & 0xf; }
+
+        static AbbrBlock make( size_t i, size_t s ) noexcept {
+            return { u32( i ) << 4 | u32( s & 0xf ) };
+        }
+    };
+
     struct ZoneStates {
-        ZoneState              initial;
-        vector<ZoneTransition> transitions;
+        /// Return the _last_ value less than or equal to 'when'.
+        /// Return -1 if no such value exists
+        static ptrdiff_t _find( span<i64 const> s, i64 when ) {
+            auto it = std::upper_bound( s.begin(), s.end(), when );
+            return ( it - s.begin() ) - 1;
+        }
 
-        sysseconds_t safeCycleTime;
+        sysseconds_t     safeCycleTime;
+        vector<ZoneAbbr> abbrTable_;
 
-        ZoneState const& getState( sysseconds_t time ) const {
-            auto begin = transitions.data();
-            auto end   = transitions.data() + transitions.size();
+        AbbrBlock abbrInitial_;
+        i32       walloffInitial_;
+        i32       stdoffInitial_;
 
-            auto it = std::upper_bound( begin,
-                end,
-                time,
-                []( sysseconds_t lhs, ZoneTransition const& rhs ) {
-                    return lhs < rhs.when;
-                } );
+        vector<sysseconds_t> abbrTrans_;
+        vector<AbbrBlock>    abbr_;
 
-            size_t i = it - begin;
+        vector<sysseconds_t> walloffTrans_;
+        vector<i32>          walloff_;
 
-            if( i == 0 ) return initial;
-            return transitions[i - 1].state;
+        vector<sysseconds_t> stdoffTrans_;
+        vector<i32>          stdoff_;
+
+
+        vector<ZoneTransition> getTransitions() const;
+
+        ZoneState initial() const noexcept {
+            return {
+                FromUTC( stdoffInitial_ ),
+                FromUTC( walloffInitial_ ),
+                abbrTable_[abbrInitial_.index()],
+            };
+        }
+
+        i32 const& stdoff( sysseconds_t t ) const noexcept {
+            auto i = _find( stdoffTrans_, t );
+            return i >= 0 ? stdoff_[i] : stdoffInitial_;
+        }
+
+        i32 const& walloff( sysseconds_t t ) const noexcept {
+            auto i = _find( walloffTrans_, t );
+            return i >= 0 ? walloff_[i] : walloffInitial_;
+        }
+
+        AbbrBlock const& abbr( sysseconds_t t ) const noexcept {
+            auto i = _find( abbrTrans_, t );
+            return i >= 0 ? abbr_[i] : abbrInitial_;
+        }
+
+
+        ZoneState getState( sysseconds_t t ) const {
+            return {
+                FromUTC( stdoff( t ) ),
+                FromUTC( walloff( t ) ),
+                abbrTable_[abbr( t ).index()],
+            };
         }
 
         string formatLocal( sysseconds_t time ) const {
             auto const& state = getState( time );
             return localToString( time, state.walloff, state.abbr );
+        }
+
+        static ZoneStates makeStatic( ZoneState state ) {
+            return {
+                0,
+                { state.abbr },
+                AbbrBlock::make( 0, state.abbr.size() ),
+                state.walloff.off,
+                state.stdoff.off,
+            };
         }
     };
 

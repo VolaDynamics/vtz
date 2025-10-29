@@ -1,4 +1,5 @@
 #include <fmt/base.h>
+#include <limits>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
 #include <vtz/span.h>
@@ -14,6 +15,18 @@
 
 #include <fmt/format.h>
 #include <stdexcept>
+
+template<>
+struct ankerl::unordered_dense::hash<vtz::ZoneAbbr> {
+    using is_avalanching = void;
+
+    [[nodiscard]] auto operator()( vtz::ZoneAbbr const& x ) const noexcept
+        -> uint64_t {
+        static_assert(
+            std::has_unique_object_representations_v<vtz::ZoneAbbr> );
+        return detail::wyhash::hash( &x, sizeof( x ) );
+    }
+};
 
 namespace vtz {
     namespace {
@@ -952,34 +965,78 @@ namespace vtz {
         sysseconds_t T;    ///< DateTime when current state ends
     };
 
-    struct ZTAgglomerator {
+    struct ZTAgglomerator : ZoneStates {
       private:
 
-        ZoneState initial_;
-        ZoneState current_;
+        ZoneAbbr currentAbbr;
+        i32      currentOff;
+        i32      currentStdoff;
 
-        vector<ZoneTransition> tt;
+
+        map<ZoneAbbr, size_t> abbrLookup;
+
+        AbbrBlock addAbbr( ZoneAbbr const& abbr ) {
+            size_t& id = abbrLookup[abbr];
+            // If it's a valid id, we just return (id - 1) to get the index
+            if( id ) return AbbrBlock::make( id - 1, abbr.size_ );
+
+            // Otherwise we set the id and update the table
+            auto result = abbrTable_.size();
+            id          = result + 1;
+            abbrTable_.push_back( abbr );
+            return AbbrBlock::make( result, abbr.size_ );
+        }
+
 
       public:
 
-        ZoneState const& current() const noexcept { return current_; }
-        ZoneState const& initial() const noexcept { return initial_; }
+        ZoneState current() const noexcept {
+            return {
+                FromUTC( currentStdoff ),
+                FromUTC( currentOff ),
+                currentAbbr,
+            };
+        }
 
         void setInitial( ZoneState state ) noexcept {
-            current_ = state;
-            initial_ = state;
+            abbrInitial_    = addAbbr( state.abbr );
+            walloffInitial_ = state.walloff.off;
+            stdoffInitial_  = state.stdoff.off;
+
+            currentAbbr   = state.abbr;
+            currentOff    = state.walloff.off;
+            currentStdoff = state.stdoff.off;
         }
 
         void add( ZoneTransition const& trans ) {
-            if( trans.state != current_ )
+            auto abbr   = trans.state.abbr;
+            auto off    = trans.state.walloff.off;
+            auto stdoff = trans.state.stdoff.off;
+            auto when   = trans.when;
+
+            if( abbr != currentAbbr )
             {
-                current_ = trans.state;
-                tt.push_back( trans );
+                currentAbbr = abbr;
+                abbr_.push_back( addAbbr( abbr ) );
+                abbrTrans_.push_back( when );
+            }
+            if( off != currentOff )
+            {
+                currentOff = off;
+                walloff_.push_back( off );
+                walloffTrans_.push_back( when );
+            }
+            if( stdoff != currentStdoff )
+            {
+                currentStdoff = stdoff;
+                stdoff_.push_back( stdoff );
+                stdoffTrans_.push_back( when );
             }
         }
 
         ZoneStates getStates( i64 safeCycleTime ) && noexcept {
-            return { initial_, std::move( tt ), safeCycleTime };
+            this->safeCycleTime = safeCycleTime;
+            return static_cast<ZoneStates&&>( *this );
         }
     };
 
@@ -1071,15 +1128,15 @@ namespace vtz {
             {
                 // We only have one entry in the zone, and also there is no
                 // associated rule, so there are no state changes.
-                return ZoneStates{ ZoneState{ stdoff, format, "-" } };
+                return ZoneStates::makeStatic( { stdoff, format, "-" } );
             }
 
             if( rule.isOffset() )
             {
                 // The rule only contains an offset. Again, no other entries, so
                 // no state changes, so... it's a steady-state zone
-                return ZoneStates{ ZoneState{
-                    stdoff, rule.save(), format, "-" } };
+                return ZoneStates::makeStatic(
+                    { stdoff, rule.save(), format, "-" } );
             }
 
             auto& iter = cache.at( rule.name() );
@@ -1289,5 +1346,61 @@ namespace vtz {
         case NAMED: return string( name() );
         case OFFSET: return toHHMMSS( offset() );
         }
+    }
+    vector<ZoneTransition> ZoneStates::getTransitions() const {
+        ZoneState initial = this->initial();
+
+        constexpr static sysseconds_t MAX_TIME
+            = std::numeric_limits<sysseconds_t>::max();
+
+        span stt = stdoffTrans_;
+        span wtt = walloffTrans_;
+        span rtt = abbrTrans_;
+
+        span svv = stdoff_;
+        span wvv = walloff_;
+        span rvv = abbr_;
+
+        size_t si = 0;
+        size_t wi = 0;
+        size_t ri = 0;
+
+        auto sLast = svv.back_or( stdoffInitial_ );
+        auto wLast = wvv.back_or( walloffInitial_ );
+        auto rLast = rvv.back_or( abbrInitial_ );
+
+        auto                   sCurrent = stdoffInitial_;
+        auto                   wCurrent = walloffInitial_;
+        auto                   rCurrent = abbrInitial_;
+        vector<ZoneTransition> result;
+        for( ;; )
+        {
+            auto st = stt.value_or( si, MAX_TIME );
+            auto wt = wtt.value_or( wi, MAX_TIME );
+            auto rt = rtt.value_or( ri, MAX_TIME );
+
+            auto T = std::min( { st, wt, rt } );
+            if( T == MAX_TIME ) break;
+
+            sCurrent = svv.value_or( si, sCurrent );
+            wCurrent = wvv.value_or( wi, wCurrent );
+            rCurrent = rvv.value_or( ri, rCurrent );
+
+            // Update each index as needed
+            si += int( st == T );
+            wi += int( wt == T );
+            ri += int( rt == T );
+
+            result.push_back( ZoneTransition{
+                T,
+                ZoneState{
+                    FromUTC( sCurrent ),
+                    FromUTC( wCurrent ),
+                    abbrTable_[rCurrent.index()],
+                },
+            } );
+        }
+
+        return result;
     }
 } // namespace vtz

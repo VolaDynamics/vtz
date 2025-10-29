@@ -845,11 +845,11 @@ TEST( vtz_tz, America_NewYork ) {
     TEST_LOG.logGood( "time getZoneStates()", std::chrono::duration_cast<msR>( t1 - t0 ) );
 
     fmt::println( "Initial state: stdoff={} save={} abbr={}",
-        times.initial.stdoff,
-        times.initial.save(),
-        times.initial.abbr.sv() );
+        times.initial().stdoff,
+        times.initial().save(),
+        times.initial().abbr.sv() );
 
-    for( auto const& trans : times.transitions )
+    for( auto const& trans : times.getTransitions() )
     {
         fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
             fmt::styled( utcToString( trans.when ), FAINT_GRAY ),
@@ -875,11 +875,11 @@ TEST( vtz_tz, Asia_Singapore ) {
     TEST_LOG.logGood( "time getZoneStates()", std::chrono::duration_cast<msR>( t1 - t0 ) );
 
     fmt::println( "Initial state: stdoff={} save={} abbr={}",
-        times.initial.stdoff,
-        times.initial.save(),
-        times.initial.abbr.sv() );
+        times.initial().stdoff,
+        times.initial().save(),
+        times.initial().abbr.sv() );
 
-    for( auto const& trans : times.transitions )
+    for( auto const& trans : times.getTransitions() )
     {
         fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
             fmt::styled( utcToString( trans.when ), FAINT_GRAY ),
