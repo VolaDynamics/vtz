@@ -363,10 +363,18 @@ namespace _test_vtz {
                     sizeof...( values ),
                     fmt::join( args, ", " ) ) );
         }
+
+        size_t maxLen = 0;
+        for( auto const& ar : args )
+        {
+            if( ar.size() > maxLen ) maxLen = ar.size();
+        }
         std::string s;
+        auto        pad        = std::string( maxLen, ' ' );
         auto        ind        = std::string( indent, ' ' );
         auto        printValue = [&, i = 0]( auto const& value ) mutable {
             s += args[i];
+            s += string_view( pad.data(), pad.size() - args[i].size() );
             s += " = ";
             debugPrint( s, value );
             ++i;
