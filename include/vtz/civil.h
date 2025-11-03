@@ -188,6 +188,13 @@ namespace vtz {
         return era * 146097 + static_cast<i32>( doe ) - 719468;
     }
 
+
+    constexpr sysseconds_t resolveCivilTime(
+        i32 y, u32 m, u32 d, int h, int min, int sec ) noexcept {
+        return i64( resolveCivil( y, m, d ) ) * 86400 + 3600 * h + 60 * min
+               + sec;
+    }
+
     /// Given a year, month, and day, obtain the number of days since the epoch
     ///
     /// Based on reference implementation by Howard Hinnant provided here:
