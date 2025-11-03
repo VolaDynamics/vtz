@@ -480,12 +480,13 @@ namespace vtz {
             // 'when'
             for( ;; )
             {
-                // The current wall offset is determined by the current save.
-                // We need this to determine the time when the next transition
-                // will occur.
-                auto walloff = stdoff.save( currentSave_ );
+                // The next transition time is based on what the zone time was
+                // previously
 
                 auto nextTransTime = next_.resolve( oldTime );
+
+                // If the next transition has not yet occurred, we've found the
+                // current state
                 if( nextTransTime > when ) break;
 
                 // Update the current state
