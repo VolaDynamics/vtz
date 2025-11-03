@@ -427,4 +427,24 @@ namespace vtz {
         _vtz_memcpy( buff + 20, abbr.buff_, N );
         return std::string( buff, 20 + abbr.size() );
     }
+
+    struct DT {
+        int64_t sec;
+
+        string str() const {
+            char dest[20]{};
+            return string( writeTimestampToSV( sec, dest ) );
+        }
+
+        constexpr static DT civil(
+            i32 y, u32 m, u32 d, int h, int min, int sec ) noexcept {
+            return { resolveCivilTime( y, m, d, h, min, sec ) };
+        }
+
+        bool operator==( DT const& rhs ) const noexcept {
+            return sec == rhs.sec;
+        }
+    };
+
+    inline string format_as( DT T ) { return T.str(); }
 } // namespace vtz
