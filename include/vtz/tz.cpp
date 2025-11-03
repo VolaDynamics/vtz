@@ -1,5 +1,6 @@
 #include "vtz/civil.h"
 #include <algorithm>
+#include <climits>
 #include <initializer_list>
 #include <vtz/tz.h>
 
@@ -69,6 +70,7 @@ namespace vtz {
     }
 
     int computeG( span<sysseconds_t const> tt ) {
+        if( tt.empty() ) return 63;
         u64 minDelta = UINT64_MAX;
 
         for( size_t i = 1; i < tt.size(); ++i )
@@ -96,54 +98,68 @@ namespace vtz {
         return g;
     }
 
-    OffTables makeOffTables( i32 off0,
+    /// Compute the required block size, taking into account that two possible
+    /// local times map to the same UTC time
+    int computeGLocal( i32 off0, span<sec_t const> tt, span<i32 const> off ) {
+        // If there are no transition times, return the maximum possible g
+        // (which is a shift of 64 bits)
+        if( tt.empty() ) return 63;
+
+        u64 minDelta = UINT64_MAX;
+
+        sec_t Tlast = std::max( tt[0] + off0, tt[0] + off[1] );
+
+        for( size_t i = 1; i < tt.size(); ++i )
+        {
+            // Transition time (UTC)
+            auto T = tt[i];
+            // Time when previous block ends (local time)
+            auto localEnd = T + off[i - 1];
+            // Time when current block starts (local time)
+            auto localStart = T + off[i];
+            auto Tearly     = std::min( localEnd, localStart );
+            auto Tlate      = std::max( localEnd, localStart );
+            if( Tearly <= Tlast )
+            {
+                throw std::runtime_error(
+                    "TimeZone(): transition times overlap when converted to "
+                    "local time" );
+            }
+
+            auto delta = u64( Tearly ) - u64( Tlast );
+            Tlast      = Tlate;
+            minDelta   = std::min( delta, minDelta );
+        }
+
+        int g = _blog2( minDelta );
+
+        if( g < 16 )
+        {
+            throw std::runtime_error( "Error: multiple transition times occur "
+                                      "very close together (why?)" );
+        }
+
+        return g;
+    }
+
+
+    template<class T>
+    S32Table makeTable( T        off0,
         span<sysseconds_t const> tt,
-        span<i32 const>          off,
-        sec_t                    cycleTime ) {
-        if( tt.size() == 0 )
-        {
-            // The zone is contains no transitions, so all of the tables are
-            // valid for the full range of possible inputs.
-            return {
-                0,
-                ~u64(),
-                table1( off0 ),
-                table1( -off0 ),
-                table1( -off0 ),
-                0, // The cycle time doesn't matter.
-            };
-        }
-
-        if( tt.size() == 1 )
-        {
-            auto off1 = off[0];
-            // The zone contains a single transition. All tables are valid for
-            // the full range of possible inputs.
-            return {
-                0,
-                ~u64(),
-                table2( tt[0], off0, off1 ),
-                table2( tt[0] + off0, off0, off1 ),
-                table2( tt[0] + off1, off0, off1 ),
-                0, // The cycle time doesn't matter
-            };
-        }
-
+        span<T const>            off,
+        sysseconds_t             minT,
+        sysseconds_t             maxT ) {
         int g = computeG( tt );
-
-        sysseconds_t minT = std::min( tt.front(), sysseconds_t( 0 ) );
-        sysseconds_t maxT = cycleTime + 12622780800;
 
         i64 minIndex = minT >> g;
         i64 maxIndex = 1 + ( maxT >> g );
 
         size_t buffCount = ( maxIndex - minIndex ) + 1;
 
+        u64 block = _join32( u32( off0 ), u32( off[0] ) );
+
         auto ttTimes = _new<i64>( buffCount );
         auto blocks  = _new<u64>( buffCount );
-
-        i32 off1  = off[0];
-        u64 block = _join32( u32( off0 ), u32( off1 ) );
 
         i64 when = tt[0];
 
@@ -177,20 +193,137 @@ namespace vtz {
             }
         }
 
+        return S32Table{
+            g,
+            std::move( ttTimes ),
+            std::move( blocks ),
+            minIndex,
+            buffCount,
+        };
+    }
+
+
+    template<class T>
+    S32Table makeTableLocal( T   off0,
+        span<sysseconds_t const> tt,
+        span<T const>            off,
+        sysseconds_t             minT,
+        sysseconds_t             maxT ) {
+        int g = computeGLocal( off0, tt, off );
+
+        i64 minIndex = minT >> g;
+        i64 maxIndex = 1 + ( maxT >> g );
+
+        size_t buffCount = ( maxIndex - minIndex ) + 1;
+
+        u64 block = _join32( u32( off0 ), u32( off[0] ) );
+
+        auto ttTimes = _new<i64>( buffCount );
+        auto blocks  = _new<u64>( buffCount );
+
+        // this is the transition time for the current block, according to
+        // `choose::latest`
+        i64 when = tt[0] + off[0];
+        // this is the time when it is safe to advance to the next transition
+        // time, when constructing blocks. it will sometimes be a little bit
+        // after the current transition time, because we set the clocks back.
+        i64 blockEndT = tt[0] + std::max( off0, off[0] );
+
+        i64 blockT = i64( u64( minIndex ) << g ); // current start time of block
+        i64 blockSize = i64( 1 ) << g;            // Block size (in seconds)
+        size_t zi     = 0;
+        for( size_t bi = 0; bi < buffCount; bi++ )
+        {
+            ttTimes[bi]  = when;
+            blocks[bi]   = block;
+            blockT      += blockSize;
+            if( blockT >= blockEndT )
+            {
+                zi++;
+                if( zi < tt.size() )
+                {
+                    i32 off0  = off[zi - 1];
+                    i32 off1  = off[zi];
+                    when      = tt[zi] + off1;
+                    blockEndT = tt[zi] + std::max( off0, off1 );
+                    block     = block >> 32 | ( u64( u32( off1 ) ) << 32 );
+                }
+                else
+                {
+                    ++bi;
+                    for( ; bi < buffCount; ++bi )
+                    {
+                        ttTimes[bi] = when;
+                        blocks[bi]  = block;
+                    }
+                    break;
+                }
+            }
+        }
+
+        return S32Table{
+            g,
+            std::move( ttTimes ),
+            std::move( blocks ),
+            minIndex,
+            buffCount,
+        };
+    }
+
+
+    OffTables makeOffTables( i32 off0,
+        span<sysseconds_t const> tt,
+        span<i32 const>          off,
+        sec_t                    cycleTime ) {
+        if( tt.size() == 0 )
+        {
+            // The zone is contains no transitions, so all of the tables are
+            // valid for the full range of possible inputs.
+            return {
+                0,
+                ~u64(),
+                table1( off0 ),
+                table1( off0 ),
+                0, // The cycle time doesn't matter.
+            };
+        }
+
+        if( tt.size() == 1 )
+        {
+            auto off1 = off[0];
+            // The zone contains a single transition. All tables are valid for
+            // the full range of possible inputs.
+            return {
+                0,
+                ~u64(),
+                table2( tt[0], off0, off1 ),
+                table2( tt[0] + off1, off0, off1 ),
+                0, // The cycle time doesn't matter
+            };
+        }
+
+        // The min time is the min time under any time convention
+        sec_t minT = std::min( {
+            tt.front(),          // min time (UTC)
+            tt.front() + off0,   // min time (initial local time)
+            tt.front() + off[0], // min time (local time after first transition)
+            sec_t( 0 ), // if min time would be smaller than 0, set to 0
+        } );
+        // Ensure that the cycle time is >= minT and >= 0
+        cycleTime = std::max( { cycleTime, minT, sec_t( 0 ) } );
+        // maxT is cycleTime + 400 years. cycleTime >= minT, so we know the
+        // table is at least 400 years in size
+        sec_t maxT = cycleTime + 12622780800;
+
         auto tz0_   = -u64( minT );
         auto tzMax_ = u64( maxT ) + tz0_;
-        return { tz0_,
+        return {
+            tz0_,
             tzMax_,
-            S32Table{
-                g,
-                std::move( ttTimes ),
-                std::move( blocks ),
-                minIndex,
-                buffCount,
-            },
-            {},
-            {},
-            cycleTime };
+            makeTable( off0, tt, off, minT, maxT ),
+            makeTableLocal( off0, tt, off, minT, maxT ),
+            cycleTime,
+        };
     }
 
     OffTables makeOffTables( ZoneStates const& s ) {

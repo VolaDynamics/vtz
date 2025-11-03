@@ -20,6 +20,18 @@ namespace vtz {
 
     /// Implements fast lookup of 32-bit values for quasi-evenly-spaced inputs
     struct S32TableView {
+        struct Entry {
+            i64 t;
+            u64 block;
+
+            /// Return the low 32 bits as a signed integer. Sign-extend to 64
+            /// bits
+            i64 lo() const noexcept { return i64( block << 32 ) >> 32; }
+            /// Return the high 32 bits as a signed integer. Sign-extend to 64
+            /// bits
+            i64 hi() const noexcept { return i64( block ) >> 32; }
+        };
+
         int  g;
         i64* tt;
         u64* bb;
@@ -35,10 +47,27 @@ namespace vtz {
             rhs      = tmp;
         }
 
+        constexpr u64 blockSize() const noexcept { return u64( 1 ) << g; }
+        constexpr i64 blockStartT( i64 t ) const noexcept {
+            return i64( ( u64( t ) >> g ) << g );
+        }
+        constexpr i64 blockEndT( i64 t ) const noexcept {
+            return i64( u64( blockStartT( t ) ) + blockSize() );
+        }
+
         /// Return the first value in the table
         constexpr i64 initial() const noexcept {
             u64 block = *data_bb();
             return i64( block << 32 ) >> 32;
+        }
+
+        VTZ_INLINE constexpr Entry firstEntry() const noexcept {
+            return Entry{ *data_tt(), *data_bb() };
+        }
+
+        VTZ_INLINE constexpr Entry get( i64 t ) const noexcept {
+            i64 i = t >> g;
+            return Entry{ tt[i], bb[i] };
         }
 
         /// if t >= tt[i], return the low 32 bits of bb[i], else obtain the hi
@@ -65,7 +94,7 @@ namespace vtz {
 
 
     // Represents an owning S32Table
-    class S32Table : private S32TableView {
+    class S32Table : public S32TableView {
         using Base = S32TableView;
 
       public:
@@ -91,6 +120,7 @@ namespace vtz {
             swap( rhs );
         }
 
+        using Base::get;
         using Base::initial;
         using Base::lookup;
         using Base::lookupU32;
@@ -112,7 +142,7 @@ namespace vtz {
     /// Seconds from epoch
     using sec_t = i64;
 
-    enum class choose { earliest, latest };
+    enum class choose : bool { earliest = false, latest = true };
 
     struct ZoneStates;
 
@@ -149,67 +179,140 @@ namespace vtz {
     struct OffTables {
         u64      tz0_;
         u64      tzMax_;
-        S32Table utcOff;
-        S32Table localE;
-        S32Table localL;
+        S32Table TTutc;
+        S32Table TTlocal;
         sec_t    cycleTime;
 
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t offsetFromUTC( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ )
-            {
-                // We can use the lookup table, which is very fast
-                return utcOff.lookup( t );
-            }
+            // If the time is in-bounds, use the lookup table
+            if( u64( t ) + tz0_ <= tzMax_ ) return TTutc.lookup( t );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return utcOff.initial();
+            if( t < 0 ) return TTutc.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return utcOff.lookup( getCyclic( t, cycleTime ) );
+            return TTutc.lookup( getCyclic( t, cycleTime ) );
+        }
+
+        VTZ_INLINE auto localBlock( sec_t t ) const noexcept {
+            // If the time is in-bounds, we can use the lookup table
+            if( u64( t ) + tz0_ <= tzMax_ ) return TTlocal.get( t );
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return TTlocal.firstEntry();
+
+            // use zone symmetry to compute state for equivalent time
+            return TTutc.get( getCyclic( t, cycleTime ) );
         }
 
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t toLocal( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ )
-            {
-                // We can use the lookup table, which is very fast
-                return t + utcOff.lookup( t );
-            }
+            // If the time is in-bounds we can use the lookup table
+            if( u64( t ) + tz0_ <= tzMax_ ) return t + TTutc.lookup( t );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return t + utcOff.initial();
+            if( t < 0 ) return t + TTutc.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return t + utcOff.lookup( getCyclic( t, cycleTime ) );
+            return t + TTutc.lookup( getCyclic( t, cycleTime ) );
+        }
+
+        template<bool chooseLatest>
+        VTZ_INLINE sec_t _lookupUTC( sec_t tKey, sec_t t ) const noexcept {
+            auto ent = TTlocal.get( tKey );
+            /// offset from UTC before transition time
+            i64 offPre = ent.lo();
+            /// offset from UTC on or after transition time
+            i64  offPost = ent.hi();
+            auto save    = offPost - offPre;
+            auto when1   = ent.t - save; // eg, 2AM when DST starts
+            auto when2   = ent.t;        // 3am (we saved 1 hour)
+            auto when    = chooseLatest ? when2 : when1;
+            if( offPost <= offPre )
+            {
+                // if latest, select when2, otherwise, select when1
+                auto off = tKey < when ? offPre : offPost;
+                return t - off;
+            }
+            else
+            {
+                // This case occurs if we're entering Daylight Savings Time (or
+                // otherwise moving the clocks forward). In this case, there
+                // is some chance that we have a nonexistant local time.
+
+                if( tKey >= when2 ) return t - offPost;
+                if( tKey <= when1 ) return t - offPre;
+                // Times between 'when1' and 'when2' are nonexistant.
+                // All of them refer to the same timestamp
+                return ( ent.t - offPost ) + ( t - tKey );
+            }
+        }
+
+
+        template<bool chooseLatest>
+        sec_t _toUTC( sec_t t ) const noexcept {
+            // If the time is in-bounds, we can use the lookup table
+            if( u64( t ) + tz0_ <= tzMax_ )
+                return _lookupUTC<chooseLatest>( t, t );
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return t - TTlocal.initial();
+
+            // use zone symmetry to compute state for equivalent time
+            return _lookupUTC<chooseLatest>( getCyclic( t, cycleTime ), t );
         }
 
         /// Returns the UTC time represented by a given input local time.
         ///
         /// If the local time is ambiguous (referring to potentially two system
-        /// times), returns the later of the two.
+        /// times), selects between them based on whether `which` is `latest` or
+        /// `earliest`.
         ///
-        /// For nonexistant times, returns:
+        /// SPECIAL CASE - NON-EXISTANT LOCAL TIMES
         ///
-        ///     (time since last existant time) + (systime of last existant
-        ///     time)
+        /// When we move the clock forward, there is some chance that we
+        /// encounter a non-existant local time.
         ///
-        /// Which is the correct interpretation if, eg, someone had forgotten to
-        /// set their clock forward.
-        VTZ_INLINE sec_t toUTCLatest( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ )
+        /// Let's take America/New_York as an example.
+        ///
+        /// The time 2025 Mar 09 02:30 AM (local time) is nonexistant -
+        /// on that date, the clocks move forward from 1:59:59 am to 3am,
+        /// so local times in the range 2am..3am are nonexistant, because the
+        /// clock skips forward to 3am.
+        ///
+        /// What do we return for a nonexistant local time?
+        ///
+        /// - 01:59:59am EST is 06:59:59 UTC
+        /// - 02:00:00am EST _would be_ 7am UTC...
+        ///
+        /// BUT the clocks skip forward, so the next existant
+        /// time is 3am EDT, which is 7am UTC
+        ///
+        /// There's no gap between those two times.
+        ///
+        /// So, all nonexistant times refer to the same UTC timestamp.
+        ///
+        /// This matches the definition of `to_sys` given in P0355R7,
+        /// which was incorporated into the C++ standard as the standard
+        /// timezone library:
+        ///
+        /// > If the tp represents a non-existent time between two UTC
+        /// > time_points, then the two UTC time_points will be the same,
+        /// > and that UTC time_point will be returned.
+        VTZ_INLINE sec_t toUTC( sec_t t, choose which ) const noexcept {
+            if( which == choose::earliest )
             {
-                // We can use the lookup table, which is very fast
-                return t + localL.lookup( t );
+                // Return earliest UTC time this could refer to
+                return _toUTC<false>( t );
             }
-
-            // t is _early_: use initial zone state
-            if( t < 0 ) return t + localL.initial();
-
-            // use zone symmetry to compute state for equivalent time
-            return t + localL.lookup( getCyclic( t, cycleTime ) );
+            else
+            {
+                // Return latest UTC time this could refer to
+                return _toUTC<true>( t );
+            }
         }
     };
 

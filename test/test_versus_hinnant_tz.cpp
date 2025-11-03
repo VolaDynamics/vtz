@@ -114,6 +114,175 @@ Zone America/Argentina/Buenos_Aires -3:53:48 - LMT	1894 Oct 31
     auto content = parseTZData( input, "(test input)" );
 }
 
+
+constexpr sysseconds_t _ct( i32 y, u32 m, u32 d, int h, int min, int sec ) {
+    return resolveCivilTime( y, m, d, h, min, sec );
+}
+
+constexpr auto E = choose::earliest;
+constexpr auto L = choose::latest;
+
+TEST( vtz, America_NewYork ) {
+    COUNT_ASSERTIONS();
+
+    using sec      = std::chrono::seconds;
+    auto const& fp = "build/data/tzdata/tzdata.zi";
+
+    auto content = readFile( fp );
+    auto file    = parseTZData( content, fp );
+
+    auto states = file.getZoneStates( "America/New_York", 2500 );
+
+    auto tz = TimeZone( "America/New_York", states );
+
+    // 2025-10-29 - the current offset from UTC is UTC-04
+    // so, UTC is 4 hours ahead
+    // clang-format off
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 10, 29, 12, 0, 0 ), L ) }, DT::civil( 2025, 10, 29, 16, 0, 0 ) );
+
+    // prior to daylight savings time transition, early and latest times match
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 11,  2,  0, 59, 59 ), E ) }, DT::civil( 2025, 11,  2,  4, 59, 59 ) );
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 11,  2,  0, 59, 59 ), L ) }, DT::civil( 2025, 11,  2,  4, 59, 59 ) );
+
+    // at 2AM the clocks move back an hour. The offset becomes UTC-05, so 2AM uniquely refers to 7am UTC time
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 11,  2,  2,  0,  0 ), E ) }, DT::civil( 2025, 11,  2,  7,  0,  0 ) );
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 11,  2,  2,  0,  0 ), L ) }, DT::civil( 2025, 11,  2,  7,  0,  0 ) );
+
+    // times from 1 AM to 1:59AM are ambiguous - they could refer to either 5AM UTC or 6AM UTC
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 11,  2,  1,  0,  0 ), E ) }, DT::civil( 2025, 11,  2,  5,  0,  0 ) );
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 11,  2,  1,  0,  0 ), L ) }, DT::civil( 2025, 11,  2,  6,  0,  0 ) );
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 11,  2,  1, 59, 59 ), E ) }, DT::civil( 2025, 11,  2,  5, 59, 59 ) );
+    ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 11,  2,  1, 59, 59 ), L ) }, DT::civil( 2025, 11,  2,  6, 59, 59 ) );
+
+    // clang-format on
+
+    // In the spring, when we jump forward and skip an hour, whether we choose the earliest or
+    // latest time makes no difference
+    //
+    // Also, non-existent times map to the same value
+    for( auto choose : { choose::earliest, choose::latest } )
+    {
+        // clang-format off
+        ASSERT_EQ( DT{ tz.toUTC( _ct( 2025,  3,  9,  1, 59, 59 ), choose ) }, DT::civil( 2025,  3,  9,  6, 59, 59 ) );
+        ASSERT_EQ( DT{ tz.toUTC( _ct( 2025,  3,  9,  3,  0,  0 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  0 ) );
+        ASSERT_EQ( DT{ tz.toUTC( _ct( 2025,  3,  9,  3,  0,  1 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  1 ) );
+
+        // On 2025-03-09  2AM..3AM are all non-existant, and they should all map to 7am
+        ASSERT_EQ( DT{ tz.toUTC( _ct( 2025,  3,  9,  2,  0,  0 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  0 ) );
+        ASSERT_EQ( DT{ tz.toUTC( _ct( 2025,  3,  9,  2, 30,  0 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  0 ) );
+        ASSERT_EQ( DT{ tz.toUTC( _ct( 2025,  3,  9,  2, 59, 59 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  0 ) );
+        // clang-format on
+    }
+}
+
+
+TEST( vtz, FirstTransition ) {
+    COUNT_ASSERTIONS();
+
+
+    auto const& fp = "build/data/tzdata/tzdata.zi";
+
+    auto content = readFile( fp );
+    auto file    = parseTZData( content, fp );
+
+
+    // Check that we give the correct times for inputs around the _first_ transition
+    // in the zone.
+    //
+    // This is necessary for checking that we made our table large enough.
+    //
+    // We are going to test two zones here: America/New_York, and America/Phoenix
+    //
+    // These two zones were chosen because America/New_York moved the clocks _back_ when
+    // switching to standard time, and America/Phoenix moved the clocks _forward_ when
+    // switching to standard time.
+    //
+    // This means that America/New_York had some ambiguous local times, while
+    // America/Phoenix had some nonexistent local times.
+
+    // clang-format off
+    /*
+    America/New_York set the clocks back a few minutes
+    at 5PM UT (what became 12:00 local time) on 1883 Nov 18:
+
+    Zone America/New_York   -4:56:02   -    LMT    1883 Nov 18 17:00u
+                               -5:00   US   E%sT   1920
+                            ...
+
+    From zdump:
+
+    America/New_York  Sun Nov 18 16:59:59 1883 UT = Sun Nov 18 12:03:57 1883 LMT isdst=0 gmtoff=-17762
+    America/New_York  Sun Nov 18 17:00:00 1883 UT = Sun Nov 18 12:00:00 1883 EST isdst=0 gmtoff=-18000
+    */
+    // clang-format on
+    auto zoneStatenNY = file.getZoneStates( "America/New_York", 2500 );
+
+    /// America/New_York
+    auto NY = TimeZone( "America/New_York", zoneStatenNY );
+
+    // clang-format off
+    ASSERT_EQ( NY.offsetFromUTC( _ct( 1883, 11, 18, 16, 59, 59 ) ), -17762 );
+    ASSERT_EQ( NY.offsetFromUTC( _ct( 1883, 11, 18, 17,  0,  0 ) ), -18000 );
+
+    ASSERT_EQ( DT{ NY.toLocal( _ct( 1883, 11, 18, 16, 59, 59 ) ) }, DT::civil( 1883, 11, 18, 12,  3, 57 ) );
+    ASSERT_EQ( DT{ NY.toLocal( _ct( 1883, 11, 18, 17,  0,  0 ) ) }, DT::civil( 1883, 11, 18, 12,  0,  0 ) );
+
+    // 11:59:59 AM is the last local time before America/New_York switched to standard railway time, in 1883
+    ASSERT_EQ( DT{ NY.toUTC( _ct( 1883, 11, 18, 11, 59, 59 ), E ) }, DT::civil( 1883, 11, 18, 16, 56,  1 ) );
+    ASSERT_EQ( DT{ NY.toUTC( _ct( 1883, 11, 18, 11, 59, 59 ), L ) }, DT::civil( 1883, 11, 18, 16, 56,  1 ) );
+
+    // local times from 12pm to 12:03:57 are ambiguous
+    ASSERT_EQ( DT{ NY.toUTC( _ct( 1883, 11, 18, 12,  0,  0 ), E ) }, DT::civil( 1883, 11, 18, 16, 56,  2 ) );
+    ASSERT_EQ( DT{ NY.toUTC( _ct( 1883, 11, 18, 12,  0,  0 ), L ) }, DT::civil( 1883, 11, 18, 17,  0,  0 ) );
+    ASSERT_EQ( DT{ NY.toUTC( _ct( 1883, 11, 18, 12,  3, 57 ), E ) }, DT::civil( 1883, 11, 18, 16, 59, 59 ) );
+    ASSERT_EQ( DT{ NY.toUTC( _ct( 1883, 11, 18, 12,  3, 57 ), L ) }, DT::civil( 1883, 11, 18, 17,  3, 57 ) );
+
+    // from 12:03:58 local time is unambiguous again
+    ASSERT_EQ( DT{ NY.toUTC( _ct( 1883, 11, 18, 12,  3, 58 ), E ) }, DT::civil( 1883, 11, 18, 17,  3, 58 ) );
+    ASSERT_EQ( DT{ NY.toUTC( _ct( 1883, 11, 18, 12,  3, 58 ), L ) }, DT::civil( 1883, 11, 18, 17,  3, 58 ) );
+    // clang-format on
+
+    // clang-format off
+    /*
+    America/Phoenix moved the clocks forward 28 minutes and 18 seconds
+    at 7pm UTC (what became 12:00 local time) on 1883 Nov 18
+
+    Zone America/Phoenix    -7:28:18   -    LMT    1883 Nov 18 19:00u
+                            -7:00      US   M%sT   1944 Jan  1  0:01
+                            ...
+
+    From zdump:
+
+    America/Phoenix  Sun Nov 18 18:59:59 1883 UT = Sun Nov 18 11:31:41 1883 LMT isdst=0 gmtoff=-26898
+    America/Phoenix  Sun Nov 18 19:00:00 1883 UT = Sun Nov 18 12:00:00 1883 MST isdst=0 gmtoff=-25200
+    */
+    // clang-format on
+    auto zoneStatePhoenix = file.getZoneStates( "America/Phoenix", 2500 );
+
+    /// America/Phoenix
+    auto PH = TimeZone( "America/Phoenix", zoneStatePhoenix );
+
+    // clang-format off
+    ASSERT_EQ( PH.offsetFromUTC( _ct( 1883, 11, 18, 18, 59, 59 ) ), -26898 );
+    ASSERT_EQ( PH.offsetFromUTC( _ct( 1883, 11, 18, 19,  0,  0 ) ), -25200 );
+
+    ASSERT_EQ( DT{ PH.toLocal( _ct( 1883, 11, 18, 18, 59, 59 ) ) }, DT::civil( 1883, 11, 18, 11, 31, 41 ) );
+    ASSERT_EQ( DT{ PH.toLocal( _ct( 1883, 11, 18, 19,  0,  0 ) ) }, DT::civil( 1883, 11, 18, 12,  0,  0 ) );
+
+    ASSERT_EQ( DT{ PH.toUTC( _ct( 1883, 11, 18, 11, 31, 41 ), E ) }, DT::civil( 1883, 11, 18, 18, 59, 59 ) );
+    ASSERT_EQ( DT{ PH.toUTC( _ct( 1883, 11, 18, 11, 31, 41 ), L ) }, DT::civil( 1883, 11, 18, 18, 59, 59 ) );
+
+    // All of these times are non-existent local times, and all of them map to 7pm UTC
+    ASSERT_EQ( DT{ PH.toUTC( _ct( 1883, 11, 18, 11, 31, 42 ), E ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( DT{ PH.toUTC( _ct( 1883, 11, 18, 11, 31, 42 ), L ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( DT{ PH.toUTC( _ct( 1883, 11, 18, 11, 59, 59 ), E ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( DT{ PH.toUTC( _ct( 1883, 11, 18, 11, 59, 59 ), L ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
+
+    ASSERT_EQ( DT{ PH.toUTC( _ct( 1883, 11, 18, 12,  0,  0 ), E ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( DT{ PH.toUTC( _ct( 1883, 11, 18, 12,  0,  0 ), L ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
+    // clang-format on
+}
+
 TEST( vtz, all_timezones ) {
     COUNT_ASSERTIONS();
 
@@ -201,13 +370,24 @@ TEST( vtz, TimeZone ) {
 
     auto zones = file.listZones();
 
-    auto checkZone = [&]( std::string const& zone ) {
+    ASSERT_GT( zones.size(), 0 );
+
+    {
+        auto itNY = std::find( zones.begin(), zones.end(), "America/New_York" );
+        ASSERT_TRUE( itNY != zones.end() );
+
+        // Move NY to the front, so we test it first
+        std::swap( *itNY, *zones.begin() );
+    }
+
+    for( auto const& zone : zones )
+    {
         fmt::println( "Checking transitions within zone {}", zone );
 
         ADD_CONTEXT( "Checking timezone", zone );
         // Get all the zone states
-        auto        zoneStates = file.getZoneStates( zone, 2900 );
-        auto const& tt         = zoneStates.walloffTrans_;
+        auto zoneStates = file.getZoneStates( zone, 2900 );
+        span tt         = zoneStates.walloffTrans_;
 
 
         auto tz = TimeZone( zone, zoneStates );
@@ -215,26 +395,140 @@ TEST( vtz, TimeZone ) {
         i32 off0 = zoneStates.walloffInitial_;
         for( size_t zi = 0; zi < tt.size(); ++zi )
         {
-            auto const& t   = zoneStates.walloffTrans_[zi];
-            auto const& off = zoneStates.walloff_[zi];
-            ADD_CONTEXT( "Checking transition", utcToString( t ), zi );
+            auto const& t             = zoneStates.walloffTrans_[zi];
+            auto const& off           = zoneStates.walloff_[zi];
+            auto        localTimePre  = t - 1 + off0;
+            auto        localTimePost = t + off;
+            // Quantity that we're changing the offset
+            auto delta = off - off0;
+
+            ADD_CONTEXT( "Checking transition",
+                DT{ t - 1 },
+                DT{ t },
+                DT{ localTimePre },
+                DT{ localTimePost },
+                off0,
+                off,
+                delta,
+                zi );
+
 
             ASSERT_EQ_QUIET( tz.offsetFromUTC( t - 1 ), off0 );
             ASSERT_EQ_QUIET( tz.offsetFromUTC( t ), off );
+
+            ASSERT_EQ_QUIET( DT{ tz.toLocal( t - 1 ) }, DT{ localTimePre } );
+            ASSERT_EQ_QUIET( DT{ tz.toLocal( t ) }, DT{ localTimePost } );
+
+            // these should not be equal (if they are, we didn't filter transitions correctly)
+            ASSERT_NE( localTimePre, localTimePost );
+            if( localTimePre < localTimePost )
+            {
+                // We move the clocks forward, resulting in a set of nonexistent
+                // local times between localTimePre and localTimePost
+
+                ASSERT_EQ_QUIET( DT{ tz.toUTC( localTimePost, E ) }, DT{ t } );
+                ASSERT_EQ_QUIET( DT{ tz.toUTC( localTimePost, L ) }, DT{ t } );
+
+                // ASSERT_EQ_QUIET( DT{ tz.toUTC( localTimePre, E ) }, DT{ t - 1 } );
+                ASSERT_EQ_QUIET( DT{ tz.toUTC( localTimePre, L ) }, DT{ t - 1 } );
+
+                for( auto i = localTimePre + 1; i < localTimePost; ++i )
+                {
+                    // All of these times are nonexistent, and they should map to the same UTC time
+                    ASSERT_EQ_QUIET( DT{ tz.toUTC( i, E ) }, DT{ t } );
+                    ASSERT_EQ_QUIET( DT{ tz.toUTC( i, L ) }, DT{ t } );
+                }
+            }
+            else
+            {
+                // This delta should be negative, since we moved the clocks back
+                ASSERT_LT( delta, 0 );
+
+                // The first ambiguous local time is whenever we move the clocks back to
+                // (eg, at 1:59:59am, NY moves the clock back to 1am, when daylight savings time
+                // ends)
+                auto ambigStartLocal = localTimePost;
+                // the last ambiguous local time is whenever we moved the clocks back from
+                // (eg, this would be 1:59:59am)
+                auto ambigEndLocal = localTimePre + 1;
+
+                // The previous unambiguous time was 1 before the start of the ambiguous times
+                auto prevUnambiguousTime = ambigStartLocal - 1;
+                // The next unambiguous time is when ambiguity ends
+                auto nextUnambiguousTime = ambigEndLocal;
+
+                // We need to actually have ambiguous times
+                ASSERT_LT( ambigStartLocal, ambigEndLocal );
+
+                auto ambigStartUTC = t + delta;
+                auto ambigEndUTC   = t - delta;
+
+                // The previous time that was unambiguous was whenever we moved the clocks back to
+
+
+                ADD_CONTEXT( "Checking ambiguous local times resulting from moving the clock back",
+                    DT{ ambigStartLocal },
+                    DT{ ambigEndLocal },
+                    DT{ ambigStartUTC },
+                    DT{ ambigEndUTC } );
+
+                // We moved the clocks back, resulting in an ambiguous time
+
+                // These times right before and after should not be ambiguous
+                ASSERT_EQ_QUIET(
+                    DT{ tz.toUTC( prevUnambiguousTime, E ) }, DT{ ambigStartUTC - 1 } );
+                ASSERT_EQ_QUIET(
+                    DT{ tz.toUTC( prevUnambiguousTime, L ) }, DT{ ambigStartUTC - 1 } );
+                ASSERT_EQ_QUIET( DT{ tz.toUTC( nextUnambiguousTime, E ) }, DT{ ambigEndUTC } );
+                ASSERT_EQ_QUIET( DT{ tz.toUTC( nextUnambiguousTime, L ) }, DT{ ambigEndUTC } );
+
+                // Recall that we have established that localTimePost < localTimePre -
+                // right now we're testing the scenario where we move the clocks back
+
+                auto n = ambigEndLocal - ambigStartLocal;
+                ASSERT_LT( 0, n );
+                for( i64 i = 0; i < n; ++i )
+                {
+                    // Check local times, choosing latest
+                    ASSERT_EQ_QUIET( DT{ tz.toUTC( ambigStartLocal + i, L ) }, DT{ t + i } );
+                }
+                for( i64 i = 0; i < n; ++i )
+                {
+                    auto localT    = ambigStartLocal + i;
+                    auto prevBlock = tz.localBlock( localT - 1 );
+                    auto block     = tz.localBlock( localT );
+
+                    ADD_CONTEXT( "Check local -> UTC, choosing earliest",
+                        DT{ localT },
+                        block.t,
+                        DT{ block.t },
+                        prevBlock.t,
+                        DT{ prevBlock.t },
+                        block.hi(),
+                        block.lo(),
+                        localT,
+                        tz.TTlocal.blockSize(),
+                        tz.TTlocal.blockStartT( localT ),
+                        tz.TTlocal.blockEndT( localT ),
+                        DT{ tz.TTlocal.blockStartT( localT ) },
+                        DT{ tz.TTlocal.blockEndT( localT ) } );
+                    ASSERT_EQ_QUIET( DT{ tz.toUTC( localT, E ) }, DT{ t + i + delta } );
+                }
+            }
             off0 = off;
         }
 
         if( tt.size() > 0 )
         {
             int64_t T0         = daysToSeconds( resolveCivil( 1700, 1, 1 ) );
-            int64_t TMax       = tt.back();
+            int64_t TMax       = daysToSeconds( resolveCivil( 2899, 1, 1 ) );
             auto    currentOff = zoneStates.walloffInitial_;
             size_t  zi         = 0;
             // loop through times in 1h intervals until we get to the end of the states we
             // calculated
             for( ; T0 < TMax; T0 += 3600 )
             {
-                while( T0 >= tt[zi] )
+                while( T0 >= tt.value_or( zi, INT64_MAX ) )
                 {
                     currentOff = zoneStates.walloff_[zi];
                     ++zi;
@@ -243,9 +537,5 @@ TEST( vtz, TimeZone ) {
                 ASSERT_EQ_QUIET( tz.offsetFromUTC( T0 ), currentOff );
             }
         }
-    };
-
-    checkZone( "America/Ciudad_Juarez" );
-    checkZone( "America/New_York" );
-    for( auto const& zone : zones ) { checkZone( zone ); }
+    }
 }
