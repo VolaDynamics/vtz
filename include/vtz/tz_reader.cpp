@@ -71,30 +71,14 @@ namespace vtz {
                    || ( 'A' <= ch && ch <= 'Z' ) // ch is uppercase
                    || ( ch == '_' );             // ch is a '_'
         };
-        constexpr auto isDigit
-            = []( char ch ) noexcept -> bool { return '0' <= ch && ch <= '9'; };
 
         constexpr inline bool isD10( int x ) noexcept {
             return 0 <= x && x < 10;
         }
-        constexpr inline bool isD6( int x ) noexcept { return 0 <= x && x < 6; }
 
 
         constexpr i32 _hms( i32 h, i32 m = 0, i32 s = 0 ) noexcept {
             return h * 3600 + m * 60 + s;
-        }
-
-        // Parse 1 digit
-        TrivialOpt<i32> parse1( char const* src ) noexcept {
-            i32 value = src[0] - '0';
-            return { value, isD10( value ) };
-        }
-
-        // Parse 2 digits.
-        TrivialOpt<i32> parse2( char const* src ) noexcept {
-            i32 v0 = src[0] - '0';
-            i32 v1 = src[1] - '0';
-            return { v0 * 10 + v1, isD10( v0 ) && isD10( v1 ) };
         }
 
         // Parse 4 digits
@@ -183,7 +167,6 @@ namespace vtz {
         using _impl::_load2;
         using _impl::_load3;
         using _impl::_parseMon;
-        char const* p = tok.data();
 
         if( auto m = _parseMon( tok.data(), tok.size() ) ) return *m;
 
@@ -225,7 +208,6 @@ namespace vtz {
 
         size_t      size = tok.size();
         char const* p    = tok.data();
-        char const* end_ = p + size;
 
         if( size <= 2 )
         {
@@ -412,7 +394,6 @@ namespace vtz {
                     return r;
                 }
             }
-            using S7 = FixStr<7>;
 
             throw ParseError{
                 "Expected Letter Token or '-'", tok ? bad_LETTER : no_token, tok
@@ -1348,7 +1329,6 @@ namespace vtz {
         }
     }
     vector<ZoneTransition> ZoneStates::getTransitions() const {
-        ZoneState initial = this->initial();
 
         constexpr static sysseconds_t MAX_TIME
             = std::numeric_limits<sysseconds_t>::max();
@@ -1364,10 +1344,6 @@ namespace vtz {
         size_t si = 0;
         size_t wi = 0;
         size_t ri = 0;
-
-        auto sLast = svv.back_or( stdoffInitial_ );
-        auto wLast = wvv.back_or( walloffInitial_ );
-        auto rLast = rvv.back_or( abbrInitial_ );
 
         auto                   sCurrent = stdoffInitial_;
         auto                   wCurrent = walloffInitial_;
