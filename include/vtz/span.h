@@ -13,6 +13,8 @@ namespace vtz {
     class span {
       public:
 
+        span() = default;
+
         VTZ_INLINE constexpr span( T* p, size_t size ) noexcept
         : p( p )
         , count( size ) {}
@@ -69,8 +71,8 @@ namespace vtz {
 
       private:
 
-        T*     p;
-        size_t count;
+        T*     p     = nullptr;
+        size_t count = 0;
     };
 
 
