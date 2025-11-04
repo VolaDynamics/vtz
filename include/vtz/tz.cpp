@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <climits>
 #include <initializer_list>
+#include <limits>
 #include <vtz/tz.h>
 
 #include <vtz/tz_reader.h>
@@ -176,9 +177,9 @@ namespace vtz {
                 zi++;
                 if( zi < tt.size() )
                 {
-                    when     = tt[zi];
-                    i32 off1 = off[zi];
-                    block    = block >> 32 | ( u64( u32( off1 ) ) << 32 );
+                    when      = tt[zi];
+                    auto off1 = off[zi];
+                    block     = block >> 32 | ( u64( u32( off1 ) ) << 32 );
                 }
                 else
                 {
@@ -331,18 +332,90 @@ namespace vtz {
             s.walloffInitial_, s.walloffTrans_, s.walloff_, s.safeCycleTime );
     }
 
-    AbbrTable makeAbbrTable( ZoneStates const& s ) {
-        // TODO
-        return {};
+    AbbrTable makeAbbrTable( AbbrBlock initial,
+        span<sysseconds_t const>       tt,
+        span<AbbrBlock const>          abbr,
+        sec_t                          cycleTime,
+        span<ZoneAbbr const>           abbrTable ) {
+        auto table = _copyUnique( abbrTable );
+        // If the timezone contains no transitions, our table is valid for the
+        // full range of possible inputs
+        if( tt.size() == 0 )
+        {
+            return {
+                0,
+                ~u64(),
+                table1( u32( initial ) ),
+                0, // The cycle time doesn't matter
+                std::move( table ),
+            };
+        }
+
+        // If the timezone contains a single transition, our table is still
+        // valid for the full range of possible inputs (although now we need
+        // to include the fact that we have a transition)
+        if( tt.size() == 1 )
+        {
+            return {
+                0,
+                ~u64(),
+                table2( tt[0], u32( initial ), u32( abbr[0] ) ),
+                0,
+                std::move( table ),
+            };
+        }
+
+        sec_t minT = std::min( {
+            tt.front(), // min time (UTC)
+            sec_t( 0 ),
+        } );
+        cycleTime  = std::max( { cycleTime, minT, sec_t( 0 ) } );
+        sec_t maxT = cycleTime + 12622780800;
+
+        auto tz0_   = -u64( minT );
+        auto tzMax_ = u64( maxT ) + tz0_;
+
+        return {
+            tz0_,
+            tzMax_,
+            makeTable( initial, tt, abbr, minT, maxT ),
+            cycleTime,
+            std::move( table ),
+        };
     }
 
-    StdoffTable makeStdoffTable( ZoneStates const& s ) {
-        // TODO
-        return {};
+    StdoffTable makeStdoffTable( ZoneStates const& states ) {
+        span tt      = states.stdoffTrans_;
+        span off     = states.stdoff_;
+        i32  initial = states.stdoffInitial_;
+        if( tt.size() == 0 )
+        {
+            return {
+                std::numeric_limits<sysseconds_t>::min(),
+                std::numeric_limits<sysseconds_t>::max(),
+                table1( u32( initial ) ),
+            };
+        }
+        if( tt.size() == 1 )
+        {
+            return {
+                std::numeric_limits<sysseconds_t>::min(),
+                std::numeric_limits<sysseconds_t>::max(),
+                table2( tt[0], u32( initial ), u32( off[0] ) ),
+            };
+        }
+
+        auto Tmin = tt.front();
+        auto Tmax = tt.back();
+        return { Tmin, Tmax, makeTable( initial, tt, off, Tmin, Tmax ) };
     }
     TimeZone::TimeZone( string_view name, ZoneStates const& states )
     : OffTables( makeOffTables( states ) )
-    , AbbrTable( makeAbbrTable( states ) )
+    , AbbrTable( makeAbbrTable( states.abbrInitial_,
+          states.abbrTrans_,
+          states.abbr_,
+          states.safeCycleTime,
+          states.abbrTable_ ) )
     , StdoffTable( makeStdoffTable( states ) )
     , name_( name ) {}
 } // namespace vtz

@@ -337,15 +337,21 @@ namespace vtz {
 
         std::unique_ptr<ZoneAbbr[]> abbrTable;
 
+        u32 getAbbrBlock( sec_t t ) const noexcept {
+            if( u64( t ) + tz0_ <= tzMax_ ) return abbr.lookup( t );
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return abbr.initial();
+
+            // use zone symmetry to compute state for equivalent time
+            return abbr.lookup( getCyclic( t, cycleTime ) );
+        }
+
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
         string_view abbrFromUTC( sec_t t ) const noexcept {
-            u64 i = u64( t ) + tz0_;
-            if( i <= tzMax_ )
-            {
-                // We can use the lookup table, which is very fast
+            if( u64( t ) + tz0_ <= tzMax_ )
                 return abbrFromBlock( abbr.lookup( t ) );
-            }
 
             // t is _early_: use initial zone state
             if( t < 0 ) return abbrFromBlock( abbr.initial() );
