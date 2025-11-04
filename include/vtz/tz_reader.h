@@ -561,7 +561,14 @@ namespace vtz {
         static AbbrBlock make( size_t i, size_t s ) noexcept {
             return { u32( i ) << 4 | u32( s & 0xf ) };
         }
+
+        constexpr explicit operator u32() const noexcept { return data_; }
+
+        constexpr bool operator==( AbbrBlock const& rhs ) const noexcept {
+            return data_ == rhs.data_;
+        }
     };
+    std::string format_as( AbbrBlock b );
 
     struct ZoneStates {
         /// Return the _last_ value less than or equal to 'when'.
@@ -611,6 +618,11 @@ namespace vtz {
         AbbrBlock const& abbr( sysseconds_t t ) const noexcept {
             auto i = _find( abbrTrans_, t );
             return i >= 0 ? abbr_[i] : abbrInitial_;
+        }
+
+
+        string_view abbrToSV( AbbrBlock block ) {
+            return string_view( abbrTable_[block.index()].buff_, block.size() );
         }
 
 

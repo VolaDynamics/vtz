@@ -1329,7 +1329,6 @@ namespace vtz {
         }
     }
     vector<ZoneTransition> ZoneStates::getTransitions() const {
-
         constexpr static sysseconds_t MAX_TIME
             = std::numeric_limits<sysseconds_t>::max();
 
@@ -1378,5 +1377,8 @@ namespace vtz {
         }
 
         return result;
+    }
+    std::string format_as( AbbrBlock b ) {
+        return fmt::format( "(index: {}, size: {})", b.index(), b.size() );
     }
 } // namespace vtz
