@@ -135,9 +135,15 @@ TEST( vtz, America_NewYork ) {
 
     auto tz = TimeZone( "America/New_York", states );
 
+
     // 2025-10-29 - the current offset from UTC is UTC-04
     // so, UTC is 4 hours ahead
     // clang-format off
+
+    // The abbreviation should change from EDT to EST
+    ASSERT_EQ( tz.abbrFromUTC( _ct( 2025, 11,  2,  5, 59, 59 ) ), "EDT" );
+    ASSERT_EQ( tz.abbrFromUTC( _ct( 2025, 11,  2,  6,  0,  0 ) ), "EST" );
+
     ASSERT_EQ( DT{ tz.toUTC( _ct( 2025, 10, 29, 12, 0, 0 ), L ) }, DT::civil( 2025, 10, 29, 16, 0, 0 ) );
 
     // prior to daylight savings time transition, early and latest times match
@@ -221,6 +227,8 @@ TEST( vtz, FirstTransition ) {
     auto NY = TimeZone( "America/New_York", zoneStatenNY );
 
     // clang-format off
+    ASSERT_EQ( NY.abbrFromUTC( _ct( 1883, 11, 18, 16, 59, 59 ) ), "LMT" );
+    ASSERT_EQ( NY.abbrFromUTC( _ct( 1883, 11, 18, 17,  0,  0 ) ), "EST" );
     ASSERT_EQ( NY.offsetFromUTC( _ct( 1883, 11, 18, 16, 59, 59 ) ), -17762 );
     ASSERT_EQ( NY.offsetFromUTC( _ct( 1883, 11, 18, 17,  0,  0 ) ), -18000 );
 
@@ -265,6 +273,9 @@ TEST( vtz, FirstTransition ) {
     // clang-format off
     ASSERT_EQ( PH.offsetFromUTC( _ct( 1883, 11, 18, 18, 59, 59 ) ), -26898 );
     ASSERT_EQ( PH.offsetFromUTC( _ct( 1883, 11, 18, 19,  0,  0 ) ), -25200 );
+
+    ASSERT_EQ( PH.abbrFromUTC( _ct( 1883, 11, 18, 18, 59, 59 ) ), "LMT" );
+    ASSERT_EQ( PH.abbrFromUTC( _ct( 1883, 11, 18, 19,  0,  0 ) ), "MST" );
 
     ASSERT_EQ( DT{ PH.toLocal( _ct( 1883, 11, 18, 18, 59, 59 ) ) }, DT::civil( 1883, 11, 18, 11, 31, 41 ) );
     ASSERT_EQ( DT{ PH.toLocal( _ct( 1883, 11, 18, 19,  0,  0 ) ) }, DT::civil( 1883, 11, 18, 12,  0,  0 ) );
@@ -388,10 +399,25 @@ TEST( vtz, TimeZone ) {
         // Get all the zone states
         auto zoneStates = file.getZoneStates( zone, 2900 );
         span tt         = zoneStates.walloffTrans_;
-
+        span TTabbr     = zoneStates.abbrTrans_;
 
         auto tz = TimeZone( zone, zoneStates );
 
+        // Check that all the abbreviations are correct
+        {
+            auto abbrPrev = zoneStates.abbrInitial_;
+            for( size_t zi = 0; zi < TTabbr.size(); ++zi )
+            {
+                auto T    = TTabbr[zi];
+                auto abbr = zoneStates.abbr_[zi];
+                ASSERT_EQ_QUIET( tz.abbrFromUTC( T - 1 ), zoneStates.abbrToSV( abbrPrev ) );
+                ASSERT_EQ_QUIET( tz.abbrFromUTC( T ), zoneStates.abbrToSV( abbr ) );
+                abbrPrev = abbr;
+            }
+        }
+
+        // Check that translations to and from local time are correct, and that
+        // calculated timezone offsets are correct
         i32 off0 = zoneStates.walloffInitial_;
         for( size_t zi = 0; zi < tt.size(); ++zi )
         {
@@ -520,20 +546,20 @@ TEST( vtz, TimeZone ) {
 
         if( tt.size() > 0 )
         {
-            int64_t T0         = daysToSeconds( resolveCivil( 1700, 1, 1 ) );
-            int64_t TMax       = daysToSeconds( resolveCivil( 2899, 1, 1 ) );
-            auto    currentOff = zoneStates.walloffInitial_;
-            size_t  zi         = 0;
+            int64_t T0          = daysToSeconds( resolveCivil( 1700, 1, 1 ) );
+            int64_t TMax        = daysToSeconds( resolveCivil( 2899, 1, 1 ) );
+            auto    currentOff  = zoneStates.walloffInitial_;
+            auto    currentAbbr = zoneStates.abbrInitial_;
+            size_t  zi          = 0;
+            size_t  ai          = 0;
             // loop through times in 1h intervals until we get to the end of the states we
             // calculated
             for( ; T0 < TMax; T0 += 3600 )
             {
-                while( T0 >= tt.value_or( zi, INT64_MAX ) )
-                {
-                    currentOff = zoneStates.walloff_[zi];
-                    ++zi;
-                }
+                if( T0 >= tt.value_or( zi, INT64_MAX ) ) currentOff = zoneStates.walloff_[zi++];
+                if( T0 >= TTabbr.value_or( ai, INT64_MAX ) ) currentAbbr = zoneStates.abbr_[ai++];
 
+                ASSERT_EQ_QUIET( AbbrBlock{ tz.getAbbrBlock( T0 ) }, currentAbbr );
                 ASSERT_EQ_QUIET( tz.offsetFromUTC( T0 ), currentOff );
             }
         }
