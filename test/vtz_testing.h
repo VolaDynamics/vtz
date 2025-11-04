@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <gtest/gtest.h>
+#include <ostream>
 #include <vector>
 #include <vtz/strings.h>
 
@@ -63,6 +64,20 @@ namespace _test_vtz {
         , header( header ) {}
 
         virtual std::string printFrame( size_t indent ) const = 0;
+
+        std::string context() const {
+            auto        ctx = this;
+            std::string extraCtx;
+            extraCtx += "\n\nAdditional context for failure:\n\n";
+            while( ctx )
+            {
+                extraCtx += fmt::format(
+                    "{}\n└── {}\n", fmt::styled( ctx->header, FAINT_GRAY ), ctx->printFrame( 4 ) );
+
+                ctx = ctx->prev;
+            }
+            return extraCtx;
+        }
     };
 
     template<class F>
@@ -78,12 +93,18 @@ namespace _test_vtz {
     template<class F>
     TestContext( TestContextI const* prev, char const*, F func ) -> TestContext<F>;
 
+
     struct NoopContext {
         constexpr TestContextI const* operator&() const noexcept { return nullptr; }
     };
 
     constexpr NoopContext _current_test_context;
 
+    inline std::ostream& operator<<( std::ostream& msg, TestContextI const& ctx ) {
+        return msg << ctx.context();
+    }
+
+    inline std::ostream& operator<<( std::ostream& msg, NoopContext ) { return msg; }
 
     template<class Enum>
     std::string enumToString( std::string_view typeName, Enum value ) {
@@ -387,55 +408,49 @@ namespace _test_vtz {
         return s;
     }
 
-    template<class A, class B>
-    static auto _eqFail( char const* lhs_expr, char const* rhs_expr, A const& lhs, B const& rhs ) {
-        return testing::internal::EqFailure(
-            lhs_expr, rhs_expr, debugToString( lhs ), debugToString( rhs ), false );
+    struct CmpBadInfo {
+        std::string lhs_;
+        std::string rhs_;
+    };
+
+    static auto _eqFail( char const* lhs_expr, char const* rhs_expr, CmpBadInfo& info ) {
+        return testing::internal::EqFailure( lhs_expr, rhs_expr, info.lhs_, info.rhs_, false );
     }
 
-    template<class LHS, class RHS, class TestCountAssertions>
-    bool _doAssertEq( LHS const& _test_lhs,
-        RHS const&               _test_rhs,
-        char const*              lhs,
-        char const*              rhs,
-        bool                     print_on_success,
-        char const*              filename,
-        int                      lineno,
-        TestContextI const*      ctx,
-        TestCountAssertions&&    _test_count_assertions ) {
-        _test_count_assertions.inc();
-        if( _test_lhs == _test_rhs )
-        {
-            if( print_on_success )
-                _test_vtz::TEST_LOG.print( lhs, rhs, _test_lhs, _test_rhs, filename, lineno );
-            return true;
-        }
-        else
-        {
-            std::string extraCtx;
-            if( ctx )
-            {
-                extraCtx += "\n\nAdditional context for failure:\n\n";
-                while( ctx )
-                {
-                    extraCtx += fmt::format( "{}\n└── {}\n",
-                        fmt::styled( ctx->header, FAINT_GRAY ),
-                        ctx->printFrame( 4 ) );
 
-                    ctx = ctx->prev;
-                }
-                fmt::println( "" );
-            }
+    struct CmpEq {
+        CmpBadInfo* info = nullptr;
 
-            _test_count_assertions.incFailed();
-            ::testing::internal::AssertHelper( ::testing::TestPartResult::kFatalFailure,
-                filename,
-                lineno,
-                _test_vtz::_eqFail( lhs, rhs, _test_lhs, _test_rhs ).failure_message() )
-                = testing::Message() << extraCtx;
-            return false;
+        CmpEq( CmpEq const& ) = delete;
+        CmpEq( CmpEq&& )      = delete;
+
+
+        template<class A, class B>
+        CmpEq( A const& a, B const& b )
+        : info{
+            a == b
+                // if the compare is good, there is no error info
+                ? nullptr
+                // If the comparison is bad, store the lhs and rhs converted to their debug repr
+                : new CmpBadInfo{ debugToString( a ), debugToString( b ) },
+        } {}
+
+        template<class A, class B>
+        CmpEq( A const& a,
+            B const&    b,
+            char const* lhsExpr,
+            char const* rhsExpr,
+            char const* filename,
+            int         lineno )
+        : CmpEq{ a, b } {
+            if( _test_vtz::TEST_LOG.print_on_success )
+                _test_vtz::TEST_LOG.print( lhsExpr, rhsExpr, a, b, filename, lineno );
         }
-    }
+
+        explicit operator bool() const noexcept { return info == nullptr; }
+
+        ~CmpEq() { delete info; }
+    };
 } // namespace _test_vtz
 
 using _test_vtz::_current_test_context;
@@ -487,25 +502,25 @@ constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
 
 #undef ASSERT_EQ
 #define ASSERT_EQ( lhs, rhs )                                                                      \
-    if( !_test_vtz::_doAssertEq( lhs,                                                              \
-            rhs,                                                                                   \
-            #lhs,                                                                                  \
-            #rhs,                                                                                  \
-            _test_vtz::TEST_LOG.print_on_success,                                                  \
-            __FILE__,                                                                              \
-            __LINE__,                                                                              \
-            &_current_test_context,                                                                \
-            _test_count_assertions ) )                                                             \
-    return
+    if( auto _compare_result = ( (void)_test_count_assertions.inc(),                               \
+            _test_vtz::CmpEq{ lhs, rhs, #lhs, #rhs, __FILE__, __LINE__ } ) )                       \
+        ;                                                                                          \
+    else                                                                                           \
+        return (void)_test_count_assertions.incFailed(),                                           \
+               ::testing::internal::AssertHelper( ::testing::TestPartResult::kFatalFailure,        \
+                   __FILE__,                                                                       \
+                   __LINE__,                                                                       \
+                   _test_vtz::_eqFail( #lhs, #rhs, *_compare_result.info ).failure_message() )     \
+               = testing::Message() << _current_test_context
 
 #define ASSERT_EQ_QUIET( lhs, rhs )                                                                \
-    if( !_test_vtz::_doAssertEq( lhs,                                                              \
-            rhs,                                                                                   \
-            #lhs,                                                                                  \
-            #rhs,                                                                                  \
-            false,                                                                                 \
-            __FILE__,                                                                              \
-            __LINE__,                                                                              \
-            &_current_test_context,                                                                \
-            _test_count_assertions ) )                                                             \
-    return
+    if( auto _compare_result                                                                       \
+        = ( (void)_test_count_assertions.inc(), _test_vtz::CmpEq{ lhs, rhs } ) )                   \
+        ;                                                                                          \
+    else                                                                                           \
+        return (void)_test_count_assertions.incFailed(),                                           \
+               ::testing::internal::AssertHelper( ::testing::TestPartResult::kFatalFailure,        \
+                   __FILE__,                                                                       \
+                   __LINE__,                                                                       \
+                   _test_vtz::_eqFail( #lhs, #rhs, *_compare_result.info ).failure_message() )     \
+               = testing::Message() << _current_test_context
