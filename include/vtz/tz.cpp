@@ -73,7 +73,9 @@ namespace vtz {
     }
 
     int computeG( span<sysseconds_t const> tt ) {
-        if( tt.empty() ) return 63;
+        // If there are no transition times, or only one transition time, return
+        // the maximum possible g
+        if( tt.size() <= 1 ) return 63;
         u64 minDelta = UINT64_MAX;
 
         for( size_t i = 1; i < tt.size(); ++i )
@@ -103,14 +105,16 @@ namespace vtz {
 
     /// Compute the required block size, taking into account that two possible
     /// local times map to the same UTC time
-    int computeGLocal( i32 off0, span<sec_t const> tt, span<i32 const> off ) {
-        // If there are no transition times, return the maximum possible g
-        // (which is a shift of 64 bits)
-        if( tt.empty() ) return 63;
+    int computeGUniversal(
+        i32 off0, span<sec_t const> tt, span<i32 const> off ) {
+        // If there are no transition times, or only one transition time, return
+        // the maximum possible g
+        if( tt.size() <= 1 ) return 63;
 
         u64 minDelta = UINT64_MAX;
 
-        sec_t Tlast = std::max( tt[0] + off0, tt[0] + off[1] );
+        // Latest possible interpretation of time of last block
+        sec_t Tlast = tt[0] + std::max( { off0, off[1], 0 } );
 
         for( size_t i = 1; i < tt.size(); ++i )
         {
@@ -120,8 +124,8 @@ namespace vtz {
             auto localEnd = T + off[i - 1];
             // Time when current block starts (local time)
             auto localStart = T + off[i];
-            auto Tearly     = std::min( localEnd, localStart );
-            auto Tlate      = std::max( localEnd, localStart );
+            auto Tearly     = std::min( { T, localEnd, localStart } );
+            auto Tlate      = std::max( { T, localEnd, localStart } );
             if( Tearly <= Tlast )
             {
                 throw std::runtime_error(
@@ -206,13 +210,17 @@ namespace vtz {
     }
 
 
+    /// Construct a single table that can be used for both UTC and local
+    /// lookups. Blocks are computed such that independent of whether you're
+    /// looking up a UTC time, or a local time, you will end up in a block
+    /// containing the relevant transition time.
     template<class T>
-    S32Table makeTableLocal( T   off0,
-        span<sysseconds_t const> tt,
-        span<T const>            off,
-        sysseconds_t             minT,
-        sysseconds_t             maxT ) {
-        int g = computeGLocal( off0, tt, off );
+    S32Table makeUniversalTable( T off0,
+        span<sysseconds_t const>   tt,
+        span<T const>              off,
+        sysseconds_t               minT,
+        sysseconds_t               maxT ) {
+        int g = computeGUniversal( off0, tt, off );
 
         i64 minIndex = minT >> g;
         i64 maxIndex = 1 + ( maxT >> g );
@@ -226,11 +234,11 @@ namespace vtz {
 
         // this is the transition time for the current block, according to
         // `choose::latest`
-        i64 when = tt[0] + off[0];
+        i64 when = tt[0];
         // this is the time when it is safe to advance to the next transition
         // time, when constructing blocks. it will sometimes be a little bit
         // after the current transition time, because we set the clocks back.
-        i64 blockEndT = tt[0] + std::max( off0, off[0] );
+        i64 blockEndT = tt[0] + std::max( { off0, off[0], 0 } );
 
         i64 blockT = i64( u64( minIndex ) << g ); // current start time of block
         i64 blockSize = i64( 1 ) << g;            // Block size (in seconds)
@@ -247,8 +255,8 @@ namespace vtz {
                 {
                     i32 off0  = off[zi - 1];
                     i32 off1  = off[zi];
-                    when      = tt[zi] + off1;
-                    blockEndT = tt[zi] + std::max( off0, off1 );
+                    when      = tt[zi];
+                    blockEndT = tt[zi] + std::max( { off0, off1, 0 } );
                     block     = block >> 32 | ( u64( u32( off1 ) ) << 32 );
                 }
                 else
@@ -286,7 +294,6 @@ namespace vtz {
                 0,
                 ~u64(),
                 table1( off0 ),
-                table1( off0 ),
                 0, // The cycle time doesn't matter.
             };
         }
@@ -300,7 +307,6 @@ namespace vtz {
                 0,
                 ~u64(),
                 table2( tt[0], off0, off1 ),
-                table2( tt[0] + off1, off0, off1 ),
                 0, // The cycle time doesn't matter
             };
         }
@@ -323,8 +329,7 @@ namespace vtz {
         return {
             tz0_,
             tzMax_,
-            makeTable( off0, tt, off, minT, maxT ),
-            makeTableLocal( off0, tt, off, minT, maxT ),
+            makeUniversalTable( off0, tt, off, minT, maxT ),
             cycleTime,
         };
     }

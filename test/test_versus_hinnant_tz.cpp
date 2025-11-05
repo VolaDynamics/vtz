@@ -552,11 +552,11 @@ TEST( vtz, TimeZone ) {
                         block.hi(),
                         block.lo(),
                         localT,
-                        TimeZone::Impl::getTTlocal( tz ).blockSize(),
-                        TimeZone::Impl::getTTlocal( tz ).blockStartT( localT ),
-                        TimeZone::Impl::getTTlocal( tz ).blockEndT( localT ),
-                        DT{ TimeZone::Impl::getTTlocal( tz ).blockStartT( localT ) },
-                        DT{ TimeZone::Impl::getTTlocal( tz ).blockEndT( localT ) } );
+                        TimeZone::Impl::getTT( tz ).blockSize(),
+                        TimeZone::Impl::getTT( tz ).blockStartT( localT ),
+                        TimeZone::Impl::getTT( tz ).blockEndT( localT ),
+                        DT{ TimeZone::Impl::getTT( tz ).blockStartT( localT ) },
+                        DT{ TimeZone::Impl::getTT( tz ).blockEndT( localT ) } );
                     ASSERT_EQ_QUIET( DT{ tz.to_sys_s( localT, E ) }, DT{ t + i + delta } );
                 }
             }

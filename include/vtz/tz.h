@@ -181,7 +181,6 @@ namespace vtz {
         u64      tz0_;
         u64      tzMax_;
         S32Table TTutc;
-        S32Table TTlocal;
         sec_t    cycleTime;
 
         /// For a given system time T, represented as "offsets from UTC", return
@@ -212,14 +211,13 @@ namespace vtz {
 
         template<bool chooseLatest>
         VTZ_INLINE sec_t _lookupUTC( sec_t tKey, sec_t t ) const noexcept {
-            auto ent = TTlocal.get( tKey );
+            auto ent = TTutc.get( tKey );
             /// offset from UTC before transition time
             i64 offPre = ent.lo();
             /// offset from UTC on or after transition time
             i64  offPost = ent.hi();
-            auto save    = offPost - offPre;
-            auto when1   = ent.t - save; // eg, 2AM when DST starts
-            auto when2   = ent.t;        // 3am (we saved 1 hour)
+            auto when1   = ent.t + offPre;  // eg, 2AM when DST starts
+            auto when2   = ent.t + offPost; // 3am (we saved 1 hour)
             auto when    = chooseLatest ? when2 : when1;
             if( offPost <= offPre )
             {
@@ -237,7 +235,7 @@ namespace vtz {
                 if( tKey <= when1 ) return t - offPre;
                 // Times between 'when1' and 'when2' are nonexistant.
                 // All of them refer to the same timestamp
-                return ( ent.t - offPost ) + ( t - tKey );
+                return ent.t + ( t - tKey );
             }
         }
 
@@ -249,7 +247,7 @@ namespace vtz {
                 return _lookupUTC<chooseLatest>( t, t );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return t - TTlocal.initial();
+            if( t < 0 ) return t - TTutc.initial();
 
             // use zone symmetry to compute state for equivalent time
             return _lookupUTC<chooseLatest>( getCyclic( t, cycleTime ), t );
@@ -500,5 +498,5 @@ namespace vtz {
 
     using time_zone = TimeZone;
 
-    time_zone const *locate_zone(string_view name);
+    time_zone const* locate_zone( string_view name );
 } // namespace vtz
