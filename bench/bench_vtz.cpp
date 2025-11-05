@@ -6,6 +6,7 @@
 #include <random>
 #include <vector>
 #include <vtz/civil.h>
+
 #define BENCH( name, state )                                                   \
     void name( benchmark::State& state );                                      \
     BENCHMARK( name );                                                         \
@@ -79,3 +80,54 @@ BENCH( hinnant_to_sys_earliest, state ) {
 }
 
 
+// if std::chrono::locate_zone is available, benchmark std::chrono::time_zone
+#if __cpp_lib_chrono >= 201907L
+BENCH( chrono_to_local, state ) {
+    constexpr size_t COUNT = 65536;
+
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = std::chrono::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->to_local( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( chrono_to_sys_latest, state ) {
+    constexpr size_t COUNT = 65536;
+    using std::chrono::choose;
+    using std::chrono::local_seconds;
+    using std::chrono::locate_zone;
+
+    auto tt = toChrono<local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tz = locate_zone( "America/New_York" );
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->to_sys( tt[i % COUNT], choose::latest ) );
+        ++i;
+    }
+}
+
+
+BENCH( chrono_to_sys_earliest, state ) {
+    constexpr size_t COUNT = 65536;
+    using std::chrono::choose;
+    using std::chrono::local_seconds;
+    using std::chrono::locate_zone;
+
+    auto   tt = toChrono<local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->to_sys( tt[i % COUNT], choose::earliest ) );
+        ++i;
+    }
+}
+#endif

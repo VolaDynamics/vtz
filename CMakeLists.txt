@@ -107,6 +107,7 @@ if(PROJECT_IS_TOP_LEVEL)
         bench_vtz
         bench/bench_vtz.cpp
     )
+    target_compile_features(bench_vtz PRIVATE cxx_std_20)
     target_link_libraries(
         bench_vtz
         PRIVATE
