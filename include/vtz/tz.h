@@ -39,8 +39,8 @@ namespace vtz {
         i32  start_;
         u32  size_;
 
-        i64 const* data_tt() const noexcept { return tt + start_; }
-        u64 const* data_bb() const noexcept { return bb + start_; }
+        constexpr i64 const* data_tt() const noexcept { return tt + start_; }
+        constexpr u64 const* data_bb() const noexcept { return bb + start_; }
 
         VTZ_INLINE constexpr void swap( S32TableView& rhs ) noexcept {
             auto tmp = *this;
