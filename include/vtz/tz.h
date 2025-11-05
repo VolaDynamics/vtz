@@ -1,11 +1,13 @@
 #pragma once
 
 #include "vtz/civil.h"
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <fmt/format.h>
 #include <memory>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vtz/span.h>
 #include <vtz/strings.h>
@@ -367,6 +369,25 @@ namespace vtz {
         }
     };
 
+    using std::chrono::hours;
+    using std::chrono::minutes;
+    using std::chrono::seconds;
+    using days = std::chrono::duration<i32, std::ratio<86400>>;
+    using std::chrono::system_clock;
+    using std::chrono::time_point;
+
+    template<class Duration>
+    using sys_time    = time_point<system_clock, Duration>;
+    using sys_seconds = sys_time<seconds>;
+
+    struct local_t {};
+    template<class Duration>
+    struct local_time : std::chrono::time_point<local_t, Duration> {
+        using std::chrono::time_point<local_t, Duration>::time_point;
+    };
+
+    using local_seconds = local_time<seconds>;
+
     class TimeZone
     : public OffTables
     , public AbbrTable
@@ -381,8 +402,95 @@ namespace vtz {
             return offsetFromUTC( t ) - zoneStdoff( t );
         }
 
+        local_seconds to_local( sys_seconds s ) const {
+            return _local( toLocal( s.time_since_epoch().count() ) );
+        }
+
+        sys_seconds to_sys( local_seconds s, choose z ) const {
+            return _sys( toUTC( s.time_since_epoch().count(), z ) );
+        }
+
+
+        template<class Dur>
+        auto to_local( sys_time<Dur> t ) const noexcept
+            -> local_time<std::common_type_t<Dur, seconds>> {
+            // This is the time we're actually looking up, in seconds
+            sys_seconds t2 = std::chrono::floor<seconds>( t );
+
+            // This is the local time (with the unit being seconds)
+            local_seconds localT
+                = _local( toLocal( t2.time_since_epoch().count() ) );
+
+            // if t2 is less precise than t, we chopped off some unit of time
+            // (eg, some number of nanoseconds)
+            //
+            // We need to add it back.
+            auto delta = t - t2;
+
+            return localT + delta;
+        }
+
+        template<class Dur>
+        auto to_sys( local_time<Dur> t, choose z ) const
+            -> sys_time<std::common_type_t<Dur, seconds>> {
+            // Time we're looking up (must be seconds)
+            local_seconds t2 = std::chrono::floor<seconds>( t );
+
+            // This is the corresponding system time (with the unit being in
+            // seconds)
+            sys_seconds sysT = _sys( toUTC( t.time_since_epoch().count(), z ) );
+
+            // if t2 is less precise than t, we chopped off some unit of time
+            // (eg, some number of nanoseconds)
+            //
+            // We need to add it back.
+            auto delta = t - t2;
+
+            return sysT + delta;
+        }
+
       private:
+
+        static local_seconds _local( sec_t s ) {
+            return local_seconds( seconds( s ) );
+        }
+        static sys_seconds _sys( sec_t s ) {
+            return sys_seconds( seconds( s ) );
+        }
 
         string name_;
     };
+
+    /// Formats a time in the form %Y%m%d %H%M%S-%Z
+    ///
+    /// This will be 16 characters, plus the length of the timezone abbreviation
+    inline string formatSysTimeAsLocalCompact( TimeZone const* tz,
+        sysseconds_t                                    t,
+        char                                            dateTimeSep = ' ',
+        char                                            tzAbbrSep   = '-' ) {
+        char buffer[64];
+        auto local = tz->toLocal( t );
+        auto abbr  = tz->abbrFromUTC( t );
+        _write_timestamp_compact( local, buffer, dateTimeSep );
+        buffer[15] = tzAbbrSep;
+        _vtz_memcpy( buffer + 16, abbr.data(), abbr.size() );
+        return string( buffer, 16 + abbr.size() );
+    }
+
+    /// Formats a time in the form %Y-%m-%d %H:%M:%S-%Z
+    ///
+    /// This will be 20 characters, plus the length of the timezone abbreviation
+    inline string formatSysTimeAsLocal( TimeZone const* tz,
+        sysseconds_t                             t,
+        char                                     dateSep     = '-',
+        char                                     dateTimeSep = ' ',
+        char                                     tzAbbrSep   = '-' ) {
+        char buffer[64];
+        auto local = tz->toLocal( t );
+        auto abbr  = tz->abbrFromUTC( t );
+        _write_timestamp( local, buffer, dateSep, dateTimeSep );
+        buffer[19] = tzAbbrSep;
+        _vtz_memcpy( buffer + 20, abbr.data(), abbr.size() );
+        return string( buffer, 20 + abbr.size() );
+    }
 } // namespace vtz

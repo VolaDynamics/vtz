@@ -98,4 +98,7 @@ if(PROJECT_IS_TOP_LEVEL)
             date::date
             date::date-tz
     )
+    if(UNIX)
+        target_compile_options(test_vtz PRIVATE -Werror=uninitialized -Wunused)
+    endif()
 endif()

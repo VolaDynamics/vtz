@@ -24,6 +24,77 @@ namespace vtz::detail {
     // clang-format on
 } // namespace vtz::detail
 
+namespace vtz {
+    /// Writes the date as YYYYMMDD. Requires 8 characters of space
+    constexpr void _write_yyyymmdd_8(
+        i32 year, u16 month, u16 day, char* dest ) noexcept {
+        int y0  = year / 1000;
+        int y1  = ( year / 100 ) % 10;
+        int y2  = ( year / 10 ) % 10;
+        int y3  = year % 10;
+        dest[0] = char( '0' + y0 );
+        dest[1] = char( '0' + y1 );
+        dest[2] = char( '0' + y2 );
+        dest[3] = char( '0' + y3 );
+        dest[4] = month >= 10 ? '1' : '0';
+        dest[5] = char( ( month < 10 ? '0' : '&' ) + month );
+        dest[6] = char( '0' + day / 10 );
+        dest[7] = char( '0' + day % 10 );
+    }
+    /// Writes the date as YYYY-MM-DD (or uses a different separator, if
+    /// specified)
+    ///
+    /// Requires 10 characters of space
+    constexpr void _write_yyyymmdd_10(
+        i32 year, u16 month, u16 day, char* dest, char sep = '-' ) noexcept {
+        int y0  = year / 1000;
+        int y1  = ( year / 100 ) % 10;
+        int y2  = ( year / 10 ) % 10;
+        int y3  = year % 10;
+        dest[0] = char( '0' + y0 );
+        dest[1] = char( '0' + y1 );
+        dest[2] = char( '0' + y2 );
+        dest[3] = char( '0' + y3 );
+        dest[4] = sep;
+        dest[5] = month >= 10 ? '1' : '0';
+        dest[6] = char( ( month < 10 ? '0' : '&' ) + month );
+        dest[7] = sep;
+        dest[8] = char( '0' + day / 10 );
+        dest[9] = char( '0' + day % 10 );
+    }
+
+    // Writes a time as hhmmss
+    constexpr void _write_hhmmss_6( u32 t, char* p ) noexcept {
+        int h  = t / 3600;
+        t     %= 3600;
+        int m  = t / 60;
+        t     %= 60;
+        int s  = t;
+        p[0]   = '0' + h / 10;
+        p[1]   = '0' + h % 10;
+        p[2]   = '0' + m / 10;
+        p[3]   = '0' + m % 10;
+        p[4]   = '0' + s / 10;
+        p[5]   = '0' + s % 10;
+    }
+
+    /// Writes a time as hh:mm:ss
+    constexpr void _write_hhmmss_8( u32 t, char* p ) noexcept {
+        int h  = t / 3600;
+        t     %= 3600;
+        int m  = t / 60;
+        t     %= 60;
+        int s  = t;
+        p[0]   = '0' + h / 10;
+        p[1]   = '0' + h % 10;
+        p[2]   = ':';
+        p[3]   = '0' + m / 10;
+        p[4]   = '0' + m % 10;
+        p[5]   = ':';
+        p[6]   = '0' + s / 10;
+        p[7]   = '0' + s % 10;
+    }
+} // namespace vtz
 
 namespace vtz {
     using std::string;
@@ -100,20 +171,7 @@ namespace vtz {
 
         /// Writes the date as YYYY-MM-DD. Requires 10 characters of space.
         constexpr void write( char* dest, char sep = '-' ) const noexcept {
-            int y0  = year / 1000;
-            int y1  = ( year / 100 ) % 10;
-            int y2  = ( year / 10 ) % 10;
-            int y3  = year % 10;
-            dest[0] = char( '0' + y0 );
-            dest[1] = char( '0' + y1 );
-            dest[2] = char( '0' + y2 );
-            dest[3] = char( '0' + y3 );
-            dest[4] = sep;
-            dest[5] = month >= 10 ? '1' : '0';
-            dest[6] = char( ( month < 10 ? '0' : '&' ) + month );
-            dest[7] = sep;
-            dest[8] = char( '0' + day / 10 );
-            dest[9] = char( '0' + day % 10 );
+            _write_yyyymmdd_10( year, month, day, dest, sep );
         }
         string str( char sep ) const {
             char buffer[10]{};
@@ -378,7 +436,7 @@ namespace vtz {
     /// Writes a timestamp as `YYYY-MM-DD HH:MM:SS`.
     ///
     /// Writes precisely 19 characters to the given buffer.
-    constexpr void writeTimestamp(
+    constexpr void _write_timestamp(
         sysseconds_t T, char* p, char dateSep = '-', char dateTimeSep = ' ' ) {
         auto dateAndTime = math::divFloor2<86400>( T );
 
@@ -386,34 +444,39 @@ namespace vtz {
         auto t    = u32( dateAndTime.rem );
 
         // Write the date
-        toCivil( date ).write( p, dateSep );
+        auto ymd = toCivil( date );
+        _write_yyyymmdd_10( ymd.year, ymd.month, ymd.day, p, dateSep );
+        p[10] = dateTimeSep;
+        _write_hhmmss_8( t, p + 11 );
+    }
 
-        int h  = t / 3600;
-        t     %= 3600;
-        int m  = t / 60;
-        t     %= 60;
-        int s  = t;
-        p[10]  = dateTimeSep;
-        p[11]  = '0' + h / 10;
-        p[12]  = '0' + h % 10;
-        p[13]  = ':';
-        p[14]  = '0' + m / 10;
-        p[15]  = '0' + m % 10;
-        p[16]  = ':';
-        p[17]  = '0' + s / 10;
-        p[18]  = '0' + s % 10;
+    /// Writes a timestamp as `YYYYMMDD HHMMSS`.
+    ///
+    /// Writes precisely 15 characters to the given buffer.
+    constexpr void _write_timestamp_compact(
+        sysseconds_t T, char* p, char dateTimeSep = ' ' ) {
+        auto dateAndTime = math::divFloor2<86400>( T );
+
+        auto date = sysdays_t( dateAndTime.quot );
+        auto t    = u32( dateAndTime.rem );
+
+        // Write the date
+        auto ymd = toCivil( date );
+        _write_yyyymmdd_8( ymd.year, ymd.month, ymd.day, p );
+        p[8] = dateTimeSep;
+        _write_hhmmss_6( t, p + 9 );
     }
 
     constexpr std::string_view writeTimestampToSV(
         sysseconds_t T, char* p, char dateSep = '-', char dateTimeSep = ' ' ) {
-        writeTimestamp( T, p, dateSep, dateTimeSep );
+        _write_timestamp( T, p, dateSep, dateTimeSep );
         return std::string_view( p, 19 );
     }
 
     inline std::string utcToString(
         sysseconds_t sec, char dateSep = '-', char dateTimeSep = ' ' ) {
         char buff[20];
-        writeTimestamp( sec, buff, dateSep, dateTimeSep );
+        _write_timestamp( sec, buff, dateSep, dateTimeSep );
         buff[19] = 'Z';
         return std::string( buff, 20 );
     }
@@ -422,7 +485,7 @@ namespace vtz {
     inline std::string localToString(
         sysseconds_t sec, FromUTC off, FixStr<N> const& abbr ) {
         char buff[20 + N];
-        writeTimestamp( off.toLocal( sec ), buff, '-', ' ' );
+        _write_timestamp( off.toLocal( sec ), buff, '-', ' ' );
         buff[19] = ' ';
         _vtz_memcpy( buff + 20, abbr.buff_, N );
         return std::string( buff, 20 + abbr.size() );

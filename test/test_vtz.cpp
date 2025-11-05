@@ -278,7 +278,6 @@ STRUCT_INFO( vtz::TZDataFile,
 using namespace vtz;
 TEST( vtz_parser, parse_tzdata ) {
     using ze = ZoneEntry;
-    using re = RuleEntry;
     using M  = Mon;
 
     constexpr auto lastSun = RuleOn::last( DOW::Sun );
@@ -898,7 +897,6 @@ TEST( vtz_parser, basics ) {
     ASSERT_EQ( parseSignedHHMMSSOffset( "2:00" ), 7200 );
     ASSERT_EQ( parseSignedHHMMSSOffset( "-2:00" ), -7200 );
 
-    using RO = RuleOn;
     ASSERT_EQ( parseRuleOn( "lastSun" ).string(), "lastSun" );
     ASSERT_EQ( parseRuleOn( "lastMon" ).string(), "lastMon" );
     ASSERT_EQ( parseRuleOn( "lastTue" ).string(), "lastTue" );

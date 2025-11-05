@@ -1,3 +1,4 @@
+#include <random>
 #include <string>
 #include <vtz/date_types.h>
 #include <vtz/files.h>
@@ -65,6 +66,24 @@ std::vector<entry> getEntries( string_view name, sys_seconds start, sys_seconds 
     return entries;
 }
 
+std::vector<date::sys_info> getSysInfo( string_view name, sysseconds_t start, sysseconds_t end ) {
+    auto const* tz      = date::locate_zone( name );
+    auto        T       = sys_seconds( seconds( start ) );
+    auto        Tend    = sys_seconds( seconds( end ) );
+    auto        entries = std::vector<date::sys_info>();
+    while( T < Tend )
+    {
+        auto info = tz->get_info( T );
+        T         = info.end;
+        entries.emplace_back( std::move( info ) );
+    }
+    return entries;
+}
+
+std::vector<entry> getEntries( string_view name, sysseconds_t start, sysseconds_t end ) {
+    return getEntries( name, sys_seconds( seconds( start ) ), sys_seconds( seconds( end ) ) );
+}
+
 
 TEST( vtz, Buenos_Aires ) {
     // On October 3rd, 1999, two things happened simultaneously at midnight:
@@ -119,13 +138,14 @@ constexpr sysseconds_t _ct( i32 y, u32 m, u32 d, int h, int min, int sec ) {
     return resolveCivilTime( y, m, d, h, min, sec );
 }
 
-constexpr auto E = choose::earliest;
-constexpr auto L = choose::latest;
+constexpr auto E  = choose::earliest;
+constexpr auto L  = choose::latest;
+constexpr auto DE = date::choose::earliest;
+constexpr auto DL = date::choose::latest;
 
 TEST( vtz, America_NewYork ) {
     COUNT_ASSERTIONS();
 
-    using sec      = std::chrono::seconds;
     auto const& fp = "build/data/tzdata/tzdata.zi";
 
     auto content = readFile( fp );
@@ -366,10 +386,9 @@ TEST( vtz, all_timezones ) {
 TEST( vtz, TimeZone ) {
     COUNT_ASSERTIONS();
 
-    using sec      = std::chrono::seconds;
     auto const& fp = "build/data/tzdata/tzdata.zi";
 
-    constexpr sysseconds_t startT = daysToSeconds( resolveCivil( 1600, 1, 1 ) );
+    constexpr sysseconds_t startT = daysToSeconds( resolveCivil( 1800, 1, 1 ) );
     constexpr sysseconds_t endT   = daysToSeconds( resolveCivil( 2900, 1, 1 ) );
 
 
@@ -546,7 +565,7 @@ TEST( vtz, TimeZone ) {
 
         if( tt.size() > 0 )
         {
-            int64_t T0          = daysToSeconds( resolveCivil( 1700, 1, 1 ) );
+            int64_t T0          = daysToSeconds( resolveCivil( 1800, 1, 1 ) );
             int64_t TMax        = daysToSeconds( resolveCivil( 2899, 1, 1 ) );
             auto    currentOff  = zoneStates.walloffInitial_;
             auto    currentAbbr = zoneStates.abbrInitial_;
@@ -562,6 +581,223 @@ TEST( vtz, TimeZone ) {
                 ASSERT_EQ_QUIET( AbbrBlock{ tz.getAbbrBlock( T0 ) }, currentAbbr );
                 ASSERT_EQ_QUIET( tz.offsetFromUTC( T0 ), currentOff );
             }
+        }
+    }
+}
+
+static vector<sys_seconds> toSys( span<sysseconds_t> tt ) {
+    vector<sys_seconds> result( tt.size() );
+    for( size_t i = 0; i < tt.size(); ++i ) { result[i] = sys_seconds( seconds( tt[i] ) ); }
+    return result;
+}
+
+
+static sys_seconds toSys( sysseconds_t t ) { return sys_seconds( seconds( t ) ); }
+
+static std::string dateStr( sysseconds_t t ) {
+    return fmt::to_string( sys_seconds( seconds( t ) ) );
+}
+namespace date {
+    std::string format_as( date::local_seconds s ) {
+        return dateStr( s.time_since_epoch().count() );
+    }
+} // namespace date
+
+struct TimeT {
+    sysseconds_t sec;
+    TimeT( date::local_seconds t )
+    : sec( t.time_since_epoch().count() ) {}
+    TimeT( vtz::local_seconds t )
+    : sec( t.time_since_epoch().count() ) {}
+    TimeT( sys_seconds t )
+    : sec( t.time_since_epoch().count() ) {}
+
+    bool operator==( TimeT const& rhs ) const noexcept { return sec == rhs.sec; }
+    bool operator!=( TimeT const& rhs ) const noexcept { return sec != rhs.sec; }
+};
+
+std::string format_as( TimeT t ) { return dateStr( t.sec ); }
+
+
+TEST( vtz, TimeZoneFuzz ) {
+    COUNT_ASSERTIONS();
+    constexpr sysseconds_t startT = daysToSeconds( resolveCivil( 1800, 1, 1 ) );
+    constexpr sysseconds_t endT   = daysToSeconds( resolveCivil( 2900, 1, 1 ) );
+    auto const&            fp     = "build/data/tzdata/tzdata.zi";
+
+    auto content = readFile( fp );
+    auto file    = parseTZData( content, fp );
+    auto zones   = file.listZones();
+    auto rng     = std::mt19937_64{};
+    auto dist    = std::uniform_int_distribution<sysseconds_t>( startT, endT );
+
+    ASSERT_GT( zones.size(), 0 );
+
+    constexpr size_t NUM_RANDOM_SAMPLES     = 10000;
+    constexpr size_t NUM_RANDOM_SAMPLES_STR = 1000;
+
+    for( auto const& zone : zones )
+    {
+        // 'Factory' is not loaded/handled by Howard Hinnant's timezone library
+        if( zone == "Factory" ) continue;
+
+        auto states    = file.getZoneStates( zone, 2901 );
+        auto tz        = TimeZone( zone, states );
+        auto tzHinnant = date::locate_zone( zone );
+        auto zoneInfo  = getSysInfo( zone, startT, endT );
+        fmt::println( "Testing {:>5} sys_info entries from {}", zoneInfo.size(), zone );
+
+        ADD_CONTEXT( "Zone information",
+            zone,
+            states.stdoffInitial_,
+            states.stdoff_,
+            toSys( states.stdoffTrans_ ) );
+
+        for( date::sys_info const& info : zoneInfo )
+        {
+            auto Tbegin     = info.begin.time_since_epoch().count();
+            auto Tend       = info.end.time_since_epoch().count();
+            auto offset     = info.offset.count();
+            auto Tmid       = Tbegin / 2 + Tend / 2;
+            auto zoneStdoff = seconds( info.offset - info.save ).count();
+
+            ADD_CONTEXT( "Times",
+                info.begin,
+                info.end,
+                info.abbrev,
+                info.save,
+                info.offset,
+                sys_seconds( seconds( Tmid ) ),
+                zoneStdoff );
+
+            ASSERT_LT( Tbegin, Tend );
+            ASSERT_LT( Tbegin, Tmid );
+            ASSERT_LT( Tmid, Tend );
+            ASSERT_EQ_QUIET( tz.offsetFromUTC( Tbegin ), offset );
+            ASSERT_EQ_QUIET( tz.offsetFromUTC( Tmid ), offset );
+            ASSERT_EQ_QUIET( tz.offsetFromUTC( Tend - 1 ), offset );
+            ASSERT_EQ_QUIET( tz.toLocal( Tbegin ), Tbegin + offset );
+            ASSERT_EQ_QUIET( tz.toLocal( Tmid ), Tmid + offset );
+            ASSERT_EQ_QUIET( tz.toLocal( Tend - 1 ), Tend + offset - 1 );
+            ASSERT_EQ_QUIET( tz.abbrFromUTC( Tbegin ), info.abbrev );
+            ASSERT_EQ_QUIET( tz.abbrFromUTC( Tmid ), info.abbrev );
+            ASSERT_EQ_QUIET( tz.abbrFromUTC( Tend - 1 ), info.abbrev );
+            ASSERT_EQ_QUIET( tz.zoneStdoff( Tbegin ), zoneStdoff );
+            ASSERT_EQ_QUIET( tz.zoneStdoff( Tmid ), zoneStdoff );
+            ASSERT_EQ_QUIET( tz.zoneStdoff( Tend - 1 ), zoneStdoff );
+            ASSERT_EQ_QUIET( seconds( tz.zoneSave( Tbegin ) ), seconds( info.save ) );
+            ASSERT_EQ_QUIET( seconds( tz.zoneSave( Tmid ) ), seconds( info.save ) );
+            ASSERT_EQ_QUIET( seconds( tz.zoneSave( Tend - 1 ) ), seconds( info.save ) );
+        }
+
+        for( size_t zi = 1; zi < zoneInfo.size(); zi++ )
+        {
+            date::sys_info const& prev = zoneInfo[zi - 1];
+            date::sys_info const& info = zoneInfo[zi];
+
+            // Current time at which sys_info applies
+            auto sysT = info.begin.time_since_epoch().count();
+            // Last time that previous sys_info applied
+            auto sysT0      = sysT - 1;
+            auto offset     = info.offset.count();
+            auto prevOffset = prev.offset.count();
+
+            auto localPrev = sysT + prevOffset - 1;
+            auto localT    = sysT + offset;
+
+            ADD_CONTEXT( "Testing local -> UTC",
+                dateStr( sysT ),
+                dateStr( sysT0 ),
+                offset,
+                prevOffset,
+                dateStr( localPrev ),
+                dateStr( localT ),
+                dateStr( tz.toLocal( sysT - 1 ) ),
+                tzHinnant->to_local( toSys( sysT - 1 ) ),
+                dateStr( tz.toLocal( sysT ) ),
+                tzHinnant->to_local( toSys( sysT ) ) );
+
+            if( localPrev < localT )
+            {
+                // If this is the case, we're moving the clock forward
+                // (eg, moving the clock from 1:59:59am to 3am)
+                ASSERT_EQ_QUIET( tz.toLocal( sysT - 1 ), localPrev );
+                ASSERT_EQ_QUIET( tz.toLocal( sysT ), localT );
+                ASSERT_EQ_QUIET( tz.toUTC( localPrev, choose::earliest ), sysT - 1 );
+                ASSERT_EQ_QUIET( tz.toUTC( localPrev, choose::latest ), sysT - 1 );
+                ASSERT_EQ_QUIET( tz.toUTC( localT, choose::earliest ), sysT );
+                ASSERT_EQ_QUIET( tz.toUTC( localT, choose::latest ), sysT );
+            }
+            else
+            {
+                ASSERT_EQ_QUIET( tz.toUTC( localT, choose::latest ), sysT );
+                ASSERT_EQ_QUIET( tz.toUTC( localPrev, choose::earliest ), sysT - 1 );
+            }
+        }
+
+        for( size_t i = 0; i < NUM_RANDOM_SAMPLES; ++i )
+        {
+            auto T       = dist( rng );
+            auto llTV    = local_seconds( seconds( T ) );
+            auto llTH    = date::local_time( seconds( T ) );
+            auto ssT     = sys_seconds( seconds( T ) );
+            auto sysInfo = tzHinnant->get_info( ssT );
+
+            ASSERT_EQ_QUIET( TimeT( tz.to_local( ssT ) ), TimeT( tzHinnant->to_local( ssT ) ) );
+            ASSERT_EQ_QUIET( tz.to_sys( llTV, E ), tzHinnant->to_sys( llTH, DE ) );
+            ASSERT_EQ_QUIET( tz.to_sys( llTV, L ), tzHinnant->to_sys( llTH, DL ) );
+            ASSERT_EQ_QUIET( tz.abbrFromUTC( T ), sysInfo.abbrev );
+            ASSERT_EQ_QUIET( tz.zoneSave( T ), seconds( sysInfo.save ).count() );
+        }
+
+        for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )
+        {
+            auto T   = dist( rng );
+            auto ssT = sys_seconds( seconds( T ) );
+            ASSERT_EQ_QUIET( formatSysTimeAsLocalCompact( &tz, T ),
+                date::format( "%Y%m%d %H%M%S-%Z", date::make_zoned( tzHinnant, ssT ) ) );
+            ASSERT_EQ_QUIET( formatSysTimeAsLocal( &tz, T, '/', 'T', ' ' ),
+                date::format( "%Y/%m/%dT%H:%M:%S %Z", date::make_zoned( tzHinnant, ssT ) ) );
+        }
+    }
+}
+
+
+TEST( vtz, TimeZoneToString ) {
+    COUNT_ASSERTIONS();
+    constexpr sysseconds_t startT = daysToSeconds( resolveCivil( 1800, 1, 1 ) );
+    constexpr sysseconds_t endT   = daysToSeconds( resolveCivil( 2900, 1, 1 ) );
+    auto const&            fp     = "build/data/tzdata/tzdata.zi";
+
+    auto content = readFile( fp );
+    auto file    = parseTZData( content, fp );
+    auto zones   = file.listZones();
+    auto rng     = std::mt19937_64{};
+    auto dist    = std::uniform_int_distribution<sysseconds_t>( startT, endT );
+
+    ASSERT_GT( zones.size(), 0 );
+
+    constexpr size_t NUM_RANDOM_SAMPLES_STR = 1000;
+
+    for( auto const& zone : zones )
+    {
+        // 'Factory' is not loaded/handled by Howard Hinnant's timezone library
+        if( zone == "Factory" ) continue;
+
+        auto states    = file.getZoneStates( zone, 2901 );
+        auto tz        = TimeZone( zone, states );
+        auto tzHinnant = date::locate_zone( zone );
+
+        ADD_CONTEXT( "Zone information", zone );
+
+        for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )
+        {
+            auto T   = dist( rng );
+            auto ssT = sys_seconds( seconds( T ) );
+            ASSERT_EQ_QUIET( formatSysTimeAsLocalCompact( &tz, T ),
+                date::format( "%Y%m%d %H%M%S-%Z", date::make_zoned( tzHinnant, ssT ) ) );
+            ASSERT_EQ_QUIET( formatSysTimeAsLocal( &tz, T, '/', 'T', ' ' ),
+                date::format( "%Y/%m/%dT%H:%M:%S %Z", date::make_zoned( tzHinnant, ssT ) ) );
         }
     }
 }

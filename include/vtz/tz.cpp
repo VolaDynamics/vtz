@@ -405,7 +405,7 @@ namespace vtz {
             };
         }
 
-        auto Tmin = tt.front();
+        auto Tmin = tt.front() - 1;
         auto Tmax = tt.back();
         return { Tmin, Tmax, makeTable( initial, tt, off, Tmin, Tmax ) };
     }
