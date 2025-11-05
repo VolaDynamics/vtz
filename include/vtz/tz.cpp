@@ -6,6 +6,7 @@
 #include <initializer_list>
 #include <limits>
 #include <vtz/tz.h>
+#include <atomic>
 
 #include <vtz/tz_reader.h>
 
