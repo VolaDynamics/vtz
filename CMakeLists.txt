@@ -53,6 +53,11 @@ if(PROJECT_IS_TOP_LEVEL)
         OPTIONS
             "BUILD_TZ_LIB ON"
     )
+    CPMAddPackage(
+        URI gh:google/benchmark@1.9.4
+        OPTIONS
+            "BENCHMARK_ENABLE_GTEST_TESTS OFF"
+    )
 
     file(GLOB_RECURSE sources include/*.cpp)
     add_library(
@@ -96,6 +101,17 @@ if(PROJECT_IS_TOP_LEVEL)
             vtz::vtz
             fmt::fmt
             date::date
+            date::date-tz
+    )
+    add_executable(
+        bench_vtz
+        bench/bench_vtz.cpp
+    )
+    target_link_libraries(
+        bench_vtz
+        PRIVATE
+            vtz::vtz
+            benchmark::benchmark_main
             date::date-tz
     )
     if(UNIX)
