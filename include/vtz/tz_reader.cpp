@@ -751,7 +751,7 @@ namespace vtz {
         }
     }
 
-    std::string RuleOn::string() const {
+    std::string RuleOn::str() const {
         switch( kind() )
         {
         case RuleOn::DAY: return fmt::format( "{}", day() );
@@ -760,7 +760,7 @@ namespace vtz {
         case RuleOn::DOW_LAST: return fmt::format( "last{}", dow() );
         }
 
-        throw std::runtime_error( "RuleOn::string(): bad kind()" );
+        throw std::runtime_error( "RuleOn::str(): bad kind()" );
     }
 
 

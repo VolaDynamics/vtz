@@ -81,9 +81,9 @@ namespace vtz {
             }
         }
 
-        string string() const;
+        string str() const;
     };
-    inline string format_as( RuleOn r ) { return r.string(); }
+    inline string format_as( RuleOn r ) { return r.str(); }
 
 
     template<>

@@ -740,7 +740,7 @@ TEST( vtz, TimeZoneFuzz ) {
         {
             auto T       = dist( rng );
             auto llTV    = local_seconds( seconds( T ) );
-            auto llTH    = date::local_time( seconds( T ) );
+            auto llTH    = date::local_seconds( seconds( T ) );
             auto ssT     = sys_seconds( seconds( T ) );
             auto sysInfo = tzHinnant->get_info( ssT );
 

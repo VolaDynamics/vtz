@@ -897,29 +897,29 @@ TEST( vtz_parser, basics ) {
     ASSERT_EQ( parseSignedHHMMSSOffset( "2:00" ), 7200 );
     ASSERT_EQ( parseSignedHHMMSSOffset( "-2:00" ), -7200 );
 
-    ASSERT_EQ( parseRuleOn( "lastSun" ).string(), "lastSun" );
-    ASSERT_EQ( parseRuleOn( "lastMon" ).string(), "lastMon" );
-    ASSERT_EQ( parseRuleOn( "lastTue" ).string(), "lastTue" );
-    ASSERT_EQ( parseRuleOn( "lastWed" ).string(), "lastWed" );
-    ASSERT_EQ( parseRuleOn( "lastThu" ).string(), "lastThu" );
-    ASSERT_EQ( parseRuleOn( "lastFri" ).string(), "lastFri" );
-    ASSERT_EQ( parseRuleOn( "lastSat" ).string(), "lastSat" );
+    ASSERT_EQ( parseRuleOn( "lastSun" ).str(), "lastSun" );
+    ASSERT_EQ( parseRuleOn( "lastMon" ).str(), "lastMon" );
+    ASSERT_EQ( parseRuleOn( "lastTue" ).str(), "lastTue" );
+    ASSERT_EQ( parseRuleOn( "lastWed" ).str(), "lastWed" );
+    ASSERT_EQ( parseRuleOn( "lastThu" ).str(), "lastThu" );
+    ASSERT_EQ( parseRuleOn( "lastFri" ).str(), "lastFri" );
+    ASSERT_EQ( parseRuleOn( "lastSat" ).str(), "lastSat" );
 
-    ASSERT_EQ( parseRuleOn( "Sun>=1" ).string(), "Sun>=1" );
-    ASSERT_EQ( parseRuleOn( "Mon>=2" ).string(), "Mon>=2" );
-    ASSERT_EQ( parseRuleOn( "Tue>=3" ).string(), "Tue>=3" );
-    ASSERT_EQ( parseRuleOn( "Wed>=10" ).string(), "Wed>=10" );
-    ASSERT_EQ( parseRuleOn( "Thu>=11" ).string(), "Thu>=11" );
-    ASSERT_EQ( parseRuleOn( "Fri>=12" ).string(), "Fri>=12" );
-    ASSERT_EQ( parseRuleOn( "Sat>=31" ).string(), "Sat>=31" );
+    ASSERT_EQ( parseRuleOn( "Sun>=1" ).str(), "Sun>=1" );
+    ASSERT_EQ( parseRuleOn( "Mon>=2" ).str(), "Mon>=2" );
+    ASSERT_EQ( parseRuleOn( "Tue>=3" ).str(), "Tue>=3" );
+    ASSERT_EQ( parseRuleOn( "Wed>=10" ).str(), "Wed>=10" );
+    ASSERT_EQ( parseRuleOn( "Thu>=11" ).str(), "Thu>=11" );
+    ASSERT_EQ( parseRuleOn( "Fri>=12" ).str(), "Fri>=12" );
+    ASSERT_EQ( parseRuleOn( "Sat>=31" ).str(), "Sat>=31" );
 
-    ASSERT_EQ( parseRuleOn( "Sun<=1" ).string(), "Sun<=1" );
-    ASSERT_EQ( parseRuleOn( "Mon<=2" ).string(), "Mon<=2" );
-    ASSERT_EQ( parseRuleOn( "Tue<=3" ).string(), "Tue<=3" );
-    ASSERT_EQ( parseRuleOn( "Wed<=10" ).string(), "Wed<=10" );
-    ASSERT_EQ( parseRuleOn( "Thu<=11" ).string(), "Thu<=11" );
-    ASSERT_EQ( parseRuleOn( "Fri<=12" ).string(), "Fri<=12" );
-    ASSERT_EQ( parseRuleOn( "Sat<=31" ).string(), "Sat<=31" );
+    ASSERT_EQ( parseRuleOn( "Sun<=1" ).str(), "Sun<=1" );
+    ASSERT_EQ( parseRuleOn( "Mon<=2" ).str(), "Mon<=2" );
+    ASSERT_EQ( parseRuleOn( "Tue<=3" ).str(), "Tue<=3" );
+    ASSERT_EQ( parseRuleOn( "Wed<=10" ).str(), "Wed<=10" );
+    ASSERT_EQ( parseRuleOn( "Thu<=11" ).str(), "Thu<=11" );
+    ASSERT_EQ( parseRuleOn( "Fri<=12" ).str(), "Fri<=12" );
+    ASSERT_EQ( parseRuleOn( "Sat<=31" ).str(), "Sat<=31" );
 
     ASSERT_ANY_THROW( parseRuleOn( "Sun<=0" ); );
 

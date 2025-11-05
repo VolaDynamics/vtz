@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vtz/tz_reader/RuleSave.h>
 #include <vtz/bit.h>
 #include <vtz/strings.h>
+#include <vtz/tz_reader/RuleSave.h>
 
 namespace vtz {
     using RuleName = FixStr<15>;
@@ -21,7 +21,7 @@ namespace vtz {
 
     struct alignas( u64 ) ZoneRule {
         struct hyphen_t {};
-        constexpr static hyphen_t hyphen;
+        constexpr static hyphen_t hyphen{};
 
         enum Kind {
             NAMED,  ///< Zone Rule is a named rule (eg, 'US')
@@ -61,7 +61,8 @@ namespace vtz {
             return string_view( data_.buff_, data_.size_ & 0xf );
         }
 
-        /// Return the offset. This is the 'save' of the zone at the current moment.
+        /// Return the offset. This is the 'save' of the zone at the current
+        /// moment.
         constexpr i32 offset() const noexcept {
             static_assert( offsetof( RuleName, buff_ ) == 1 );
             return i32( _impl::_load4( data_.buff_ + 3 ) );
@@ -104,11 +105,10 @@ namespace vtz {
 
     static_assert( ZoneRule().kind() == ZoneRule::NAMED );
     static_assert( ZoneRule().name() == string_view() );
-    static_assert(
-        ZoneRule( RuleName{ 2, "US" } ).kind() == ZoneRule::NAMED );
+    static_assert( ZoneRule( RuleName{ 2, "US" } ).kind() == ZoneRule::NAMED );
     static_assert( ZoneRule( RuleName{ 2, "US" } ).name() == "US" );
-    static_assert( ZoneRule( RuleName{ 12, "Indianapolis" } ).kind()
-                   == ZoneRule::NAMED );
+    static_assert(
+        ZoneRule( RuleName{ 12, "Indianapolis" } ).kind() == ZoneRule::NAMED );
     static_assert(
         ZoneRule( RuleName{ 12, "Indianapolis" } ).name() == "Indianapolis" );
 
