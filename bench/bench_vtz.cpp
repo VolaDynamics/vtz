@@ -6,6 +6,7 @@
 #include <random>
 #include <vector>
 #include <vtz/civil.h>
+#include <vtz/tz.h>
 
 #define BENCH( name, state )                                                   \
     void name( benchmark::State& state );                                      \
@@ -75,6 +76,90 @@ BENCH( hinnant_to_sys_earliest, state ) {
     {
         benchmark::DoNotOptimize(
             tz->to_sys( tt[i % COUNT], date::choose::earliest ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_local, state ) {
+    constexpr size_t COUNT = 65536;
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->to_local( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_sys_latest, state ) {
+    constexpr size_t COUNT = 65536;
+
+    auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tz  = vtz::locate_zone( "America/New_York" );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->to_sys( tt[i % COUNT], vtz::choose::latest ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_sys_earliest, state ) {
+    constexpr size_t COUNT = 65536;
+    auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tz  = vtz::locate_zone( "America/New_York" );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->to_sys( tt[i % COUNT], vtz::choose::earliest ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_local_s, state ) {
+    constexpr size_t COUNT = 65536;
+    auto             tt    = randomTimes( COUNT, 1900, 2100 );
+    auto             tz    = vtz::locate_zone( "America/New_York" );
+    size_t           i     = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->to_local_s( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_sys_latest_s, state ) {
+    constexpr size_t COUNT = 65536;
+
+    auto   tt = randomTimes( COUNT, 1900, 2100 );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->to_sys_s( tt[i % COUNT], vtz::choose::latest ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_sys_earliest_s, state ) {
+    constexpr size_t COUNT = 65536;
+    auto             tt    = randomTimes( COUNT, 1900, 2100 );
+    auto             tz    = vtz::locate_zone( "America/New_York" );
+    size_t           i     = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->to_sys_s( tt[i % COUNT], vtz::choose::earliest ) );
         ++i;
     }
 }
