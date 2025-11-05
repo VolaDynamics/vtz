@@ -187,7 +187,7 @@ namespace vtz {
 
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
-        VTZ_INLINE sec_t offsetFromUTC( sec_t t ) const noexcept {
+        VTZ_INLINE sec_t offset_s( sec_t t ) const noexcept {
             // If the time is in-bounds, use the lookup table
             if( u64( t ) + tz0_ <= tzMax_ ) return TTutc.lookup( t );
 
@@ -198,20 +198,9 @@ namespace vtz {
             return TTutc.lookup( getCyclic( t, cycleTime ) );
         }
 
-        VTZ_INLINE auto localBlock( sec_t t ) const noexcept {
-            // If the time is in-bounds, we can use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) return TTlocal.get( t );
-
-            // t is _early_: use initial zone state
-            if( t < 0 ) return TTlocal.firstEntry();
-
-            // use zone symmetry to compute state for equivalent time
-            return TTutc.get( getCyclic( t, cycleTime ) );
-        }
-
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
-        VTZ_INLINE sec_t toLocal( sec_t t ) const noexcept {
+        VTZ_INLINE sec_t to_local_s( sec_t t ) const noexcept {
             // If the time is in-bounds we can use the lookup table
             if( u64( t ) + tz0_ <= tzMax_ ) return t + TTutc.lookup( t );
 
@@ -304,7 +293,7 @@ namespace vtz {
         /// > If the tp represents a non-existent time between two UTC
         /// > time_points, then the two UTC time_points will be the same,
         /// > and that UTC time_point will be returned.
-        VTZ_INLINE sec_t toUTC( sec_t t, choose which ) const noexcept {
+        VTZ_INLINE sec_t to_sys_s( sec_t t, choose which ) const noexcept {
             if( which == choose::earliest )
             {
                 // Return earliest UTC time this could refer to
@@ -316,6 +305,8 @@ namespace vtz {
                 return _toUTC<true>( t );
             }
         }
+
+        struct Impl;
     };
 
     struct StdoffTable {
@@ -323,7 +314,7 @@ namespace vtz {
         sysseconds_t tMax;
         S32Table     stdoff;
 
-        VTZ_INLINE i32 zoneStdoff( sysseconds_t t ) const noexcept {
+        VTZ_INLINE i32 stdoff_s( sysseconds_t t ) const noexcept {
             if( t < tMin ) t = tMin;
             if( t > tMax ) t = tMax;
             return stdoff.lookup( t );
@@ -339,7 +330,7 @@ namespace vtz {
 
         std::unique_ptr<ZoneAbbr[]> abbrTable;
 
-        u32 getAbbrBlock( sec_t t ) const noexcept {
+        u32 abbr_block_s( sec_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tzMax_ ) return abbr.lookup( t );
 
             // t is _early_: use initial zone state
@@ -351,7 +342,7 @@ namespace vtz {
 
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
-        string_view abbrFromUTC( sec_t t ) const noexcept {
+        string_view abbrev_s( sec_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tzMax_ )
                 return abbrFromBlock( abbr.lookup( t ) );
 
@@ -389,28 +380,38 @@ namespace vtz {
     using local_seconds = local_time<seconds>;
 
     class TimeZone
-    : public OffTables
-    , public AbbrTable
-    , public StdoffTable {
+    : private OffTables
+    , private AbbrTable
+    , private StdoffTable {
       public:
 
         TimeZone( string_view name, ZoneStates const& states );
 
+        using AbbrTable::abbrev_s;
+        using OffTables::offset_s;
+        using OffTables::to_local_s;
+        using OffTables::to_sys_s;
+        using StdoffTable::stdoff_s;
+
+        /// Return the name of the zone
         string_view name() const noexcept { return name_; }
 
-        VTZ_INLINE i32 zoneSave( sysseconds_t t ) const noexcept {
-            return offsetFromUTC( t ) - zoneStdoff( t );
+        /// Return the current save, in seconds
+        i32 save_s( sysseconds_t t ) const noexcept {
+            return offset_s( t ) - stdoff_s( t );
         }
 
+        /// Convert the given time (sys_seconds) to local seconds
         local_seconds to_local( sys_seconds s ) const {
-            return _local( toLocal( s.time_since_epoch().count() ) );
+            return _local( to_local_s( s.time_since_epoch().count() ) );
         }
 
+        /// Convert the given time (local seconds) to UTC
         sys_seconds to_sys( local_seconds s, choose z ) const {
-            return _sys( toUTC( s.time_since_epoch().count(), z ) );
+            return _sys( to_sys_s( s.time_since_epoch().count(), z ) );
         }
 
-
+        /// Convert the given time (sys_seconds) to local seconds
         template<class Dur>
         auto to_local( sys_time<Dur> t ) const noexcept
             -> local_time<std::common_type_t<Dur, seconds>> {
@@ -419,7 +420,7 @@ namespace vtz {
 
             // This is the local time (with the unit being seconds)
             local_seconds localT
-                = _local( toLocal( t2.time_since_epoch().count() ) );
+                = _local( to_local_s( t2.time_since_epoch().count() ) );
 
             // if t2 is less precise than t, we chopped off some unit of time
             // (eg, some number of nanoseconds)
@@ -430,6 +431,7 @@ namespace vtz {
             return localT + delta;
         }
 
+        /// Convert the given time (local seconds) to UTC
         template<class Dur>
         auto to_sys( local_time<Dur> t, choose z ) const
             -> sys_time<std::common_type_t<Dur, seconds>> {
@@ -438,7 +440,8 @@ namespace vtz {
 
             // This is the corresponding system time (with the unit being in
             // seconds)
-            sys_seconds sysT = _sys( toUTC( t.time_since_epoch().count(), z ) );
+            sys_seconds sysT
+                = _sys( to_sys_s( t.time_since_epoch().count(), z ) );
 
             // if t2 is less precise than t, we chopped off some unit of time
             // (eg, some number of nanoseconds)
@@ -448,6 +451,8 @@ namespace vtz {
 
             return sysT + delta;
         }
+
+        struct Impl;
 
       private:
 
@@ -465,12 +470,12 @@ namespace vtz {
     ///
     /// This will be 16 characters, plus the length of the timezone abbreviation
     inline string formatSysTimeAsLocalCompact( TimeZone const* tz,
-        sysseconds_t                                    t,
-        char                                            dateTimeSep = ' ',
-        char                                            tzAbbrSep   = '-' ) {
+        sysseconds_t                                           t,
+        char dateTimeSep = ' ',
+        char tzAbbrSep   = '-' ) {
         char buffer[64];
-        auto local = tz->toLocal( t );
-        auto abbr  = tz->abbrFromUTC( t );
+        auto local = tz->to_local_s( t );
+        auto abbr  = tz->abbrev_s( t );
         _write_timestamp_compact( local, buffer, dateTimeSep );
         buffer[15] = tzAbbrSep;
         _vtz_memcpy( buffer + 16, abbr.data(), abbr.size() );
@@ -481,13 +486,13 @@ namespace vtz {
     ///
     /// This will be 20 characters, plus the length of the timezone abbreviation
     inline string formatSysTimeAsLocal( TimeZone const* tz,
-        sysseconds_t                             t,
-        char                                     dateSep     = '-',
-        char                                     dateTimeSep = ' ',
-        char                                     tzAbbrSep   = '-' ) {
+        sysseconds_t                                    t,
+        char                                            dateSep     = '-',
+        char                                            dateTimeSep = ' ',
+        char                                            tzAbbrSep   = '-' ) {
         char buffer[64];
-        auto local = tz->toLocal( t );
-        auto abbr  = tz->abbrFromUTC( t );
+        auto local = tz->to_local_s( t );
+        auto abbr  = tz->abbrev_s( t );
         _write_timestamp( local, buffer, dateSep, dateTimeSep );
         buffer[19] = tzAbbrSep;
         _vtz_memcpy( buffer + 20, abbr.data(), abbr.size() );
