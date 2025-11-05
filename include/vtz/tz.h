@@ -4,7 +4,6 @@
 #include <chrono>
 #include <climits>
 #include <cstdint>
-#include <fmt/format.h>
 #include <memory>
 #include <string_view>
 #include <type_traits>
@@ -498,4 +497,8 @@ namespace vtz {
         _vtz_memcpy( buffer + 20, abbr.data(), abbr.size() );
         return string( buffer, 20 + abbr.size() );
     }
+
+    using time_zone = TimeZone;
+
+    time_zone const *locate_zone(string_view name);
 } // namespace vtz
