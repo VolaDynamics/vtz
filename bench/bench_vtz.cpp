@@ -157,6 +157,32 @@ BENCH( vtz_to_sys_earliest_s, state ) {
 }
 
 
+BENCH( hinnant_format, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = date::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            date::format( "%F %T %Z", date::make_zoned( tz, tt[i % COUNT] ) ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_format, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            vtz::format( tz, tt[i % COUNT], "%F %T %Z" ) );
+        ++i;
+    }
+}
+
+
 // if std::chrono::locate_zone is available, benchmark std::chrono::time_zone
 #if __cpp_lib_chrono >= 201907L
 BENCH( chrono_to_local, state ) {
