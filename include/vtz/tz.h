@@ -498,5 +498,15 @@ namespace vtz {
 
     using time_zone = TimeZone;
 
+    /// Formats a time with std::strftime specifiers
+    ///
+    /// See: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    string format_s( TimeZone const* tz, sysseconds_t t, string_view format );
+
+    inline string format(
+        TimeZone const* tz, sys_seconds t, string_view format ) {
+        return format_s( tz, t.time_since_epoch().count(), format );
+    }
+
     time_zone const* locate_zone( string_view name );
 } // namespace vtz

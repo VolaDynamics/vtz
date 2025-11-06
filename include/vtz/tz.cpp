@@ -1,14 +1,16 @@
-#include "vtz/civil.h"
-#include "vtz/files.h"
+#include <vtz/civil.h>
+#include <vtz/files.h>
+#include <vtz/math.h>
+#include <vtz/tz.h>
+#include <vtz/tz_reader.h>
+
 #include <algorithm>
+#include <atomic>
 #include <climits>
+#include <ctime>
 #include <fmt/format.h>
 #include <initializer_list>
 #include <limits>
-#include <vtz/tz.h>
-#include <atomic>
-
-#include <vtz/tz_reader.h>
 
 namespace vtz {
     template<class T>
@@ -551,5 +553,87 @@ namespace vtz {
         static Store store{};
 
         return store.cache.locate_zone( name );
+    }
+
+    string format_s(
+        TimeZone const* tz, sysseconds_t t, std::string_view format ) {
+        if( format.size() >= 128 )
+            throw std::runtime_error(
+                "formatTime(): input format string is too long" );
+
+        auto gmtoff = tz->offset_s( t );
+        auto stdoff = tz->stdoff_s( t );
+        bool isDST  = gmtoff != stdoff;
+
+        auto tLocal        = t + gmtoff;
+        auto parts         = vtz::math::divFloor2<86400>( tLocal );
+        auto date          = parts.quot;
+        u32  timeIntraday  = parts.rem;
+        int  hour          = timeIntraday / 3600;
+        timeIntraday      %= 3600;
+        int minute         = timeIntraday / 60;
+        timeIntraday      %= 60;
+        int  sec           = timeIntraday;
+        auto ymd           = toCivil( date );
+
+        auto abbrev = tz->abbrev_s( t );
+
+
+        auto tmValue = std::tm{
+            sec,
+            minute,
+            hour,
+            ymd.day,
+            ymd.month - 1, // the 'tm' struct uses 0-11 for the month
+            // tm_year stores years since 1900
+            ymd.year - 1900,
+            // days since sunday - 0-6
+            int( dowFromDays( date ) - DOW::Sun ),
+            // days since January 1 – [​0​, 365]
+            int( date - resolveCivil( ymd.year, 1, 1 ) ),
+            // true if daylight savings time is in effect
+            isDST,
+        };
+
+        // We need to inject the current timezone abbreviation into the format
+        // string, since we do NOT want to rely on strftime's use of the
+        // computer's local zone
+        char fmtStr[2048];
+
+        {
+            char*  dest = fmtStr;
+            size_t i    = 0;
+            size_t len  = format.size();
+            while( i < len )
+            {
+                char c = format[i++];
+                if( c == '%' )
+                {
+                    char next = format[i];
+                    // writes offset from UTC in the ISO 8601 format
+                    if( next == 'z' )
+                    {
+                        dest += writeShortestOffset( stdoff, dest );
+                        i    += 1;
+                        continue;
+                    }
+                    // writes time zone name or abbreviation
+                    else if( next == 'Z' )
+                    {
+                        memcpy( dest, abbrev.data(), abbrev.size() );
+                        dest += abbrev.size();
+                        i    += 1;
+                        continue;
+                    }
+                }
+                *dest++ = c;
+            }
+            *dest = '\0';
+        }
+
+        char   buffer[2048];
+        size_t count
+            = std::strftime( buffer, sizeof( buffer ), fmtStr, &tmValue );
+        return std::string( buffer, count );
     }
 } // namespace vtz
