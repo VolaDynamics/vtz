@@ -118,8 +118,8 @@ namespace vtz {
     /// - `writeShortestOffset(0, ...) -> "+00"`
     /// - `writeShortestOffset(7200, ...) -> "+02"`
     /// - `writeShortestOffset(7260, ...) -> "+0201"`
-    /// - `writeShortestOffset(7201, ...) -> "+0200:01"`
-    /// - `writeShortestOffset(7261, ...) -> "+0201:01"`
+    /// - `writeShortestOffset(7201, ...) -> "+020001"`
+    /// - `writeShortestOffset(7261, ...) -> "+020101"`
     /// - `writeShortestOffset(-7200, ...) -> "-02"`
     /// - `writeShortestOffset(-7260, ...) -> "-0201"`
     /// - `writeShortestOffset(-7201, ...) -> "-020001"`
