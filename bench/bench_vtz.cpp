@@ -40,8 +40,10 @@ vector<i64> randomTimes( size_t count, int startYear, int endYear ) {
 }
 
 
+constexpr size_t COUNT = 65536;
+
+
 BENCH( hinnant_to_local, state ) {
-    constexpr size_t COUNT = 65536;
     auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -54,7 +56,6 @@ BENCH( hinnant_to_local, state ) {
 
 
 BENCH( hinnant_to_sys_latest, state ) {
-    constexpr size_t COUNT = 65536;
     auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto tz = date::locate_zone( "America/New_York" );
     size_t i = 0;
@@ -68,7 +69,6 @@ BENCH( hinnant_to_sys_latest, state ) {
 
 
 BENCH( hinnant_to_sys_earliest, state ) {
-    constexpr size_t COUNT = 65536;
     auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto tz = date::locate_zone( "America/New_York" );
     size_t i = 0;
@@ -82,7 +82,6 @@ BENCH( hinnant_to_sys_earliest, state ) {
 
 
 BENCH( vtz_to_local, state ) {
-    constexpr size_t COUNT = 65536;
     auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -95,8 +94,6 @@ BENCH( vtz_to_local, state ) {
 
 
 BENCH( vtz_to_sys_latest, state ) {
-    constexpr size_t COUNT = 65536;
-
     auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto tz  = vtz::locate_zone( "America/New_York" );
     size_t i = 0;
@@ -110,7 +107,6 @@ BENCH( vtz_to_sys_latest, state ) {
 
 
 BENCH( vtz_to_sys_earliest, state ) {
-    constexpr size_t COUNT = 65536;
     auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto tz  = vtz::locate_zone( "America/New_York" );
     size_t i = 0;
@@ -124,10 +120,9 @@ BENCH( vtz_to_sys_earliest, state ) {
 
 
 BENCH( vtz_to_local_s, state ) {
-    constexpr size_t COUNT = 65536;
-    auto             tt    = randomTimes( COUNT, 1900, 2100 );
-    auto             tz    = vtz::locate_zone( "America/New_York" );
-    size_t           i     = 0;
+    auto   tt = randomTimes( COUNT, 1900, 2100 );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
     for( auto _ : state )
     {
         benchmark::DoNotOptimize( tz->to_local_s( tt[i % COUNT] ) );
@@ -137,8 +132,6 @@ BENCH( vtz_to_local_s, state ) {
 
 
 BENCH( vtz_to_sys_latest_s, state ) {
-    constexpr size_t COUNT = 65536;
-
     auto   tt = randomTimes( COUNT, 1900, 2100 );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -152,10 +145,9 @@ BENCH( vtz_to_sys_latest_s, state ) {
 
 
 BENCH( vtz_to_sys_earliest_s, state ) {
-    constexpr size_t COUNT = 65536;
-    auto             tt    = randomTimes( COUNT, 1900, 2100 );
-    auto             tz    = vtz::locate_zone( "America/New_York" );
-    size_t           i     = 0;
+    auto   tt = randomTimes( COUNT, 1900, 2100 );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
     for( auto _ : state )
     {
         benchmark::DoNotOptimize(
@@ -168,8 +160,6 @@ BENCH( vtz_to_sys_earliest_s, state ) {
 // if std::chrono::locate_zone is available, benchmark std::chrono::time_zone
 #if __cpp_lib_chrono >= 201907L
 BENCH( chrono_to_local, state ) {
-    constexpr size_t COUNT = 65536;
-
     auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto   tz = std::chrono::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -182,7 +172,6 @@ BENCH( chrono_to_local, state ) {
 
 
 BENCH( chrono_to_sys_latest, state ) {
-    constexpr size_t COUNT = 65536;
     using std::chrono::choose;
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
@@ -200,7 +189,6 @@ BENCH( chrono_to_sys_latest, state ) {
 
 
 BENCH( chrono_to_sys_earliest, state ) {
-    constexpr size_t COUNT = 65536;
     using std::chrono::choose;
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
