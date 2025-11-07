@@ -4,43 +4,26 @@ cmake_minimum_required(VERSION 3.23)
 project(vtz)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 17)
 set(BUILD "${CMAKE_CURRENT_BINARY_DIR}")
 
-set(tzdb_file tzdb-2025b.tar.lz)
-cmake_path(GET tzdb_file STEM tzdb_stem)
+# Add dev compile flags (if on unix)
+if(PROJECT_IS_TOP_LEVEL AND UNIX)
+    add_compile_options(
+        -fdiagnostics-color=always
+        -Werror=uninitialized
+        -Wunused
+    )
+endif()
 
-file(
-    DOWNLOAD
-        "https://data.iana.org/time-zones/releases/${tzdb_file}"
-        "${BUILD}/${tzdb_file}"
-)
-
-file(
-    ARCHIVE_EXTRACT
-    INPUT
-        "${BUILD}/${tzdb_file}"
-    DESTINATION
-        "${BUILD}/data"
-)
-
-file(
-    CREATE_LINK
-        "${BUILD}/data/${tzdb_stem}"
-        "${BUILD}/data/tzdata"
-    SYMBOLIC
-)
-
-if(PROJECT_IS_TOP_LEVEL)
-    if(UNIX)
-        add_compile_options(-fdiagnostics-color=always)
-    endif()
-
+# (For development) add SANITIZE and PROFILE compile flags when on unix
+if(PROJECT_IS_TOP_LEVEL AND UNIX)
     set(LINK_FLAGS_SANITIZE "-fsanitize=address,undefined")
     set(CMAKE_CXX_FLAGS_SANITIZE "-fsanitize=address,undefined -O0 -g")
-
     set(CMAKE_CXX_FLAGS_PROFILE "-Og -g")
+endif()
 
+# (For development) download dependencies
+if(PROJECT_IS_TOP_LEVEL)
     include(cmake/get_cpm.cmake)
 
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
@@ -58,35 +41,62 @@ if(PROJECT_IS_TOP_LEVEL)
         OPTIONS
             "BENCHMARK_ENABLE_GTEST_TESTS OFF"
     )
+endif()
 
-    file(GLOB_RECURSE sources include/*.cpp)
-    add_library(
-        vtz
-        STATIC
-            ${sources})
+file(GLOB_RECURSE sources include/*.cpp)
+add_library(
+    vtz
+    STATIC
+        ${sources})
 
-    target_link_libraries(
-        vtz
-        PRIVATE
-            fmt::fmt
-        PUBLIC
-            unordered_dense::unordered_dense
+target_link_libraries(
+    vtz
+    PRIVATE
+        fmt::fmt
+    PUBLIC
+        unordered_dense::unordered_dense
+)
+target_compile_features(
+    vtz
+    PRIVATE
+        cxx_std_17
+)
+add_library(vtz::vtz ALIAS vtz)
+
+file(GLOB_RECURSE headers include/*.h)
+target_sources(
+    vtz
+    PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS include
+    FILES ${headers}
+)
+
+# Add tests and benchmarks
+if(PROJECT_IS_TOP_LEVEL)
+    set(tzdb_file tzdb-2025b.tar.lz)
+    cmake_path(GET tzdb_file STEM tzdb_stem)
+
+    file(
+        DOWNLOAD
+            "https://data.iana.org/time-zones/releases/${tzdb_file}"
+            "${BUILD}/${tzdb_file}"
     )
-    add_library(vtz::vtz ALIAS vtz)
 
-    if(UNIX)
-        target_compile_options(vtz PRIVATE -Werror=uninitialized -Wunused)
-    endif()
-
-    file(GLOB_RECURSE headers include/*.h)
-    target_sources(
-        vtz
-        PUBLIC
-        FILE_SET HEADERS
-        BASE_DIRS include
-        FILES ${headers}
+    file(
+        ARCHIVE_EXTRACT
+        INPUT
+            "${BUILD}/${tzdb_file}"
+        DESTINATION
+            "${BUILD}/data"
     )
 
+    file(
+        CREATE_LINK
+            "${BUILD}/data/${tzdb_stem}"
+            "${BUILD}/data/tzdata"
+        SYMBOLIC
+    )
 
     add_executable(test_vtz
         test/test_vtz.cpp
@@ -115,7 +125,4 @@ if(PROJECT_IS_TOP_LEVEL)
             benchmark::benchmark_main
             date::date-tz
     )
-    if(UNIX)
-        target_compile_options(test_vtz PRIVATE -Werror=uninitialized -Wunused)
-    endif()
 endif()
