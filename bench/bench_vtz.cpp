@@ -170,14 +170,101 @@ BENCH( hinnant_format, state ) {
 }
 
 
+BENCH( vtz_format_strftime, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->format( "%F %T %Z", tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_format_to_strftime, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    char   buff[64];
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->format_to( "%F %T %Z", tt[i % COUNT], buff, sizeof( buff ) ) );
+        ++i;
+    }
+}
+
 BENCH( vtz_format, state ) {
     auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
     {
+        benchmark::DoNotOptimize( tz->format( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_format_to, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    char   buff[64];
+    for( auto _ : state )
+    {
         benchmark::DoNotOptimize(
-            vtz::format( tz, tt[i % COUNT], "%F %T %Z" ) );
+            tz->format_to( tt[i % COUNT], buff, sizeof( buff ) ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_format_compact, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->format_compact( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_format_compact_to, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    char   buff[32];
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->format_compact_to( tt[i % COUNT], buff, sizeof( buff ) ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_format_iso8601, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->format_iso8601( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_format_iso8601_to, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    char   buff[32];
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->format_iso8601_to( tt[i % COUNT], buff, sizeof( buff ) ) );
         ++i;
     }
 }

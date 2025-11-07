@@ -156,12 +156,12 @@ namespace vtz {
     /// A Proleptic Civil Calendar follows a 400 year cycle.
     ///
     /// - Each 400-year cycle contains the same number of days
-    ///   (146097 days),
+    /// (146097 days),
     /// - Whatever the given day of the week is (eg, Monday), this
-    ///   date 400 years from now will also be a Monday.
+    /// date 400 years from now will also be a Monday.
     /// - If the last sunday of the month is the 26th, the last
-    ///   sunday of that same month 400 years from now will also
-    ///   be the 26th, etc
+    /// sunday of that same month 400 years from now will also
+    /// be the 26th, etc
     ///
     /// This means that when daylight savings time starts, ends, etc
     /// will _also_ be the same in 400 years, at least based on all
@@ -328,13 +328,23 @@ namespace vtz {
         std::unique_ptr<ZoneAbbr[]> abbrTable;
 
         u32 abbr_block_s( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ ) return abbr.lookup( t );
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+                return abbr.lookup( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return abbr.initial();
 
             // use zone symmetry to compute state for equivalent time
             return abbr.lookup( getCyclic( t, cycleTime ) );
+        }
+
+        /// Writes up to 7 characters, representing the abbreviation
+        size_t abbrev_to_s( sec_t t, char* p ) const noexcept {
+            auto        block = abbr_block_s( t );
+            size_t      size  = block & 0xf;
+            char const* data  = abbrTable[block >> 4].buff_;
+            _vtz_memcpy( p, data, size );
+            return size;
         }
 
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
@@ -385,6 +395,7 @@ namespace vtz {
         TimeZone( string_view name, ZoneStates const& states );
 
         using AbbrTable::abbrev_s;
+        using AbbrTable::abbrev_to_s;
         using OffTables::offset_s;
         using OffTables::to_local_s;
         using OffTables::to_sys_s;
@@ -449,6 +460,49 @@ namespace vtz {
             return sysT + delta;
         }
 
+        // clang-format off
+
+        /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        size_t format_to_s( string_view format, sysseconds_t t, char* buff, size_t count ) const;
+        /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        size_t format_to(   string_view format, sys_seconds  t, char* buff, size_t count ) const { return format_to_s( format, t.time_since_epoch().count(), buff, count ); }
+        /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        string format_s(    string_view format, sysseconds_t t ) const;
+        /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        string format(      string_view format, sys_seconds  t ) const { return format_s( format, t.time_since_epoch().count() ); }
+
+
+        /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
+        size_t format_to_s( sysseconds_t t, char* buff, size_t count, char dateSep = '-', char dateTimeSep = ' ', char abbrevSep = ' ' ) const noexcept;
+        /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
+        size_t format_to(   sys_seconds  t, char* buff, size_t count, char dateSep = '-', char dateTimeSep = ' ', char abbrevSep = ' ' ) const { return format_to_s( t.time_since_epoch().count(), buff, count, dateSep, dateTimeSep, abbrevSep ); }
+        /// Formats as `%Y-%m-%d HH:MM:SS %Z`. Example: `2025-11-06 17:50:00 EST`
+        string format_s(    sysseconds_t t, char dateSep = '-', char dateTimeSep = ' ', char abbrevSep = ' ' ) const;
+        /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`
+        string format(      sys_seconds  t, char dateSep = '-', char dateTimeSep = ' ', char abbrevSep = ' ' ) const { return format_s( t.time_since_epoch().count(), dateSep, dateTimeSep, abbrevSep ); }
+
+
+        /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
+        size_t format_compact_to_s( sysseconds_t t, char* p, size_t count, char dateTimeSep = ' ', char abbrevSep = ' ' ) const noexcept;
+        /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
+        size_t format_compact_to(   sys_seconds  t, char* p, size_t count, char dateTimeSep = ' ', char abbrevSep = ' ' ) const { return format_compact_to_s( t.time_since_epoch().count(), p, count, dateTimeSep, abbrevSep ); }
+        /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
+        string format_compact_s(    sysseconds_t t, char dateTimeSep = ' ', char abbrevSep = ' ' ) const;
+        /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
+        string format_compact(      sys_seconds  t, char dateTimeSep = ' ', char abbrevSep = ' ' ) const { return format_compact_s( t.time_since_epoch().count(), dateTimeSep, abbrevSep ); }
+
+
+        /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
+        size_t format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char dateSep = '-', char dateTimeSep = 'T' ) const noexcept;
+        /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
+        size_t format_iso8601_to(   sys_seconds  t, char* buff, size_t count, char dateSep = '-', char dateTimeSep = 'T' ) const { return format_iso8601_to_s( t.time_since_epoch().count(), buff, count, dateSep, dateTimeSep );}
+        /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
+        string format_iso8601_s(    sysseconds_t t, char dateSep = '-', char dateTimeSep = 'T' ) const;
+        /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
+        string format_iso8601(      sys_seconds  t, char dateSep = '-', char dateTimeSep = 'T' ) const { return format_iso8601_s( t.time_since_epoch().count(), dateSep, dateTimeSep );}
+
+        // clang-format on
+
         struct Impl;
 
       private:
@@ -463,13 +517,13 @@ namespace vtz {
         string name_;
     };
 
-    /// Formats a time in the form %Y%m%d %H%M%S-%Z
+    /// Formats a time in the form %Y%m%d %H%M%S %Z
     ///
     /// This will be 16 characters, plus the length of the timezone abbreviation
     inline string formatSysTimeAsLocalCompact( TimeZone const* tz,
         sysseconds_t                                           t,
         char dateTimeSep = ' ',
-        char tzAbbrSep   = '-' ) {
+        char tzAbbrSep   = ' ' ) {
         char buffer[64];
         auto local = tz->to_local_s( t );
         auto abbr  = tz->abbrev_s( t );
@@ -498,15 +552,6 @@ namespace vtz {
 
     using time_zone = TimeZone;
 
-    /// Formats a time with std::strftime specifiers
-    ///
-    /// See: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
-    string format_s( TimeZone const* tz, sysseconds_t t, string_view format );
-
-    inline string format(
-        TimeZone const* tz, sys_seconds t, string_view format ) {
-        return format_s( tz, t.time_since_epoch().count(), format );
-    }
 
     time_zone const* locate_zone( string_view name );
 } // namespace vtz

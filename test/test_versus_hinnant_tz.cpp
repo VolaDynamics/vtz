@@ -813,7 +813,7 @@ TEST( vtz, formatTime ) {
         return date::format( format, date::make_zoned( tz, s ) );
     };
     auto fmtVTZ = []( vtz::time_zone const* tz, sys_seconds s, char const* format ) {
-        return vtz::format( tz, s, format );
+        return tz->format( format, s );
     };
 
     // Do sanity check - we know how these should be formatted
@@ -841,6 +841,15 @@ TEST( vtz, formatTime ) {
 
         ASSERT_EQ( fmtVTZ( NY_V, T, "%D %T %Z" ), "11/06/25 10:24:45 EST" );
         ASSERT_EQ( fmtVTZ( De_V, T, "%D %T %Z" ), "11/06/25 08:24:45 MST" );
+
+        // Check the case that the string does NOT end in a format specifier (ensure the last
+        // character is copied)
+        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%S-%Zx" ), "20251106 10:24:45-ESTx" );
+        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%S-%Zxyz" ), "20251106 10:24:45-ESTxyz" );
+        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%Sx" ), "20251106 10:24:45x" );
+        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%Sxyz" ), "20251106 10:24:45xyz" );
+
+        ASSERT_EQ( NY_V->format( T ), "2025-11-06 10:24:45 EST" );
     }
 
     {
