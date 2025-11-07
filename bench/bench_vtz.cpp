@@ -18,20 +18,20 @@ using std::vector;
 using std::chrono::seconds;
 using vtz::i64;
 
-template<class T>
+template<class T, class Dur = typename T::duration>
 vector<T> toChrono( vector<i64> const& tt ) {
     vector<T> result( tt.size() );
-    for( size_t i = 0; i < tt.size(); ++i )
-    { result[i] = T( seconds( tt[i] ) ); }
+    for( size_t i = 0; i < tt.size(); ++i ) result[i] = T( Dur( tt[i] ) );
     return result;
 }
 
-vector<i64> randomTimes( size_t count, int startYear, int endYear ) {
+vector<i64> randomTimes(
+    size_t count, int startYear, int endYear, i64 mul = 1 ) {
     vector<i64>                        result( count );
     std::mt19937_64                    rng;
     std::uniform_int_distribution<i64> dist{
-        vtz::resolveCivilTime( startYear, 1, 1, 0, 0, 0 ),
-        vtz::resolveCivilTime( endYear, 1, 1, 0, 0, 0 ),
+        vtz::resolveCivilTime( startYear, 1, 1, 0, 0, 0 ) * mul,
+        vtz::resolveCivilTime( endYear, 1, 1, 0, 0, 0 ) * mul,
     };
 
     for( size_t i = 0; i < count; ++i ) result[i] = dist( rng );
@@ -183,6 +183,20 @@ BENCH( vtz_format_strftime, state ) {
 
 BENCH( vtz_format_to_strftime, state ) {
     auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    char   buff[64];
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            tz->format_to( "%F %T %Z", tt[i % COUNT], buff, sizeof( buff ) ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_format_to_strftime_nanos, state ) {
+    using nanos = vtz::sys_time<std::chrono::nanoseconds>;
+    auto   tt = toChrono<nanos>( randomTimes( COUNT, 1900, 2100, 1000000000 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     char   buff[64];

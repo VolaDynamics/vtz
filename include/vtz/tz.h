@@ -14,6 +14,40 @@
 
 #include <vtz/bit.h>
 
+namespace vtz::detail {
+    /// Compute the amount of precision necessary to represent some duration
+    constexpr int getNecessaryPrecision(
+        bool isFloatingPoint, intmax_t num, intmax_t denom ) noexcept {
+        // if it's floating-point, use max precision
+        if( isFloatingPoint ) return 9;
+
+        // if the numerator is divisible by the denominator, we can use 0 for
+        // the precision
+        if( num % denom == 0 ) return 0;
+
+        if( 10 % denom == 0 ) return 1;
+        if( 100 % denom == 0 ) return 2;
+        if( 1000 % denom == 0 ) return 3;
+        if( 10000 % denom == 0 ) return 4;
+        if( 100000 % denom == 0 ) return 5;
+        if( 1000000 % denom == 0 ) return 6;
+        if( 10000000 % denom == 0 ) return 7;
+        if( 100000000 % denom == 0 ) return 8;
+
+        return 9;
+    }
+
+    template<class Duration>
+    constexpr int getNecessaryPrecision() {
+        using rep    = typename Duration::rep;
+        using period = typename Duration::period;
+        // period::num is the numerator, period::den is the denominator
+        return getNecessaryPrecision(
+            std::is_floating_point<rep>(), period::num, period::den );
+    }
+} // namespace vtz::detail
+
+
 namespace vtz {
     constexpr u64 _join32( u32 lo, u32 hi ) {
         return u64( lo ) | ( u64( hi ) << 32 );
@@ -187,7 +221,8 @@ namespace vtz {
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t offset_s( sec_t t ) const noexcept {
             // If the time is in-bounds, use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]] return TTutc.lookup( t );
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+                return TTutc.lookup( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return TTutc.initial();
@@ -200,7 +235,8 @@ namespace vtz {
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t to_local_s( sec_t t ) const noexcept {
             // If the time is in-bounds we can use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]] return t + TTutc.lookup( t );
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+                return t + TTutc.lookup( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return t + TTutc.initial();
@@ -369,7 +405,9 @@ namespace vtz {
 
     using std::chrono::hours;
     using std::chrono::minutes;
+    using std::chrono::nanoseconds;
     using std::chrono::seconds;
+
     using days = std::chrono::duration<i32, std::ratio<86400>>;
     using std::chrono::system_clock;
     using std::chrono::time_point;
@@ -501,7 +539,92 @@ namespace vtz {
         /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
         string format_iso8601(      sys_seconds  t, char dateSep = '-', char dateTimeSep = 'T' ) const { return format_iso8601_s( t.time_since_epoch().count(), dateSep, dateTimeSep );}
 
+
+        /// Formats a time (expressed as seconds and nanoseconds) to the given buffer.
+        /// For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        ///
+        /// Preconditions: nanos is in the range `[0, 999999999]`, and precision<=9.
+        /// The fractional component will formatted as a decimal followed by the given digits,
+        /// and it will be placed immediately after the 'seconds' component.
+        ///
+        /// When formatting, if precision is less than 9, the value is truncated. Eg, if nanos
+        /// is 999999999, but precision is 3, the fractional component is `.999`.
+        ///
+        /// If precision is 0, no fractional component is written, and the decimal point is omitted.
+        ///
+        /// Examples:
+        ///
+        /// - `"%Y%m%d %H:%M:%S-%Z"` with `t=1762442685`, `nanos=029380000` and `prec=4` would produce "20251106 08:24:45.0293-MST" for America/Denver
+        /// - `"%F %T %Z"` with `t=1762442685`, `nanos=029380000` and `precision=4` would produce "2025-11-06 08:24:45.0293-MST" for America/Denver
+        ///
+        /// In the latter example, `%T` expands to `%H:%M:%S`.
+        size_t format_precise_to_s( string_view format, sysseconds_t t, u32 nanos, int precision, char* buff, size_t count ) const;
+
+        /// Format the given time, with the requested precision (up to 9 digits)
+        template<class Dur>
+        size_t format_precise_to( string_view format, sys_time<Dur> t, int precision, char* buff, size_t count ) const {
+            auto sec = std::chrono::floor<seconds>( t.time_since_epoch() );
+            auto nanos = std::chrono::floor<nanoseconds>( t.time_since_epoch() - sec );
+            return format_precise_to_s( format, sec.count(), nanos.count(), precision, buff, count );
+        }
+
+        /// Formats a time (expressed as seconds and nanoseconds) to the given buffer. For more information,
+        /// see the equivalent version of `format_to_s`.
+        string format_precise_s( string_view format, sysseconds_t t, u32 nanos, int precision ) const;
+
+        /// Format the given time, with the requested precision (up to 9 digits)
+        template<class Dur>
+        string format_precise( string_view format, sys_time<Dur> t, int precision ) const {
+            auto sec = std::chrono::floor<seconds>( t.time_since_epoch() );
+            auto nanos = std::chrono::floor<nanoseconds>( t.time_since_epoch() - sec );
+            return format_precise_s( format, sec.count(), nanos.count(), precision );
+        }
+
+        /// Format the given time. If the input time has a precision higher than
+        /// seconds, or it's fractional (or floating-point), then up to 9 digits
+        /// will be included after the seconds component, as necessary to
+        /// represent the input time.
+        template<class Dur>
+        size_t format_to( string_view format, sys_time<Dur> t, char* buff, size_t count ) const {
+            constexpr int prec = detail::getNecessaryPrecision<Dur>();
+
+            // If the required amount of precision is 0, format w/ seconds.
+            // Otherwise, compute the necessary amount of precision, and format
+            // with that.
+            if constexpr( prec == 0 )
+            {
+                return format_to_s( format, seconds( t.time_since_epoch() ).count(), buff, count );
+            }
+            else
+            {
+                auto sec = std::chrono::floor<seconds>( t.time_since_epoch() );
+                auto nanos = std::chrono::floor<nanoseconds>( t.time_since_epoch() - sec );
+                return format_precise_to_s( format, sec.count(), nanos.count(), prec, buff, count );
+            }
+        }
+
+        /// Format the given time. If the input time has a precision higher than
+        /// seconds, or it's fractional (or floating-point), then up to 9 digits
+        /// will be included after the seconds component, as necessary to
+        /// represent the input time.
+        template<class Dur>
+        string format( string_view format, sys_time<Dur> t ) const {
+            constexpr int prec = detail::getNecessaryPrecision<Dur>();
+
+            if constexpr( prec == 0 )
+            {
+                return format_s( format, seconds( t.time_since_epoch() ).count() );
+            }
+            else
+            {
+                auto sec = std::chrono::floor<seconds>( t.time_since_epoch() );
+                auto nanos = std::chrono::floor<nanoseconds>( t.time_since_epoch() - sec );
+                return format_precise_s( format, sec.count(), nanos.count(), prec );
+            }
+        }
+
         // clang-format on
+
 
         struct Impl;
 

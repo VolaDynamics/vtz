@@ -646,7 +646,7 @@ namespace vtz {
     }
 
     /// equivalent to "%H%M%S" (the ISO 8601 time format)
-    VTZ_INLINE static char* _writeISO_HHMMSS_compact(
+    VTZ_INLINE static char* _writeHHMMSScompact(
         char* p, int h, int m, int s ) noexcept {
         p[0] = '0' + h / 10;
         p[1] = '0' + h % 10;
@@ -658,7 +658,7 @@ namespace vtz {
     }
 
     /// equivalent to "%H:%M:%S" (the ISO 8601 time format)
-    VTZ_INLINE static char* _writeISO_HHMMSS(
+    VTZ_INLINE static char* _writeHHMMSS(
         char* p, int h, int m, int s ) noexcept {
         p[0] = '0' + h / 10;
         p[1] = '0' + h % 10;
@@ -707,12 +707,13 @@ namespace vtz {
         return p;
     }
 
-    template<class F>
-    auto _do_format( TimeZone const& tz,
-        char const*                 format,
-        size_t                      formatSize,
-        sysseconds_t                t,
-        F&&                         func ) {
+    template<class F, class WriteFractional>
+    auto _do_strformat( TimeZone const& tz,
+        char const*                     format,
+        size_t                          formatSize,
+        sysseconds_t                    t,
+        WriteFractional                 writeFrac,
+        F                               func ) {
         constexpr size_t MAX_SPECIFIERS = 64;
         constexpr size_t MAX_SIZE       = MAX_SPECIFIERS * 2;
         // In the worst case, the year is 13 bytes. (this occurs if, eg, the
@@ -840,17 +841,14 @@ namespace vtz {
             case 'H': p = _write2Digit( p, hr ); continue;
             // writes minute as a decimal number (range [00,59])
             case 'M': p = _write2Digit( p, mi ); continue;
-            // writes second as a decimal number (range [00,60])
-            case 'S': p = _write2Digit( p, sec ); continue;
+            // writes second as a decimal number (range [00,60]). Will also
+            // write a fractional component after the second.
+            case 'S': p = writeFrac( _write2Digit( p, sec ) ); continue;
             // equivalent to "%H:%M:%S" (the ISO 8601 time format)
-            case 'T': p = _writeISO_HHMMSS( p, hr, mi, sec ); continue;
+            case 'T': p = writeFrac( _writeHHMMSS( p, hr, mi, sec ) ); continue;
             // writes offset from UTC in the ISO 8601 format (e.g. -0430)
             case 'z': p += writeShortestOffset( gmtoff, p ); continue;
-            case 'Z':
-                {
-                    p += tz.abbrev_to_s( t, p );
-                    continue;
-                }
+            case 'Z': p += tz.abbrev_to_s( t, p ); continue;
             default:
                 {
                     *p++          = c;
@@ -906,10 +904,13 @@ namespace vtz {
 
     size_t TimeZone::format_to_s(
         string_view format, sysseconds_t t, char* buff, size_t count ) const {
-        return _do_format( *this,
+        return _do_strformat(
+            *this,
             format.data(),
             format.size(),
             t,
+            // There is no fractional component, so writeFrac is a noop
+            []( char* s ) noexcept -> char* { return s; },
             [buff, count]( char const* s, size_t size ) {
                 // clamp size
                 if( size > count ) size = count;
@@ -920,11 +921,74 @@ namespace vtz {
             } );
     }
 
-    string TimeZone::format_s( std::string_view format, sysseconds_t t ) const {
-        return _do_format( *this,
+    auto _writeNanos( u32 nanos, int precision ) noexcept {
+        return [nanos, precision]( char* p ) noexcept -> char* {
+            // clang-format off
+            u32 n = nanos;
+            int prec = precision;
+            if( prec == 0 ) return p;
+            p[0] = '.';
+            p[1] = '0' + n / 100000000; n %= 100000000;
+            if( prec == 1 ) return p + 2;
+            p[2] = '0' + n / 10000000;  n %= 10000000;
+            if( prec == 2 ) return p + 3;
+            p[3] = '0' + n / 1000000;   n %= 1000000;
+            if( prec == 3 ) return p + 4;
+            p[4] = '0' + n / 100000;    n %= 100000;
+            if( prec == 4 ) return p + 5;
+            p[5] = '0' + n / 10000;     n %= 10000;
+            if( prec == 5 ) return p + 6;
+            p[6] = '0' + n / 1000;      n %= 1000;
+            if( prec == 6 ) return p + 7;
+            p[7] = '0' + n / 100;       n %= 100;
+            if( prec == 7 ) return p + 8;
+            p[8] = '0' + n / 10;        n %= 10;
+            if( prec == 8 ) return p + 9;
+            p[9] = '0' + n;
+            return p + 10;
+            // clang-format on
+        };
+    }
+
+    size_t TimeZone::format_precise_to_s( string_view format,
+        sysseconds_t                                  t,
+        u32                                           nanos,
+        int                                           precision,
+        char*                                         buff,
+        size_t                                        count ) const {
+        return _do_strformat( *this,
             format.data(),
             format.size(),
             t,
+            _writeNanos( nanos, precision ),
+            [buff, count]( char const* s, size_t size ) {
+                // clamp size
+                if( size > count ) size = count;
+                // write to buffer
+                _vtz_memcpy( buff, s, size );
+                // return size
+                return size;
+            } );
+    }
+
+    std::string TimeZone::format_precise_s(
+        string_view format, sysseconds_t t, u32 nanos, int precision ) const {
+        return _do_strformat( *this,
+            format.data(),
+            format.size(),
+            t,
+            _writeNanos( nanos, precision ),
+            []( char const* s, size_t size ) { return string( s, size ); } );
+    }
+
+    string TimeZone::format_s( std::string_view format, sysseconds_t t ) const {
+        return _do_strformat(
+            *this,
+            format.data(),
+            format.size(),
+            t,
+            // There is no fractional component, so writeFrac is a noop
+            []( char* s ) noexcept -> char* { return s; },
             []( char const* s, size_t size ) { return string( s, size ); } );
     }
 
@@ -954,23 +1018,23 @@ namespace vtz {
             if constexpr( isCompact )
             {
                 // We were promised that the year is 0000-9999
-                (void)_writeYear4( p, ymd.year );                     // 0..4
-                (void)_writeMon( p + 4, ymd.month );                  // 4..6
-                (void)_writeDOM_d( p + 6, ymd.day );                  // 6..8
-                p[8] = dateTimeSep;                                   // 8..9
-                (void)_writeISO_HHMMSS_compact( p + 9, hr, mi, sec ); // 9..15
+                (void)_writeYear4( p, ymd.year );                // 0..4
+                (void)_writeMon( p + 4, ymd.month );             // 4..6
+                (void)_writeDOM_d( p + 6, ymd.day );             // 6..8
+                p[8] = dateTimeSep;                              // 8..9
+                (void)_writeHHMMSScompact( p + 9, hr, mi, sec ); // 9..15
             }
             else
             {
                 // YYYY-MM-DD HH:MM:SS
                 // 0123456789012345678
-                (void)_writeYear4( p, ymd.year );             // 0..4
-                p[4] = dateSep;                               // 4..5
-                (void)_writeMon( p + 5, ymd.month );          // 5..7
-                p[7] = dateSep;                               // 7..8
-                (void)_writeDOM_d( p + 8, ymd.day );          // 8..10
-                p[10] = dateTimeSep;                          // 10..11
-                (void)_writeISO_HHMMSS( p + 11, hr, mi, sec ); // 11..19
+                (void)_writeYear4( p, ymd.year );          // 0..4
+                p[4] = dateSep;                            // 4..5
+                (void)_writeMon( p + 5, ymd.month );       // 5..7
+                p[7] = dateSep;                            // 7..8
+                (void)_writeDOM_d( p + 8, ymd.day );       // 8..10
+                p[10] = dateTimeSep;                       // 10..11
+                (void)_writeHHMMSS( p + 11, hr, mi, sec ); // 11..19
             }
 
             return action( p, stampEnd + writeAbbrev( p + stampEnd ) );
@@ -987,21 +1051,21 @@ namespace vtz {
             {
                 // MMDD HHMMSS
                 // 01234567890
-                (void)_writeMon( q, ymd.month );                      // 0..2
-                (void)_writeDOM_d( q + 2, ymd.day );                  // 2..4
-                q[4] = dateTimeSep;                                   // 4..5
-                (void)_writeISO_HHMMSS_compact( q + 5, hr, mi, sec ); // 5..11
+                (void)_writeMon( q, ymd.month );                 // 0..2
+                (void)_writeDOM_d( q + 2, ymd.day );             // 2..4
+                q[4] = dateTimeSep;                              // 4..5
+                (void)_writeHHMMSScompact( q + 5, hr, mi, sec ); // 5..11
             }
             else
             {
                 // -MM-DD HH:MM:SS
                 // 012345678901234
-                q[0] = dateSep;                               // 0..1
-                (void)_writeMon( q + 1, ymd.month );          // 1..3
-                q[3] = dateSep;                               // 3..4
-                (void)_writeDOM_d( q + 4, ymd.day );          // 4..6
-                q[6] = dateTimeSep;                           // 6..7
-                (void)_writeISO_HHMMSS( q + 7, hr, mi, sec ); // 7..14
+                q[0] = dateSep;                           // 0..1
+                (void)_writeMon( q + 1, ymd.month );      // 1..3
+                q[3] = dateSep;                           // 3..4
+                (void)_writeDOM_d( q + 4, ymd.day );      // 4..6
+                q[6] = dateTimeSep;                       // 6..7
+                (void)_writeHHMMSS( q + 7, hr, mi, sec ); // 7..14
             }
 
             return action(

@@ -25,6 +25,7 @@ using namespace vtz;
 using _test_vtz::TEST_LOG;
 
 using sys_seconds = date::sys_seconds;
+using std::chrono::duration;
 
 struct entry {
     string       abbr;
@@ -848,6 +849,68 @@ TEST( vtz, formatTime ) {
         ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%Sxyz" ), "20251106 10:24:45xyz" );
 
         ASSERT_EQ( NY_V->format( T ), "2025-11-06 10:24:45 EST" );
+
+        auto t         = T.time_since_epoch().count();
+        using _25th    = duration<int, std::ratio<1, 25>>;
+        using _3rd     = duration<int, std::ratio<1, 3>>;
+        using millis   = std::chrono::milliseconds;
+        using micros   = std::chrono::microseconds;
+        using nanos    = std::chrono::nanoseconds;
+        using secondsR = std::chrono::duration<double>;
+        using std::chrono::hours;
+        using std::chrono::minutes;
+
+        // Adding minutes or hours shouldn't affect the precision
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + minutes( 10 ) ), "2025-11-06 10:34:45 EST" );
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + hours( 24 ) ), "2025-11-07 10:24:45 EST" );
+
+        // Only the necessary amount of precision (for a given type) is added, but the same
+        // amount of precision is always added
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + _25th( 0 ) ), "2025-11-06 10:24:45.00 EST" );
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + _25th( 3 ) ), "2025-11-06 10:24:45.12 EST" );
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + _3rd( 1 ) ), "2025-11-06 10:24:45.333333333 EST" );
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + _3rd( 2 ) ), "2025-11-06 10:24:45.666666666 EST" );
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + _3rd( 3 ) ), "2025-11-06 10:24:46.000000000 EST" );
+
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + millis( 3295 ) ), "2025-11-06 10:24:48.295 EST" );
+        ASSERT_EQ(
+            NY_V->format( "%F %T %Z", T + micros( 3295 ) ), "2025-11-06 10:24:45.003295 EST" );
+        ASSERT_EQ(
+            NY_V->format( "%F %T %Z", T + nanos( 3295 ) ), "2025-11-06 10:24:45.000003295 EST" );
+
+        // Using floating-point for the duration always results in 9 digits of precision
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + secondsR( 0.375 ) ),
+            "2025-11-06 10:24:45.375000000 EST" );
+
+        // We can request that a given quantity of precision always be used
+        ASSERT_EQ( NY_V->format_precise( "%F %T %Z", T, 3 ), "2025-11-06 10:24:45.000 EST" );
+        ASSERT_EQ(
+            NY_V->format_precise( "%F %T %Z", T + _25th( 3 ), 3 ), "2025-11-06 10:24:45.120 EST" );
+        ASSERT_EQ( NY_V->format_precise( "%F %T %Z", T + micros( 3295 ), 3 ),
+            "2025-11-06 10:24:45.003 EST" );
+        ASSERT_EQ( NY_V->format_precise( "%F %T %Z", T + secondsR( 0.375 ), 3 ),
+            "2025-11-06 10:24:45.375 EST" );
+
+        ASSERT_EQ( NY_V->format_precise_s( "%F %T %Z", t, 987654321, 9 ),
+            "2025-11-06 10:24:45.987654321 EST" );
+        ASSERT_EQ( NY_V->format_precise_s( "%F %T %Z", t, 987654321, 8 ),
+            "2025-11-06 10:24:45.98765432 EST" );
+        ASSERT_EQ( NY_V->format_precise_s( "%F %T %Z", t, 987654321, 7 ),
+            "2025-11-06 10:24:45.9876543 EST" );
+        ASSERT_EQ( NY_V->format_precise_s( "%F %T %Z", t, 987654321, 6 ),
+            "2025-11-06 10:24:45.987654 EST" );
+        ASSERT_EQ( NY_V->format_precise_s( "%F %T %Z", t, 987654321, 5 ),
+            "2025-11-06 10:24:45.98765 EST" );
+        ASSERT_EQ(
+            NY_V->format_precise_s( "%F %T %Z", t, 987654321, 4 ), "2025-11-06 10:24:45.9876 EST" );
+        ASSERT_EQ(
+            NY_V->format_precise_s( "%F %T %Z", t, 987654321, 3 ), "2025-11-06 10:24:45.987 EST" );
+        ASSERT_EQ(
+            NY_V->format_precise_s( "%F %T %Z", t, 987654321, 2 ), "2025-11-06 10:24:45.98 EST" );
+        ASSERT_EQ(
+            NY_V->format_precise_s( "%F %T %Z", t, 987654321, 1 ), "2025-11-06 10:24:45.9 EST" );
+        ASSERT_EQ(
+            NY_V->format_precise_s( "%F %T %Z", t, 987654321, 0 ), "2025-11-06 10:24:45 EST" );
     }
 
     {
