@@ -187,7 +187,7 @@ namespace vtz {
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t offset_s( sec_t t ) const noexcept {
             // If the time is in-bounds, use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) return TTutc.lookup( t );
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]] return TTutc.lookup( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return TTutc.initial();
@@ -200,7 +200,7 @@ namespace vtz {
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t to_local_s( sec_t t ) const noexcept {
             // If the time is in-bounds we can use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) return t + TTutc.lookup( t );
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]] return t + TTutc.lookup( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return t + TTutc.initial();
@@ -243,7 +243,7 @@ namespace vtz {
         template<bool chooseLatest>
         sec_t _toUTC( sec_t t ) const noexcept {
             // If the time is in-bounds, we can use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ )
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
                 return _lookupUTC<chooseLatest>( t, t );
 
             // t is _early_: use initial zone state
@@ -350,7 +350,7 @@ namespace vtz {
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
         string_view abbrev_s( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ )
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
                 return abbrFromBlock( abbr.lookup( t ) );
 
             // t is _early_: use initial zone state
