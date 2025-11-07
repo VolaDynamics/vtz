@@ -755,12 +755,11 @@ TEST( vtz, TimeZoneFuzz ) {
 
         for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )
         {
-            auto T   = dist( rng );
-            auto ssT = sys_seconds( seconds( T ) );
-            ASSERT_EQ_QUIET( formatSysTimeAsLocalCompact( &tz, T ),
-                date::format( "%Y%m%d %H%M%S-%Z", date::make_zoned( tzHinnant, ssT ) ) );
-            ASSERT_EQ_QUIET( formatSysTimeAsLocal( &tz, T, '/', 'T', ' ' ),
-                date::format( "%Y/%m/%dT%H:%M:%S %Z", date::make_zoned( tzHinnant, ssT ) ) );
+            auto T = sys_seconds( seconds( dist( rng ) ) );
+            ASSERT_EQ_QUIET( tz.format_compact( T ),
+                date::format( "%Y%m%d %H%M%S %Z", date::make_zoned( tzHinnant, T ) ) );
+            ASSERT_EQ_QUIET( tz.format( T, '/', 'T', ' ' ),
+                date::format( "%Y/%m/%dT%H:%M:%S %Z", date::make_zoned( tzHinnant, T ) ) );
         }
     }
 }
@@ -795,12 +794,11 @@ TEST( vtz, TimeZoneToString ) {
 
         for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )
         {
-            auto T   = dist( rng );
-            auto ssT = sys_seconds( seconds( T ) );
-            ASSERT_EQ_QUIET( formatSysTimeAsLocalCompact( &tz, T ),
-                date::format( "%Y%m%d %H%M%S-%Z", date::make_zoned( tzHinnant, ssT ) ) );
-            ASSERT_EQ_QUIET( formatSysTimeAsLocal( &tz, T, '/', 'T', ' ' ),
-                date::format( "%Y/%m/%dT%H:%M:%S %Z", date::make_zoned( tzHinnant, ssT ) ) );
+            auto T = sys_seconds( seconds( dist( rng ) ) );
+            ASSERT_EQ_QUIET( tz.format_compact( T ),
+                date::format( "%Y%m%d %H%M%S %Z", date::make_zoned( tzHinnant, T ) ) );
+            ASSERT_EQ_QUIET( tz.format( T, '/', 'T', '-' ),
+                date::format( "%Y/%m/%dT%H:%M:%S-%Z", date::make_zoned( tzHinnant, T ) ) );
         }
     }
 }

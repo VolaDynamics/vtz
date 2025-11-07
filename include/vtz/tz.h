@@ -517,39 +517,6 @@ namespace vtz {
         string name_;
     };
 
-    /// Formats a time in the form %Y%m%d %H%M%S %Z
-    ///
-    /// This will be 16 characters, plus the length of the timezone abbreviation
-    inline string formatSysTimeAsLocalCompact( TimeZone const* tz,
-        sysseconds_t                                           t,
-        char dateTimeSep = ' ',
-        char tzAbbrSep   = ' ' ) {
-        char buffer[64];
-        auto local = tz->to_local_s( t );
-        auto abbr  = tz->abbrev_s( t );
-        _write_timestamp_compact( local, buffer, dateTimeSep );
-        buffer[15] = tzAbbrSep;
-        _vtz_memcpy( buffer + 16, abbr.data(), abbr.size() );
-        return string( buffer, 16 + abbr.size() );
-    }
-
-    /// Formats a time in the form %Y-%m-%d %H:%M:%S-%Z
-    ///
-    /// This will be 20 characters, plus the length of the timezone abbreviation
-    inline string formatSysTimeAsLocal( TimeZone const* tz,
-        sysseconds_t                                    t,
-        char                                            dateSep     = '-',
-        char                                            dateTimeSep = ' ',
-        char                                            tzAbbrSep   = '-' ) {
-        char buffer[64];
-        auto local = tz->to_local_s( t );
-        auto abbr  = tz->abbrev_s( t );
-        _write_timestamp( local, buffer, dateSep, dateTimeSep );
-        buffer[19] = tzAbbrSep;
-        _vtz_memcpy( buffer + 20, abbr.data(), abbr.size() );
-        return string( buffer, 20 + abbr.size() );
-    }
-
     using time_zone = TimeZone;
 
 
