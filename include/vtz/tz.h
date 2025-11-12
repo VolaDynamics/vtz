@@ -531,6 +531,32 @@ namespace vtz {
             return sysT + delta;
         }
 
+        /// Returns a number [0,86400) representing the current time of day
+        /// (local time)
+        u32 local_time_of_day_s( sysseconds_t s ) const noexcept {
+            return u32( math::rem<86400>( to_local_s( s ) ) );
+        }
+
+        /// Returns the date of the given systime, as number of days since the
+        /// epoch
+        i64 local_date_s( sysseconds_t t ) const noexcept {
+            return math::divFloor<86400>( to_local_s( t ) );
+        }
+
+        /// Given nanoseconds since the epoch, return the current date (as days
+        /// since the epoch)
+        i64 local_date_ns( nanos_t nanos ) const noexcept {
+            return math::divFloor<86400000000000>( to_local_ns( nanos ) );
+        }
+
+        template<class Dur>
+        auto local_date( sys_time<Dur> t ) const -> local_days {
+            return local_days(
+                days( local_date_s( std::chrono::floor<seconds>( t )
+                        .time_since_epoch()
+                        .count() ) ) );
+        }
+
         // clang-format off
 
         /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
