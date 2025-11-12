@@ -6,6 +6,7 @@
 
 namespace vtz {
     using std::string_view;
+    using file_bytes = std::vector<char>;
 
 #ifdef _WIN32
     constexpr char FILE_SEP = '\\';
@@ -19,4 +20,13 @@ namespace vtz {
     std::string readFile( char const* fp );
 
     std::string readFile( std::string const& filepath );
+
+    /// Read any remaining content within a file, and close the file when
+    /// complete.
+    file_bytes readFileBytes( std::FILE* file, char const* fp );
+
+    /// Read the full contents of a file as if it's a binary file.
+    file_bytes readFileBytes( char const* fp );
+
+    file_bytes readFileBytes( std::string const& filepath );
 } // namespace vtz
