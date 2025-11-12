@@ -1,9 +1,9 @@
 #include <vtz/files.h>
-
-#include <fmt/format.h>
+#include <vtz/strings.h>
 
 #include <cerrno>
 #include <cstdio>
+#include <fmt/format.h>
 #include <stdexcept>
 #include <system_error>
 
@@ -19,16 +19,19 @@ namespace vtz {
         template<class T>
         _guard( T ) -> _guard<T>;
 
-        auto fileError( int errc, char const* fp, string_view verb )
-            -> std::runtime_error {
-            return std::runtime_error(
-                fmt::format( "Error when {} '{}'. What: {} (OS Error {})",
-                    verb,
-                    fp,
-                    std::make_error_code( std::errc( errc ) ).message(),
-                    errc ) );
-        }
+
     } // namespace
+
+    auto fileError( int errc, string_view fp, string_view verb )
+        -> std::runtime_error {
+        return std::runtime_error(
+            fmt::format( "Error when {} '{}'. What: {} (OS Error {})",
+                verb,
+                fp,
+                std::make_error_code( std::errc( errc ) ).message(),
+                errc ) );
+    }
+
 
     std::string readFile( std::string const& fp ) {
         return readFile( fp.c_str() );
