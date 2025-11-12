@@ -12,9 +12,11 @@
 #include <fmt/color.h>
 #include <fmt/format.h>
 
-#include "vtz_testing.h"
 #include <vtz/civil.h>
 #include <vtz/tz.h>
+#include <vtz/tz_cache.h>
+
+#include "vtz_testing.h"
 
 #include "test_zones.h"
 
@@ -432,6 +434,8 @@ TEST( vtz, TimeZone ) {
             {
                 auto T    = TTabbr[zi];
                 auto abbr = zoneStates.abbr_[zi];
+                ADD_CONTEXT(
+                    "Checking times", DT{ T }, DT{ T - 1 }, DT{ zoneStates.safeCycleTime } );
                 ASSERT_EQ_QUIET( tz.abbrev_s( T - 1 ), zoneStates.abbrToSV( abbrPrev ) );
                 ASSERT_EQ_QUIET( tz.abbrev_s( T ), zoneStates.abbrToSV( abbr ) );
                 abbrPrev = abbr;
@@ -623,6 +627,73 @@ struct TimeT {
 std::string format_as( TimeT t ) { return dateStr( t.sec ); }
 
 
+TEST( vtz, SelfTest ) {
+    COUNT_ASSERTIONS();
+    constexpr sysseconds_t startT = daysToSeconds( resolveCivil( 1800, 1, 1 ) );
+    constexpr sysseconds_t endT   = daysToSeconds( resolveCivil( 2900, 1, 1 ) );
+    constexpr sysseconds_t _2370  = resolveCivilTime( 2370, 1, 1, 0, 0, 0 );
+
+    auto const& fp = "build/data/tzdata/tzdata.zi";
+
+    auto content = readFile( fp );
+    auto file    = parseTZData( content, fp );
+
+    auto const& cache = tzdb_cache();
+
+    for( auto const& zone : ALL_ZONES )
+    {
+        ADD_CONTEXT( "Testing zone", zone );
+        fmt::println( "Testing zone {}", zone );
+
+        auto  s1  = file.getZoneStates( zone, 2901 );
+        auto  tz  = TimeZone( zone, s1 );
+        auto  s2  = cache.computeStates( zone );
+        auto& tz2 = *locate_zone( zone );
+
+        auto tt1 = s1.getTransitions();
+        auto tt2 = s2.getTransitions();
+
+        // if tt1.size() is not 0, tt2.size() must be greater than 0 as well
+        ASSERT_TRUE( tt1.size() == 0 || tt2.size() > 0 );
+
+        size_t count = std::min( tt1.size(), tt2.size() );
+
+        for( size_t i = 0; i < count; ++i )
+        {
+            ASSERT_EQ_QUIET( tt1[i].when, tt2[i].when );
+            ASSERT_EQ_QUIET( tt1[i].state.stdoff, tt2[i].state.stdoff );
+            ASSERT_EQ_QUIET( tt1[i].state.walloff, tt2[i].state.walloff );
+            ASSERT_EQ_QUIET( tt1[i].state.abbr.sv(), tt2[i].state.abbr.sv() );
+        }
+
+        if( !tt1.empty() )
+        {
+            ASSERT_TRUE( count > 0 );
+            if( tt1.back().when >= _2370 )
+            {
+                // Both should end after 2370 - this implies that we have some sort of cyclic rule
+                ASSERT_GT( tt2.back().when, _2370 );
+            }
+        }
+
+
+        auto t0 = startT;
+        while( t0 < endT )
+        {
+            ADD_CONTEXT( "Testing time",
+                toSys( t0 ),
+                toSys( tz.to_sys_s( t0, E ) ),
+                toSys( tz2.to_sys_s( t0, E ) ),
+                toSys( tz.to_sys_s( t0, L ) ),
+                toSys( tz2.to_sys_s( t0, L ) ) );
+            ASSERT_EQ_QUIET( tz.offset_s( t0 ), tz2.offset_s( t0 ) );
+            ASSERT_EQ_QUIET( tz.to_local_s( t0 ), tz2.to_local_s( t0 ) );
+            ASSERT_EQ_QUIET( tz.to_sys_s( t0, E ), tz2.to_sys_s( t0, E ) );
+            ASSERT_EQ_QUIET( tz.to_sys_s( t0, L ), tz2.to_sys_s( t0, L ) );
+            t0 += 3600;
+        }
+    }
+}
 TEST( vtz, TimeZoneFuzz ) {
     COUNT_ASSERTIONS();
     constexpr sysseconds_t startT = daysToSeconds( resolveCivil( 1800, 1, 1 ) );
