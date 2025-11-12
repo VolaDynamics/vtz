@@ -253,6 +253,11 @@ namespace vtz {
             return t + TTutc.lookup( getCyclic( t, cycleTime ) );
         }
 
+        VTZ_INLINE nanos_t to_local_ns( nanos_t ns ) const noexcept {
+            auto parts = math::divFloor2<1000000000>( ns );
+            return 1000000000 * to_local_s( parts.quot ) + parts.rem;
+        }
+
         template<bool chooseLatest>
         VTZ_INLINE sec_t _lookupUTC( sec_t tKey, sec_t t ) const noexcept {
             auto ent = TTutc.get( tKey );
@@ -344,6 +349,20 @@ namespace vtz {
             {
                 // Return latest UTC time this could refer to
                 return _toUTC<true>( t );
+            }
+        }
+
+        VTZ_INLINE nanos_t to_sys_ns( nanos_t t, choose which ) const noexcept {
+            auto parts = math::divFloor2<1000000000>( t );
+            if( which == choose::earliest )
+            {
+                // Return earliest UTC time this could refer to
+                return 1000000000 * _toUTC<false>( parts.quot ) + parts.rem;
+            }
+            else
+            {
+                // Return latest UTC time this could refer to
+                return 1000000000 * _toUTC<true>( parts.quot ) + parts.rem;
             }
         }
 
