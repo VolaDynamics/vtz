@@ -446,9 +446,7 @@ namespace vtz {
 
     struct local_t {};
     template<class Duration>
-    struct local_time : std::chrono::time_point<local_t, Duration> {
-        using std::chrono::time_point<local_t, Duration>::time_point;
-    };
+    using local_time = std::chrono::time_point<local_t, Duration>;
 
     using local_seconds = local_time<seconds>;
 
