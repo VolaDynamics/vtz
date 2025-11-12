@@ -442,6 +442,7 @@ namespace vtz {
     template<class Duration>
     using sys_time    = time_point<system_clock, Duration>;
     using sys_seconds = sys_time<seconds>;
+    using sys_days    = sys_time<days>;
 
     struct local_t {};
     template<class Duration>
