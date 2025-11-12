@@ -449,6 +449,7 @@ namespace vtz {
     using local_time = std::chrono::time_point<local_t, Duration>;
 
     using local_seconds = local_time<seconds>;
+    using local_days    = local_time<days>;
 
     class TimeZone
     : private OffTables
