@@ -492,7 +492,7 @@ namespace vtz {
 
         /// Convert the given time (sys_seconds) to local seconds
         template<class Dur>
-        auto to_local( sys_time<Dur> t ) const noexcept
+        auto to_local( sys_time<Dur> t ) const
             -> local_time<std::common_type_t<Dur, seconds>> {
             // This is the time we're actually looking up, in seconds
             sys_seconds t2 = std::chrono::floor<seconds>( t );
