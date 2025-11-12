@@ -20,7 +20,42 @@ namespace vtz {
         _guard( T ) -> _guard<T>;
 
 
+        constexpr bool isFileSep( char ch ) {
+#if _WIN32
+            return ch == '\\' || ch == '/';
+#else
+            return ch == '/';
+#endif
+        }
+
+#ifdef _WIN32
+        constexpr char FILE_SEP = '\\';
+#else
+        constexpr char FILE_SEP = '/';
+#endif
     } // namespace
+
+    std::string joinPath( string_view prefix, string_view file ) {
+        // If the prefix is empty, just return the file
+        if( prefix.empty() ) return std::string( file );
+
+        // If it already ends in a file separator, just add the file
+        if( isFileSep( prefix.back() ) )
+        {
+            std::string result;
+            result.reserve( prefix.size() + file.size() );
+            result.append( prefix );
+            result.append( file );
+            return result;
+        }
+
+        std::string result;
+        result.reserve( prefix.size() + file.size() + 1 );
+        result.append( prefix );
+        result.push_back( FILE_SEP );
+        result.append( file );
+        return result;
+    }
 
     auto fileError( int errc, string_view fp, string_view verb )
         -> std::runtime_error {

@@ -8,11 +8,7 @@ namespace vtz {
     using std::string_view;
     using file_bytes = std::vector<char>;
 
-#ifdef _WIN32
-    constexpr char FILE_SEP = '\\';
-#else
-    constexpr char FILE_SEP = '/';
-#endif
+    std::string joinPath( string_view prefix, string_view file );
 
     std::runtime_error fileError( int errc, string_view fp, string_view verb );
 
