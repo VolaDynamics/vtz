@@ -286,6 +286,16 @@ namespace vtz {
         return YMD{ i32( y + ( m <= 2 ) ), u16( m ), u16( d ) };
     }
 
+    constexpr i32 civilYear( sysdays_t days ) noexcept {
+        return toCivil( days ).year;
+    }
+    constexpr u16 civilMonth( sysdays_t days ) noexcept {
+        return toCivil( days ).month;
+    }
+    constexpr u16 civilDayOfMonth( sysdays_t days ) noexcept {
+        return toCivil( days ).day;
+    }
+
     /// Returns the weekday for the given date, expressed as a number of days
     /// since the epoch, where 0=Sun, 1=Mon, etc
     constexpr DOW dowFromDays( sysdays_t daysFromEpoch ) noexcept {
