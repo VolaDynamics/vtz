@@ -8,8 +8,8 @@
 #include <vector>
 
 namespace vtz {
-    using std::string_view;
     using std::string;
+    using std::string_view;
     using std::vector;
 
     [[nodiscard]] size_t countLines( string_view input );
@@ -330,4 +330,9 @@ namespace vtz {
 
     std::string escapeString( std::string_view sv );
 
+    /// std::string_view::starts_with doesn't appear until C++20
+    inline bool startsWith( string_view s, string_view prefix ) {
+        return s.size() >= prefix.size()
+               && string_view( s.data(), prefix.size() ) == prefix;
+    }
 } // namespace vtz
