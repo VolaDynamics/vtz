@@ -1266,4 +1266,16 @@ namespace vtz {
         return _do_format_to<true, false, true>( *this, t, p, count, '\0', dateTimeSep, abbrevSep );
     }
     // clang-format on
+
+
+    TimeZone TimeZone::utc() {
+        return TimeZone{ "UTC",
+            ZoneStates::makeStatic( ZoneState{
+                FromUTC( 0 ),
+                FromUTC( 0 ),
+                ZoneAbbr{ 3, "UTC" },
+            } ) };
+    }
+
+
 } // namespace vtz

@@ -457,6 +457,10 @@ namespace vtz {
     , private StdoffTable {
       public:
 
+        /// Constructs a TimeZone representing UTC (stdoff of 0, walloff of 0,
+        /// abbreviation is UTC, etc)
+        static TimeZone utc();
+
         TimeZone( string_view name, ZoneStates const& states );
 
         using AbbrTable::abbrev_s;
