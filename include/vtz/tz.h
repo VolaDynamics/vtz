@@ -701,6 +701,9 @@ namespace vtz {
 
     using time_zone = TimeZone;
 
+    std::string tzdb_version();
 
     time_zone const* locate_zone( string_view name );
+
+    time_zone const* current_zone();
 } // namespace vtz

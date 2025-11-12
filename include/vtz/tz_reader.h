@@ -1,11 +1,13 @@
 #pragma once
 
-#include "vtz/span.h"
 #include <algorithm>
+#include <utility>
 #include <vtz/bit.h>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
+#include <vtz/files.h>
 #include <vtz/inplace_optional.h>
+#include <vtz/span.h>
 #include <vtz/strings.h>
 
 #include <vtz/tz_reader/FromUTC.h>
@@ -655,10 +657,8 @@ namespace vtz {
         ZoneMap zones;
         LinkMap links;
 
-        RuleEvalResult evaluateRules( string_view rule ) const {
-            return vtz::evaluateRules( rules.at( rule ) );
-        }
-        ZoneStates getZoneStates( string_view name, i32 endYear ) const;
+        RuleEvalResult evaluateRules( string_view rule ) const;
+        ZoneStates     getZoneStates( string_view name, i32 endYear ) const;
 
         bool operator==( TZDataFile const& rhs ) const noexcept {
             return rules == rhs.rules    //
@@ -671,6 +671,19 @@ namespace vtz {
             vector<string> result( zones.size() );
             size_t         i = 0;
             for( auto const& [name, _] : zones ) result[i++] = string( name );
+            return result;
+        }
+    };
+
+    struct TZData : TZDataFile {
+        vector<std::pair<string, file_bytes>> data;
+
+        std::string version;
+
+        /// Get a list of the source files that make up the timezone database
+        vector<string> sourceFiles() const {
+            vector<string> result( data.size() );
+            for( size_t i = 0; i < data.size(); ++i ) result[i] = data[i].first;
             return result;
         }
     };
@@ -698,8 +711,29 @@ namespace vtz {
     /// Parses either a rule, zone, or link
     void parseEntry( TZDataFile& file, string_view line, LineIter& lines );
 
+    // Estimated number of buckets for rules
+    // There are 130 rules:
+    // `rg -oNI '^R [^ ]+' build/data/tzdata/tzdata.zi | sort -u | wc -l`
+    constexpr size_t RULE_BUCKETS = 130 * 2;
+    // Estimated number of buckets for timezones.
+    // There are 341 zones in tzdata.zi:
+    // `rg -oNI '^Z [^ ]+' build/data/tzdata/tzdata.zi | sort -u | wc -l`
+    constexpr size_t ZONE_BUCKETS = 341 * 2;
+    // Estimated number of buckets for links.
+    // There are 111 links:
+    // `rg -oNI '^L [^ ]+' build/data/tzdata/tzdata.zi | sort -u | wc -l`
+    constexpr size_t LINK_BUCKETS = 111 * 2;
+
+    TZData loadZoneInfoFromFile( string file );
+
+    /// Load zone info from a directory, eg build/data/tzdata
+    TZData loadZoneInfoFromDir( string fp );
+
     TZDataFile parseTZData(
         string_view input, string_view filename = "(none)" );
 
+    /// Append timezone data from the given input
+    void appendTZData(
+        TZDataFile& file, string_view input, string_view filename = "(none)" );
 
 } // namespace vtz

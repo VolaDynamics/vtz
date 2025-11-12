@@ -1,9 +1,12 @@
+#include "vtz/files.h"
+#include <cerrno>
 #include <fmt/base.h>
 #include <limits>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
 #include <vtz/span.h>
 #include <vtz/strings.h>
+#include <vtz/tz_cache.h>
 #include <vtz/tz_reader.h>
 #include <vtz/tz_reader/FromUTC.h>
 #include <vtz/tz_reader/ZoneFormat.h>
@@ -647,15 +650,13 @@ namespace vtz {
         return z;
     }
 
-    TZDataFile parseTZData( string_view input, string_view filename ) {
+
+    /// Append timezone data from the given input
+    void appendTZData(
+        TZDataFile& file, string_view input, string_view filename ) {
         try
         {
-            auto       lines = LineIter( input );
-            TZDataFile file{
-                RuleMap( 512 ),
-                ZoneMap( 512 ),
-                LinkMap( 512 ),
-            };
+            auto lines = LineIter( input );
 
             while( auto nextLine = lines.next() )
             {
@@ -723,7 +724,6 @@ namespace vtz {
                     std::sort( begin, end, RuleEntry::compareFrom() );
                 }
             }
-            return file;
         }
         catch( ParseError err )
         { //
@@ -749,6 +749,150 @@ namespace vtz {
                         err.but ) );
             }
         }
+    }
+
+    /// tzdata.zi begins with a line containing the version
+    /// This line has `"# version "`, followed by the version string.
+    ///
+    /// We will try to load it from the file.
+
+    OptSV loadVersionFromTZDataFile( string_view content ) {
+        constexpr string_view VERSION_PREFIX = "# version ";
+        // If the content does not contain the version prefix
+        if( !startsWith( content, VERSION_PREFIX ) ) { return OptSV(); }
+
+        auto     remainder = content.substr( VERSION_PREFIX.size() );
+        LineIter it( remainder );
+
+        return it.next();
+    }
+
+    TZData loadZoneInfoFromFile( string fp ) {
+        auto content = readFileBytes( fp.c_str() );
+
+        TZData result{
+            RuleMap( RULE_BUCKETS ),
+            ZoneMap( ZONE_BUCKETS ),
+            LinkMap( LINK_BUCKETS ),
+        };
+
+        appendTZData(
+            result, string_view( content.data(), content.size() ), fp );
+
+        result.data.emplace_back( std::move( fp ), std::move( content ) );
+
+        return result;
+    }
+
+
+    TZData loadZoneInfoFromDir( string dir ) {
+        TZData result{
+            RuleMap( RULE_BUCKETS ),
+            ZoneMap( ZONE_BUCKETS ),
+            LinkMap( LINK_BUCKETS ),
+        };
+
+        // Attempt to open tzdata.zi. If present, we'll use that, and we don't
+        // need to open any of the source files.
+        {
+            auto fp = joinPath( dir, "tzdata.zi" );
+            if( auto file = std::fopen( fp.c_str(), "rb" ) )
+            {
+                auto content = readFileBytes( file, fp.c_str() );
+                auto contentView
+                    = string_view( content.data(), content.size() );
+
+                auto version = loadVersionFromTZDataFile( contentView )
+                                   .value_or( "(unknown version)" );
+
+                result.version = std::string( version );
+
+                appendTZData( result, contentView, fp );
+
+                result.data.emplace_back(
+                    std::move( fp ), std::move( content ) );
+
+                return result;
+            }
+
+            // If the file could not be opened for any reason other than
+            // it being missing, we want to throw an exception. This
+            // will ensure that we catch issues due to permission
+            // errors, file already in use, etc
+            int errc = errno;
+            if( errc != ENOENT ) throw fileError( errc, fp, "opening" );
+        }
+
+        // If tzdata.zi wasn't found, we're going to attempt to load each of the
+        // timezone source files.
+        static constexpr char const* ZONE_FILES[]{
+            "africa",
+            "antarctica",
+            "asia",
+            "australasia",
+            "backward", // Contains link files
+            "etcetera", // Contains gmt zones
+            "europe",
+            "northamerica",
+            "southamerica",
+        };
+
+        // Load the version. Throw an exception if we're unable to load the version.
+        result.version
+            = std::string( LineIter( readFile( joinPath( dir, "version" ) ) )
+                    .next()
+                    .value_or( "(unknown version)" ) );
+
+        size_t numRead = 0;
+        int    errc{};
+        for( auto filename : ZONE_FILES )
+        {
+            auto fp = joinPath( dir, filename );
+
+            auto file = std::fopen( fp.c_str(), "rb" );
+            if( file == nullptr )
+            {
+                // Save the error code - if we're not able to open any files, we
+                // will use it when reporting the error message
+                errc = errno;
+
+                // We will permit missing files, so long as we're able to load
+                // *some* parts of the timezone database
+                if( errc == ENOENT ) { continue; }
+
+                // All other errors will result in an exception being thrown
+                throw fileError( errc, fp, "opening" );
+            }
+
+            ++numRead;
+            auto content = readFileBytes( file, fp.c_str() );
+
+            appendTZData(
+                result, string_view( content.data(), content.size() ), fp );
+
+            result.data.emplace_back( std::move( fp ), std::move( content ) );
+        }
+
+        if( numRead == 0 )
+        {
+            throw fileError( errc,
+                dir.c_str(),
+                "attempting to load timezone source files from" );
+        }
+
+        return result;
+    }
+
+    TZDataFile parseTZData( string_view input, string_view filename ) {
+        TZDataFile file{
+            RuleMap( RULE_BUCKETS ),
+            ZoneMap( ZONE_BUCKETS ),
+            LinkMap( LINK_BUCKETS ),
+        };
+
+        appendTZData( file, input, filename );
+
+        return file;
     }
 
     std::string RuleOn::str() const {
@@ -1021,8 +1165,9 @@ namespace vtz {
         }
     };
 
-    static i64 getSafeCycleTime( span<ZoneEntry const> zoneEntries,
-        map<string_view, RuleEvalResult> const&        ruleTable ) {
+
+    static i64 getSafeCycleTime(
+        span<ZoneEntry const> zoneEntries, i32 lastRuleEndYear ) {
         // No entries, doesn't matter
         size_t n = zoneEntries.size();
         if( n == 0 ) return 0;
@@ -1035,8 +1180,7 @@ namespace vtz {
         {
             // If the last entry in the zone refers to a named rule, figure out
             // the date that rule becomes cyclic
-            lastRuleCycleDate
-                = resolveCivil( ruleTable.at( lastRule.name() ).yearEnd, 1, 1 );
+            lastRuleCycleDate = resolveCivil( lastRuleEndYear, 1, 1 );
         }
         else
         {
@@ -1060,40 +1204,23 @@ namespace vtz {
         return daysToSeconds( cycleDate );
     }
 
-    ZoneStates TZDataFile::getZoneStates(
-        string_view name, i32 endYear ) const {
-        // Represents a map of rule names to evaluated rules
-        using RuleCache = map<string_view, ZoneTransIter>;
+    ZoneStates loadZoneStates( span<ZoneEntry const> entries,
+        map<string_view, ZoneTransIter>              cache,
+        i64                                          safeCycleTime,
+        i32                                          endYear = -1 ) {
+        sysseconds_t const STOP_TIME
+            = endYear > 0
+                  // If the end year is specified, use that as the stop time
+                  ? daysToSeconds( resolveCivil( endYear, 1, 1 ) )
+                  // Otherwise, use the time the rule becomes cyclic, plus 400
+                  // years
+                  : safeCycleTime + 12622780800;
 
-        sysseconds_t STOP_TIME = daysToSeconds( resolveCivil( endYear, 1, 1 ) );
-
-
-        auto const& entries = zones.at( name );
-        if( entries.empty() )
-            throw std::runtime_error(
-                fmt::format( "Error: zone '{}' contained no entries",
-                    escapeString( name ) ) );
-
-
-        auto rules = map<string_view, RuleEvalResult>( 16 );
+        if( entries.size() == 0 )
+            return ZoneStates::makeStatic(
+                { FromUTC( 0 ), FromUTC( 0 ), ZoneAbbr{ 3, "-00" } } );
 
         ZTAgglomerator agg;
-
-        for( auto const& ent : entries )
-        {
-            auto const& rule = ent.rules;
-            if( rule.isNamed() )
-            {
-                auto name = rule.name();
-                if( !rules.contains( name ) )
-                    rules.emplace( name, evaluateRules( name ) );
-            }
-        }
-
-        auto cache = RuleCache( 16 );
-        for( auto const& [k, rule] : rules ) { cache.emplace( k, rule ); }
-
-        i64 safeCycleTime = getSafeCycleTime( entries, rules );
 
         // There is no 'until'. Therefore, just evaluate whatever rule is
         // present until the end year is reached
@@ -1170,19 +1297,13 @@ namespace vtz {
             }
         }
 
-        for( size_t i = 1; i < entries.size(); i++ )
+        for( size_t i = 1; i < entries.size() - 1; i++ )
         {
             auto const& ent    = entries[i];
             auto const& rule   = ent.rules;
             auto const& stdoff = ent.stdoff;
             auto const& format = ent.format;
             auto        until  = ent.until;
-
-            if( !until.has_value() )
-            {
-                // We're going from here, until the end year
-                until = ZoneUntil{ resolveCivil( endYear, 1, 1 ) };
-            }
 
             if( rule.isHyphen() )
             {
@@ -1214,7 +1335,112 @@ namespace vtz {
             }
         }
 
+        // The last entry does not have an 'until' time
+        {
+            auto const& ent    = entries.back();
+            auto const& rule   = ent.rules;
+            auto const& stdoff = ent.stdoff;
+            auto const& format = ent.format;
+
+            if( rule.isHyphen() )
+            {
+                auto state = ZoneState{ stdoff, format, "-" };
+                agg.add( { untilT, state } );
+            }
+            else if( rule.isOffset() )
+            {
+                auto state = ZoneState{ stdoff, rule.save(), format, "-" };
+                agg.add( { untilT, state } );
+            }
+            else
+            {
+                auto& iter = cache.at( rule.name() );
+                auto  state
+                    = iter.advanceTo( untilT, stdoff, format, agg.current() );
+                agg.add( { untilT, state } );
+
+                while( auto const& maybeTrans
+                       = iter.next( STOP_TIME, stdoff, format ) )
+                {
+                    auto const& trans = *maybeTrans;
+                    agg.add( trans );
+                }
+            }
+        }
+
         return std::move( agg ).getStates( safeCycleTime );
+    }
+
+
+    ZoneStates TimeZoneCache::computeStates( string_view name ) const {
+        // Represents a map of rule names to evaluated rules
+        using RuleCache = map<string_view, ZoneTransIter>;
+
+        auto const& entries = data.zones.at( name );
+
+        if( entries.empty() )
+            throw std::runtime_error(
+                fmt::format( "Error: zone '{}' contained no entries",
+                    escapeString( name ) ) );
+
+        auto cache = RuleCache( 16 );
+
+        int lastRuleEndYear = 1970;
+        for( auto const& ent : entries )
+        {
+            auto const& rule = ent.rules;
+            if( rule.isNamed() )
+            {
+                auto  ruleName  = rule.name();
+                auto& ruleEntry = locateRule( ruleName );
+                lastRuleEndYear = ruleEntry.yearEnd;
+                cache.emplace( ruleName, ZoneTransIter( ruleEntry ) );
+            }
+        }
+
+        return loadZoneStates( entries,
+            std::move( cache ),
+            getSafeCycleTime( entries, lastRuleEndYear ),
+            -1 );
+    }
+
+
+    ZoneStates TZDataFile::getZoneStates(
+        string_view name, i32 endYear ) const {
+        // Represents a map of rule names to evaluated rules
+        using RuleCache = map<string_view, ZoneTransIter>;
+
+
+        auto const& entries = zones.at( name );
+        if( entries.empty() )
+            throw std::runtime_error(
+                fmt::format( "Error: zone '{}' contained no entries",
+                    escapeString( name ) ) );
+
+
+        auto rules = map<string_view, RuleEvalResult>( 16 );
+
+        int lastRuleEndYear = 1970;
+
+        for( auto const& ent : entries )
+        {
+            auto const& rule = ent.rules;
+            if( rule.isNamed() )
+            {
+                auto name       = rule.name();
+                auto eval       = evaluateRules( name );
+                lastRuleEndYear = eval.yearEnd;
+                rules.emplace( name, std::move( eval ) );
+            }
+        }
+
+        auto cache = RuleCache( 16 );
+        for( auto const& [k, rule] : rules ) { cache.emplace( k, rule ); }
+
+        return loadZoneStates( entries,
+            std::move( cache ),
+            getSafeCycleTime( entries, lastRuleEndYear ),
+            endYear );
     }
 
 
@@ -1380,5 +1606,26 @@ namespace vtz {
     }
     std::string format_as( AbbrBlock b ) {
         return fmt::format( "(index: {}, size: {})", b.index(), b.size() );
+    }
+    RuleEvalResult TZDataFile::evaluateRules( string_view rule ) const {
+        auto it = rules.find( rule );
+        if( it == rules.end() )
+        {
+            throw std::runtime_error(
+                fmt::format( "Unable to load rule {}", escapeString( rule ) ) );
+        }
+
+        try
+        {
+            // Attempt to evaluate the rules.
+            return vtz::evaluateRules( it->second );
+        }
+        catch( std::exception const& ex )
+        {
+            throw std::runtime_error(
+                fmt::format( "Error when loading rule {}. {}",
+                    escapeString( rule ),
+                    ex.what() ) );
+        }
     }
 } // namespace vtz

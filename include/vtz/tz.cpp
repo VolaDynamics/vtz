@@ -3,6 +3,7 @@
 #include <vtz/files.h>
 #include <vtz/math.h>
 #include <vtz/tz.h>
+#include <vtz/tz_cache.h>
 #include <vtz/tz_reader.h>
 
 #include <algorithm>
@@ -432,130 +433,7 @@ namespace vtz {
     , name_( name ) {}
 
 
-    struct TZHolder {
-        std::atomic<time_zone const*> tz;
-
-        TZHolder( nullptr_t )
-        : tz( nullptr ) {}
-
-        TZHolder( std::unique_ptr<time_zone>&& tz ) noexcept
-        : tz( tz.release() ) {}
-
-        TZHolder( TZHolder&& rhs )
-        : tz( rhs.tz.exchange(
-              nullptr, std::memory_order::memory_order_relaxed ) ) {}
-
-
-        time_zone const* atomicAssignZoneIfNull(
-            std::unique_ptr<time_zone> tzptr ) {
-            time_zone const* expected = nullptr;
-
-            if( tz.compare_exchange_strong( expected, tzptr.get() ) )
-            {
-                // If the exchange succeeded, then
-                // 1. Our _old_ value was null, so there was nothing to destroy
-                // 2. Our current value is now set to 'ptr', so we own ptr.
-                //
-                // We can return ptr, which is the newly owned timezone. Also,
-                // we can release it from the unique_ptr, since we now own it.
-                return tzptr.release();
-            }
-            else
-            {
-                // If the exchange failed, then we already stored some timezone!
-                // If this happens, then no release occurs, and we can just
-                // return the observed value
-                return expected;
-            }
-        }
-
-        ~TZHolder() {
-            auto* ptr = tz.load( std::memory_order::memory_order_relaxed );
-            delete ptr;
-        }
-    };
-    struct TimeZoneCache {
-        TZDataFile file;
-        using _table = map<string_view, TZHolder>;
-        _table lookup;
-
-        static _table getEmptyLookup( TZDataFile const& file ) {
-            // TODO: handle links
-            struct Entry {
-                string_view name;
-                operator _table::value_type() const {
-                    return { name, nullptr };
-                }
-            };
-
-            vector<Entry> entries;
-            for( auto const& [key, value] : file.zones )
-            {
-                // construct the vector of entries
-                entries.push_back( Entry{ key } );
-            }
-
-            // Convert to map
-            return _table( entries.data(), entries.data() + entries.size() );
-        }
-
-        TimeZoneCache( TZDataFile&& file )
-        : file( std::move( file ) )
-        , lookup( getEmptyLookup( this->file ) ) {}
-
-        std::unique_ptr<time_zone> load( string_view name ) {
-            auto states = file.getZoneStates( name, 2600 );
-            return std::unique_ptr<time_zone>( new TimeZone( name, states ) );
-        }
-
-
-        /// Locate a zone, loading it if necessary. Return a pointer to the
-        /// loaded zone
-        ///
-        /// This function is thread safe, so that even if multiple threads
-        /// try locating the same (or different) zones simultaneously,
-        /// everything works out fine!
-        time_zone const* locate_zone( string_view name ) {
-            auto it = lookup.find( name );
-            if( it == lookup.end() )
-            {
-                throw std::runtime_error( fmt::format(
-                    "Unable to locate zone with name '{}'", name ) );
-            }
-
-            auto& entry = it->second;
-            if( auto* ptr = entry.tz.load() )
-            {
-                // If this map entry already contained a time_zone pointer,
-                // then we can just return that!
-                return ptr;
-            }
-            else
-            {
-                // This occurs if the given zone has not yet been loaded.
-                // We need to lead the zone, and then we atomically replace the
-                // entry with the new zone.
-                //
-                // If another thread also attempted to
-                // load the same zone at the same time, whichever thread
-                // finishes loading first will fill in the entry
-                return entry.atomicAssignZoneIfNull( load( name ) );
-            }
-        }
-    };
-
-
-    time_zone const* locate_zone( string_view name ) {
-        struct Store {
-            std::string   contents = readFile( "build/data/tzdata/tzdata.zi" );
-            TimeZoneCache cache
-                = parseTZData( contents, "build/data/tzdata/tzdata.zi" );
-        };
-
-        static Store store{};
-
-        return store.cache.locate_zone( name );
-    }
+    using TZHolder = AtomicEnt<time_zone>;
 
     class FormatError : public std::exception {
         char const* what_;
@@ -707,13 +585,13 @@ namespace vtz {
         return p;
     }
 
-    template<class F, class WriteFractional>
-    auto _do_strformat( TimeZone const& tz,
-        char const*                     format,
-        size_t                          formatSize,
-        sysseconds_t                    t,
-        WriteFractional                 writeFrac,
-        F                               func ) {
+    template<class TimeZoneT, class F, class WriteFractional>
+    auto _do_strformat( TimeZoneT const& tz,
+        char const*                      format,
+        size_t                           formatSize,
+        sysseconds_t                     t,
+        WriteFractional                  writeFrac,
+        F                                func ) {
         constexpr size_t MAX_SPECIFIERS = 64;
         constexpr size_t MAX_SIZE       = MAX_SPECIFIERS * 2;
         // In the worst case, the year is 13 bytes. (this occurs if, eg, the
