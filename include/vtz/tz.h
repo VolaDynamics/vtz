@@ -466,7 +466,9 @@ namespace vtz {
         using AbbrTable::abbrev_s;
         using AbbrTable::abbrev_to_s;
         using OffTables::offset_s;
+        using OffTables::to_local_ns;
         using OffTables::to_local_s;
+        using OffTables::to_sys_ns;
         using OffTables::to_sys_s;
         using StdoffTable::stdoff_s;
 
