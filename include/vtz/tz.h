@@ -49,6 +49,17 @@ namespace vtz::detail {
 
 
 namespace vtz {
+    using sec_t   = i64;
+    using nanos_t = i64;
+
+    // clang-format off
+
+    /// Get the number of seconds since the epoch
+    VTZ_INLINE constexpr sec_t ns_to_s( nanos_t ns ) noexcept { return vtz::math::divFloor<1000000000>( ns ); }
+    VTZ_INLINE constexpr nanos_t s_to_ns( sec_t s ) noexcept { return s * 1000000000; }
+
+    // clang-format on
+
     constexpr u64 _join32( u32 lo, u32 hi ) {
         return u64( lo ) | ( u64( hi ) << 32 );
     }
@@ -173,9 +184,6 @@ namespace vtz {
             if( bb ) delete[]( bb + start_ );
         }
     };
-
-    /// Seconds from epoch
-    using sec_t = i64;
 
     enum class choose : bool { earliest = false, latest = true };
 
