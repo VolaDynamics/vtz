@@ -3,6 +3,7 @@
 #include <climits>
 #include <random>
 #include <vtz/bit.h>
+#include <vtz/math.h>
 
 using namespace vtz;
 
@@ -92,6 +93,19 @@ static_assert( _blog2( 1 << 27 ) == 27 );
 static_assert( _blog2( 1 << 28 ) == 28 );
 static_assert( _blog2( 1 << 29 ) == 29 );
 static_assert( _blog2( UINT64_MAX ) == 63 );
+
+static_assert( vtz::math::rem<5>( -5 ) == 0 );
+static_assert( vtz::math::rem<5>( -4 ) == 1 );
+static_assert( vtz::math::rem<5>( -3 ) == 2 );
+static_assert( vtz::math::rem<5>( -2 ) == 3 );
+static_assert( vtz::math::rem<5>( -1 ) == 4 );
+static_assert( vtz::math::rem<5>( 0 ) == 0 );
+static_assert( vtz::math::rem<5>( 1 ) == 1 );
+static_assert( vtz::math::rem<5>( 2 ) == 2 );
+static_assert( vtz::math::rem<5>( 3 ) == 3 );
+static_assert( vtz::math::rem<5>( 4 ) == 4 );
+static_assert( vtz::math::rem<5>( 5 ) == 0 );
+
 
 TEST( vtz, blog2 ) {
     for( int i = 0; i < 64; ++i )
