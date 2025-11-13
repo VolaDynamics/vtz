@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vtz/bit.h>
 #include <vtz/date_types.h>
 #include <vtz/math.h>
 #include <vtz/strings.h>
@@ -148,7 +149,15 @@ namespace vtz {
         return 3;
     }
 
-    struct YMD {
+    /// Holds a (year, day of year) pair
+    struct year_doy {
+        /// Holds the year
+        i32 year;
+        /// 0-based day of the year
+        i32 doy;
+    };
+
+    struct alignas( u64 ) YMD {
         i32 year;
         u16 month;
         u16 day;
@@ -227,6 +236,31 @@ namespace vtz {
         return x <= 6 ? x : x + 7;
     }
 
+    /// Return 0-based year/month/day, so month is 0-11 and day is 0-30
+    constexpr YMD toCivil0( sysdays_t days ) noexcept {
+        days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
+        const i64 era = ( days >= 0 ? days : days - 146096 ) / 146097;
+        const u32 doe = u32( days - era * 146097 ); // [0, 146096]
+        const u32 yoe = ( doe - doe / 1460 + doe / 36524 - doe / 146096 )
+                        / 365;                      // [0, 399]
+        const i64 y   = i64( yoe ) + era * 400;
+        const u32 doy = doe - ( 365 * yoe + yoe / 4 - yoe / 100 ); // [0, 365]
+        const u32 mp  = ( 5 * doy + 2 ) / 153;                     // [0, 11]
+        const u32 d   = doy - ( 153 * mp + 2 ) / 5;                // [0, 30]
+        const u32 m   = mp < 10 ? mp + 2 : mp - 10;                // [0, 11]
+        return YMD{ i32( y + ( m <= 1 ) ), u16( m ), u16( d ) };
+    }
+
+    constexpr sysdays_t resolveCivil0( i32 y, u32 m, u32 d ) noexcept {
+        y -= m <= 1;
+
+        i32 era = ( y >= 0 ? y : y - 399 ) / 400;
+        u32 yoe = static_cast<u32>( y - era * 400 );                // [0, 399]
+        u32 doy = ( 153 * ( m > 1 ? m - 2 : m + 10 ) + 2 ) / 5 + d; // [0, 365]
+        u32 doe = yoe * 365 + yoe / 4 - yoe / 100 + doy; // [0, 146096]
+        return era * 146097 + static_cast<i32>( doe ) - 719468;
+    }
+
     /// Given a year, month, and day, obtain the number of days since the epoch
     ///
     /// Based on reference implementation by Howard Hinnant provided here:
@@ -273,11 +307,11 @@ namespace vtz {
     ///
     /// @param days Days since the epoch (The epoch being January 1st, 1970)
     constexpr YMD toCivil( sysdays_t days ) noexcept {
-        days          += 719468;
-        const i64 era  = ( days >= 0 ? days : days - 146096 ) / 146097;
-        const u32 doe  = u32( days - era * 146097 ); // [0, 146096]
-        const u32 yoe  = ( doe - doe / 1460 + doe / 36524 - doe / 146096 )
-                        / 365;                       // [0, 399]
+        days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
+        const i64 era = ( days >= 0 ? days : days - 146096 ) / 146097;
+        const u32 doe = u32( days - era * 146097 ); // [0, 146096]
+        const u32 yoe = ( doe - doe / 1460 + doe / 36524 - doe / 146096 )
+                        / 365;                      // [0, 399]
         const i64 y   = i64( yoe ) + era * 400;
         const u32 doy = doe - ( 365 * yoe + yoe / 4 - yoe / 100 ); // [0, 365]
         const u32 mp  = ( 5 * doy + 2 ) / 153;                     // [0, 11]
@@ -286,14 +320,90 @@ namespace vtz {
         return YMD{ i32( y + ( m <= 2 ) ), u16( m ), u16( d ) };
     }
 
-    constexpr i32 civilYear( sysdays_t days ) noexcept {
-        return toCivil( days ).year;
+
+    /// Get the year and the day of the year. Jan 1st 2025 -> (2025, 0)
+    constexpr year_doy toCivilYearDOY( sysdays_t days ) noexcept {
+        days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
+        const auto parts = math::divFloor2<146097>( days );
+        i32        era   = parts.quot;
+        u32        doe   = parts.rem; // Day within era - [0, 146096]
+        const u32  yoe
+            = ( doe - doe / 1460 + doe / 36524 - int( doe >= 146096 ) )
+              / 365;                                               // [0, 399]
+        const i32 y   = i32( yoe ) + era * 400;
+        const u32 doy = doe - ( 365 * yoe + yoe / 4 - yoe / 100 ); // [0, 365]
+        bool      needsAdj  = doy >= 306;
+        i32       y2        = y + int( needsAdj );
+        int       doyAddend = 59 + int( isLeap( yoe ) );
+        i32       doy2      = doy + ( doy >= 306 ? -306 : doyAddend );
+        return year_doy{ y2, doy2 };
     }
+
+    constexpr i32 civilYear( sysdays_t days ) noexcept {
+        return toCivilYearDOY( days ).year;
+    }
+
     constexpr u16 civilMonth( sysdays_t days ) noexcept {
         return toCivil( days ).month;
     }
     constexpr u16 civilDayOfMonth( sysdays_t days ) noexcept {
         return toCivil( days ).day;
+    }
+
+    /// Return 0-based month (January -> 0)
+    constexpr u16 civilMonth0( sysdays_t days ) noexcept {
+        return toCivil0( days ).month;
+    }
+
+    /// Return the 0-based day of the month (1st of month -> 0).
+    /// This is the number of days since the 1st of the month.
+    constexpr u16 civilDayOfMonth0( sysdays_t days ) noexcept {
+        return toCivil0( days ).day;
+    }
+
+    /// Return the date corresponding to the first day of the year
+    /// Eg, Dec 13 2025 -> Jan 1st, 2025
+    constexpr sysdays_t civilBOY( sysdays_t days ) noexcept {
+        return days - toCivilYearDOY( days ).doy;
+    }
+
+    /// Return the date corresponding to the last day of the year
+    /// Eg, Dec 13 2025 -> Dec 31st, 2025
+    constexpr sysdays_t civilEOY( sysdays_t days ) noexcept {
+        auto _year_doy = toCivilYearDOY( days );
+        // 364 for regular years, 365 for leap years
+        auto lastDOY = 364 + int( isLeap( _year_doy.year ) );
+        return days + lastDOY - _year_doy.doy;
+    }
+
+    /// Add months to the date. Eg, (Dec 13 2025) + 3 months becomes
+    /// Mar 13 2026
+    constexpr sysdays_t civilAddMonths( sysdays_t days, i32 months ) noexcept {
+        auto ymd   = toCivil0( days );
+        auto m0    = ymd.month;
+        auto parts = math::divFloor2<12>( m0 + months );
+        return resolveCivil0( ymd.year + parts.quot, parts.rem, ymd.day );
+    }
+
+
+    /// Add years to the date. Eg, (Dec 13 2025) + 3 years becomes
+    /// Dec 13 2028
+    constexpr sysdays_t civilAddYears( sysdays_t days, i32 years ) noexcept {
+        auto ymd = toCivil0( days );
+        return resolveCivil0( ymd.year + years, ymd.month, ymd.day );
+    }
+
+    /// Get the beginning of the month, as days since the epoch. Eg, Dec 13 2025
+    /// -> Dec 1st 2025
+    constexpr sysdays_t civilBOM( sysdays_t days ) noexcept {
+        return days - civilDayOfMonth0( days );
+    }
+
+    constexpr sysdays_t civilEOM( sysdays_t days ) noexcept {
+        auto ymd     = toCivil( days );
+        auto lastDOM = lastDayOfMonth( ymd.year, ymd.month );
+        // Add as many days as needed to get to the last day of the month
+        return days + ( lastDOM - ymd.day );
     }
 
     /// Returns the weekday for the given date, expressed as a number of days
