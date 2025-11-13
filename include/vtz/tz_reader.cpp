@@ -837,7 +837,8 @@ namespace vtz {
             "southamerica",
         };
 
-        // Load the version. Throw an exception if we're unable to load the version.
+        // Load the version. Throw an exception if we're unable to load the
+        // version.
         result.version
             = std::string( LineIter( readFile( joinPath( dir, "version" ) ) )
                     .next()
@@ -1139,24 +1140,31 @@ namespace vtz {
             auto stdoff = trans.state.stdoff.off;
             auto when   = trans.when;
 
+            bool anyTrans = false;
+
             if( abbr != currentAbbr )
             {
+                anyTrans    = true;
                 currentAbbr = abbr;
                 abbr_.push_back( addAbbr( abbr ) );
                 abbrTrans_.push_back( when );
             }
             if( off != currentOff )
             {
+                anyTrans   = true;
                 currentOff = off;
                 walloff_.push_back( off );
                 walloffTrans_.push_back( when );
             }
             if( stdoff != currentStdoff )
             {
+                anyTrans      = true;
                 currentStdoff = stdoff;
                 stdoff_.push_back( stdoff );
                 stdoffTrans_.push_back( when );
             }
+
+            if( anyTrans ) { tt_.push_back( trans.when ); }
         }
 
         ZoneStates getStates( i64 safeCycleTime ) && noexcept {

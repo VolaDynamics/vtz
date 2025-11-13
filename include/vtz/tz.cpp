@@ -156,10 +156,10 @@ namespace vtz {
     }
 
 
-    template<class T>
+    template<class T, class Indexable>
     S32Table makeTable( T        off0,
         span<sysseconds_t const> tt,
-        span<T const>            off,
+        Indexable                off,
         sysseconds_t             minT,
         sysseconds_t             maxT ) {
         int g = computeG( tt );
@@ -284,6 +284,67 @@ namespace vtz {
             std::move( blocks ),
             minIndex,
             buffCount,
+        };
+    }
+
+
+    TransTable makeTransTable( span<sysseconds_t const> tt,
+
+        sec_t        cycleTime,
+        sysseconds_t minTransTime = INT64_MIN,
+        sysseconds_t maxTransTime = INT64_MAX ) {
+        if( tt.size() == 0 )
+        {
+            return {
+                0,
+                ~u64(),
+                table1( 0 ),
+                cycleTime,
+                _init<sysseconds_t>( minTransTime, maxTransTime ),
+            };
+        }
+
+        if( tt.size() == 1 )
+        {
+            return {
+                0,
+                ~u64(),
+                // if we're before the transition time, use index of 0
+                // (corresponding to when[0], when[1]),
+                // otherwise use index of 1 (corresponding to when[1], when[2])
+                table2( tt[0], 0, 1 ),
+                0, // The cycle time doesn't matter
+                _init<sysseconds_t>( minTransTime, tt[0], maxTransTime ),
+            };
+        }
+
+        // The min time is the min time under any time convention
+        sec_t minT = std::min( {
+            tt.front(), // min time (UTC)
+            sec_t( 0 ), // if min time would be smaller than 0, set to 0
+        } );
+
+        cycleTime  = std::max( { cycleTime, minT, sec_t( 0 ) } );
+        sec_t maxT = cycleTime + 12622780800;
+
+        auto tz0_   = -u64( minT );
+        auto tzMax_ = u64( maxT ) + tz0_;
+
+        struct GetIndex {
+            i32 operator[]( ptrdiff_t i ) const noexcept { return i + 1; };
+        };
+
+        auto times = _new<sysseconds_t>( tt.size() + 2 );
+        times[0]   = minTransTime;
+        memcpy( times.get() + 1, tt.data(), tt.size_bytes() );
+        times[tt.size() + 1] = maxTransTime;
+
+        return {
+            tz0_,
+            tzMax_,
+            makeTable( 0, tt, GetIndex{}, minT, maxT ),
+            cycleTime,
+            std::move( times ),
         };
     }
 
@@ -430,6 +491,7 @@ namespace vtz {
           states.safeCycleTime,
           states.abbrTable_ ) )
     , StdoffTable( makeStdoffTable( states ) )
+    , TransTable( makeTransTable( states.tt_, states.safeCycleTime ) )
     , name_( name ) {}
 
 

@@ -52,6 +52,78 @@ namespace vtz {
     using sec_t   = i64;
     using nanos_t = i64;
 
+    using std::chrono::hours;
+    using std::chrono::minutes;
+    using std::chrono::nanoseconds;
+    using std::chrono::seconds;
+
+    using days = std::chrono::duration<i32, std::ratio<86400>>;
+    using std::chrono::system_clock;
+    using std::chrono::time_point;
+
+    template<class Duration>
+    using sys_time    = time_point<system_clock, Duration>;
+    using sys_seconds = sys_time<seconds>;
+    using sys_days    = sys_time<days>;
+
+    struct local_t {};
+    template<class Duration>
+    using local_time = std::chrono::time_point<local_t, Duration>;
+
+    using local_seconds = local_time<seconds>;
+    using local_days    = local_time<days>;
+
+
+    struct sys_info {
+        sys_seconds begin;
+        sys_seconds end;
+        seconds     offset;
+        minutes     save;
+        std::string abbrev;
+
+        bool operator==( sys_info const& rhs ) const noexcept {
+            return begin == rhs.begin      //
+                   && end == rhs.end       //
+                   && offset == rhs.offset //
+                   && save == rhs.save     //
+                   && abbrev == rhs.abbrev;
+        }
+    };
+
+    /// This class describes the result of converting a `local_time` to a
+    /// `sys_time`.
+    ///
+    /// - If the result of the conversion is unique, then `result ==
+    ///   local_info::unique`, `first` is filled out with the correct
+    ///   `sys_info`, and second is zero-initialized.
+    /// - If the `local_time` is nonexistent, then `result ==
+    ///   local_info::nonexistent`, `first` is filled out with the `sys_info`
+    ///   that ends just prior to the `local_time`, and second is filled out
+    ///   with the `sys_info` that begins just after the `local_time`.
+    /// - If the `local_time` is ambiguous, then `result ==
+    ///   local_info::ambiguous`, `first` is filled out with the `sys_info` that
+    ///   ends just after the `local_time`, and second is filled with the
+    ///   `sys_info` that starts just before the `local_time`.
+    ///
+    /// This is a low-level data structure; typical conversions from local_time
+    /// to sys_time will use it implicitly rather than explicitly.
+
+    struct local_info {
+        constexpr static int unique      = 0;
+        constexpr static int nonexistant = 1;
+        constexpr static int ambiguous   = 2;
+
+        int      result;
+        sys_info first;
+        sys_info second;
+
+        bool operator==( local_info const& rhs ) const noexcept {
+            return result == rhs.result  //
+                   && first == rhs.first //
+                   && second == rhs.second;
+        }
+    };
+
     // clang-format off
 
     /// Get the number of seconds since the epoch
@@ -288,6 +360,93 @@ namespace vtz {
             }
         }
 
+        int _lookupLocal(
+            sec_t tKey, sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
+            auto ent = TTutc.get( tKey );
+            /// offset from UTC before transition time
+            i64 offPre = ent.lo();
+            /// offset from UTC on or after transition time
+            i64  offPost = ent.hi();
+            auto when1   = ent.t + offPre;  // eg, 2AM when DST starts
+            auto when2   = ent.t + offPost; // 3am (we saved 1 hour)
+            if( offPost <= offPre )
+            {
+                // Let's take the end of daylight savings time in
+                // America/New_York as an example.
+                //
+                // At 1:59:59am, rather than changing to 2am, the clock falls
+                // back an hour to 1:00 am, and the offset goes from UTC-04 to
+                // UTC-05
+
+                // `offPost <= offPre`
+                // -> `ent.t + offPost <= ent.t + offPre`
+                // -> `when2 <= when1`
+                //
+                // This case occurs if we're dealing with ambiguous times.
+
+                if( when1 <= tKey ) // eg, the key is 2AM or after
+                {
+                    // We're past the time we could be ambiguous
+                    result[0] = result[1] = t - offPost;
+                    return local_info::unique;
+                }
+                if( tKey < when2 )
+                {
+                    // eg, the key is before 1am
+                    result[0] = result[1] = t - offPre;
+                    return local_info::unique;
+                }
+                // The result is ambiguous
+                result[0] = t - offPre;  // earliest possible time
+                result[1] = t - offPost; // latest possible time
+                return local_info::ambiguous;
+            }
+            else
+            {
+                // This case occurs if we're entering Daylight Savings Time (or
+                // otherwise moving the clocks forward). In this case, there
+                // is some chance that we have a nonexistant local time.
+
+                if( tKey >= when2 )
+                { // eg, local time is 3am or after
+                    result[0] = result[1] = t - offPost;
+                    return local_info::unique;
+                }
+                if( tKey < when1 )
+                { // eg, local time is before 2am
+                    result[0] = result[1] = t - offPre;
+                    return local_info::unique;
+                }
+
+                // Time was nonexistant.
+                sysseconds_t jumpTime
+                    = ent.t + ( t - tKey ); // Time at which jump occurred (eg,
+                                            // 3am (since 2am is nonexistent))
+
+                result[0] = jumpTime - 1;   // Time right before jump
+                result[1] = jumpTime;       // Time at jump
+                return local_info::nonexistant;
+            }
+        }
+
+        int lookupLocal( sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
+            // If the time is in-bounds, we can use the lookup table
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+                return _lookupLocal( t, t, result );
+
+            // t is _early_: this means it occurs before any timezone
+            // transitions.
+            if( t < 0 )
+            {
+                sysseconds_t utcTime = t - TTutc.initial();
+                result[0] = result[1] = utcTime;
+                return local_info::unique;
+            }
+
+            // use zone symmetry to compute state for equivalent time
+            return _lookupLocal( getCyclic( t, cycleTime ), t, result );
+        }
+
 
         template<bool chooseLatest>
         sec_t _toUTC( sec_t t ) const noexcept {
@@ -369,6 +528,42 @@ namespace vtz {
         struct Impl;
     };
 
+    struct TransTable {
+        u64      tz0_;
+        u64      tzMax_;
+        S32Table ttIndex;
+        sec_t    cycleTime;
+
+        std::unique_ptr<sysseconds_t[]> when;
+
+        struct Range {
+            sysseconds_t begin;
+            sysseconds_t end;
+        };
+
+        VTZ_INLINE Range sys_range_s( sysseconds_t t ) const noexcept {
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+                return sys_range_impl( t );
+
+            if( t < 0 ) { return Range{ when[0], when[1] }; }
+
+            auto t2    = getCyclic( t, cycleTime );
+            auto r     = sys_range_impl( t2 );
+            auto delta = t - t2;
+            return {
+                r.begin + delta,
+                r.end + delta,
+            };
+        }
+
+      private:
+
+        VTZ_INLINE Range sys_range_impl( sysseconds_t t ) const noexcept {
+            auto i = ttIndex.lookup( t );
+            return { when[i], when[i + 1] };
+        }
+    };
+
     struct StdoffTable {
         sysseconds_t tMin;
         sysseconds_t tMax;
@@ -423,38 +618,39 @@ namespace vtz {
             return abbrFromBlock( abbr.lookup( getCyclic( t, cycleTime ) ) );
         }
 
+        /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
+        /// timestamp
+        string abbrev_string_s( sec_t t ) const noexcept {
+            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+                return abbrStringFromBlock( abbr.lookup( t ) );
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return abbrStringFromBlock( abbr.initial() );
+
+            // use zone symmetry to compute state for equivalent time
+            return abbrStringFromBlock(
+                abbr.lookup( getCyclic( t, cycleTime ) ) );
+        }
+
         string_view abbrFromBlock( u32 block ) const noexcept {
             size_t      size = block & 0xf;
             char const* data = abbrTable[block >> 4].buff_;
             return string_view( data, size );
         }
+
+        std::string abbrStringFromBlock( u32 block ) const noexcept {
+            size_t      size = block & 0xf;
+            char const* data = abbrTable[block >> 4].buff_;
+            return std::string( data, size );
+        }
     };
 
-    using std::chrono::hours;
-    using std::chrono::minutes;
-    using std::chrono::nanoseconds;
-    using std::chrono::seconds;
-
-    using days = std::chrono::duration<i32, std::ratio<86400>>;
-    using std::chrono::system_clock;
-    using std::chrono::time_point;
-
-    template<class Duration>
-    using sys_time    = time_point<system_clock, Duration>;
-    using sys_seconds = sys_time<seconds>;
-    using sys_days    = sys_time<days>;
-
-    struct local_t {};
-    template<class Duration>
-    using local_time = std::chrono::time_point<local_t, Duration>;
-
-    using local_seconds = local_time<seconds>;
-    using local_days    = local_time<days>;
 
     class TimeZone
     : private OffTables
     , private AbbrTable
-    , private StdoffTable {
+    , private StdoffTable
+    , private TransTable {
       public:
 
         /// Constructs a TimeZone representing UTC (stdoff of 0, walloff of 0,
@@ -464,6 +660,7 @@ namespace vtz {
         TimeZone( string_view name, ZoneStates const& states );
 
         using AbbrTable::abbrev_s;
+        using AbbrTable::abbrev_string_s;
         using AbbrTable::abbrev_to_s;
         using OffTables::offset_s;
         using OffTables::to_local_ns;
@@ -529,6 +726,50 @@ namespace vtz {
             auto delta = t - t2;
 
             return sysT + delta;
+        }
+
+        sys_info get_info_sys_s( sysseconds_t t ) const {
+            auto range = sys_range_s( t );
+
+            auto stdoff = stdoff_s( t );
+            auto off    = offset_s( t );
+            auto save   = off - stdoff;
+
+            return sys_info{
+                sys_seconds( seconds( range.begin ) ),
+                sys_seconds( seconds( range.end ) ),
+                seconds( off ),
+                std::chrono::floor<minutes>( seconds( save ) ),
+                abbrev_string_s( t ),
+            };
+        }
+
+        local_info get_info_local_s( sec_t t ) const {
+            sysseconds_t tt[2];
+            int          result = lookupLocal( t, tt );
+            if( result == local_info::unique )
+            {
+                return local_info{
+                    result,
+                    get_info_sys_s( tt[0] ),
+                    sys_info{},
+                };
+            }
+            return local_info{
+                result,
+                get_info_sys_s( tt[0] ),
+                get_info_sys_s( tt[1] ),
+            };
+        }
+
+        template<class Dur>
+        local_info get_info( local_time<Dur> input ) const {
+            return get_info_local_s( _rawTime( input ) );
+        }
+
+        template<class Dur>
+        sys_info get_info( sys_time<Dur> input ) const {
+            return get_info_sys_s( _rawTime( input ) );
         }
 
         /// Returns a number [0,86400) representing the current time of day
@@ -688,6 +929,21 @@ namespace vtz {
         struct Impl;
 
       private:
+
+        static sec_t _rawTime( local_seconds s ) {
+            return s.time_since_epoch().count();
+        }
+        static sec_t _rawTime( sys_seconds s ) {
+            return s.time_since_epoch().count();
+        }
+        template<class Dur>
+        static sec_t _rawTime( local_time<Dur> s ) {
+            return std::chrono::floor<seconds>( s ).time_since_epoch().count();
+        }
+        template<class Dur>
+        static sec_t _rawTime( sys_time<Dur> s ) {
+            return std::chrono::floor<seconds>( s ).time_since_epoch().count();
+        }
 
         static local_seconds _local( sec_t s ) {
             return local_seconds( seconds( s ) );

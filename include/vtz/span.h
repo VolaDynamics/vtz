@@ -41,6 +41,7 @@ namespace vtz {
         VTZ_INLINE constexpr T&     operator[]( ptrdiff_t i ) const noexcept { return p[i]; }
         VTZ_INLINE constexpr T&     front() const noexcept { return *p; }
         VTZ_INLINE constexpr T&     back() const noexcept { return p[count - 1]; }
+        VTZ_INLINE constexpr size_t size_bytes() const noexcept { return count * sizeof(T); }
         // clang-format on
 
         using size_type      = size_t;

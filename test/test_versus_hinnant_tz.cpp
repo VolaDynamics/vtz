@@ -29,6 +29,29 @@ using _test_vtz::TEST_LOG;
 using sys_seconds = date::sys_seconds;
 using std::chrono::duration;
 
+
+static vector<sys_seconds> toSys( span<sysseconds_t> tt ) {
+    vector<sys_seconds> result( tt.size() );
+    for( size_t i = 0; i < tt.size(); ++i ) { result[i] = sys_seconds( seconds( tt[i] ) ); }
+    return result;
+}
+
+
+STRUCT_INFO( vtz::sys_info,
+    FIELD( vtz::sys_info, begin ),
+    FIELD( vtz::sys_info, end ),
+    FIELD( vtz::sys_info, offset ),
+    FIELD( vtz::sys_info, save ),
+    FIELD( vtz::sys_info, abbrev ) );
+
+STRUCT_INFO( vtz::local_info,
+    FIELD( vtz::local_info, result ),
+    FIELD( vtz::local_info, first ),
+    FIELD( vtz::local_info, second ) );
+
+
+static sys_seconds toSys( sysseconds_t t ) { return sys_seconds( seconds( t ) ); }
+
 struct entry {
     string       abbr;
     sysseconds_t begin;
@@ -186,6 +209,55 @@ TEST( vtz, America_NewYork ) {
     ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  1, 59, 59 ), L ) }, DT::civil( 2025, 11,  2,  6, 59, 59 ) );
 
     // clang-format on
+
+    {
+        auto t0 = _ct( 2025, 3, 9, 7, 0, 0 );
+        auto t1 = _ct( 2025, 11, 2, 6, 0, 0 );
+        auto t2 = _ct( 2026, 3, 8, 7, 0, 0 );
+
+        ADD_CONTEXT( "Checking get_info",
+            tz.format_s( t0 ),
+            tz.format_s( t1 - 1 ),
+            tz.format_s( t1 ),
+            tz.format_s( t2 ) );
+
+        auto s0 = tz.get_info_sys_s( t1 - 1 );
+        auto s1 = tz.get_info_sys_s( t1 );
+        ASSERT_EQ( s0,
+            ( sys_info{
+                toSys( t0 ),
+                toSys( t1 ),
+                hours( -4 ),
+                minutes( 60 ),
+                "EDT",
+            } ) );
+        ASSERT_EQ( s1,
+            ( sys_info{
+                toSys( t1 ),
+                toSys( t2 ),
+                hours( -5 ),
+                minutes( 0 ),
+                "EST",
+            } ) );
+
+        {
+            // 1am is the first time that is ambiguous, 1:59:59am is the last time
+            // that is ambiguous
+            ASSERT_EQ( tz.get_info_local_s( _ct( 2025, 11, 2, 1, 0, 0 ) ),
+                local_info( { local_info::ambiguous, s0, s1 } ) );
+            ASSERT_EQ( tz.get_info_local_s( _ct( 2025, 11, 2, 1, 59, 59 ) ),
+                local_info( { local_info::ambiguous, s0, s1 } ) );
+
+            // 00:59am is not ambiguous
+            ASSERT_EQ( tz.get_info_local_s( _ct( 2025, 11, 2, 0, 59, 59 ) ),
+                local_info( { local_info::unique, s0 } ) );
+
+            // 2am is no longer ambiguous
+            ASSERT_EQ( tz.get_info_local_s( _ct( 2025, 11, 2, 2, 0, 0 ) ),
+                local_info( { local_info::unique, s1 } ) );
+        }
+    }
+
 
     // In the spring, when we jump forward and skip an hour, whether we choose the earliest or
     // latest time makes no difference
@@ -592,15 +664,6 @@ TEST( vtz, TimeZone ) {
         }
     }
 }
-
-static vector<sys_seconds> toSys( span<sysseconds_t> tt ) {
-    vector<sys_seconds> result( tt.size() );
-    for( size_t i = 0; i < tt.size(); ++i ) { result[i] = sys_seconds( seconds( tt[i] ) ); }
-    return result;
-}
-
-
-static sys_seconds toSys( sysseconds_t t ) { return sys_seconds( seconds( t ) ); }
 
 static std::string dateStr( sysseconds_t t ) {
     return fmt::to_string( sys_seconds( seconds( t ) ) );

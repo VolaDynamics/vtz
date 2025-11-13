@@ -596,6 +596,7 @@ namespace vtz {
         vector<sysseconds_t> stdoffTrans_;
         vector<i32>          stdoff_;
 
+        vector<sysseconds_t> tt_;
 
         vector<ZoneTransition> getTransitions() const;
 
