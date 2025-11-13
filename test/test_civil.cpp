@@ -1,7 +1,7 @@
 #include <vtz/civil.h>
-
 #include <vtz/date_types.h>
 #include <vtz/math.h>
+#include <vtz/tz.h>
 #include <vtz/tz_reader.h>
 
 #include "vtz_testing.h"
@@ -13,6 +13,9 @@ using _test_vtz::TEST_LOG;
 STRUCT_INFO( vtz::math::div_t<int>,
     FIELD( vtz::math::div_t<int>, quot ),
     FIELD( vtz::math::div_t<int>, rem ) );
+
+STRUCT_INFO( vtz::YMD, FIELD( vtz::YMD, year ), FIELD( vtz::YMD, month ), FIELD( vtz::YMD, day ) );
+STRUCT_INFO( vtz::year_doy, FIELD( vtz::year_doy, year ), FIELD( vtz::year_doy, doy ) );
 
 TEST( vtz_math, divFloor ) {
     using vtz::math::div_t;
@@ -283,4 +286,67 @@ TEST( vtz, resolveRule ) {
     ASSERT_EQ(
         utcToString( US_Peace_Time.resolveAt( 1945, FromUTC( "-5:00" ), FromUTC( "-4:00" ) ) ),
         "1945-08-14 23:00:00Z" );
+}
+
+
+TEST( vtz, civil_big_test ) {
+    /// Corresponds to -400-01-01
+    sysdays_t dayCounter = -865625;
+
+    for( int year = -400; year < 3000; ++year )
+    {
+        // Beginning of year, as days since the epoch
+        sysdays_t boyDays = dayCounter;
+        // End of year, as days since epoch
+        sysdays_t eoyDays = dayCounter + ( isLeap( year ) ? 365 : 364 );
+
+        /// Counts days since the start of the year
+        int doyCounter = 0;
+
+        for( int month = 1; month <= 12; ++month )
+        {
+            int       daysInMonth = daysInMonthReference( year, month );
+            sysdays_t bomDays     = dayCounter;
+            sysdays_t eomDays     = dayCounter + daysInMonth - 1;
+
+            for( int day = 1; day <= daysInMonth; ++day )
+            {
+                // Days since the epoch
+                auto const dse = dayCounter++;
+                int const  doy = doyCounter++;
+                ADD_CONTEXT( "Testing date",
+                    year,
+                    month,
+                    day,
+                    dse,
+                    doy,
+                    toCivil( dse ),
+                    toCivilYearDOY( dse ) );
+
+                auto ymd  = YMD{ year, u16( month ), u16( day ) };
+                auto ymd0 = YMD{ year, u16( month - 1 ), u16( day - 1 ) };
+
+                ASSERT_EQ_QUIET( toCivil( dse ), ymd );
+                ASSERT_EQ_QUIET( resolveCivil( year, month, day ), dse );
+                ASSERT_EQ_QUIET( toCivil0( dse ), ymd0 );
+                ASSERT_EQ_QUIET( resolveCivil0( year, month - 1, day - 1 ), dse );
+
+                ASSERT_EQ_QUIET( civilYear( dse ), year );
+                ASSERT_EQ_QUIET( civilMonth( dse ), month );
+                ASSERT_EQ_QUIET( civilDayOfMonth( dse ), day );
+
+                ASSERT_EQ_QUIET( civilMonth0( dse ), month - 1 );
+                ASSERT_EQ_QUIET( civilDayOfMonth0( dse ), day - 1 );
+
+                auto yearDoy = toCivilYearDOY( dse );
+                ASSERT_EQ_QUIET( yearDoy.year, year );
+                ASSERT_EQ_QUIET( yearDoy.doy, doy );
+
+                ASSERT_EQ_QUIET( civilBOM( dse ), bomDays );
+                ASSERT_EQ_QUIET( civilEOM( dse ), eomDays );
+                ASSERT_EQ_QUIET( civilBOY( dse ), boyDays );
+                ASSERT_EQ_QUIET( civilEOY( dse ), eoyDays );
+            }
+        }
+    }
 }
