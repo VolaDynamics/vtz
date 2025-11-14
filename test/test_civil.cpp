@@ -296,7 +296,12 @@ TEST( vtz, resolveRule ) {
 TEST( vtz, civil_big_test ) {
     /// Corresponds to -400-01-01
     sysdays_t dayCounter = -865625;
+    unsigned  dowCounter = 6; // -400-01-01 was a Saturday
 
+    // Sanity Check - 2025-11-13 is a Thursday
+    ASSERT_EQ_QUIET( dowFromDays( resolveCivil( 2025, 11, 13 ) ), DOW::Thu );
+
+    // Test these functions over a huge span of time
     for( int year = -400; year < 3000; ++year )
     {
         // Beginning of year, as days since the epoch
@@ -316,8 +321,13 @@ TEST( vtz, civil_big_test ) {
             for( int day = 1; day <= daysInMonth; ++day )
             {
                 // Days since the epoch
-                auto const dse = dayCounter++;
-                int const  doy = doyCounter++;
+                auto const dse       = dayCounter++;
+                int const  doy       = doyCounter++;
+                auto const dayOfWeek = dowCounter++;
+                auto const dow       = DOW( dayOfWeek );
+                if( dowCounter == 7 ) dowCounter = 0;
+
+
                 ADD_CONTEXT( "Testing date",
                     year,
                     month,
@@ -330,6 +340,7 @@ TEST( vtz, civil_big_test ) {
                 auto ymd  = YMD{ year, u16( month ), u16( day ) };
                 auto ymd0 = YMD{ year, u16( month - 1 ), u16( day - 1 ) };
 
+                ASSERT_EQ_QUIET( dow, dowFromDays( dse ) );
                 ASSERT_EQ_QUIET( toCivil( dse ), ymd );
                 ASSERT_EQ_QUIET( resolveCivil( year, month, day ), dse );
                 ASSERT_EQ_QUIET( toCivil0( dse ), ymd0 );
@@ -350,6 +361,41 @@ TEST( vtz, civil_big_test ) {
                 ASSERT_EQ_QUIET( civilEOM( dse ), eomDays );
                 ASSERT_EQ_QUIET( civilBOY( dse ), boyDays );
                 ASSERT_EQ_QUIET( civilEOY( dse ), eoyDays );
+            }
+        }
+    }
+}
+
+
+TEST( vtz, civil_arithmetic ) {
+    /// Check that adding years or months does the correct thing
+
+
+    /// Corresponds to 1970-01-01
+    sysdays_t dayCounter = 0;
+
+    // Sanity Check - 2025-11-13 is a Thursday
+    ASSERT_EQ_QUIET( dowFromDays( resolveCivil( 2025, 11, 13 ) ), DOW::Thu );
+
+    // Test these functions over a huge span of time
+    for( int year = 1970; year < 2060; ++year )
+    {
+        for( int month = 1; month <= 12; ++month )
+        {
+            int daysInMonth = daysInMonthReference( year, month );
+
+            for( int day = 1; day <= daysInMonth; ++day )
+            {
+                auto dse = dayCounter++;
+                for( int k = -60; k <= 60; ++k )
+                {
+                    ASSERT_EQ_QUIET(
+                        civilAddYears( dse, k ), resolveCivil( year + k, month, day ) );
+
+                    auto parts = math::divFloor2<12>( month + k - 1 );
+                    ASSERT_EQ_QUIET( civilAddMonths( dse, k ),
+                        resolveCivil( year + parts.quot, parts.rem + 1, day ) );
+                }
             }
         }
     }
