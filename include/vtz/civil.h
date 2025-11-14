@@ -366,7 +366,7 @@ namespace vtz {
     }
 
     constexpr i32 civilYear( sysdays_t days ) noexcept {
-        return toCivilYearDOY( days ).year;
+        return toCivil( days ).year;
     }
 
     constexpr u16 civilMonth( sysdays_t days ) noexcept {
