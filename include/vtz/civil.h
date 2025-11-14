@@ -170,6 +170,8 @@ namespace vtz {
         u16 month;
         u16 day;
 
+        YMD() = default;
+
         constexpr YMD( i32 year, u16 mon, u16 day ) noexcept
         : year( year )
         , month( mon )
