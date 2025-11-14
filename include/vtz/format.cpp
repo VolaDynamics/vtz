@@ -389,6 +389,37 @@ namespace vtz {
     }
 
 
+    struct DummyTimeZone {
+        /// NOOP - offset is 0
+        static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
+        static sec_t stdoff_s( sysseconds_t t ) noexcept { return 0; }
+        /// NOOP - no abbreviation to write
+        static size_t abbrev_to_s( sec_t, char* ) noexcept { return 0; }
+    };
+
+    std::string format_date_d( string_view fmt, sysdays_t days ) {
+        return _do_strformat(
+            DummyTimeZone{},
+            fmt.data(),
+            fmt.size(),
+            daysToSeconds( days ),
+            // There is no fractional component, so writeFrac is a noop
+            []( char* s ) noexcept -> char* { return s; },
+            WriteToString{} );
+    }
+
+    size_t format_date_to_d(
+        string_view fmt, sysdays_t days, char* buff, size_t count ) {
+        return _do_strformat(
+            DummyTimeZone{},
+            fmt.data(),
+            fmt.size(),
+            daysToSeconds( days ),
+            // There is no fractional component, so writeFrac is a noop
+            []( char* s ) noexcept -> char* { return s; },
+            WriteToBuff{ buff, count } );
+    }
+
     auto _writeNanos( u32 nanos, int precision ) noexcept {
         return [nanos, precision]( char* p ) noexcept -> char* {
             // clang-format off

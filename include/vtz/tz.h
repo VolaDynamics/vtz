@@ -954,6 +954,22 @@ namespace vtz {
         string name_;
     };
 
+
+    std::string format_date_d( string_view fmt, sysdays_t days );
+
+    size_t format_date_to_d(
+        string_view format, sysdays_t days, char* buff, size_t count );
+
+    inline std::string format_date( string_view fmt, sys_days days ) {
+        return format_date_d( fmt, days.time_since_epoch().count() );
+    }
+
+    inline size_t format_date_to(
+        string_view fmt, sys_days days, char* buff, size_t count ) {
+        return format_date_to_d(
+            fmt, days.time_since_epoch().count(), buff, count );
+    }
+
     using time_zone = TimeZone;
 
     std::string tzdb_version();
