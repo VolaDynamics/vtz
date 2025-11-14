@@ -970,6 +970,13 @@ namespace vtz {
             fmt, days.time_since_epoch().count(), buff, count );
     }
 
+    /// Parse a date
+    sysdays_t parse_date( string_view dateStr, char const* fmt = "%Y-%m-%d" );
+
+    /// Parse a time
+    sec_t parse_time(
+        string_view timeStr, char const* fmt = "%Y-%m-%d %H:%M:%S" );
+
     using time_zone = TimeZone;
 
     std::string tzdb_version();
