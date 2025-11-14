@@ -10,6 +10,10 @@ using namespace vtz;
 
 using _test_vtz::TEST_LOG;
 
+namespace {
+    int _do_set_install = ( set_install( "build/data/tzdata" ), 0 );
+} // namespace
+
 STRUCT_INFO( vtz::math::div_t<int>,
     FIELD( vtz::math::div_t<int>, quot ),
     FIELD( vtz::math::div_t<int>, rem ) );
