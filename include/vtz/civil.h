@@ -111,8 +111,13 @@ namespace vtz {
 
     constexpr inline sysdays_t MAX_DAYS = INT32_MAX;
 
-    constexpr sysseconds_t daysToSeconds( sysdays_t days ) noexcept {
-        return i64( days ) * 86400;
+    constexpr sysseconds_t daysToSeconds( i64 days ) noexcept {
+        return days * 86400;
+    }
+
+    constexpr sysseconds_t daysToSeconds(
+        i64 days, i64 hr, i64 min, i64 sec ) noexcept {
+        return days * 86400 + 3600 * hr + 60 * min + sec;
     }
 
     /// Write an offset (in seconds) as [+/-]HH[:MM[:SS]], writing the shortest
