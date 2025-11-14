@@ -289,6 +289,15 @@ namespace vtz {
         return era * 146097 + static_cast<i32>( doe ) - 719468;
     }
 
+    /// Returns a civil date (as days since epoch) based on Jan 1st of the given
+    /// year
+    constexpr sysdays_t resolveCivil( i32 y ) noexcept {
+        auto eraParts = vtz::math::divFloor2<400>( y - 1 );
+        i64  era      = eraParts.quot;
+        i32  yoe      = eraParts.rem;                          // [0, 399]
+        i32  doe      = yoe * 365 + yoe / 4 - yoe / 100 + 306; // [0, 146096]
+        return era * 146097 + doe - 719468;
+    }
 
     constexpr sysseconds_t resolveCivilTime(
         i32 y, u32 m, u32 d, int h, int min, int sec ) noexcept {
