@@ -155,6 +155,32 @@ namespace vtz {
         return p;
     }
 
+    namespace {
+        struct WriteNOOP {
+            VTZ_INLINE static size_t dump( char const*, size_t size ) {
+                return size;
+            }
+        };
+        struct WriteToString {
+            VTZ_INLINE static std::string dump( char const* s, size_t size ) {
+                return std::string( s, size );
+            }
+        };
+        struct WriteToBuff {
+            char*  buff;
+            size_t count;
+
+            VTZ_INLINE size_t dump( char const* s, size_t size ) noexcept {
+                // clamp size
+                if( size > count ) size = count;
+                // write to buffer
+                _vtz_memcpy( buff, s, size );
+                // return size
+                return size;
+            }
+        };
+    } // namespace
+
     template<class TimeZoneT, class F, class WriteFractional>
     auto _do_strformat( TimeZoneT const& tz,
         char const*                      format,
@@ -183,7 +209,7 @@ namespace vtz {
             throw FormatError(
                 "formatTime(): input format string is too long" );
 
-        if( formatSize == 0 ) return func( "", 0 );
+        if( formatSize == 0 ) return func.dump( "", 0 );
 
         auto gmtoff        = tz.offset_s( t );
         auto tLocal        = t + gmtoff;
@@ -315,7 +341,7 @@ namespace vtz {
             // If we were able to handle all the specifiers, there's nothing
             // left to format. This means we don't need to do a call to
             // strftime, and we can exit early!
-            return func( fmtStr, size_t( p - fmtStr ) );
+            return func.dump( fmtStr, size_t( p - fmtStr ) );
         }
 
         // Add null terminator to format string
@@ -347,7 +373,7 @@ namespace vtz {
         char   buffer[BUFF_SIZE];
         size_t count
             = std::strftime( buffer, sizeof( buffer ), fmtStr, &tmValue );
-        return func( buffer, count );
+        return func.dump( buffer, count );
     }
 
     size_t TimeZone::format_to_s(
@@ -359,15 +385,9 @@ namespace vtz {
             t,
             // There is no fractional component, so writeFrac is a noop
             []( char* s ) noexcept -> char* { return s; },
-            [buff, count]( char const* s, size_t size ) {
-                // clamp size
-                if( size > count ) size = count;
-                // write to buffer
-                _vtz_memcpy( buff, s, size );
-                // return size
-                return size;
-            } );
+            WriteToBuff{ buff, count } );
     }
+
 
     auto _writeNanos( u32 nanos, int precision ) noexcept {
         return [nanos, precision]( char* p ) noexcept -> char* {
@@ -409,14 +429,7 @@ namespace vtz {
             format.size(),
             t,
             _writeNanos( nanos, precision ),
-            [buff, count]( char const* s, size_t size ) {
-                // clamp size
-                if( size > count ) size = count;
-                // write to buffer
-                _vtz_memcpy( buff, s, size );
-                // return size
-                return size;
-            } );
+            WriteToBuff{ buff, count } );
     }
 
     std::string TimeZone::format_precise_s(
@@ -426,7 +439,7 @@ namespace vtz {
             format.size(),
             t,
             _writeNanos( nanos, precision ),
-            []( char const* s, size_t size ) { return string( s, size ); } );
+            WriteToString{} );
     }
 
     string TimeZone::format_s( std::string_view format, sysseconds_t t ) const {
@@ -437,7 +450,7 @@ namespace vtz {
             t,
             // There is no fractional component, so writeFrac is a noop
             []( char* s ) noexcept -> char* { return s; },
-            []( char const* s, size_t size ) { return string( s, size ); } );
+            WriteToString{} );
     }
 
     template<bool isSane, bool isCompact, class FWriteAbbrev, class FAction>
@@ -446,7 +459,8 @@ namespace vtz {
         char                            dateSep,
         char                            dateTimeSep,
         FWriteAbbrev                    writeAbbrev,
-        FAction action ) noexcept( noexcept( action( p, writeAbbrev( p ) ) ) ) {
+        FAction action ) noexcept( noexcept( action.dump( p,
+        writeAbbrev( p ) ) ) ) {
         // t = utc_t + gmtoff;
         auto parts         = vtz::math::divFloor2<86400>( tLocal );
         auto date          = parts.quot;
@@ -485,7 +499,7 @@ namespace vtz {
                 (void)_writeHHMMSS( p + 11, hr, mi, sec ); // 11..19
             }
 
-            return action( p, stampEnd + writeAbbrev( p + stampEnd ) );
+            return action.dump( p, stampEnd + writeAbbrev( p + stampEnd ) );
         }
         else
         {
@@ -516,7 +530,7 @@ namespace vtz {
                 (void)_writeHHMMSS( q + 7, hr, mi, sec ); // 7..14
             }
 
-            return action(
+            return action.dump(
                 p, yearLen + stampEnd + writeAbbrev( q + stampEnd ) );
         }
     }
@@ -578,7 +592,7 @@ namespace vtz {
                 dateSep,
                 dateTimeSep,
                 _writeAbbrev<includeAbbrSep, useStdoff>( tz, t, off, abbrSep ),
-                []( char* p, size_t s ) { return std::string( p, s ); } );
+                WriteToString{} );
         }
         else
         {
@@ -587,7 +601,7 @@ namespace vtz {
                 dateSep,
                 dateTimeSep,
                 _writeAbbrev<includeAbbrSep, useStdoff>( tz, t, off, abbrSep ),
-                []( char* p, size_t s ) { return std::string( p, s ); } );
+                WriteToString{} );
         }
     }
 
@@ -629,7 +643,7 @@ namespace vtz {
                     dateTimeSep,
                     _writeAbbrev<includeAbbrSep, useStdoff>(
                         tz, t, gmtoff, abbrSep ),
-                    []( char*, size_t s ) noexcept { return s; } );
+                    WriteNOOP{} );
             }
             else
             {
@@ -641,11 +655,7 @@ namespace vtz {
                     dateTimeSep,
                     _writeAbbrev<includeAbbrSep, useStdoff>(
                         tz, t, gmtoff, abbrSep ),
-                    [p, count]( char const* p2, size_t s ) noexcept {
-                        if( s > count ) s = count;
-                        _vtz_memcpy( p, p2, s );
-                        return s;
-                    } );
+                    WriteToBuff{ p, count } );
             }
         }
         else
@@ -668,7 +678,7 @@ namespace vtz {
                     dateTimeSep,
                     _writeAbbrev<includeAbbrSep, useStdoff>(
                         tz, t, gmtoff, abbrSep ),
-                    []( char*, size_t s ) noexcept { return s; } );
+                    WriteNOOP{} );
             }
             else
             {
@@ -680,11 +690,7 @@ namespace vtz {
                     dateTimeSep,
                     _writeAbbrev<includeAbbrSep, useStdoff>(
                         tz, t, gmtoff, abbrSep ),
-                    [p, count]( char const* p2, size_t s ) noexcept {
-                        if( s > count ) s = count;
-                        _vtz_memcpy( p, p2, s );
-                        return s;
-                    } );
+                    WriteToBuff{ p, count } );
             }
         }
     }
