@@ -312,6 +312,8 @@ TEST( vtz, civil_big_test ) {
         /// Counts days since the start of the year
         int doyCounter = 0;
 
+        ASSERT_EQ_QUIET( resolveCivil( year ), boyDays );
+
         for( int month = 1; month <= 12; ++month )
         {
             int       daysInMonth = daysInMonthReference( year, month );
@@ -343,6 +345,7 @@ TEST( vtz, civil_big_test ) {
                 ASSERT_EQ_QUIET( dow, dowFromDays( dse ) );
                 ASSERT_EQ_QUIET( toCivil( dse ), ymd );
                 ASSERT_EQ_QUIET( resolveCivil( year, month, day ), dse );
+                ASSERT_EQ_QUIET( resolveCivilOrdinal( year, doy + 1 ), dse );
                 ASSERT_EQ_QUIET( toCivil0( dse ), ymd0 );
                 ASSERT_EQ_QUIET( resolveCivil0( year, month - 1, day - 1 ), dse );
 
