@@ -280,9 +280,10 @@ namespace vtz {
     constexpr sysdays_t resolveCivil( i32 y, u32 m, u32 d ) noexcept {
         y -= m <= 2;
 
-        i32 era = ( y >= 0 ? y : y - 399 ) / 400;
-        u32 yoe = static_cast<u32>( y - era * 400 );               // [0, 399]
-        u32 doy
+        auto eraParts = vtz::math::divFloor2<400>( y );
+        i64  era      = eraParts.quot;
+        u32  yoe      = u32( eraParts.rem );                       // [0, 399]
+        u32  doy
             = ( 153 * ( m > 2 ? m - 3 : m + 9 ) + 2 ) / 5 + d - 1; // [0, 365]
         u32 doe = yoe * 365 + yoe / 4 - yoe / 100 + doy; // [0, 146096]
         return era * 146097 + static_cast<i32>( doe ) - 719468;
