@@ -332,11 +332,13 @@ namespace vtz {
     /// @param days Days since the epoch (The epoch being January 1st, 1970)
     constexpr YMD toCivil( sysdays_t days ) noexcept {
         days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
-        const i64 era = ( days >= 0 ? days : days - 146096 ) / 146097;
-        const u32 doe = u32( days - era * 146097 ); // [0, 146096]
-        const u32 yoe = ( doe - doe / 1460 + doe / 36524 - doe / 146096 )
-                        / 365;                      // [0, 399]
-        const i64 y   = i64( yoe ) + era * 400;
+        const auto parts = math::divFloor2<146097>( days );
+        i32        era   = parts.quot;
+        u32        doe   = parts.rem; // Day within era - [0, 146096]
+        const u32  yoe
+            = ( doe - doe / 1460 + doe / 36524 - int( doe >= 146096 ) )
+              / 365;                                               // [0, 399]
+        const i32 y   = i32( yoe ) + era * 400;
         const u32 doy = doe - ( 365 * yoe + yoe / 4 - yoe / 100 ); // [0, 365]
         const u32 mp  = ( 5 * doy + 2 ) / 153;                     // [0, 11]
         const u32 d   = doy - ( 153 * mp + 2 ) / 5 + 1;            // [1, 31]
