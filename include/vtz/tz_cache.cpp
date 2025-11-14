@@ -1,3 +1,4 @@
+#include <mutex>
 #include <vtz/date_types.h>
 #include <vtz/tz_cache.h>
 
@@ -86,16 +87,53 @@ namespace vtz {
     }
 
 
+    static std::atomic_bool TIMEZONE_DATABASE_HAS_BEEN_LOADED = false;
+    static std::mutex       INSTALL_PATH_MUTEX{};
+
+    /// Return a reference to the install path. The first time this function is
+    /// called, the _install path is initialized.
+    static std::string& installPath( bool loadFromEnvVar ) {
+        static std::string _install
+            = loadFromEnvVar ? getTZDataPath() : std::string();
+
+        return _install;
+    }
+
+    void set_install( std::string path ) {
+        std::scoped_lock _lock( INSTALL_PATH_MUTEX );
+
+        if( TIMEZONE_DATABASE_HAS_BEEN_LOADED )
+        {
+            throw std::runtime_error(
+                "set_install(): cannot change install path after timezone "
+                "database has already been loaded." );
+        }
+
+        installPath( false ) = std::move( path );
+    }
+
+    std::string get_install() {
+        std::scoped_lock _lock( INSTALL_PATH_MUTEX );
+
+        // Return the install path. If no install path has been set, load it
+        // from an environment variable.
+        return installPath( true );
+    }
+
+    static TimeZoneCache doLoadCache() {
+        std::scoped_lock _lock( INSTALL_PATH_MUTEX );
+
+        TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
+
+        return TimeZoneCache( loadZoneInfoFromDir( installPath( true ) ) );
+    }
+
     TimeZoneCache const& tzdb_cache() {
-        static const TimeZoneCache cache(
-            loadZoneInfoFromDir( getTZDataPath() ) );
+        static const TimeZoneCache cache( doLoadCache() );
         return cache;
     }
 
-
-    std::string tzdb_version() {
-        return tzdb_cache().data.version;
-    }
+    std::string tzdb_version() { return tzdb_cache().data.version; }
 
     time_zone const* locate_zone( string_view name ) {
         auto const& cache = tzdb_cache();

@@ -959,6 +959,12 @@ namespace vtz {
 
     std::string tzdb_version();
 
+    /// Set the path to use for the timezone database. Will throw an exception
+    /// if the timezone database is already loaded.
+    void set_install( std::string path );
+
+    std::string get_install();
+
     time_zone const* locate_zone( string_view name );
 
     time_zone const* current_zone();
