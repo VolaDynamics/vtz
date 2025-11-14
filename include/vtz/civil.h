@@ -299,6 +299,12 @@ namespace vtz {
         return era * 146097 + doe - 719468;
     }
 
+    /// Resolve a civil date, expressed as (year, doy), where doy starts at 1
+    constexpr sysdays_t resolveCivilOrdinal( i32 y, i32 doy ) noexcept {
+        return resolveCivil( y ) + doy - 1;
+    }
+
+
     constexpr sysseconds_t resolveCivilTime(
         i32 y, u32 m, u32 d, int h, int min, int sec ) noexcept {
         return i64( resolveCivil( y, m, d ) ) * 86400 + 3600 * h + 60 * min
