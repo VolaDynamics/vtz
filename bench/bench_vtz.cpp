@@ -17,6 +17,7 @@ using date::sys_seconds;
 using std::vector;
 using std::chrono::seconds;
 using vtz::i64;
+using vtz::sysdays_t;
 
 template<class T, class Dur = typename T::duration>
 vector<T> toChrono( vector<i64> const& tt ) {
@@ -25,18 +26,49 @@ vector<T> toChrono( vector<i64> const& tt ) {
     return result;
 }
 
+template<class T, class F>
+auto randomValues( size_t count, T start, T end, F func ) {
+    using value_type = decltype( func( start ) );
+    auto result      = vector<value_type>( count );
+    auto rng         = std::mt19937_64{};
+    auto dist        = std::uniform_int_distribution<T>( start, end );
+
+    for( size_t i = 0; i < count; ++i ) { result[i] = func( dist( rng ) ); }
+    return result;
+}
+
+template<class T>
+auto randomValues( size_t count, T start, T end ) {
+    return randomValues( count, start, end, []( auto x ) { return x; } );
+}
 vector<i64> randomTimes(
     size_t count, int startYear, int endYear, i64 mul = 1 ) {
-    vector<i64>                        result( count );
-    std::mt19937_64                    rng;
-    std::uniform_int_distribution<i64> dist{
-        vtz::resolveCivilTime( startYear, 1, 1, 0, 0, 0 ) * mul,
-        vtz::resolveCivilTime( endYear, 1, 1, 0, 0, 0 ) * mul,
-    };
+    return randomValues( count,
+        vtz::daysToSeconds( vtz::resolveCivil( startYear ) ),
+        vtz::daysToSeconds( vtz::resolveCivil( endYear ) ),
+        [=]( i64 x ) { return x * mul; } );
+}
 
-    for( size_t i = 0; i < count; ++i ) result[i] = dist( rng );
 
-    return result;
+vector<sysdays_t> randomDays( size_t count, int startYear, int endYear ) {
+    return randomValues(
+        count, vtz::resolveCivil( startYear ), vtz::resolveCivil( endYear ) );
+}
+
+vector<vtz::sys_days> randomSysDays(
+    size_t count, int startYear, int endYear ) {
+    return randomValues( count,
+        vtz::resolveCivil( startYear ),
+        vtz::resolveCivil( endYear ),
+        []( sysdays_t days ) { return vtz::sys_days( vtz::days( days ) ); } );
+}
+
+
+vector<vtz::YMD> randomYMD( size_t count, int startYear, int endYear ) {
+    return randomValues( count,
+        vtz::resolveCivil( startYear ),
+        vtz::resolveCivil( endYear ),
+        []( sysdays_t days ) { return vtz::toCivil( days ); } );
 }
 
 
@@ -279,6 +311,62 @@ BENCH( vtz_format_iso8601_to, state ) {
     {
         benchmark::DoNotOptimize(
             tz->format_iso8601_to( tt[i % COUNT], buff, sizeof( buff ) ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_format_date, state ) {
+    auto   dd = randomSysDays( COUNT, 1900, 2100 );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( vtz::format_date( "%F", dd[i % COUNT] ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_format_date_to, state ) {
+    auto   dd = randomSysDays( COUNT, 1900, 2100 );
+    size_t i  = 0;
+    char   buff[64];
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            vtz::format_date_to( "%F", dd[i % COUNT], buff, sizeof( buff ) ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_date_to_civil, state ) {
+    auto   dd = randomDays( COUNT, 1900, 2100 );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( vtz::toCivil( dd[i % COUNT] ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_date_from_civil_date, state ) {
+    auto   dd = randomYMD( COUNT, 1900, 2100 );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        auto const& entry = dd[i % COUNT];
+        benchmark::DoNotOptimize(
+            vtz::resolveCivil( entry.year, entry.month, entry.day ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_date_from_civil_year, state ) {
+    auto   dd = randomYMD( COUNT, 1900, 2100 );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        auto const& entry = dd[i % COUNT];
+        benchmark::DoNotOptimize( vtz::resolveCivil( entry.year ) );
         ++i;
     }
 }
