@@ -22,7 +22,7 @@ namespace vtz::math {
     ///
     /// The remainder will always be positive after this operation
     template<auto Divisor, class T>
-    constexpr inline div_t<T> divFloor2( T k ) noexcept {
+    VTZ_INLINE constexpr div_t<T> divFloor2( T k ) noexcept {
         static_assert( Divisor > 0 );
         auto m = k % Divisor;
         auto q = k / Divisor;
@@ -37,7 +37,7 @@ namespace vtz::math {
 
     /// Returns the (positive) remainder after division by the given divisor
     template<auto Divisor, class T>
-    constexpr inline T rem( T k ) noexcept {
+    VTZ_INLINE constexpr T rem( T k ) noexcept {
         auto m    = k % Divisor;
         bool mNeg = m < 0;
         return T( m + ( mNeg ? Divisor : 0 ) );
@@ -48,7 +48,7 @@ namespace vtz::math {
     ///
     /// This is floor(k / Divisor).
     template<i32 Divisor>
-    constexpr i32 divFloor( i32 k ) noexcept {
+    VTZ_INLINE constexpr i32 divFloor( i32 k ) noexcept {
         static_assert( Divisor > 0 );
         bool isNeg = k < 0;
         return ( ( k + isNeg ) / Divisor ) - isNeg;
@@ -58,7 +58,7 @@ namespace vtz::math {
     ///
     /// This is floor(k / Divisor).
     template<i64 Divisor>
-    constexpr i64 divFloor( i64 k ) noexcept {
+    VTZ_INLINE constexpr i64 divFloor( i64 k ) noexcept {
         static_assert( Divisor > 0 );
         bool isNeg = k < 0;
         return ( ( k + isNeg ) / Divisor ) - isNeg;
