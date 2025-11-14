@@ -49,7 +49,6 @@ namespace vtz::detail {
 
 
 namespace vtz {
-    using sec_t   = i64;
     using nanos_t = i64;
 
     using std::chrono::hours;

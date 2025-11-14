@@ -106,6 +106,9 @@ namespace vtz {
     /// Seconds from epoch
     using sysseconds_t = i64;
 
+    /// Holds seconds (unspecified if it's local or UTC)
+    using sec_t = i64;
+
     constexpr inline sysdays_t MAX_DAYS = INT32_MAX;
 
     constexpr sysseconds_t daysToSeconds( sysdays_t days ) noexcept {
