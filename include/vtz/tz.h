@@ -988,7 +988,7 @@ namespace vtz {
     ///
     /// Eg, 2025-11-14 09:30:05.3948, this is interpreted as 394,800,000
     /// nanoseconds after 2025-11-14 09:30:05
-    sec_t parse_time_ns( string_view fmt, string_view timeStr );
+    nanos_t parse_time_ns( string_view fmt, string_view timeStr );
 
 
     using time_zone = TimeZone;
