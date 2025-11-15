@@ -8,6 +8,15 @@
 #include <vtz/civil.h>
 
 namespace vtz {
+    static bool isWhitespace( char ch ) {
+        return ch == ' '      //
+               || ch == '\t'  //
+               || ch == '\n'  //
+               || ch == '\r'  //
+               || ch == '\xb' //
+               || ch == '\xc';
+    }
+
     VTZ_INLINE bool parseDigitTo( char ch, i64& dest ) noexcept {
         int  x      = ch - '0';
         bool good   = size_t( x ) < 10;
@@ -199,13 +208,10 @@ namespace vtz {
             case '%':
                 if( '%' == *p++ ) continue;
                 throw where{ f - 1, p - 1 };
-            // Expect literal '\n'
+            // Matches any whitespace
             case 'n':
-                if( '\n' == *p++ ) continue;
-                throw where{ f - 1, p - 1 };
-            // Expect literal '\t'
             case 't':
-                if( '\t' == *p++ ) continue;
+                while( p < pEnd && isWhitespace( *p ) ) ++p;
                 throw where{ f - 1, p - 1 };
 
             // PARSE YEAR
