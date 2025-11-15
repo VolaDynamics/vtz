@@ -404,6 +404,40 @@ BENCH( vtz_parse_time, state ) {
     }
 }
 
+BENCH( vtz_parse_date_compact, state ) {
+    static auto const& utc = vtz::TimeZone::utc();
+
+    auto dd = randomValues( COUNT,
+        vtz::resolveCivilTime( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolveCivilTime( 2100, 1, 1, 0, 0, 0 ),
+        []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        auto const& entry = dd[i % COUNT];
+        benchmark::DoNotOptimize( vtz::parse_date_d( "%F", entry ) );
+        ++i;
+    }
+}
+
+BENCH( vtz_parse_time_compact, state ) {
+    static auto const& utc = vtz::TimeZone::utc();
+
+    auto dd = randomValues( COUNT,
+        vtz::resolveCivilTime( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolveCivilTime( 2100, 1, 1, 0, 0, 0 ),
+        []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        auto const& entry = dd[i % COUNT];
+        benchmark::DoNotOptimize( vtz::parse_time_s( "%F %T", entry ) );
+        ++i;
+    }
+}
+
 // if std::chrono::locate_zone is available, benchmark std::chrono::time_zone
 #if __cpp_lib_chrono >= 201907L
 BENCH( chrono_to_local, state ) {
