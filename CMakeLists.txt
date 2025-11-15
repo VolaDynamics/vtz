@@ -104,6 +104,7 @@ if(PROJECT_IS_TOP_LEVEL)
         test/test_civil.cpp
         test/test_math.cpp
         test/test_versus_hinnant_tz.cpp
+        test/test_formatting.cpp
     )
     target_link_libraries(
         test_vtz
