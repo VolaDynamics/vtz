@@ -404,6 +404,43 @@ BENCH( vtz_parse_time, state ) {
     }
 }
 
+BENCH( hinnant_parse_date, state ) {
+    auto   dd = randomValues( COUNT,
+        vtz::resolveCivil( 1900 ),
+        vtz::resolveCivil( 2100 ),
+        []( sysdays_t days ) { return vtz::format_date_d( "%F", days ); } );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        auto const&          entry = dd[i % COUNT];
+        std::istringstream   ss( entry );
+        date::year_month_day ymd;
+        ss >> date::parse( "%Y-%m-%d", ymd );
+        benchmark::DoNotOptimize( ymd );
+        ++i;
+    }
+}
+
+BENCH( hinnant_parse_time, state ) {
+    static auto const& utc = vtz::TimeZone::utc();
+
+    auto dd = randomValues( COUNT,
+        vtz::resolveCivilTime( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolveCivilTime( 2100, 1, 1, 0, 0, 0 ),
+        []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        auto const&        entry = dd[i % COUNT];
+        std::istringstream ss( entry );
+        date::sys_seconds  tp;
+        ss >> date::parse( "%Y-%m-%d %H:%M:%S", tp );
+        benchmark::DoNotOptimize( tp );
+        ++i;
+    }
+}
+
 BENCH( vtz_parse_date_compact, state ) {
     static auto const& utc = vtz::TimeZone::utc();
 
