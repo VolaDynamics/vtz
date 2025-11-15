@@ -356,6 +356,16 @@ namespace vtz {
             }
         }
 
+        if( f <= fBack )
+        {
+            // We reached the end of the input before the full format string was
+            // consumed
+            if( f < fBack ) throw where{ f, p };
+            // check last literal character
+            if( *f != *p ) throw where{ f, p };
+            ++p;
+        }
+
         sysdays_t date = bool( doy ) // Check if we have an ordinal date
                                      // use ordinal date
                              ? date = resolveCivilOrdinal( year, doy )
