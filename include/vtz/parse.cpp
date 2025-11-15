@@ -237,14 +237,20 @@ namespace vtz {
             case 'C':
                 {
                     hasC = true;
-                    // if '%y' was parsed, treat as number 0-99
                     if( hasSmallY )
                     {
+                        // if '%y' was parsed, treat as number 0-99
                         if( year < 2000 ) { year -= 1900; }
                         else { year -= 2000; }
+                        // add in two digits for '%C'
+                        year += parseD2( p, pEnd ) * 100;
                     }
-                    // add in two digits for '%C'
-                    year += parseD2( p, pEnd ) * 100;
+                    else
+                    {
+                        // Overwrite the year with the correct two digits
+                        year = parseD2( p, pEnd ) * 100;
+                    }
+
                     continue;
                 }
 
