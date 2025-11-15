@@ -12,6 +12,7 @@ if(PROJECT_IS_TOP_LEVEL AND UNIX)
         -fdiagnostics-color=always
         -Werror=uninitialized
         -Wunused
+        -Wimplicit-fallthrough
     )
 endif()
 

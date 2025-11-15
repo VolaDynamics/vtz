@@ -49,7 +49,6 @@ namespace vtz::detail {
 
 
 namespace vtz {
-    using nanos_t = i64;
 
     using std::chrono::hours;
     using std::chrono::minutes;
@@ -971,11 +970,26 @@ namespace vtz {
     }
 
     /// Parse a date
-    sysdays_t parse_date( string_view dateStr, char const* fmt = "%Y-%m-%d" );
+    ///
+    /// format specifier describes layout of a date (eg, "%Y-%m-%d")
+    sysdays_t parse_date_d( string_view fmt, string_view dateStr );
 
-    /// Parse a time
-    sec_t parse_time(
-        string_view timeStr, char const* fmt = "%Y-%m-%d %H:%M:%S" );
+    /// Parse a time.
+    ///
+    /// Format specifier describes layout of time (eg, "%Y-%m-%d %H:%M:%S")
+    sec_t parse_time_s( string_view fmt, string_view timeStr );
+
+    /// Parse a time with nanosecond precision
+    ///
+    /// Format specifier describes layout of time (eg, "%Y-%m-%d %H:%M:%S")
+    /// If a '.' followed by 1-9 digits occurs in the input string after the
+    /// '%S' modifier, that's used to determine the fractional portion of the
+    /// timestamp.
+    ///
+    /// Eg, 2025-11-14 09:30:05.3948, this is interpreted as 394,800,000
+    /// nanoseconds after 2025-11-14 09:30:05
+    sec_t parse_time_ns( string_view fmt, string_view timeStr );
+
 
     using time_zone = TimeZone;
 

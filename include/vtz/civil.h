@@ -109,6 +109,9 @@ namespace vtz {
     /// Holds seconds (unspecified if it's local or UTC)
     using sec_t = i64;
 
+    /// Holds nanoseconds (unspecified if it's local or UTC)
+    using nanos_t = i64;
+
     constexpr inline sysdays_t MAX_DAYS = INT32_MAX;
 
     constexpr sysseconds_t daysToSeconds( i64 days ) noexcept {

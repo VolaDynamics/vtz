@@ -380,7 +380,7 @@ BENCH( vtz_parse_date, state ) {
     for( auto _ : state )
     {
         auto const& entry = dd[i % COUNT];
-        benchmark::DoNotOptimize( vtz::parse_date( entry, "%Y-%m-%d" ) );
+        benchmark::DoNotOptimize( vtz::parse_date_d( "%Y-%m-%d", entry ) );
         ++i;
     }
 }
@@ -389,17 +389,17 @@ BENCH( vtz_parse_date, state ) {
 BENCH( vtz_parse_time, state ) {
     static auto const& utc = vtz::TimeZone::utc();
 
-    auto   dd = randomValues( COUNT,
+    auto dd = randomValues( COUNT,
         vtz::resolveCivilTime( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolveCivilTime( 2100, 1, 1, 0, 0, 0 ),
         []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
 
-    size_t i  = 0;
+    size_t i = 0;
     for( auto _ : state )
     {
         auto const& entry = dd[i % COUNT];
         benchmark::DoNotOptimize(
-            vtz::parse_time( entry, "%Y-%m-%d %H:%M:%S" ) );
+            vtz::parse_time_s( "%Y-%m-%d %H:%M:%S", entry ) );
         ++i;
     }
 }
