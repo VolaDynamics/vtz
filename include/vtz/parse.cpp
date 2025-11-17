@@ -98,8 +98,7 @@ namespace {
         return result;
     }
 
-    i64 parseFracAsNanos(
-        char const*& p, char const* end ) noexcept {
+    i64 parseFracAsNanos( char const*& p, char const* end ) noexcept {
         // If there are fewer than 2 characters left, or there's no decimal
         // point, there's nothing to parse. return 0
         if( end - p < 2 || *p != '.' ) return 0;
@@ -303,23 +302,19 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     if( p < pEnd )
                     {
                         int weekday = *p++ - '0';
-                        if( weekday < 0 || weekday > 6 )
-                            throw ParseFail{ p - 1,
-                                "Expected weekday (range [0-6])" };
+                        if( weekday < 7 ) continue;
                     }
-                    continue;
+                    throw ParseFail{ p - 1, "Expected weekday (range [0-6])" };
                 }
             // weekday 1-7, monday is 1
             case 'u':
                 {
                     if( p < pEnd )
                     {
-                        int weekday = *p++ - '0';
-                        if( weekday < 1 || weekday > 7 )
-                            throw ParseFail{ p - 1,
-                                "Expected weekday (range [1-7])" };
+                        int weekday = *p++ - '1';
+                        if( weekday < 7 ) continue;
                     }
-                    continue;
+                    throw ParseFail{ p - 1, "Expected weekday (range [1-7])" };
                 }
 
             // HOUR, MINUTE, SECOND
