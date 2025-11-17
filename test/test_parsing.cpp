@@ -3,6 +3,7 @@
 #include <vtz/parse.cpp>
 
 #include "vtz_testing.h"
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 using namespace vtz;
@@ -126,4 +127,72 @@ TEST( vtz_parsing, parse_ordinal_date ) {
     // Last day of non-leap year
     auto d3 = parse_date_d( "%Y-%j", "2023-365" );
     ASSERT_EQ( d3, resolveCivil( 2023, 12, 31 ) );
+}
+
+TEST( vtz_parsing, parse_invalid_throws ) {
+    // Test that invalid format/input pairs throw exceptions
+
+    struct TestCase {
+        string_view format;
+        string_view input;
+        string_view description;
+    };
+
+    std::vector<TestCase> invalid_cases = {
+        // Mismatched characters
+        { "%Y-%m-%d", "2024/03/15" },
+        { "%Y/%m/%d", "2024-03-15" },
+
+        // Missing components
+        { "%Y-%m-%d", "2024-03" },
+        { "%Y-%m-%d", "2024" },
+
+        // Invalid format specifiers in input
+        { "%Y-%m-%d %H:%M:%S" },
+        { "%F %T", "2024-03-15" },
+
+        // Malformed input
+        { "%Y-%m-%d", "abcd-03-15" },
+        { "%Y-%m-%d", "2024-xy-15" },
+        { "%Y-%m-%d", "2024-03-ab" },
+
+        // Too short input
+        { "%Y%m%d", "202403" },
+        { "%H:%M:%S", "12:30" },
+
+        // Literal mismatch
+        { "%Y%%%m", "2024-03" },
+
+        // Invalid weekday values
+        { "%w", "7" },
+        { "%u", "0" },
+        { "%u", "8" },
+
+        // Format string longer than input
+        { "%Y-%m-%d %H:%M", "2024-03-15" },
+
+        // Empty or minimal cases
+        { "%Y", "" },
+        { "%d", "x" },
+    };
+
+    int exception_count = 0;
+
+    for( const auto& test : invalid_cases )
+    {
+        try
+        {
+            (void)parse_time_s( test.format, test.input );
+            // If we get here, the parse unexpectedly succeeded
+            FAIL() << "Expected exception for: " << test.description << " (format=\"" << test.format
+                   << "\", input=\"" << test.input << "\")";
+        }
+        catch( const std::exception& e )
+        {
+            exception_count++;
+            _test_vtz::TEST_LOG.logGood( "Caught exception with message: {}", e.what() );
+        }
+    }
+
+    ASSERT_EQ( exception_count, invalid_cases.size() );
 }
