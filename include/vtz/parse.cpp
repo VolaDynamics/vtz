@@ -1,5 +1,6 @@
 
 
+#include <vtz/strings.h>
 #include <ctime>
 #include <fmt/format.h>
 #include <iomanip>
@@ -8,7 +9,16 @@
 #include <vtz/civil.h>
 
 namespace vtz {
-    static bool isWhitespace( char ch ) {
+
+    namespace {
+        struct ParseFail {
+            char const* p;
+            char const* msg;
+        };
+    } // namespace
+
+
+    VTZ_INLINE static bool isWhitespace( char ch ) {
         return ch == ' '      //
                || ch == '\t'  //
                || ch == '\n'  //
@@ -17,7 +27,7 @@ namespace vtz {
                || ch == '\xc';
     }
 
-    VTZ_INLINE bool parseDigitTo( char ch, i64& dest ) noexcept {
+    VTZ_INLINE static bool parseDigitTo( char ch, i64& dest ) noexcept {
         int  x      = ch - '0';
         bool good   = size_t( x ) < 10;
         i64  newVal = dest * 10 + x;
@@ -25,15 +35,13 @@ namespace vtz {
         return good;
     }
 
-    enum class ParseComp { Y, m, d, H, M, S };
-
-    VTZ_INLINE i64 parseYear( char const*& p, char const* end ) {
+    VTZ_INLINE static i64 parseYear( char const*& p, char const* end ) {
         i64 result = 0;
 
         if( p != end && parseDigitTo( *p, result ) )
             ++p;
         else
-            throw std::runtime_error( "Expected %Y" );
+            throw ParseFail{ p, "Expected digit" };
         if( p != end && parseDigitTo( *p, result ) ) ++p;
         if( p != end && parseDigitTo( *p, result ) ) ++p;
         if( p != end && parseDigitTo( *p, result ) ) ++p;
@@ -47,7 +55,7 @@ namespace vtz {
         if( p != end && parseDigitTo( *p, result ) )
             ++p;
         else
-            throw std::runtime_error( "Expected 1-2 digits" );
+            throw ParseFail{ p, "Expected digit" };
         if( p != end && parseDigitTo( *p, result ) ) ++p;
         return result;
     }
@@ -58,13 +66,14 @@ namespace vtz {
         if( p != end && parseDigitTo( *p, result ) )
             ++p;
         else
-            throw std::runtime_error( "Expected 1-3 digits, but 0 given" );
+            throw ParseFail{ p, "Expected digit" };
         if( p != end && parseDigitTo( *p, result ) ) ++p;
         if( p != end && parseDigitTo( *p, result ) ) ++p;
         return result;
     }
 
-    VTZ_INLINE i64 parseFracAsNanos( char const*& p, char const* end ) {
+    VTZ_INLINE i64 parseFracAsNanos(
+        char const*& p, char const* end ) noexcept {
         // If there are fewer than 2 characters left, or there's no decimal
         // point, there's nothing to parse. return 0
         if( end - p < 2 || *p != '.' ) return 0;
@@ -129,11 +138,6 @@ namespace vtz {
         }
     }
 
-    struct where {
-        char const* fStr;
-        char const* pStr;
-    };
-
     static sysdays_t dateFromTM( std::tm const& t ) noexcept {
         int year = 1900 + t.tm_year;
         if( t.tm_mday || t.tm_mon )
@@ -158,7 +162,8 @@ namespace vtz {
 
     template<class F>
     auto doParse( string_view format, string_view input, F func )
-        -> decltype( func( i32(), i32(), i32() ) ) {
+        -> decltype( func( i32(), i32(), i32() ) ) try
+    {
         if( format.size() == 0 )
         {
             // Format string is empty. So: date is epoch date, time of day is 0,
@@ -194,7 +199,8 @@ namespace vtz {
             {
                 if( c == *p++ ) continue;
                 // Mismatched character
-                throw where{ f - 1, p - 1 };
+                throw ParseFail{ p,
+                    "Character doesn't match input format string" };
             }
 
             // We've encountered a format specifier, so we consume an additional
@@ -207,12 +213,12 @@ namespace vtz {
             // Expect literal '%'
             case '%':
                 if( '%' == *p++ ) continue;
-                throw where{ f - 1, p - 1 };
+                throw ParseFail{ p - 1, "Expected literal '%'" };
             // Matches any whitespace
             case 'n':
             case 't':
                 while( p < pEnd && isWhitespace( *p ) ) ++p;
-                throw where{ f - 1, p - 1 };
+                continue;
 
             // PARSE YEAR
 
@@ -273,9 +279,29 @@ namespace vtz {
             // DAY OF THE WEEK
 
             // weekday 0-6, sunday is 0
-            case 'w': (void)parseD1<0, 6>( p, pEnd ); continue;
+            case 'w':
+                {
+                    if( p < pEnd )
+                    {
+                        int weekday = *p++ - '0';
+                        if( weekday < 0 || weekday > 6 )
+                            throw ParseFail{ p - 1,
+                                "Expected weekday (range [0-6], Sunday is 0)" };
+                    }
+                    continue;
+                }
             // weekday 1-7, monday is 1
-            case 'u': (void)parseD1<1, 7>( p, pEnd ); continue;
+            case 'u':
+                {
+                    if( p < pEnd )
+                    {
+                        int weekday = *p++ - '0';
+                        if( weekday < 1 || weekday > 7 )
+                            throw ParseFail{ p - 1,
+                                "Expected weekday (range [1-7], Monday is 1)" };
+                    }
+                    continue;
+                }
 
             // HOUR, MINUTE, SECOND
 
@@ -295,7 +321,9 @@ namespace vtz {
             case 'R':
                 {
                     hr = parseD2( p, pEnd );
-                    if( p == pEnd || *p != ':' ) throw where{ f - 1, p };
+                    if( p == pEnd || *p != ':' )
+                        throw ParseFail{ p,
+                            "Expected ':' followed by minute (range [00,59])" };
                     ++p;
                     mi = parseD2( p, pEnd );
                     continue;
@@ -304,10 +332,14 @@ namespace vtz {
             case 'F':
                 {
                     year = parseYear( p, pEnd );
-                    if( p == pEnd || *p != '-' ) throw where{ f - 1, p };
+                    if( p == pEnd || *p != '-' )
+                        throw ParseFail{ p,
+                            "Expected '-' followed by month (range [01,12])" };
                     ++p;
                     month = parseD2( p, pEnd );
-                    if( p == pEnd || *p != '-' ) throw where{ f - 1, p };
+                    if( p == pEnd || *p != '-' )
+                        throw ParseFail{ p,
+                            "Expected '-' followed by day (range [01,31])" };
                     ++p;
                     dom = parseD2( p, pEnd );
                     continue;
@@ -316,10 +348,14 @@ namespace vtz {
             case 'T':
                 {
                     hr = parseD2( p, pEnd );
-                    if( p == pEnd || *p != ':' ) throw where{ f - 1, p };
+                    if( p == pEnd || *p != ':' )
+                        throw ParseFail{ p,
+                            "Expected ':' followed by minute and second" };
                     ++p;
                     mi = parseD2( p, pEnd );
-                    if( p == pEnd || *p != ':' ) throw where{ f - 1, p };
+                    if( p == pEnd || *p != ':' )
+                        throw ParseFail{ p,
+                            "Expected ':' followed by second (range [00,60])" };
                     ++p;
                     se    = parseD2( p, pEnd );
                     nanos = parseFracAsNanos( p, pEnd );
@@ -357,9 +393,12 @@ namespace vtz {
                         if( ss.fail() )
                         {
                             throw std::runtime_error( fmt::format(
-                                "parse_time(): Unable to parse {} as {}",
+                                "parse_time(): Unable to parse {} as {}. NOTE: "
+                                "fallback to standard library required because "
+                                "of '%{}' specifier",
                                 escapeString( input ),
-                                escapeString( formatCstr ) ) );
+                                escapeString( formatCstr ),
+                                next ) );
                         }
 
                         return func( dateFromTM( tm ), timeFromTM( tm ), 0 );
@@ -372,9 +411,13 @@ namespace vtz {
         {
             // We reached the end of the input before the full format string was
             // consumed
-            if( f < fBack ) throw where{ f, p };
+            if( f < fBack )
+                throw ParseFail{ p,
+                    "End of input reached before format string was consumed" };
             // check last literal character
-            if( *f != *p ) throw where{ f, p };
+            if( *f != *p )
+                throw ParseFail{ p,
+                    "Character doesn't match input format string" };
             ++p;
         }
 
@@ -387,6 +430,31 @@ namespace vtz {
         i32 timeOfDay = i32( hr ) * 3600 + i32( mi ) * 60 + i32( se );
 
         return func( date, timeOfDay, nanos );
+    }
+    catch( ParseFail const& p )
+    {
+        auto pos = p.p - input.data();
+        if( size_t( pos ) < input.size() )
+        {
+            char ch = *p.p;
+            throw std::runtime_error(
+                fmt::format( "Error @ input[{}] (char='{}'). Unable to parse "
+                             "{} with format={}: {}",
+                    pos,
+                    ch,
+                    escapeString( input ),
+                    escapeString( format ),
+                    p.msg ) );
+        }
+        else
+        {
+            throw std::runtime_error(
+                fmt::format( "Error: unexpected end of input. Unable to parse "
+                             "{} with format={}: {}",
+                    escapeString( input ),
+                    escapeString( format ),
+                    p.msg ) );
+        }
     }
 
     sysdays_t parse_date_d( string_view fmt, string_view dateStr ) {

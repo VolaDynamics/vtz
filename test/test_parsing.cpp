@@ -58,6 +58,10 @@ TEST( vtz_parsing, parse_time_s_simple ) {
     auto t4        = parse_time_s( "%Y-%m-%d %H:%M:%S", "2024-01-01 00:00:00" );
     auto expected4 = resolveCivil( 2024, 1, 1 ) * 86400ll;
     ASSERT_EQ( t4, expected4 );
+
+    // Edge case: date with no separators
+    auto t5 = parse_time_s( "%Y%m%d%H%M%S", "20251117120357" );
+    ASSERT_EQ( t5, resolveCivil( 2025, 11, 17 ) * 86400ll + 12 * 3600 + 3 * 60 + 57 );
 }
 
 TEST( vtz_parsing, parse_time_ns_simple ) {
