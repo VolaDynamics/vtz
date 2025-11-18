@@ -190,7 +190,7 @@ TEST( vtz_parsing, parse_invalid_throws ) {
         catch( const std::exception& e )
         {
             exception_count++;
-            _test_vtz::TEST_LOG.logGood( "Caught exception with message: {}", e.what() );
+            _test_vtz::TEST_LOG.logGood( "Caught exception with message", e.what() );
         }
     }
 
