@@ -435,7 +435,7 @@ BENCH( hinnant_parse_time, state ) {
         auto const&        entry = dd[i % COUNT];
         std::istringstream ss( entry );
         date::sys_seconds  tp;
-        ss >> date::parse( "%Y-%m-%d %H:%M:%S", tp );
+        date::from_stream( ss, "%Y-%m-%d %H:%M:%S", tp );
         benchmark::DoNotOptimize( tp );
         ++i;
     }
