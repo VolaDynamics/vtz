@@ -123,9 +123,13 @@ namespace vtz {
     static TimeZoneCache doLoadCache() {
         std::scoped_lock _lock( INSTALL_PATH_MUTEX );
 
+        auto result
+            = TimeZoneCache( loadZoneInfoFromDir( installPath( true ) ) );
+
+        // if result loaded successfully, mark this as true
         TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
 
-        return TimeZoneCache( loadZoneInfoFromDir( installPath( true ) ) );
+        return result;
     }
 
     TimeZoneCache const& tzdb_cache() {
