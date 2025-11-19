@@ -113,6 +113,42 @@ BENCH( hinnant_to_sys_earliest, state ) {
 }
 
 
+BENCH( hinnant_to_local_with_lookup, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( date::locate_zone( "America/New_York" )->to_local( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( hinnant_to_sys_latest_with_lookup, state ) {
+    auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            date::locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], date::choose::latest ) );
+        ++i;
+    }
+}
+
+
+BENCH( hinnant_to_sys_earliest_with_lookup, state ) {
+    auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tz = date::locate_zone( "America/New_York" );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            date::locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], date::choose::earliest ) );
+        ++i;
+    }
+}
+
+
 BENCH( vtz_to_local, state ) {
     auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
@@ -146,6 +182,41 @@ BENCH( vtz_to_sys_earliest, state ) {
     {
         benchmark::DoNotOptimize(
             tz->to_sys( tt[i % COUNT], vtz::choose::earliest ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_local_with_lookup, state ) {
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( vtz::locate_zone( "America/New_York" )->to_local( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_sys_latest_with_lookup, state ) {
+    auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            vtz::locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], vtz::choose::latest ) );
+        ++i;
+    }
+}
+
+
+BENCH( vtz_to_sys_earliest_with_lookup, state ) {
+    auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            vtz::locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], vtz::choose::earliest ) );
         ++i;
     }
 }
@@ -518,6 +589,50 @@ BENCH( chrono_to_sys_earliest, state ) {
     {
         benchmark::DoNotOptimize(
             tz->to_sys( tt[i % COUNT], choose::earliest ) );
+        ++i;
+    }
+}
+
+
+BENCH( chrono_to_local_with_lookup, state ) {
+    using std::chrono::locate_zone;
+    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( locate_zone( "America/New_York" )->to_local( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( chrono_to_sys_latest_with_lookup, state ) {
+    using std::chrono::choose;
+    using std::chrono::local_seconds;
+    using std::chrono::locate_zone;
+
+    auto tt = toChrono<local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], choose::latest ) );
+        ++i;
+    }
+}
+
+
+BENCH( chrono_to_sys_earliest_with_lookup, state ) {
+    using std::chrono::choose;
+    using std::chrono::local_seconds;
+    using std::chrono::locate_zone;
+
+    auto   tt = toChrono<local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], choose::earliest ) );
         ++i;
     }
 }
