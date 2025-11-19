@@ -43,7 +43,7 @@ namespace vtz {
     /// containing elements of the desired type
     template<class T, class... Args>
     std::unique_ptr<T[]> _init( Args&&... args ) {
-        return std::unique_ptr<T[]>{ new T[]{
+        return std::unique_ptr<T[]>{ new T[sizeof...(args)]{
             T( static_cast<Args&&>( args ) )... } };
     }
 

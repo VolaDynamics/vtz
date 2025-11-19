@@ -1008,7 +1008,7 @@ namespace vtz {
             return cursor;
         }
 
-        [[nodiscard]] constexpr RuleEntry const* pullNewlyActive(
+        [[nodiscard]] RuleEntry const* pullNewlyActive(
             vector<RuleEntry>& active,
             size_t             year,
             RuleEntry const*   begin,
@@ -1028,7 +1028,7 @@ namespace vtz {
             return initial;
         }
 
-        [[nodiscard]] constexpr size_t nextExpiryYear(
+        [[nodiscard]] size_t nextExpiryYear(
             vector<RuleEntry> const& active,
             size_t                   initialYear = -1 ) noexcept {
             return nextExpiryYear( active.data(), active.size(), initialYear );
