@@ -1,4 +1,6 @@
 
+#include <date/tz.h>
+
 #include <vtz/date_types.h>
 #include <vtz/files.h>
 #include <vtz/strings.h>
@@ -11,6 +13,7 @@
 #include <fmt/color.h>
 #include <fmt/format.h>
 
+#include <vtz/tz.h>
 #include "vtz_testing.h"
 #include <vtz/civil.h>
 
@@ -1113,4 +1116,13 @@ TEST( vtz_parser, zoneFormat ) {
     // Test %z with seconds
     ASSERT_EQ( zFmt.format( 3601, false, "" ).sv(), "+010001" );
     ASSERT_EQ( zFmt.format( -3661, false, "" ).sv(), "-010101" );
+}
+
+namespace vtz {
+    std::string _get_current_zone_name();
+} // namespace vtz
+
+TEST( vtz, current_zone ) {
+    ASSERT_EQ( _get_current_zone_name(), date::current_zone()->name() );
+    ASSERT_EQ( vtz::current_zone()->name(), date::current_zone()->name() );
 }

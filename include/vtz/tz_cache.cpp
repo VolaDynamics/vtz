@@ -158,8 +158,5 @@ namespace vtz {
         }
     }
 
-    time_zone const* current_zone() {
-        // TODO: get the current zone for the user
-        return locate_zone( "America/New_York" );
-    }
+
 } // namespace vtz
