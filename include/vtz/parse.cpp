@@ -302,7 +302,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     if( p < pEnd )
                     {
                         int weekday = *p++ - '0';
-                        if( weekday < 7 ) continue;
+                        if( 0 <= weekday && weekday < 7 ) continue;
                     }
                     throw ParseFail{ p - 1, "Expected weekday (range [0-6])" };
                 }
@@ -312,7 +312,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     if( p < pEnd )
                     {
                         int weekday = *p++ - '1';
-                        if( weekday < 7 ) continue;
+                        if( 0 <= weekday && weekday < 7 ) continue;
                     }
                     throw ParseFail{ p - 1, "Expected weekday (range [1-7])" };
                 }
