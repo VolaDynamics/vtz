@@ -1,6 +1,10 @@
+#include <atomic>
 #include <cerrno>
+#include <cstdlib>
 #include <fmt/format.h>
+#include <mutex>
 #include <stdexcept>
+#include <string_view>
 #include <vtz/files.h>
 #include <vtz/span.h>
 #include <vtz/tz.h>
@@ -211,8 +215,59 @@ namespace vtz {
     }
 
 
+    static time_zone const* _do_locate_current_zone() {
+        char const* currentZone = std::getenv( "VTZ_TZ" );
+        if( currentZone )
+        {
+            std::string name( currentZone );
+            return locate_zone( name );
+        }
+        return locate_zone( _get_current_zone_name() );
+    }
+
+
+    std::atomic<time_zone const*> CURRENT_ZONE = nullptr;
+    std::mutex                    CURRENT_ZONE_MUTEX{};
+
+
+    time_zone const* set_current_zone_for_application( string_view name ) {
+        time_zone const* tz = locate_zone( name );
+        CURRENT_ZONE.store( tz );
+        return tz;
+    }
+
+    time_zone const* reload_current_zone() {
+        auto tz = _do_locate_current_zone();
+        CURRENT_ZONE.store( tz );
+        return tz;
+    }
+
     time_zone const* current_zone() {
-        static time_zone const* _zone = locate_zone( _get_current_zone_name() );
-        return _zone;
+        if( auto ptr = CURRENT_ZONE.load() )
+        {
+            // Attempt to load the current zone. If successful, return current
+            // zone.
+            return ptr;
+        }
+
+        // We do this lock to avoid contention - we don't want a bunch of
+        // threads to try loading the zone for the first time, all at once.
+        // However, if somebody manually calls set_current_zone, we want to
+        // respect that.
+
+        std::scoped_lock _lock( CURRENT_ZONE_MUTEX );
+
+        auto             result   = _do_locate_current_zone();
+        time_zone const* expected = nullptr;
+        if( CURRENT_ZONE.compare_exchange_strong( expected, result ) )
+        {
+            // Return the zone we identified by lookup
+            return result;
+        }
+        else
+        {
+            // Someone else already filled in a zone - use that instead.
+            return expected;
+        }
     }
 } // namespace vtz

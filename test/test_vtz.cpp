@@ -1128,6 +1128,41 @@ TEST( vtz, current_zone ) {
 }
 
 
+TEST( vtz, reload_current_zone ) {
+    ASSERT_EQ( _get_current_zone_name(), date::current_zone()->name() );
+    auto* oldTZ = vtz::current_zone();
+    ASSERT_EQ( oldTZ->name(), date::current_zone()->name() );
+
+    std::string newZoneName = oldTZ->name() == "America/New_York"
+                                  ? std::string( "America/Denver" )    // Switch to America/Denver
+                                  : std::string( "America/New_York" ); // Switch to America/New_York
+
+    // Ensure that the new zone is different
+    ASSERT_NE( newZoneName, vtz::current_zone()->name() );
+
+    auto* newTZ = vtz::set_current_zone_for_application( newZoneName );
+
+    // check that the zone was updated
+    ASSERT_EQ( newTZ, vtz::current_zone() );
+
+    // Assert that the old zone is different than the new zone
+    ASSERT_NE( oldTZ, newTZ );
+
+    ASSERT_EQ( vtz::current_zone()->name(), newZoneName );
+
+    ASSERT_NE( vtz::current_zone()->name(), date::current_zone()->name() );
+
+    // Reload the current zone
+    vtz::reload_current_zone();
+    ASSERT_NE( newZoneName, vtz::current_zone()->name() );
+
+    ASSERT_EQ( vtz::current_zone()->name(), date::current_zone()->name() );
+
+    // Assert that the 'restored' current_zone is the same as before
+    ASSERT_EQ( oldTZ, vtz::current_zone() );
+}
+
+
 namespace vtz::win32 {
     string_view windowsZoneToNative( string_view windowsZone );
 } // namespace vtz::win32
