@@ -7,6 +7,49 @@
 
 #include <optional>
 
+namespace vtz::win32 {
+    using std::string_view;
+    constexpr size_t npos = string_view::npos;
+
+    string_view resolveNative( string_view data, string_view name ) {
+        std::string key;
+        key.reserve( name.size() + 2 );
+        key     += '"';
+        key     += name;
+        key     += '"';
+        auto p0  = data.find( key );
+        if( p0 == npos )
+        {
+            throw std::runtime_error( fmt::format(
+                "Unable to find '{}' within windowsZones.xml", key ) );
+        }
+        p0      += key.size();
+        auto p1  = data.find( "type=\"", p0 );
+        if( p1 == npos )
+        {
+            throw std::runtime_error( fmt::format(
+                "'{}' appeared in windowsZones.xml but the associated zone "
+                "could not be determined (expected 'type=\"')",
+                key ) );
+        }
+        p1 += 6;
+
+        // Take the zone name
+        string_view result = data.substr( p1 );
+        return result.substr( 0, result.find_first_of( "\" " ) );
+    }
+
+    std::string loadWindowsZones() {
+        return readFile( joinPath( get_install(), "windowsZones.xml" ) );
+    }
+
+    string_view windowsZoneToNative( string_view windowsZone ) {
+        static std::string windowsZones = loadWindowsZones();
+        return resolveNative( windowsZones, windowsZone );
+    }
+} // namespace vtz::win32
+
+
 #ifdef _WIN32
     #include <windows.h>
 
@@ -160,7 +203,8 @@ namespace vtz::unix {
 namespace vtz {
     std::string _get_current_zone_name() {
 #ifdef _WIN32
-        return win32::_get_current_timezone_name();
+        return std::string(
+            win32::windowsZoneToNative( win32::_get_current_timezone_name() ) );
 #else
         return unix::_readlink( "/etc/localtime", unix::_resolve_tzname );
 #endif
