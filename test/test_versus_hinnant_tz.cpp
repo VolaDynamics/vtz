@@ -16,9 +16,9 @@
 #include <vtz/tz.h>
 #include <vtz/tz_cache.h>
 
-#include "vtz_testing.h"
 #include "test_utils.h"
 #include "test_zones.h"
+#include "vtz_testing.h"
 
 #include <date/date.h>
 #include <date/tz.h>
@@ -26,8 +26,13 @@
 using namespace vtz;
 using _test_vtz::TEST_LOG;
 
+namespace {
+    int _do_set_install_hinnant = ( date::set_install( "build/data/tzdata" ), 0 );
+} // namespace
 
-static vector<sys_seconds> toSys( span<sysseconds_t> tt ) {
+static sys_seconds toSys( sysseconds_t t ) { return sys_seconds( seconds( t ) ); }
+
+static vector<sys_seconds> toSysVec( span<sysseconds_t> tt ) {
     vector<sys_seconds> result( tt.size() );
     for( size_t i = 0; i < tt.size(); ++i ) { result[i] = sys_seconds( seconds( tt[i] ) ); }
     return result;
@@ -46,8 +51,6 @@ STRUCT_INFO( vtz::local_info,
     FIELD( vtz::local_info, first ),
     FIELD( vtz::local_info, second ) );
 
-
-static sys_seconds toSys( sysseconds_t t ) { return sys_seconds( seconds( t ) ); }
 
 struct entry {
     string       abbr;
@@ -82,8 +85,8 @@ std::vector<entry> getEntries( string_view name, sys_seconds start, sys_seconds 
             info.abbrev,
             info.begin.time_since_epoch().count(),
             info.end.time_since_epoch().count(),
-            info.offset.count(),
-            info.save.count() * 60,
+            FromUTC( info.offset.count() ),
+            RuleSave( info.save.count() * 60 ),
         } );
         T = info.end;
     }
@@ -781,7 +784,7 @@ TEST( vtz, TimeZoneFuzz ) {
             zone,
             states.stdoffInitial_,
             states.stdoff_,
-            toSys( states.stdoffTrans_ ) );
+            toSysVec( states.stdoffTrans_ ) );
 
         for( date::sys_info const& info : zoneInfo )
         {
