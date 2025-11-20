@@ -36,6 +36,9 @@ if(PROJECT_IS_TOP_LEVEL)
         URI gh:HowardHinnant/date@3.0.4
         OPTIONS
             "BUILD_TZ_LIB ON"
+            # Don't perform any downloading; we will obtain the tzdb via cmake
+            # for testing purposes
+            "MANUAL_TZ_DB ON"
     )
     CPMAddPackage(
         URI gh:google/benchmark@1.9.4
@@ -97,6 +100,13 @@ if(PROJECT_IS_TOP_LEVEL)
             "${BUILD}/data/${tzdb_stem}"
             "${BUILD}/data/tzdata"
         SYMBOLIC
+    )
+
+    # This is required by the Hinnant date library, which is used for tests and bencmarks
+    file(
+        DOWNLOAD
+            "https://raw.githubusercontent.com/unicode-org/cldr/refs/heads/main/common/supplemental/windowsZones.xml"
+            "${BUILD}/data/tzdata/windowsZones.xml"
     )
 
     add_executable(test_vtz
