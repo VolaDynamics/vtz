@@ -125,7 +125,8 @@ if(PROJECT_IS_TOP_LEVEL)
         bench_vtz
         PRIVATE
             vtz::vtz
-            benchmark::benchmark_main
+            benchmark::benchmark
+            fmt::fmt
             date::date-tz
     )
 endif()

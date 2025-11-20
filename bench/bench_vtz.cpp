@@ -3,6 +3,7 @@
 #include <chrono>
 #include <date/date.h>
 #include <date/tz.h>
+#include <exception>
 #include <random>
 #include <vector>
 #include <vtz/civil.h>
@@ -118,7 +119,8 @@ BENCH( hinnant_to_local_with_lookup, state ) {
     size_t i  = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize( date::locate_zone( "America/New_York" )->to_local( tt[i % COUNT] ) );
+        benchmark::DoNotOptimize( date::locate_zone( "America/New_York" )
+                ->to_local( tt[i % COUNT] ) );
         ++i;
     }
 }
@@ -129,8 +131,8 @@ BENCH( hinnant_to_sys_latest_with_lookup, state ) {
     size_t i = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize(
-            date::locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], date::choose::latest ) );
+        benchmark::DoNotOptimize( date::locate_zone( "America/New_York" )
+                ->to_sys( tt[i % COUNT], date::choose::latest ) );
         ++i;
     }
 }
@@ -138,12 +140,11 @@ BENCH( hinnant_to_sys_latest_with_lookup, state ) {
 
 BENCH( hinnant_to_sys_earliest_with_lookup, state ) {
     auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
-    auto tz = date::locate_zone( "America/New_York" );
     size_t i = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize(
-            date::locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], date::choose::earliest ) );
+        benchmark::DoNotOptimize( date::locate_zone( "America/New_York" )
+                ->to_sys( tt[i % COUNT], date::choose::earliest ) );
         ++i;
     }
 }
@@ -192,7 +193,8 @@ BENCH( vtz_to_local_with_lookup, state ) {
     size_t i  = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize( vtz::locate_zone( "America/New_York" )->to_local( tt[i % COUNT] ) );
+        benchmark::DoNotOptimize(
+            vtz::locate_zone( "America/New_York" )->to_local( tt[i % COUNT] ) );
         ++i;
     }
 }
@@ -203,8 +205,8 @@ BENCH( vtz_to_sys_latest_with_lookup, state ) {
     size_t i = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize(
-            vtz::locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], vtz::choose::latest ) );
+        benchmark::DoNotOptimize( vtz::locate_zone( "America/New_York" )
+                ->to_sys( tt[i % COUNT], vtz::choose::latest ) );
         ++i;
     }
 }
@@ -215,8 +217,8 @@ BENCH( vtz_to_sys_earliest_with_lookup, state ) {
     size_t i = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize(
-            vtz::locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], vtz::choose::earliest ) );
+        benchmark::DoNotOptimize( vtz::locate_zone( "America/New_York" )
+                ->to_sys( tt[i % COUNT], vtz::choose::earliest ) );
         ++i;
     }
 }
@@ -600,7 +602,8 @@ BENCH( chrono_to_local_with_lookup, state ) {
     size_t i  = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize( locate_zone( "America/New_York" )->to_local( tt[i % COUNT] ) );
+        benchmark::DoNotOptimize(
+            locate_zone( "America/New_York" )->to_local( tt[i % COUNT] ) );
         ++i;
     }
 }
@@ -616,7 +619,8 @@ BENCH( chrono_to_sys_latest_with_lookup, state ) {
     size_t i = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize( locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], choose::latest ) );
+        benchmark::DoNotOptimize( locate_zone( "America/New_York" )
+                ->to_sys( tt[i % COUNT], choose::latest ) );
         ++i;
     }
 }
@@ -631,9 +635,34 @@ BENCH( chrono_to_sys_earliest_with_lookup, state ) {
     size_t i  = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize(
-            locate_zone( "America/New_York" )->to_sys( tt[i % COUNT], choose::earliest ) );
+        benchmark::DoNotOptimize( locate_zone( "America/New_York" )
+                ->to_sys( tt[i % COUNT], choose::earliest ) );
         ++i;
     }
 }
 #endif
+
+#include <fmt/core.h>
+int main( int argc, char** argv ) {
+    try
+    {
+        benchmark::Initialize( &argc, argv );
+        if( benchmark::ReportUnrecognizedArguments( argc, argv ) ) return 1;
+
+        vtz::set_install( "build/data/tzdata" );
+        date::set_install( "build/data/tzdata" );
+        benchmark::RunSpecifiedBenchmarks();
+        benchmark::Shutdown();
+        return 0;
+    }
+    catch( std::exception const& ex )
+    {
+        fmt::println( "Error: {}", ex.what() );
+        return 1;
+    }
+    catch( ... )
+    {
+        fmt::println( "Failed with unknown exception." );
+        return 1;
+    }
+}
