@@ -126,12 +126,12 @@ TEST( vtz, blog2 ) {
 
     auto rng       = std::mt19937_64();
     auto dist      = std::uniform_int_distribution<u64>( 0 );
-    auto shiftDist = std::uniform_int_distribution<int>( 0, 63 );
+    auto shift_dist = std::uniform_int_distribution<int>( 0, 63 );
 
     // Check random inputs
     for( int i = 0; i < 1000; ++i )
     {
-        u64 input = dist( rng ) >> shiftDist( rng );
+        u64 input = dist( rng ) >> shift_dist( rng );
         if( input == 0 ) continue;
         ADD_CONTEXT( "Test Input: ", input );
         ASSERT_EQ_QUIET( _blog2_fallback( input ), ref::blog2( input ) );

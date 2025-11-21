@@ -16,10 +16,10 @@
 
 namespace vtz::detail {
     /// Compute the amount of precision necessary to represent some duration
-    constexpr int getNecessaryPrecision(
-        bool isFloatingPoint, intmax_t num, intmax_t denom ) noexcept {
+    constexpr int get_necessary_precision(
+        bool is_floating_point, intmax_t num, intmax_t denom ) noexcept {
         // if it's floating-point, use max precision
-        if( isFloatingPoint ) return 9;
+        if( is_floating_point ) return 9;
 
         // if the numerator is divisible by the denominator, we can use 0 for
         // the precision
@@ -38,11 +38,11 @@ namespace vtz::detail {
     }
 
     template<class Duration>
-    constexpr int getNecessaryPrecision() {
+    constexpr int get_necessary_precision() {
         using rep    = typename Duration::rep;
         using period = typename Duration::period;
         // period::num is the numerator, period::den is the denominator
-        return getNecessaryPrecision(
+        return get_necessary_precision(
             std::is_floating_point<rep>(), period::num, period::den );
     }
 } // namespace vtz::detail
@@ -125,7 +125,7 @@ namespace vtz {
     // clang-format off
 
     /// Get the number of seconds since the epoch
-    VTZ_INLINE constexpr sec_t ns_to_s( nanos_t ns ) noexcept { return vtz::math::divFloor<1000000000>( ns ); }
+    VTZ_INLINE constexpr sec_t ns_to_s( nanos_t ns ) noexcept { return vtz::math::div_floor<1000000000>( ns ); }
     VTZ_INLINE constexpr nanos_t s_to_ns( sec_t s ) noexcept { return s * 1000000000; }
 
     // clang-format on
@@ -163,12 +163,12 @@ namespace vtz {
             rhs      = tmp;
         }
 
-        constexpr u64 blockSize() const noexcept { return u64( 1 ) << g; }
-        constexpr i64 blockStartT( i64 t ) const noexcept {
+        constexpr u64 block_size() const noexcept { return u64( 1 ) << g; }
+        constexpr i64 block_start_t( i64 t ) const noexcept {
             return i64( ( u64( t ) >> g ) << g );
         }
-        constexpr i64 blockEndT( i64 t ) const noexcept {
-            return i64( u64( blockStartT( t ) ) + blockSize() );
+        constexpr i64 block_end_t( i64 t ) const noexcept {
+            return i64( u64( block_start_t( t ) ) + block_size() );
         }
 
         /// Return the first value in the table
@@ -177,7 +177,7 @@ namespace vtz {
             return i64( block << 32 ) >> 32;
         }
 
-        VTZ_INLINE constexpr Entry firstEntry() const noexcept {
+        VTZ_INLINE constexpr Entry first_entry() const noexcept {
             return Entry{ *data_tt(), *data_bb() };
         }
 
@@ -195,16 +195,16 @@ namespace vtz {
         /// 64 bits.
         VTZ_INLINE constexpr i64 lookup( i64 t ) const noexcept {
             i64  i        = t >> g;
-            bool selectLo = t < tt[i];
+            bool select_lo = t < tt[i];
             u64  block    = bb[i];
-            return i64( block << ( int( selectLo ) << 5 ) ) >> 32;
+            return i64( block << ( int( select_lo ) << 5 ) ) >> 32;
         }
 
-        VTZ_INLINE constexpr u32 lookupU32( i64 t ) const noexcept {
+        VTZ_INLINE constexpr u32 lookup_u32( i64 t ) const noexcept {
             i64  i        = t >> g;
-            bool selectHi = t >= tt[i];
+            bool select_hi = t >= tt[i];
             u64  block    = bb[i];
-            return u32( block >> ( int( selectHi ) << 5 ) );
+            return u32( block >> ( int( select_hi ) << 5 ) );
         }
     };
 
@@ -239,7 +239,7 @@ namespace vtz {
         using Base::get;
         using Base::initial;
         using Base::lookup;
-        using Base::lookupU32;
+        using Base::lookup_u32;
 
         VTZ_INLINE S32TableView view() const noexcept { return *this; }
 
@@ -263,7 +263,7 @@ namespace vtz {
 
     /// Takes a `t` that is out of range, and converts it to a `t` that
     /// is in-range of the lookup table, such that the result of functions
-    /// like `offsetFromUTC` will be the same.
+    /// like `offset_from_utc` will be the same.
     ///
     /// A Proleptic Civil Calendar follows a 400 year cycle.
     ///
@@ -279,69 +279,69 @@ namespace vtz {
     /// will _also_ be the same in 400 years, at least based on all
     /// the rules currently supported by the timezone database source
     /// files.
-    constexpr sec_t getCyclic( sec_t t, sec_t cycleTime ) noexcept {
+    constexpr sec_t get_cyclic( sec_t t, sec_t cycle_time ) noexcept {
         // 12622780800 is the number of seconds in 400 years.
         //
         // There are _always_ 97 leap days in _any_ given 400 year period
         // within the civil calendar, so the number of seconds in 400 years
         // is given by (365 * 400 + 97) * 24 * 3600, which is 12622780800
-        return ( ( t - cycleTime ) % 12622780800 ) + cycleTime;
+        return ( ( t - cycle_time ) % 12622780800 ) + cycle_time;
     }
 
 
     struct OffTables {
         u64      tz0_;
-        u64      tzMax_;
+        u64      tz_max_;
         S32Table TTutc;
-        sec_t    cycleTime;
+        sec_t    cycle_time;
 
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t offset_s( sec_t t ) const noexcept {
             // If the time is in-bounds, use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
                 return TTutc.lookup( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return TTutc.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return TTutc.lookup( getCyclic( t, cycleTime ) );
+            return TTutc.lookup( get_cyclic( t, cycle_time ) );
         }
 
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t to_local_s( sec_t t ) const noexcept {
             // If the time is in-bounds we can use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
                 return t + TTutc.lookup( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return t + TTutc.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return t + TTutc.lookup( getCyclic( t, cycleTime ) );
+            return t + TTutc.lookup( get_cyclic( t, cycle_time ) );
         }
 
         VTZ_INLINE nanos_t to_local_ns( nanos_t ns ) const noexcept {
-            auto parts = math::divFloor2<1000000000>( ns );
+            auto parts = math::div_floor2<1000000000>( ns );
             return 1000000000 * to_local_s( parts.quot ) + parts.rem;
         }
 
-        template<bool chooseLatest>
-        VTZ_INLINE sec_t _lookupUTC( sec_t tKey, sec_t t ) const noexcept {
-            auto ent = TTutc.get( tKey );
+        template<bool choose_latest>
+        VTZ_INLINE sec_t _lookup_utc( sec_t t_key, sec_t t ) const noexcept {
+            auto ent = TTutc.get( t_key );
             /// offset from UTC before transition time
-            i64 offPre = ent.lo();
+            i64 off_pre = ent.lo();
             /// offset from UTC on or after transition time
-            i64  offPost = ent.hi();
-            auto when1   = ent.t + offPre;  // eg, 2AM when DST starts
-            auto when2   = ent.t + offPost; // 3am (we saved 1 hour)
-            auto when    = chooseLatest ? when2 : when1;
-            if( offPost <= offPre )
+            i64  off_post = ent.hi();
+            auto when1    = ent.t + off_pre;  // eg, 2AM when DST starts
+            auto when2    = ent.t + off_post; // 3am (we saved 1 hour)
+            auto when     = choose_latest ? when2 : when1;
+            if( off_post <= off_pre )
             {
                 // if latest, select when2, otherwise, select when1
-                auto off = tKey < when ? offPre : offPost;
+                auto off = t_key < when ? off_pre : off_post;
                 return t - off;
             }
             else
@@ -350,24 +350,24 @@ namespace vtz {
                 // otherwise moving the clocks forward). In this case, there
                 // is some chance that we have a nonexistant local time.
 
-                if( tKey >= when2 ) return t - offPost;
-                if( tKey <= when1 ) return t - offPre;
+                if( t_key >= when2 ) return t - off_post;
+                if( t_key <= when1 ) return t - off_pre;
                 // Times between 'when1' and 'when2' are nonexistant.
                 // All of them refer to the same timestamp
-                return ent.t + ( t - tKey );
+                return ent.t + ( t - t_key );
             }
         }
 
-        int _lookupLocal(
-            sec_t tKey, sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
-            auto ent = TTutc.get( tKey );
+        int _lookup_local(
+            sec_t t_key, sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
+            auto ent = TTutc.get( t_key );
             /// offset from UTC before transition time
-            i64 offPre = ent.lo();
+            i64 off_pre = ent.lo();
             /// offset from UTC on or after transition time
-            i64  offPost = ent.hi();
-            auto when1   = ent.t + offPre;  // eg, 2AM when DST starts
-            auto when2   = ent.t + offPost; // 3am (we saved 1 hour)
-            if( offPost <= offPre )
+            i64  off_post = ent.hi();
+            auto when1    = ent.t + off_pre;  // eg, 2AM when DST starts
+            auto when2    = ent.t + off_post; // 3am (we saved 1 hour)
+            if( off_post <= off_pre )
             {
                 // Let's take the end of daylight savings time in
                 // America/New_York as an example.
@@ -376,27 +376,27 @@ namespace vtz {
                 // back an hour to 1:00 am, and the offset goes from UTC-04 to
                 // UTC-05
 
-                // `offPost <= offPre`
-                // -> `ent.t + offPost <= ent.t + offPre`
+                // `off_post <= off_pre`
+                // -> `ent.t + off_post <= ent.t + off_pre`
                 // -> `when2 <= when1`
                 //
                 // This case occurs if we're dealing with ambiguous times.
 
-                if( when1 <= tKey ) // eg, the key is 2AM or after
+                if( when1 <= t_key ) // eg, the key is 2AM or after
                 {
                     // We're past the time we could be ambiguous
-                    result[0] = result[1] = t - offPost;
+                    result[0] = result[1] = t - off_post;
                     return local_info::unique;
                 }
-                if( tKey < when2 )
+                if( t_key < when2 )
                 {
                     // eg, the key is before 1am
-                    result[0] = result[1] = t - offPre;
+                    result[0] = result[1] = t - off_pre;
                     return local_info::unique;
                 }
                 // The result is ambiguous
-                result[0] = t - offPre;  // earliest possible time
-                result[1] = t - offPost; // latest possible time
+                result[0] = t - off_pre;  // earliest possible time
+                result[1] = t - off_post; // latest possible time
                 return local_info::ambiguous;
             }
             else
@@ -405,58 +405,59 @@ namespace vtz {
                 // otherwise moving the clocks forward). In this case, there
                 // is some chance that we have a nonexistant local time.
 
-                if( tKey >= when2 )
+                if( t_key >= when2 )
                 { // eg, local time is 3am or after
-                    result[0] = result[1] = t - offPost;
+                    result[0] = result[1] = t - off_post;
                     return local_info::unique;
                 }
-                if( tKey < when1 )
+                if( t_key < when1 )
                 { // eg, local time is before 2am
-                    result[0] = result[1] = t - offPre;
+                    result[0] = result[1] = t - off_pre;
                     return local_info::unique;
                 }
 
                 // Time was nonexistant.
-                sysseconds_t jumpTime
-                    = ent.t + ( t - tKey ); // Time at which jump occurred (eg,
-                                            // 3am (since 2am is nonexistent))
+                sysseconds_t jump_time
+                    = ent.t + ( t - t_key ); // Time at which jump occurred (eg,
+                                             // 3am (since 2am is nonexistent))
 
-                result[0] = jumpTime - 1;   // Time right before jump
-                result[1] = jumpTime;       // Time at jump
+                result[0] = jump_time - 1;   // Time right before jump
+                result[1] = jump_time;       // Time at jump
                 return local_info::nonexistant;
             }
         }
 
-        int lookupLocal( sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
+        int lookup_local(
+            sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
             // If the time is in-bounds, we can use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
-                return _lookupLocal( t, t, result );
+            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+                return _lookup_local( t, t, result );
 
             // t is _early_: this means it occurs before any timezone
             // transitions.
             if( t < 0 )
             {
-                sysseconds_t utcTime = t - TTutc.initial();
-                result[0] = result[1] = utcTime;
+                sysseconds_t utc_time = t - TTutc.initial();
+                result[0] = result[1] = utc_time;
                 return local_info::unique;
             }
 
             // use zone symmetry to compute state for equivalent time
-            return _lookupLocal( getCyclic( t, cycleTime ), t, result );
+            return _lookup_local( get_cyclic( t, cycle_time ), t, result );
         }
 
 
-        template<bool chooseLatest>
-        sec_t _toUTC( sec_t t ) const noexcept {
+        template<bool choose_latest>
+        sec_t _to_utc( sec_t t ) const noexcept {
             // If the time is in-bounds, we can use the lookup table
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
-                return _lookupUTC<chooseLatest>( t, t );
+            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+                return _lookup_utc<choose_latest>( t, t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return t - TTutc.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return _lookupUTC<chooseLatest>( getCyclic( t, cycleTime ), t );
+            return _lookup_utc<choose_latest>( get_cyclic( t, cycle_time ), t );
         }
 
         /// Returns the UTC time represented by a given input local time.
@@ -500,26 +501,26 @@ namespace vtz {
             if( which == choose::earliest )
             {
                 // Return earliest UTC time this could refer to
-                return _toUTC<false>( t );
+                return _to_utc<false>( t );
             }
             else
             {
                 // Return latest UTC time this could refer to
-                return _toUTC<true>( t );
+                return _to_utc<true>( t );
             }
         }
 
         VTZ_INLINE nanos_t to_sys_ns( nanos_t t, choose which ) const noexcept {
-            auto parts = math::divFloor2<1000000000>( t );
+            auto parts = math::div_floor2<1000000000>( t );
             if( which == choose::earliest )
             {
                 // Return earliest UTC time this could refer to
-                return 1000000000 * _toUTC<false>( parts.quot ) + parts.rem;
+                return 1000000000 * _to_utc<false>( parts.quot ) + parts.rem;
             }
             else
             {
                 // Return latest UTC time this could refer to
-                return 1000000000 * _toUTC<true>( parts.quot ) + parts.rem;
+                return 1000000000 * _to_utc<true>( parts.quot ) + parts.rem;
             }
         }
 
@@ -528,9 +529,9 @@ namespace vtz {
 
     struct TransTable {
         u64      tz0_;
-        u64      tzMax_;
-        S32Table ttIndex;
-        sec_t    cycleTime;
+        u64      tz_max_;
+        S32Table tt_index;
+        sec_t    cycle_time;
 
         std::unique_ptr<sysseconds_t[]> when;
 
@@ -540,12 +541,12 @@ namespace vtz {
         };
 
         VTZ_INLINE Range sys_range_s( sysseconds_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
                 return sys_range_impl( t );
 
             if( t < 0 ) { return Range{ when[0], when[1] }; }
 
-            auto t2    = getCyclic( t, cycleTime );
+            auto t2    = get_cyclic( t, cycle_time );
             auto r     = sys_range_impl( t2 );
             auto delta = t - t2;
             return {
@@ -557,48 +558,48 @@ namespace vtz {
       private:
 
         VTZ_INLINE Range sys_range_impl( sysseconds_t t ) const noexcept {
-            auto i = ttIndex.lookup( t );
+            auto i = tt_index.lookup( t );
             return { when[i], when[i + 1] };
         }
     };
 
     struct StdoffTable {
-        sysseconds_t tMin;
-        sysseconds_t tMax;
+        sysseconds_t t_min;
+        sysseconds_t t_max;
         S32Table     stdoff;
 
         VTZ_INLINE i32 stdoff_s( sysseconds_t t ) const noexcept {
-            if( t < tMin ) t = tMin;
-            if( t > tMax ) t = tMax;
+            if( t < t_min ) t = t_min;
+            if( t > t_max ) t = t_max;
             return stdoff.lookup( t );
         }
     };
 
     struct AbbrTable {
         u64 tz0_;
-        u64 tzMax_;
+        u64 tz_max_;
 
         S32Table abbr;
-        sec_t    cycleTime;
+        sec_t    cycle_time;
 
-        std::unique_ptr<ZoneAbbr[]> abbrTable;
+        std::unique_ptr<ZoneAbbr[]> abbr_table;
 
         u32 abbr_block_s( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
                 return abbr.lookup( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return abbr.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return abbr.lookup( getCyclic( t, cycleTime ) );
+            return abbr.lookup( get_cyclic( t, cycle_time ) );
         }
 
         /// Writes up to 7 characters, representing the abbreviation
         size_t abbrev_to_s( sec_t t, char* p ) const noexcept {
             auto        block = abbr_block_s( t );
             size_t      size  = block & 0xf;
-            char const* data  = abbrTable[block >> 4].buff_;
+            char const* data  = abbr_table[block >> 4].buff_;
             _vtz_memcpy( p, data, size );
             return size;
         }
@@ -606,39 +607,40 @@ namespace vtz {
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
         string_view abbrev_s( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
-                return abbrFromBlock( abbr.lookup( t ) );
+            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+                return abbr_from_block( abbr.lookup( t ) );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return abbrFromBlock( abbr.initial() );
+            if( t < 0 ) return abbr_from_block( abbr.initial() );
 
             // use zone symmetry to compute state for equivalent time
-            return abbrFromBlock( abbr.lookup( getCyclic( t, cycleTime ) ) );
+            return abbr_from_block(
+                abbr.lookup( get_cyclic( t, cycle_time ) ) );
         }
 
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
         string abbrev_string_s( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tzMax_ ) [[likely]]
-                return abbrStringFromBlock( abbr.lookup( t ) );
+            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+                return abbr_string_from_block( abbr.lookup( t ) );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return abbrStringFromBlock( abbr.initial() );
+            if( t < 0 ) return abbr_string_from_block( abbr.initial() );
 
             // use zone symmetry to compute state for equivalent time
-            return abbrStringFromBlock(
-                abbr.lookup( getCyclic( t, cycleTime ) ) );
+            return abbr_string_from_block(
+                abbr.lookup( get_cyclic( t, cycle_time ) ) );
         }
 
-        string_view abbrFromBlock( u32 block ) const noexcept {
+        string_view abbr_from_block( u32 block ) const noexcept {
             size_t      size = block & 0xf;
-            char const* data = abbrTable[block >> 4].buff_;
+            char const* data = abbr_table[block >> 4].buff_;
             return string_view( data, size );
         }
 
-        std::string abbrStringFromBlock( u32 block ) const noexcept {
+        std::string abbr_string_from_block( u32 block ) const noexcept {
             size_t      size = block & 0xf;
-            char const* data = abbrTable[block >> 4].buff_;
+            char const* data = abbr_table[block >> 4].buff_;
             return std::string( data, size );
         }
     };
@@ -693,7 +695,7 @@ namespace vtz {
             sys_seconds t2 = std::chrono::floor<seconds>( t );
 
             // This is the local time (with the unit being seconds)
-            local_seconds localT
+            local_seconds local_t
                 = _local( to_local_s( t2.time_since_epoch().count() ) );
 
             // if t2 is less precise than t, we chopped off some unit of time
@@ -702,7 +704,7 @@ namespace vtz {
             // We need to add it back.
             auto delta = t - t2;
 
-            return localT + delta;
+            return local_t + delta;
         }
 
         /// Convert the given time (local seconds) to UTC
@@ -714,7 +716,7 @@ namespace vtz {
 
             // This is the corresponding system time (with the unit being in
             // seconds)
-            sys_seconds sysT
+            sys_seconds sys_t
                 = _sys( to_sys_s( t.time_since_epoch().count(), z ) );
 
             // if t2 is less precise than t, we chopped off some unit of time
@@ -723,7 +725,7 @@ namespace vtz {
             // We need to add it back.
             auto delta = t - t2;
 
-            return sysT + delta;
+            return sys_t + delta;
         }
 
         sys_info get_info_sys_s( sysseconds_t t ) const {
@@ -744,7 +746,7 @@ namespace vtz {
 
         local_info get_info_local_s( sec_t t ) const {
             sysseconds_t tt[2];
-            int          result = lookupLocal( t, tt );
+            int          result = lookup_local( t, tt );
             if( result == local_info::unique )
             {
                 return local_info{
@@ -762,12 +764,12 @@ namespace vtz {
 
         template<class Dur>
         local_info get_info( local_time<Dur> input ) const {
-            return get_info_local_s( _rawTime( input ) );
+            return get_info_local_s( _raw_time( input ) );
         }
 
         template<class Dur>
         sys_info get_info( sys_time<Dur> input ) const {
-            return get_info_sys_s( _rawTime( input ) );
+            return get_info_sys_s( _raw_time( input ) );
         }
 
         /// Returns a number [0,86400) representing the current time of day
@@ -779,13 +781,13 @@ namespace vtz {
         /// Returns the date of the given systime, as number of days since the
         /// epoch
         i64 local_date_s( sysseconds_t t ) const noexcept {
-            return math::divFloor<86400>( to_local_s( t ) );
+            return math::div_floor<86400>( to_local_s( t ) );
         }
 
         /// Given nanoseconds since the epoch, return the current date (as days
         /// since the epoch)
         i64 local_date_ns( nanos_t nanos ) const noexcept {
-            return math::divFloor<86400000000000>( to_local_ns( nanos ) );
+            return math::div_floor<86400000000000>( to_local_ns( nanos ) );
         }
 
         template<class Dur>
@@ -809,33 +811,33 @@ namespace vtz {
 
 
         /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        size_t format_to_s( sysseconds_t t, char* buff, size_t count, char dateSep = '-', char dateTimeSep = ' ', char abbrevSep = ' ' ) const noexcept;
+        size_t format_to_s( sysseconds_t t, char* buff, size_t count, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const noexcept;
         /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        size_t format_to(   sys_seconds  t, char* buff, size_t count, char dateSep = '-', char dateTimeSep = ' ', char abbrevSep = ' ' ) const { return format_to_s( t.time_since_epoch().count(), buff, count, dateSep, dateTimeSep, abbrevSep ); }
+        size_t format_to(   sys_seconds  t, char* buff, size_t count, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_to_s( t.time_since_epoch().count(), buff, count, date_sep, date_time_sep, abbrev_sep ); }
         /// Formats as `%Y-%m-%d HH:MM:SS %Z`. Example: `2025-11-06 17:50:00 EST`
-        string format_s(    sysseconds_t t, char dateSep = '-', char dateTimeSep = ' ', char abbrevSep = ' ' ) const;
+        string format_s(    sysseconds_t t, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const;
         /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`
-        string format(      sys_seconds  t, char dateSep = '-', char dateTimeSep = ' ', char abbrevSep = ' ' ) const { return format_s( t.time_since_epoch().count(), dateSep, dateTimeSep, abbrevSep ); }
+        string format(      sys_seconds  t, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_s( t.time_since_epoch().count(), date_sep, date_time_sep, abbrev_sep ); }
 
 
         /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        size_t format_compact_to_s( sysseconds_t t, char* p, size_t count, char dateTimeSep = ' ', char abbrevSep = ' ' ) const noexcept;
+        size_t format_compact_to_s( sysseconds_t t, char* p, size_t count, char date_time_sep = ' ', char abbrev_sep = ' ' ) const noexcept;
         /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        size_t format_compact_to(   sys_seconds  t, char* p, size_t count, char dateTimeSep = ' ', char abbrevSep = ' ' ) const { return format_compact_to_s( t.time_since_epoch().count(), p, count, dateTimeSep, abbrevSep ); }
+        size_t format_compact_to(   sys_seconds  t, char* p, size_t count, char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_compact_to_s( t.time_since_epoch().count(), p, count, date_time_sep, abbrev_sep ); }
         /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        string format_compact_s(    sysseconds_t t, char dateTimeSep = ' ', char abbrevSep = ' ' ) const;
+        string format_compact_s(    sysseconds_t t, char date_time_sep = ' ', char abbrev_sep = ' ' ) const;
         /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        string format_compact(      sys_seconds  t, char dateTimeSep = ' ', char abbrevSep = ' ' ) const { return format_compact_s( t.time_since_epoch().count(), dateTimeSep, abbrevSep ); }
+        string format_compact(      sys_seconds  t, char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_compact_s( t.time_since_epoch().count(), date_time_sep, abbrev_sep ); }
 
 
-        /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
-        size_t format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char dateSep = '-', char dateTimeSep = 'T' ) const noexcept;
-        /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
-        size_t format_iso8601_to(   sys_seconds  t, char* buff, size_t count, char dateSep = '-', char dateTimeSep = 'T' ) const { return format_iso8601_to_s( t.time_since_epoch().count(), buff, count, dateSep, dateTimeSep );}
-        /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
-        string format_iso8601_s(    sysseconds_t t, char dateSep = '-', char dateTimeSep = 'T' ) const;
-        /// Formats as `%Y-%m-%d[dateTimeSep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
-        string format_iso8601(      sys_seconds  t, char dateSep = '-', char dateTimeSep = 'T' ) const { return format_iso8601_s( t.time_since_epoch().count(), dateSep, dateTimeSep );}
+        /// Formats as `%Y-%m-%d[date_time_sep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
+        size_t format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char date_sep = '-', char date_time_sep = 'T' ) const noexcept;
+        /// Formats as `%Y-%m-%d[date_time_sep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
+        size_t format_iso8601_to(   sys_seconds  t, char* buff, size_t count, char date_sep = '-', char date_time_sep = 'T' ) const { return format_iso8601_to_s( t.time_since_epoch().count(), buff, count, date_sep, date_time_sep );}
+        /// Formats as `%Y-%m-%d[date_time_sep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
+        string format_iso8601_s(    sysseconds_t t, char date_sep = '-', char date_time_sep = 'T' ) const;
+        /// Formats as `%Y-%m-%d[date_time_sep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
+        string format_iso8601(      sys_seconds  t, char date_sep = '-', char date_time_sep = 'T' ) const { return format_iso8601_s( t.time_since_epoch().count(), date_sep, date_time_sep );}
 
 
         /// Formats a time (expressed as seconds and nanoseconds) to the given buffer.
@@ -884,7 +886,7 @@ namespace vtz {
         /// represent the input time.
         template<class Dur>
         size_t format_to( string_view format, sys_time<Dur> t, char* buff, size_t count ) const {
-            constexpr int prec = detail::getNecessaryPrecision<Dur>();
+            constexpr int prec = detail::get_necessary_precision<Dur>();
 
             // If the required amount of precision is 0, format w/ seconds.
             // Otherwise, compute the necessary amount of precision, and format
@@ -907,7 +909,7 @@ namespace vtz {
         /// represent the input time.
         template<class Dur>
         string format( string_view format, sys_time<Dur> t ) const {
-            constexpr int prec = detail::getNecessaryPrecision<Dur>();
+            constexpr int prec = detail::get_necessary_precision<Dur>();
 
             if constexpr( prec == 0 )
             {
@@ -928,18 +930,18 @@ namespace vtz {
 
       private:
 
-        static sec_t _rawTime( local_seconds s ) {
+        static sec_t _raw_time( local_seconds s ) {
             return s.time_since_epoch().count();
         }
-        static sec_t _rawTime( sys_seconds s ) {
+        static sec_t _raw_time( sys_seconds s ) {
             return s.time_since_epoch().count();
         }
         template<class Dur>
-        static sec_t _rawTime( local_time<Dur> s ) {
+        static sec_t _raw_time( local_time<Dur> s ) {
             return std::chrono::floor<seconds>( s ).time_since_epoch().count();
         }
         template<class Dur>
-        static sec_t _rawTime( sys_time<Dur> s ) {
+        static sec_t _raw_time( sys_time<Dur> s ) {
             return std::chrono::floor<seconds>( s ).time_since_epoch().count();
         }
 
@@ -972,12 +974,12 @@ namespace vtz {
     /// Parse a date
     ///
     /// format specifier describes layout of a date (eg, "%Y-%m-%d")
-    sysdays_t parse_date_d( string_view fmt, string_view dateStr );
+    sysdays_t parse_date_d( string_view fmt, string_view date_str );
 
     /// Parse a time.
     ///
     /// Format specifier describes layout of time (eg, "%Y-%m-%d %H:%M:%S")
-    sec_t parse_time_s( string_view fmt, string_view timeStr );
+    sec_t parse_time_s( string_view fmt, string_view time_str );
 
     /// Parse a time with nanosecond precision
     ///
@@ -988,7 +990,7 @@ namespace vtz {
     ///
     /// Eg, 2025-11-14 09:30:05.3948, this is interpreted as 394,800,000
     /// nanoseconds after 2025-11-14 09:30:05
-    nanos_t parse_time_ns( string_view fmt, string_view timeStr );
+    nanos_t parse_time_ns( string_view fmt, string_view time_str );
 
 
     using time_zone = TimeZone;

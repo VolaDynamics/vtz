@@ -25,13 +25,13 @@
 
 using namespace vtz;
 
-TEST( vtz, formatTime ) {
+TEST( vtz, format_time ) {
     COUNT_ASSERTIONS();
 
-    auto fmtH = []( date::time_zone const* tz, sys_seconds s, char const* format ) {
+    auto fmt_h = []( date::time_zone const* tz, sys_seconds s, char const* format ) {
         return date::format( format, date::make_zoned( tz, s ) );
     };
-    auto fmtVTZ = []( vtz::time_zone const* tz, sys_seconds s, char const* format ) {
+    auto fmt_vtz = []( vtz::time_zone const* tz, sys_seconds s, char const* format ) {
         return tz->format( format, s );
     };
 
@@ -44,29 +44,29 @@ TEST( vtz, formatTime ) {
         auto De_V = vtz::locate_zone( "America/Denver" );
 
         // Check that America/New_York matches
-        ASSERT_EQ( fmtH( NY_H, T, "%Y%m%d %H:%M:%S-%Z" ), "20251106 10:24:45-EST" );
-        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%S-%Z" ), "20251106 10:24:45-EST" );
+        ASSERT_EQ( fmt_h( NY_H, T, "%Y%m%d %H:%M:%S-%Z" ), "20251106 10:24:45-EST" );
+        ASSERT_EQ( fmt_vtz( NY_V, T, "%Y%m%d %H:%M:%S-%Z" ), "20251106 10:24:45-EST" );
 
         // Check that America/Denver matches
-        ASSERT_EQ( fmtH( De_H, T, "%Y%m%d %H:%M:%S-%Z" ), "20251106 08:24:45-MST" );
-        ASSERT_EQ( fmtVTZ( De_V, T, "%Y%m%d %H:%M:%S-%Z" ), "20251106 08:24:45-MST" );
+        ASSERT_EQ( fmt_h( De_H, T, "%Y%m%d %H:%M:%S-%Z" ), "20251106 08:24:45-MST" );
+        ASSERT_EQ( fmt_vtz( De_V, T, "%Y%m%d %H:%M:%S-%Z" ), "20251106 08:24:45-MST" );
 
         // Check some other formats
-        ASSERT_EQ( fmtVTZ( NY_V, T, "%y%m%d %H:%M:%S-%Z" ), "251106 10:24:45-EST" );
-        ASSERT_EQ( fmtVTZ( De_V, T, "%y%m%d %H:%M:%S-%Z" ), "251106 08:24:45-MST" );
+        ASSERT_EQ( fmt_vtz( NY_V, T, "%y%m%d %H:%M:%S-%Z" ), "251106 10:24:45-EST" );
+        ASSERT_EQ( fmt_vtz( De_V, T, "%y%m%d %H:%M:%S-%Z" ), "251106 08:24:45-MST" );
 
-        ASSERT_EQ( fmtVTZ( NY_V, T, "%F %T %Z" ), "2025-11-06 10:24:45 EST" );
-        ASSERT_EQ( fmtVTZ( De_V, T, "%F %T %Z" ), "2025-11-06 08:24:45 MST" );
+        ASSERT_EQ( fmt_vtz( NY_V, T, "%F %T %Z" ), "2025-11-06 10:24:45 EST" );
+        ASSERT_EQ( fmt_vtz( De_V, T, "%F %T %Z" ), "2025-11-06 08:24:45 MST" );
 
-        ASSERT_EQ( fmtVTZ( NY_V, T, "%D %T %Z" ), "11/06/25 10:24:45 EST" );
-        ASSERT_EQ( fmtVTZ( De_V, T, "%D %T %Z" ), "11/06/25 08:24:45 MST" );
+        ASSERT_EQ( fmt_vtz( NY_V, T, "%D %T %Z" ), "11/06/25 10:24:45 EST" );
+        ASSERT_EQ( fmt_vtz( De_V, T, "%D %T %Z" ), "11/06/25 08:24:45 MST" );
 
         // Check the case that the string does NOT end in a format specifier (ensure the last
         // character is copied)
-        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%S-%Zx" ), "20251106 10:24:45-ESTx" );
-        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%S-%Zxyz" ), "20251106 10:24:45-ESTxyz" );
-        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%Sx" ), "20251106 10:24:45x" );
-        ASSERT_EQ( fmtVTZ( NY_V, T, "%Y%m%d %H:%M:%Sxyz" ), "20251106 10:24:45xyz" );
+        ASSERT_EQ( fmt_vtz( NY_V, T, "%Y%m%d %H:%M:%S-%Zx" ), "20251106 10:24:45-ESTx" );
+        ASSERT_EQ( fmt_vtz( NY_V, T, "%Y%m%d %H:%M:%S-%Zxyz" ), "20251106 10:24:45-ESTxyz" );
+        ASSERT_EQ( fmt_vtz( NY_V, T, "%Y%m%d %H:%M:%Sx" ), "20251106 10:24:45x" );
+        ASSERT_EQ( fmt_vtz( NY_V, T, "%Y%m%d %H:%M:%Sxyz" ), "20251106 10:24:45xyz" );
 
         ASSERT_EQ( NY_V->format( T ), "2025-11-06 10:24:45 EST" );
 
@@ -76,7 +76,7 @@ TEST( vtz, formatTime ) {
         using millis   = std::chrono::milliseconds;
         using micros   = std::chrono::microseconds;
         using nanos    = std::chrono::nanoseconds;
-        using secondsR = std::chrono::duration<double>;
+        using seconds_r = std::chrono::duration<double>;
         using std::chrono::hours;
         using std::chrono::minutes;
 
@@ -99,7 +99,7 @@ TEST( vtz, formatTime ) {
             NY_V->format( "%F %T %Z", T + nanos( 3295 ) ), "2025-11-06 10:24:45.000003295 EST" );
 
         // Using floating-point for the duration always results in 9 digits of precision
-        ASSERT_EQ( NY_V->format( "%F %T %Z", T + secondsR( 0.375 ) ),
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T + seconds_r( 0.375 ) ),
             "2025-11-06 10:24:45.375000000 EST" );
 
         // We can request that a given quantity of precision always be used
@@ -108,7 +108,7 @@ TEST( vtz, formatTime ) {
             NY_V->format_precise( "%F %T %Z", T + _25th( 3 ), 3 ), "2025-11-06 10:24:45.120 EST" );
         ASSERT_EQ( NY_V->format_precise( "%F %T %Z", T + micros( 3295 ), 3 ),
             "2025-11-06 10:24:45.003 EST" );
-        ASSERT_EQ( NY_V->format_precise( "%F %T %Z", T + secondsR( 0.375 ), 3 ),
+        ASSERT_EQ( NY_V->format_precise( "%F %T %Z", T + seconds_r( 0.375 ), 3 ),
             "2025-11-06 10:24:45.375 EST" );
 
         ASSERT_EQ( NY_V->format_precise_s( "%F %T %Z", t, 987654321, 9 ),
@@ -159,42 +159,42 @@ TEST( vtz, formatTime ) {
 
         auto T_NY_lmt  = sys_seconds( seconds( _ct( 1883, 11, 18, 16, 59, 59 ) ) );
         auto T_NY_rail = T_NY_lmt + seconds( 1 );
-        ASSERT_EQ( "zoneoff: -045602", fmtVTZ( NY, T_NY_lmt, "zoneoff: %z" ) );
-        ASSERT_EQ( "zoneoff: -05", fmtVTZ( NY, T_NY_rail, "zoneoff: %z" ) );
+        ASSERT_EQ( "zoneoff: -045602", fmt_vtz( NY, T_NY_lmt, "zoneoff: %z" ) );
+        ASSERT_EQ( "zoneoff: -05", fmt_vtz( NY, T_NY_rail, "zoneoff: %z" ) );
 
-        ASSERT_EQ( "1883-11-18 12:03:57 LMT", fmtVTZ( NY, T_NY_lmt, "%F %T %Z" ) );
-        ASSERT_EQ( "1883-11-18 12:00:00 EST", fmtVTZ( NY, T_NY_rail, "%F %T %Z" ) );
+        ASSERT_EQ( "1883-11-18 12:03:57 LMT", fmt_vtz( NY, T_NY_lmt, "%F %T %Z" ) );
+        ASSERT_EQ( "1883-11-18 12:00:00 EST", fmt_vtz( NY, T_NY_rail, "%F %T %Z" ) );
 
-        ASSERT_EQ( "1883-11-18 12:03:57 -045602", fmtVTZ( NY, T_NY_lmt, "%F %T %z" ) );
-        ASSERT_EQ( "1883-11-18 12:00:00 -05", fmtVTZ( NY, T_NY_rail, "%F %T %z" ) );
+        ASSERT_EQ( "1883-11-18 12:03:57 -045602", fmt_vtz( NY, T_NY_lmt, "%F %T %z" ) );
+        ASSERT_EQ( "1883-11-18 12:00:00 -05", fmt_vtz( NY, T_NY_rail, "%F %T %z" ) );
 
         auto T = sys_seconds( seconds( _ct( 2025, 11, 6, 12, 0, 37 ) ) );
-        ASSERT_EQ( "+0845", fmtVTZ( Eucla, T, "%z" ) );
-        ASSERT_EQ( "2025-11-06 20:45:37 +0845", fmtVTZ( Eucla, T, "%F %T %z" ) );
+        ASSERT_EQ( "+0845", fmt_vtz( Eucla, T, "%z" ) );
+        ASSERT_EQ( "2025-11-06 20:45:37 +0845", fmt_vtz( Eucla, T, "%F %T %z" ) );
 
         // At time of writing, Eucla uses '%z' for the format specifier for the zone, so rather than
         // a 3-letter abbreviation (such as 'EST' or 'EDT'), %Z should be the same as %z:
-        ASSERT_EQ( "2025-11-06 20:45:37 +0845", fmtVTZ( Eucla, T, "%F %T %Z" ) );
-        ASSERT_EQ( "+0845", fmtVTZ( Eucla, T, "%Z" ) );
+        ASSERT_EQ( "2025-11-06 20:45:37 +0845", fmt_vtz( Eucla, T, "%F %T %Z" ) );
+        ASSERT_EQ( "+0845", fmt_vtz( Eucla, T, "%Z" ) );
     }
 
-    constexpr sysseconds_t startT = daysToSeconds( resolveCivil( 1800, 1, 1 ) );
-    constexpr sysseconds_t endT   = daysToSeconds( resolveCivil( 2900, 1, 1 ) );
+    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
+    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
 
     auto rng  = std::mt19937_64{};
-    auto dist = std::uniform_int_distribution<sysseconds_t>( startT, endT );
+    auto dist = std::uniform_int_distribution<sysseconds_t>( start_t, end_t );
 
     for( auto const& zone : ALL_ZONES )
     {
-        auto tzH = date::locate_zone( zone );
-        auto tzV = vtz::locate_zone( zone );
+        auto tz_h = date::locate_zone( zone );
+        auto tz_v = vtz::locate_zone( zone );
         for( size_t i = 0; i < 100; ++i )
         {
             auto T = sys_seconds( seconds( dist( rng ) ) );
             ASSERT_EQ_QUIET(
-                fmtVTZ( tzV, T, "%y%m%d %H:%M:%S-%Z" ), fmtH( tzH, T, "%y%m%d %H:%M:%S-%Z" ) );
-            ASSERT_EQ_QUIET( fmtVTZ( tzV, T, "%F %T %Z" ), fmtH( tzH, T, "%F %T %Z" ) );
-            ASSERT_EQ_QUIET( fmtVTZ( tzV, T, "%D %T %Z" ), fmtH( tzH, T, "%D %T %Z" ) );
+                fmt_vtz( tz_v, T, "%y%m%d %H:%M:%S-%Z" ), fmt_h( tz_h, T, "%y%m%d %H:%M:%S-%Z" ) );
+            ASSERT_EQ_QUIET( fmt_vtz( tz_v, T, "%F %T %Z" ), fmt_h( tz_h, T, "%F %T %Z" ) );
+            ASSERT_EQ_QUIET( fmt_vtz( tz_v, T, "%D %T %Z" ), fmt_h( tz_h, T, "%D %T %Z" ) );
         }
     }
 }

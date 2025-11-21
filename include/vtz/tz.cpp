@@ -17,7 +17,7 @@
 
 namespace vtz {
     template<class T>
-    std::unique_ptr<T[]> _copyUnique( T const* data, size_t count ) {
+    std::unique_ptr<T[]> _copy_unique( T const* data, size_t count ) {
         // We use memcpy here, so we expect the input to be trivially copyable
         static_assert( std::is_trivially_copyable_v<T> );
 
@@ -27,8 +27,8 @@ namespace vtz {
     }
 
     template<class T>
-    auto _copyUnique( span<T> values ) {
-        return _copyUnique( values.data(), values.size() );
+    auto _copy_unique( span<T> values ) {
+        return _copy_unique( values.data(), values.size() );
     }
 
 
@@ -78,11 +78,11 @@ namespace vtz {
         };
     }
 
-    int computeG( span<sysseconds_t const> tt ) {
+    int compute_g( span<sysseconds_t const> tt ) {
         // If there are no transition times, or only one transition time, return
         // the maximum possible g
         if( tt.size() <= 1 ) return 63;
-        u64 minDelta = UINT64_MAX;
+        u64 min_delta = UINT64_MAX;
 
         for( size_t i = 1; i < tt.size(); ++i )
         {
@@ -95,10 +95,10 @@ namespace vtz {
             }
             auto delta = u64( t1 ) - u64( t0 );
 
-            if( delta < minDelta ) minDelta = delta;
+            if( delta < min_delta ) min_delta = delta;
         }
 
-        int g = _blog2( minDelta );
+        int g = _blog2( min_delta );
 
         if( g < 16 )
         {
@@ -111,13 +111,13 @@ namespace vtz {
 
     /// Compute the required block size, taking into account that two possible
     /// local times map to the same UTC time
-    int computeGUniversal(
+    int compute_guniversal(
         i32 off0, span<sec_t const> tt, span<i32 const> off ) {
         // If there are no transition times, or only one transition time, return
         // the maximum possible g
         if( tt.size() <= 1 ) return 63;
 
-        u64 minDelta = UINT64_MAX;
+        u64 min_delta = UINT64_MAX;
 
         // Latest possible interpretation of time of last block
         sec_t Tlast = tt[0] + std::max( { off0, off[1], 0 } );
@@ -127,11 +127,11 @@ namespace vtz {
             // Transition time (UTC)
             auto T = tt[i];
             // Time when previous block ends (local time)
-            auto localEnd = T + off[i - 1];
+            auto local_end = T + off[i - 1];
             // Time when current block starts (local time)
-            auto localStart = T + off[i];
-            auto Tearly     = std::min( { T, localEnd, localStart } );
-            auto Tlate      = std::max( { T, localEnd, localStart } );
+            auto local_start = T + off[i];
+            auto Tearly      = std::min( { T, local_end, local_start } );
+            auto Tlate       = std::max( { T, local_end, local_start } );
             if( Tearly <= Tlast )
             {
                 throw std::runtime_error(
@@ -141,10 +141,10 @@ namespace vtz {
 
             auto delta = u64( Tearly ) - u64( Tlast );
             Tlast      = Tlate;
-            minDelta   = std::min( delta, minDelta );
+            min_delta  = std::min( delta, min_delta );
         }
 
-        int g = _blog2( minDelta );
+        int g = _blog2( min_delta );
 
         if( g < 16 )
         {
@@ -157,34 +157,35 @@ namespace vtz {
 
 
     template<class T, class Indexable>
-    S32Table makeTable( T        off0,
+    S32Table make_table( T       off0,
         span<sysseconds_t const> tt,
         Indexable                off,
-        sysseconds_t             minT,
-        sysseconds_t             maxT ) {
-        int g = computeG( tt );
+        sysseconds_t             min_t,
+        sysseconds_t             max_t ) {
+        int g = compute_g( tt );
 
-        i64 minIndex = minT >> g;
-        i64 maxIndex = 1 + ( maxT >> g );
+        i64 min_index = min_t >> g;
+        i64 max_index = 1 + ( max_t >> g );
 
-        size_t buffCount = ( maxIndex - minIndex ) + 1;
+        size_t buff_count = ( max_index - min_index ) + 1;
 
         u64 block = _join32( u32( off0 ), u32( off[0] ) );
 
-        auto ttTimes = _new<i64>( buffCount );
-        auto blocks  = _new<u64>( buffCount );
+        auto tt_times = _new<i64>( buff_count );
+        auto blocks   = _new<u64>( buff_count );
 
         i64 when = tt[0];
 
-        i64 blockT = i64( u64( minIndex ) << g ); // current start time of block
-        i64 blockSize = i64( 1 ) << g;            // Block size (in seconds)
+        i64 block_t
+            = i64( u64( min_index ) << g ); // current start time of block
+        i64    block_size = i64( 1 ) << g;  // Block size (in seconds)
         size_t zi     = 0;
-        for( size_t bi = 0; bi < buffCount; bi++ )
+        for( size_t bi = 0; bi < buff_count; bi++ )
         {
-            ttTimes[bi]  = when;
+            tt_times[bi]  = when;
             blocks[bi]   = block;
-            blockT      += blockSize;
-            if( blockT >= when )
+            block_t      += block_size;
+            if( block_t >= when )
             {
                 zi++;
                 if( zi < tt.size() )
@@ -196,9 +197,9 @@ namespace vtz {
                 else
                 {
                     ++bi;
-                    for( ; bi < buffCount; ++bi )
+                    for( ; bi < buff_count; ++bi )
                     {
-                        ttTimes[bi] = when;
+                        tt_times[bi] = when;
                         blocks[bi]  = block;
                     }
                     break;
@@ -208,10 +209,10 @@ namespace vtz {
 
         return S32Table{
             g,
-            std::move( ttTimes ),
+            std::move( tt_times ),
             std::move( blocks ),
-            minIndex,
-            buffCount,
+            min_index,
+            buff_count,
         };
     }
 
@@ -221,22 +222,22 @@ namespace vtz {
     /// looking up a UTC time, or a local time, you will end up in a block
     /// containing the relevant transition time.
     template<class T>
-    S32Table makeUniversalTable( T off0,
-        span<sysseconds_t const>   tt,
-        span<T const>              off,
-        sysseconds_t               minT,
-        sysseconds_t               maxT ) {
-        int g = computeGUniversal( off0, tt, off );
+    S32Table make_universal_table( T off0,
+        span<sysseconds_t const>     tt,
+        span<T const>                off,
+        sysseconds_t                 min_t,
+        sysseconds_t                 max_t ) {
+        int g = compute_guniversal( off0, tt, off );
 
-        i64 minIndex = minT >> g;
-        i64 maxIndex = 1 + ( maxT >> g );
+        i64 min_index = min_t >> g;
+        i64 max_index = 1 + ( max_t >> g );
 
-        size_t buffCount = ( maxIndex - minIndex ) + 1;
+        size_t buff_count = ( max_index - min_index ) + 1;
 
         u64 block = _join32( u32( off0 ), u32( off[0] ) );
 
-        auto ttTimes = _new<i64>( buffCount );
-        auto blocks  = _new<u64>( buffCount );
+        auto tt_times = _new<i64>( buff_count );
+        auto blocks   = _new<u64>( buff_count );
 
         // this is the transition time for the current block, according to
         // `choose::latest`
@@ -244,17 +245,18 @@ namespace vtz {
         // this is the time when it is safe to advance to the next transition
         // time, when constructing blocks. it will sometimes be a little bit
         // after the current transition time, because we set the clocks back.
-        i64 blockEndT = tt[0] + std::max( { off0, off[0], 0 } );
+        i64 block_end_t = tt[0] + std::max( { off0, off[0], 0 } );
 
-        i64 blockT = i64( u64( minIndex ) << g ); // current start time of block
-        i64 blockSize = i64( 1 ) << g;            // Block size (in seconds)
+        i64 block_t
+            = i64( u64( min_index ) << g ); // current start time of block
+        i64    block_size = i64( 1 ) << g;  // Block size (in seconds)
         size_t zi     = 0;
-        for( size_t bi = 0; bi < buffCount; bi++ )
+        for( size_t bi = 0; bi < buff_count; bi++ )
         {
-            ttTimes[bi]  = when;
+            tt_times[bi]  = when;
             blocks[bi]   = block;
-            blockT      += blockSize;
-            if( blockT >= blockEndT )
+            block_t      += block_size;
+            if( block_t >= block_end_t )
             {
                 zi++;
                 if( zi < tt.size() )
@@ -262,15 +264,15 @@ namespace vtz {
                     i32 off0  = off[zi - 1];
                     i32 off1  = off[zi];
                     when      = tt[zi];
-                    blockEndT = tt[zi] + std::max( { off0, off1, 0 } );
+                    block_end_t = tt[zi] + std::max( { off0, off1, 0 } );
                     block     = block >> 32 | ( u64( u32( off1 ) ) << 32 );
                 }
                 else
                 {
                     ++bi;
-                    for( ; bi < buffCount; ++bi )
+                    for( ; bi < buff_count; ++bi )
                     {
-                        ttTimes[bi] = when;
+                        tt_times[bi] = when;
                         blocks[bi]  = block;
                     }
                     break;
@@ -280,27 +282,27 @@ namespace vtz {
 
         return S32Table{
             g,
-            std::move( ttTimes ),
+            std::move( tt_times ),
             std::move( blocks ),
-            minIndex,
-            buffCount,
+            min_index,
+            buff_count,
         };
     }
 
 
-    TransTable makeTransTable( span<sysseconds_t const> tt,
+    TransTable make_trans_table( span<sysseconds_t const> tt,
 
-        sec_t        cycleTime,
-        sysseconds_t minTransTime = INT64_MIN,
-        sysseconds_t maxTransTime = INT64_MAX ) {
+        sec_t        cycle_time,
+        sysseconds_t min_trans_time = INT64_MIN,
+        sysseconds_t max_trans_time = INT64_MAX ) {
         if( tt.size() == 0 )
         {
             return {
                 0,
                 ~u64(),
                 table1( 0 ),
-                cycleTime,
-                _init<sysseconds_t>( minTransTime, maxTransTime ),
+                cycle_time,
+                _init<sysseconds_t>( min_trans_time, max_trans_time ),
             };
         }
 
@@ -314,45 +316,45 @@ namespace vtz {
                 // otherwise use index of 1 (corresponding to when[1], when[2])
                 table2( tt[0], 0, 1 ),
                 0, // The cycle time doesn't matter
-                _init<sysseconds_t>( minTransTime, tt[0], maxTransTime ),
+                _init<sysseconds_t>( min_trans_time, tt[0], max_trans_time ),
             };
         }
 
         // The min time is the min time under any time convention
-        sec_t minT = std::min( {
+        sec_t min_t = std::min( {
             tt.front(), // min time (UTC)
             sec_t( 0 ), // if min time would be smaller than 0, set to 0
         } );
 
-        cycleTime  = std::max( { cycleTime, minT, sec_t( 0 ) } );
-        sec_t maxT = cycleTime + 12622780800;
+        cycle_time  = std::max( { cycle_time, min_t, sec_t( 0 ) } );
+        sec_t max_t = cycle_time + 12622780800;
 
-        auto tz0_   = -u64( minT );
-        auto tzMax_ = u64( maxT ) + tz0_;
+        auto tz0_    = -u64( min_t );
+        auto tz_max_ = u64( max_t ) + tz0_;
 
         struct GetIndex {
             i32 operator[]( ptrdiff_t i ) const noexcept { return i + 1; };
         };
 
         auto times = _new<sysseconds_t>( tt.size() + 2 );
-        times[0]   = minTransTime;
+        times[0]   = min_trans_time;
         memcpy( times.get() + 1, tt.data(), tt.size_bytes() );
-        times[tt.size() + 1] = maxTransTime;
+        times[tt.size() + 1] = max_trans_time;
 
         return {
             tz0_,
-            tzMax_,
-            makeTable( 0, tt, GetIndex{}, minT, maxT ),
-            cycleTime,
+            tz_max_,
+            make_table( 0, tt, GetIndex{}, min_t, max_t ),
+            cycle_time,
             std::move( times ),
         };
     }
 
 
-    OffTables makeOffTables( i32 off0,
-        span<sysseconds_t const> tt,
-        span<i32 const>          off,
-        sec_t                    cycleTime ) {
+    OffTables make_off_tables( i32 off0,
+        span<sysseconds_t const>   tt,
+        span<i32 const>            off,
+        sec_t                      cycle_time ) {
         if( tt.size() == 0 )
         {
             // The zone is contains no transitions, so all of the tables are
@@ -379,39 +381,41 @@ namespace vtz {
         }
 
         // The min time is the min time under any time convention
-        sec_t minT = std::min( {
+        sec_t min_t = std::min( {
             tt.front(),          // min time (UTC)
             tt.front() + off0,   // min time (initial local time)
             tt.front() + off[0], // min time (local time after first transition)
             sec_t( 0 ), // if min time would be smaller than 0, set to 0
         } );
-        // Ensure that the cycle time is >= minT and >= 0
-        cycleTime = std::max( { cycleTime, minT, sec_t( 0 ) } );
-        // maxT is cycleTime + 400 years. cycleTime >= minT, so we know the
+        // Ensure that the cycle time is >= min_t and >= 0
+        cycle_time = std::max( { cycle_time, min_t, sec_t( 0 ) } );
+        // max_t is cycle_time + 400 years. cycle_time >= min_t, so we know the
         // table is at least 400 years in size
-        sec_t maxT = cycleTime + 12622780800;
+        sec_t max_t = cycle_time + 12622780800;
 
-        auto tz0_   = -u64( minT );
-        auto tzMax_ = u64( maxT ) + tz0_;
+        auto tz0_    = -u64( min_t );
+        auto tz_max_ = u64( max_t ) + tz0_;
         return {
             tz0_,
-            tzMax_,
-            makeUniversalTable( off0, tt, off, minT, maxT ),
-            cycleTime,
+            tz_max_,
+            make_universal_table( off0, tt, off, min_t, max_t ),
+            cycle_time,
         };
     }
 
-    OffTables makeOffTables( ZoneStates const& s ) {
-        return makeOffTables(
-            s.walloffInitial_, s.walloffTrans_, s.walloff_, s.safeCycleTime );
+    OffTables make_off_tables( ZoneStates const& s ) {
+        return make_off_tables( s.walloff_initial_,
+            s.walloff_trans_,
+            s.walloff_,
+            s.safe_cycle_time );
     }
 
-    AbbrTable makeAbbrTable( AbbrBlock initial,
-        span<sysseconds_t const>       tt,
-        span<AbbrBlock const>          abbr,
-        sec_t                          cycleTime,
-        span<ZoneAbbr const>           abbrTable ) {
-        auto table = _copyUnique( abbrTable );
+    AbbrTable make_abbr_table( AbbrBlock initial,
+        span<sysseconds_t const>         tt,
+        span<AbbrBlock const>            abbr,
+        sec_t                            cycle_time,
+        span<ZoneAbbr const>             abbr_table ) {
+        auto table = _copy_unique( abbr_table );
         // If the timezone contains no transitions, our table is valid for the
         // full range of possible inputs
         if( tt.size() == 0 )
@@ -439,29 +443,29 @@ namespace vtz {
             };
         }
 
-        sec_t minT = std::min( {
+        sec_t min_t = std::min( {
             tt.front(), // min time (UTC)
             sec_t( 0 ),
         } );
-        cycleTime  = std::max( { cycleTime, minT, sec_t( 0 ) } );
-        sec_t maxT = cycleTime + 12622780800;
+        cycle_time  = std::max( { cycle_time, min_t, sec_t( 0 ) } );
+        sec_t max_t = cycle_time + 12622780800;
 
-        auto tz0_   = -u64( minT );
-        auto tzMax_ = u64( maxT ) + tz0_;
+        auto tz0_    = -u64( min_t );
+        auto tz_max_ = u64( max_t ) + tz0_;
 
         return {
             tz0_,
-            tzMax_,
-            makeTable( initial, tt, abbr, minT, maxT ),
-            cycleTime,
+            tz_max_,
+            make_table( initial, tt, abbr, min_t, max_t ),
+            cycle_time,
             std::move( table ),
         };
     }
 
-    StdoffTable makeStdoffTable( ZoneStates const& states ) {
-        span tt      = states.stdoffTrans_;
+    StdoffTable make_stdoff_table( ZoneStates const& states ) {
+        span tt      = states.stdoff_trans_;
         span off     = states.stdoff_;
-        i32  initial = states.stdoffInitial_;
+        i32  initial = states.stdoff_initial_;
         if( tt.size() == 0 )
         {
             return {
@@ -481,17 +485,17 @@ namespace vtz {
 
         auto Tmin = tt.front() - 1;
         auto Tmax = tt.back();
-        return { Tmin, Tmax, makeTable( initial, tt, off, Tmin, Tmax ) };
+        return { Tmin, Tmax, make_table( initial, tt, off, Tmin, Tmax ) };
     }
     TimeZone::TimeZone( string_view name, ZoneStates const& states )
-    : OffTables( makeOffTables( states ) )
-    , AbbrTable( makeAbbrTable( states.abbrInitial_,
-          states.abbrTrans_,
+    : OffTables( make_off_tables( states ) )
+    , AbbrTable( make_abbr_table( states.abbr_initial_,
+          states.abbr_trans_,
           states.abbr_,
-          states.safeCycleTime,
-          states.abbrTable_ ) )
-    , StdoffTable( makeStdoffTable( states ) )
-    , TransTable( makeTransTable( states.tt_, states.safeCycleTime ) )
+          states.safe_cycle_time,
+          states.abbr_table_ ) )
+    , StdoffTable( make_stdoff_table( states ) )
+    , TransTable( make_trans_table( states.tt_, states.safe_cycle_time ) )
     , name_( name ) {}
 
 
@@ -500,7 +504,7 @@ namespace vtz {
 
     TimeZone TimeZone::utc() {
         return TimeZone{ "UTC",
-            ZoneStates::makeStatic( ZoneState{
+            ZoneStates::make_static( ZoneState{
                 FromUTC( 0 ),
                 FromUTC( 0 ),
                 ZoneAbbr{ 3, "UTC" },

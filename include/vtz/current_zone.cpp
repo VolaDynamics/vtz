@@ -15,7 +15,7 @@ namespace vtz::win32 {
     using std::string_view;
     constexpr size_t npos = string_view::npos;
 
-    string_view resolveNative( string_view data, string_view name ) {
+    string_view resolve_native( string_view data, string_view name ) {
         std::string key;
         key.reserve( name.size() + 2 );
         key     += '"';
@@ -43,13 +43,13 @@ namespace vtz::win32 {
         return result.substr( 0, result.find_first_of( "\" " ) );
     }
 
-    std::string loadWindowsZones() {
-        return readFile( joinPath( get_install(), "windowsZones.xml" ) );
+    std::string load_windows_zones() {
+        return read_file( join_path( get_install(), "windowsZones.xml" ) );
     }
 
-    string_view windowsZoneToNative( string_view windowsZone ) {
-        static std::string windowsZones = loadWindowsZones();
-        return resolveNative( windowsZones, windowsZone );
+    string_view windows_zone_to_native( string_view windows_zone ) {
+        static std::string windows_zones = load_windows_zones();
+        return resolve_native( windows_zones, windows_zone );
     }
 } // namespace vtz::win32
 
@@ -102,7 +102,7 @@ namespace vtz::unix {
         ssize_t result = readlink( link, dest.data(), dest.size() );
 
         // If result < 0, this indicates an error
-        if( result < 0 ) throw fileError( errno, link, "reading symlink" );
+        if( result < 0 ) throw file_error( errno, link, "reading symlink" );
 
         // returns valid optional if there was no truncation
         if( result < dest.size() ) return result;
@@ -124,28 +124,28 @@ namespace vtz::unix {
 
         // Attempt to read the link into progressively larger heap-allocated
         // buffers
-        size_t bufSize = sizeof( buf ) * 2;
+        size_t buf_size = sizeof( buf ) * 2;
 
         // Stop after 10 doublings... the link must be insanely large
         for( int i = 0; i < 10; ++i )
         {
-            auto p = std::unique_ptr<char[]>( new char[bufSize] );
+            auto p = std::unique_ptr<char[]>( new char[buf_size] );
 
-            if( auto sz = _try_readlink( link, span( p.get(), bufSize ) ) )
+            if( auto sz = _try_readlink( link, span( p.get(), buf_size ) ) )
             {
                 // We read a valid link!
                 return func( string_view( p.get(), *sz ) );
             }
 
             // Try reading with a bigger buffer
-            bufSize *= 2;
+            buf_size *= 2;
         }
 
         throw std::runtime_error( fmt::format(
             "Error when attempting to read {}: readlink() "
             "returned an insanely long symlink. Link (truncated): {}",
-            escapeString( link ),
-            escapeString( string_view( buf, sizeof( buf ) ) ) ) );
+            escape_string( link ),
+            escape_string( string_view( buf, sizeof( buf ) ) ) ) );
     }
 
     static OptSV _get_by_zoneinfo( string_view path ) {
@@ -197,7 +197,7 @@ namespace vtz::unix {
             fmt::format( "Unable to determine current timezone. "
                          "/etc/localtime resolved to {}, which does not "
                          "contain either 'zoneinfo/' or a valid zone name.",
-                escapeString( path ) ) );
+                escape_string( path ) ) );
     };
 } // namespace vtz::unix
 
@@ -207,8 +207,8 @@ namespace vtz::unix {
 namespace vtz {
     std::string _get_current_zone_name() {
 #ifdef _WIN32
-        return std::string(
-            win32::windowsZoneToNative( win32::_get_current_timezone_name() ) );
+        return std::string( win32::windows_zone_to_native(
+            win32::_get_current_timezone_name() ) );
 #else
         return unix::_readlink( "/etc/localtime", unix::_resolve_tzname );
 #endif
@@ -216,10 +216,10 @@ namespace vtz {
 
 
     static time_zone const* _do_locate_current_zone() {
-        char const* currentZone = std::getenv( "VTZ_TZ" );
-        if( currentZone )
+        char const* current_zone = std::getenv( "VTZ_TZ" );
+        if( current_zone )
         {
-            std::string name( currentZone );
+            std::string name( current_zone );
             return locate_zone( name );
         }
         return locate_zone( _get_current_zone_name() );

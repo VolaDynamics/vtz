@@ -12,7 +12,7 @@ namespace vtz {
     using std::string_view;
     using std::vector;
 
-    [[nodiscard]] size_t countLines( string_view input );
+    [[nodiscard]] size_t count_lines( string_view input );
 
     /// Get a vector of all the lines in the input. Do not include line endings.
     vector<string_view> lines( string_view input );
@@ -68,7 +68,7 @@ namespace vtz {
         /// Find the line and column number where a given cursor appears within
         /// some body of text. Return an empty Loc if the input is outside the
         /// body.
-        static Location wherePtr(
+        static Location where_ptr(
             string_view body, char const* cursor ) noexcept;
 
         /// Find the line and column number where a given cursor appears within
@@ -142,12 +142,12 @@ namespace vtz {
         ///
         /// `data()` must still be valid, so that we can obtain a proper
         /// lineno/column when providing an error message to the user.
-        constexpr static OptTok missingAt( char const* at ) noexcept {
+        constexpr static OptTok missing_at( char const* at ) noexcept {
             return OptTok( at, 0 );
         }
     };
 
-    constexpr bool isDelim( char ch ) { return ch <= (unsigned char)( ' ' ); }
+    constexpr bool is_delim( char ch ) { return ch <= (unsigned char)( ' ' ); }
 
     struct TokenIter {
       private:
@@ -155,40 +155,40 @@ namespace vtz {
         char const* b_ = nullptr;
         char const* e_ = nullptr;
 
-        constexpr static char const* findDelim(
+        constexpr static char const* find_delim(
             char const* p, char const* end ) noexcept {
             for( ;; )
             {
-                if( p == end || isDelim( *p ) ) return p;
+                if( p == end || is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || isDelim( *p ) ) return p;
+                if( p == end || is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || isDelim( *p ) ) return p;
+                if( p == end || is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || isDelim( *p ) ) return p;
+                if( p == end || is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || isDelim( *p ) ) return p;
+                if( p == end || is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || isDelim( *p ) ) return p;
+                if( p == end || is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || isDelim( *p ) ) return p;
+                if( p == end || is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || isDelim( *p ) ) return p;
+                if( p == end || is_delim( *p ) ) return p;
                 ++p;
             }
         }
 
-        constexpr static char const* findNonDelim(
+        constexpr static char const* find_non_delim(
             char const* p, char const* end ) noexcept {
             for( ;; )
             {
-                if( p == end || !isDelim( *p ) ) return p;
+                if( p == end || !is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || !isDelim( *p ) ) return p;
+                if( p == end || !is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || !isDelim( *p ) ) return p;
+                if( p == end || !is_delim( *p ) ) return p;
                 ++p;
-                if( p == end || !isDelim( *p ) ) return p;
+                if( p == end || !is_delim( *p ) ) return p;
                 ++p;
             }
         }
@@ -206,15 +206,15 @@ namespace vtz {
         void clear() noexcept { b_ = e_; }
 
         OptTok next() {
-            auto start = findNonDelim( b_, e_ );
+            auto start = find_non_delim( b_, e_ );
 
             if( start == e_ )
             {
                 clear();
-                return OptTok::missingAt( e_ );
+                return OptTok::missing_at( e_ );
             }
 
-            auto end = findDelim( start + 1, e_ );
+            auto end = find_delim( start + 1, e_ );
 
             auto result = string_view( start, size_t( end - start ) );
 
@@ -226,17 +226,17 @@ namespace vtz {
             return result;
         }
 
-        OptTok nextNonComment() {
-            auto start = findNonDelim( b_, e_ );
+        OptTok next_non_comment() {
+            auto start = find_non_delim( b_, e_ );
 
             if( start == e_ )
             {
                 clear();
-                return OptTok::missingAt( e_ );
+                return OptTok::missing_at( e_ );
             }
-            if( *start == '#' ) return OptTok::missingAt( start );
+            if( *start == '#' ) return OptTok::missing_at( start );
 
-            auto end = findDelim( start + 1, e_ );
+            auto end = find_delim( start + 1, e_ );
 
             auto result = string_view( start, size_t( end - start ) );
 
@@ -254,30 +254,30 @@ namespace vtz {
         }
     };
 
-    inline string_view stripComment( string_view line ) {
+    inline string_view strip_comment( string_view line ) {
         auto pos = line.find( '#' );
         if( pos == string_view::npos ) { return line; }
         return string_view( line.data(), pos );
     }
 
-    [[nodiscard]] inline string_view stripTrailingDelim(
+    [[nodiscard]] inline string_view strip_trailing_delim(
         string_view s ) noexcept {
         if( s.empty() ) { return s; }
         size_t i = s.size();
-        while( i > 0 && isDelim( s[i - 1] ) ) { --i; }
+        while( i > 0 && is_delim( s[i - 1] ) ) { --i; }
         return string_view( s.data(), i );
     }
 
-    [[nodiscard]] inline string_view stripLeadingDelim(
+    [[nodiscard]] inline string_view strip_leading_delim(
         string_view s ) noexcept {
         size_t i = 0;
-        while( i < s.size() && isDelim( s[i] ) ) ++i;
+        while( i < s.size() && is_delim( s[i] ) ) ++i;
         return string_view( s.data() + i, s.size() - i );
     }
 
 
     // If a line ends in a '\r' character, strip it from the end of the line
-    [[nodiscard]] inline string_view stripCR( string_view line ) {
+    [[nodiscard]] inline string_view strip_cr( string_view line ) {
         if( line.size() > 0 && line.back() == '\r' )
         { return string_view( line.data(), line.size() - 1 ); }
         return line;
@@ -300,7 +300,7 @@ namespace vtz {
             auto p = input.find( '\n' );
             if( p != string_view::npos )
             {
-                string_view line = stripCR( string_view( input.data(), p ) );
+                string_view line = strip_cr( string_view( input.data(), p ) );
                 // Start of next line
                 size_t next = p + 1;
                 input = string_view( input.data() + next, input.size() - next );
@@ -323,15 +323,15 @@ namespace vtz {
         string_view rest() const noexcept { return input; }
     };
 
-    inline char firstOrNil( string_view sv ) {
+    inline char first_or_nil( string_view sv ) {
         if( sv.empty() ) return '\0';
         return sv[0];
     }
 
-    std::string escapeString( std::string_view sv );
+    std::string escape_string( std::string_view sv );
 
     /// std::string_view::starts_with doesn't appear until C++20
-    inline bool startsWith( string_view s, string_view prefix ) {
+    inline bool starts_with( string_view s, string_view prefix ) {
         return s.size() >= prefix.size()
                && string_view( s.data(), prefix.size() ) == prefix;
     }

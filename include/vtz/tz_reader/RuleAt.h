@@ -63,35 +63,35 @@ namespace vtz {
 
         /// Returns the timestamp (in seconds from UTC) when the 'AT' time is
         /// referring to, on the given date
-        constexpr sysseconds_t resolveAt(
+        constexpr sysseconds_t resolve_at(
             sysdays_t date, FromUTC stdoff, FromUTC walloff ) const noexcept {
             // Time when the date starts (midnight on that date)
-            i64 T = daysToSeconds( date );
+            i64 T = days_to_seconds( date );
 
             // time of day -
-            i32 timeOfDay = offset();
+            i32 time_of_day = offset();
             switch( kind() )
             {
             /// Time of day represents an offset from the current local time in
             /// the zone
-            case LOCAL_WALL: return T + walloff.toUTC( timeOfDay );
+            case LOCAL_WALL: return T + walloff.to_utc( time_of_day );
             /// Time of day represents an offset from standard time within the
             /// zone
-            case LOCAL_STANDARD: return T + stdoff.toUTC( timeOfDay );
+            case LOCAL_STANDARD: return T + stdoff.to_utc( time_of_day );
             /// Time of day represents an offset from UTC time within the zone
-            case UTC: return T + timeOfDay;
+            case UTC: return T + time_of_day;
             }
         }
 
 
         /// Returns the timestamp (in seconds from UTC) when the 'AT' time is
         /// referring to, on the given date
-        constexpr sysseconds_t resolveAt(
+        constexpr sysseconds_t resolve_at(
             sysdays_t date, ZoneTime time ) const noexcept {
-            return resolveAt( date, time.stdoff, time.walloff );
+            return resolve_at( date, time.stdoff, time.walloff );
         }
 
-        constexpr static RuleAt fromRepr( i32 repr ) noexcept {
+        constexpr static RuleAt from_repr( i32 repr ) noexcept {
             return RuleAt( repr );
         }
     };
@@ -99,7 +99,7 @@ namespace vtz {
 
     template<>
     struct OptTraits<RuleAt> {
-        constexpr static RuleAt NULL_VALUE = RuleAt::fromRepr( INT32_MIN );
+        constexpr static RuleAt NULL_VALUE = RuleAt::from_repr( INT32_MIN );
     };
 
     using OptRuleAt = OptClass<RuleAt>;

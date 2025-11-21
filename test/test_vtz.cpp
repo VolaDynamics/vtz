@@ -41,38 +41,38 @@ static_assert( format_as( DOW::Thu ) == "Thu" );
 static_assert( format_as( DOW::Fri ) == "Fri" );
 static_assert( format_as( DOW::Sat ) == "Sat" );
 
-static_assert( _impl::_parseMon( "blarg", 3 ) == none );
-static_assert( _impl::_parseMon( "Jan", 3 ).value() == Mon::Jan );
-static_assert( _impl::_parseMon( "Feb", 3 ).value() == Mon::Feb );
-static_assert( _impl::_parseMon( "Mar", 3 ).value() == Mon::Mar );
-static_assert( _impl::_parseMon( "Apr", 3 ).value() == Mon::Apr );
-static_assert( _impl::_parseMon( "May", 3 ).value() == Mon::May );
-static_assert( _impl::_parseMon( "Jun", 3 ).value() == Mon::Jun );
-static_assert( _impl::_parseMon( "Jul", 3 ).value() == Mon::Jul );
-static_assert( _impl::_parseMon( "Aug", 3 ).value() == Mon::Aug );
-static_assert( _impl::_parseMon( "Sep", 3 ).value() == Mon::Sep );
-static_assert( _impl::_parseMon( "Oct", 3 ).value() == Mon::Oct );
-static_assert( _impl::_parseMon( "Nov", 3 ).value() == Mon::Nov );
-static_assert( _impl::_parseMon( "Dec", 3 ).value() == Mon::Dec );
+static_assert( _impl::_parse_mon( "blarg", 3 ) == none );
+static_assert( _impl::_parse_mon( "Jan", 3 ).value() == Mon::Jan );
+static_assert( _impl::_parse_mon( "Feb", 3 ).value() == Mon::Feb );
+static_assert( _impl::_parse_mon( "Mar", 3 ).value() == Mon::Mar );
+static_assert( _impl::_parse_mon( "Apr", 3 ).value() == Mon::Apr );
+static_assert( _impl::_parse_mon( "May", 3 ).value() == Mon::May );
+static_assert( _impl::_parse_mon( "Jun", 3 ).value() == Mon::Jun );
+static_assert( _impl::_parse_mon( "Jul", 3 ).value() == Mon::Jul );
+static_assert( _impl::_parse_mon( "Aug", 3 ).value() == Mon::Aug );
+static_assert( _impl::_parse_mon( "Sep", 3 ).value() == Mon::Sep );
+static_assert( _impl::_parse_mon( "Oct", 3 ).value() == Mon::Oct );
+static_assert( _impl::_parse_mon( "Nov", 3 ).value() == Mon::Nov );
+static_assert( _impl::_parse_mon( "Dec", 3 ).value() == Mon::Dec );
 
-static_assert( _impl::_parseDOW( "blarg", 3 ) == none );
-static_assert( _impl::_parseDOW( "Sun", 3 ).value() == DOW::Sun );
-static_assert( _impl::_parseDOW( "Mon", 3 ).value() == DOW::Mon );
-static_assert( _impl::_parseDOW( "Tue", 3 ).value() == DOW::Tue );
-static_assert( _impl::_parseDOW( "Wed", 3 ).value() == DOW::Wed );
-static_assert( _impl::_parseDOW( "Thu", 3 ).value() == DOW::Thu );
-static_assert( _impl::_parseDOW( "Fri", 3 ).value() == DOW::Fri );
-static_assert( _impl::_parseDOW( "Sat", 3 ).value() == DOW::Sat );
-static_assert( _impl::_parseDOW( "Su", 2 ).value() == DOW::Sun );
-static_assert( _impl::_parseDOW( "Mo", 2 ).value() == DOW::Mon );
-static_assert( _impl::_parseDOW( "Tu", 2 ).value() == DOW::Tue );
-static_assert( _impl::_parseDOW( "We", 2 ).value() == DOW::Wed );
-static_assert( _impl::_parseDOW( "Th", 2 ).value() == DOW::Thu );
-static_assert( _impl::_parseDOW( "Fr", 2 ).value() == DOW::Fri );
-static_assert( _impl::_parseDOW( "Sa", 2 ).value() == DOW::Sat );
-static_assert( _impl::_parseDOW( "M", 1 ).value() == DOW::Mon );
-static_assert( _impl::_parseDOW( "W", 1 ).value() == DOW::Wed );
-static_assert( _impl::_parseDOW( "F", 1 ).value() == DOW::Fri );
+static_assert( _impl::_parse_dow( "blarg", 3 ) == none );
+static_assert( _impl::_parse_dow( "Sun", 3 ).value() == DOW::Sun );
+static_assert( _impl::_parse_dow( "Mon", 3 ).value() == DOW::Mon );
+static_assert( _impl::_parse_dow( "Tue", 3 ).value() == DOW::Tue );
+static_assert( _impl::_parse_dow( "Wed", 3 ).value() == DOW::Wed );
+static_assert( _impl::_parse_dow( "Thu", 3 ).value() == DOW::Thu );
+static_assert( _impl::_parse_dow( "Fri", 3 ).value() == DOW::Fri );
+static_assert( _impl::_parse_dow( "Sat", 3 ).value() == DOW::Sat );
+static_assert( _impl::_parse_dow( "Su", 2 ).value() == DOW::Sun );
+static_assert( _impl::_parse_dow( "Mo", 2 ).value() == DOW::Mon );
+static_assert( _impl::_parse_dow( "Tu", 2 ).value() == DOW::Tue );
+static_assert( _impl::_parse_dow( "We", 2 ).value() == DOW::Wed );
+static_assert( _impl::_parse_dow( "Th", 2 ).value() == DOW::Thu );
+static_assert( _impl::_parse_dow( "Fr", 2 ).value() == DOW::Fri );
+static_assert( _impl::_parse_dow( "Sa", 2 ).value() == DOW::Sat );
+static_assert( _impl::_parse_dow( "M", 1 ).value() == DOW::Mon );
+static_assert( _impl::_parse_dow( "W", 1 ).value() == DOW::Wed );
+static_assert( _impl::_parse_dow( "F", 1 ).value() == DOW::Fri );
 
 
 static_assert( !OptMon{}.has_value() );
@@ -110,11 +110,11 @@ FMT_ENUM_PLAIN( vtz::ZoneRule::Kind );
 
 namespace {
     template<size_t... N>
-    std::vector<string_view> vecSV( char const ( &... arr )[N] ) {
+    std::vector<string_view> vec_sv( char const ( &... arr )[N] ) {
         return std::vector<string_view>{ string_view( arr, N - 1 )... };
     }
 
-    void checkLines( string_view input, std::vector<string_view> lines ) {
+    void check_lines( string_view input, std::vector<string_view> lines ) {
         auto reader = LineIter( input );
         for( auto expected : lines )
         {
@@ -130,7 +130,7 @@ namespace {
         ASSERT_EQ( vtz::lines( input ), lines );
     }
 
-    void checkTokens( string_view input, std::vector<string_view> tokens ) {
+    void check_tokens( string_view input, std::vector<string_view> tokens ) {
         auto reader = TokenIter( input );
         for( auto expected : tokens )
         {
@@ -150,26 +150,26 @@ namespace {
 
 TEST( vtz_parser, tokenizer ) {
     // These are all empty
-    checkTokens( "", vecSV() );
-    checkTokens( "    ", vecSV() );
-    checkTokens( "  \t \t", vecSV() );
+    check_tokens( "", vec_sv() );
+    check_tokens( "    ", vec_sv() );
+    check_tokens( "  \t \t", vec_sv() );
 
     // Placement of whitespace does not matter
-    checkTokens( "word", vecSV( "word" ) );
-    checkTokens( "  word", vecSV( "word" ) );
-    checkTokens( "word  ", vecSV( "word" ) );
+    check_tokens( "word", vec_sv( "word" ) );
+    check_tokens( "  word", vec_sv( "word" ) );
+    check_tokens( "word  ", vec_sv( "word" ) );
 
-    checkTokens( "word", vecSV( "word" ) );
-    checkTokens( " \t word", vecSV( "word" ) );
-    checkTokens( "word \t ", vecSV( "word" ) );
+    check_tokens( "word", vec_sv( "word" ) );
+    check_tokens( " \t word", vec_sv( "word" ) );
+    check_tokens( "word \t ", vec_sv( "word" ) );
 
-    checkTokens( "hello world", vecSV( "hello", "world" ) );
-    checkTokens( "hello\tworld", vecSV( "hello", "world" ) );
-    checkTokens( "   hello\tworld \t \t", vecSV( "hello", "world" ) );
+    check_tokens( "hello world", vec_sv( "hello", "world" ) );
+    check_tokens( "hello\tworld", vec_sv( "hello", "world" ) );
+    check_tokens( "   hello\tworld \t \t", vec_sv( "hello", "world" ) );
 
     // clang-format off
-        checkTokens( "Zone America/Los_Angeles    -7:52:58\t -	LMT	1883 Nov 18 20:00u",
-            vecSV( "Zone",
+        check_tokens( "Zone America/Los_Angeles    -7:52:58\t -	LMT	1883 Nov 18 20:00u",
+            vec_sv( "Zone",
                 "America/Los_Angeles",
                 "-7:52:58",
                 "-",
@@ -183,72 +183,72 @@ TEST( vtz_parser, tokenizer ) {
 
 
 TEST( vtz_parser, lines ) {
-    ASSERT_EQ( countLines( "" ), 0 );
-    ASSERT_EQ( countLines( "\n" ), 1 );
-    ASSERT_EQ( countLines( "hello" ), 1 );
-    ASSERT_EQ( countLines( "hello\n" ), 1 );
-    ASSERT_EQ( countLines( "hello\nworld" ), 2 );
-    ASSERT_EQ( countLines( "hello\nworld\n" ), 2 );
-    ASSERT_EQ( countLines( "hello\r\nworld\n" ), 2 );
-    ASSERT_EQ( countLines( "hello\n"
-                           "\n"
-                           "The quick brown fox jumps over the lazy dogs.\n"
-                           "End.\n" ),
+    ASSERT_EQ( count_lines( "" ), 0 );
+    ASSERT_EQ( count_lines( "\n" ), 1 );
+    ASSERT_EQ( count_lines( "hello" ), 1 );
+    ASSERT_EQ( count_lines( "hello\n" ), 1 );
+    ASSERT_EQ( count_lines( "hello\nworld" ), 2 );
+    ASSERT_EQ( count_lines( "hello\nworld\n" ), 2 );
+    ASSERT_EQ( count_lines( "hello\r\nworld\n" ), 2 );
+    ASSERT_EQ( count_lines( "hello\n"
+                            "\n"
+                            "The quick brown fox jumps over the lazy dogs.\n"
+                            "End.\n" ),
         4 );
-    ASSERT_EQ( countLines( "hello\n"
-                           "\n"
-                           "The quick brown fox jumps over the lazy dogs.\n"
-                           "End." ),
+    ASSERT_EQ( count_lines( "hello\n"
+                            "\n"
+                            "The quick brown fox jumps over the lazy dogs.\n"
+                            "End." ),
         4 );
 
-    ASSERT_EQ( countLines( "hello\n"
-                           "\n"
-                           "\n"
-                           "\n"
-                           "\n" ),
+    ASSERT_EQ( count_lines( "hello\n"
+                            "\n"
+                            "\n"
+                            "\n"
+                            "\n" ),
         5 );
 
-    checkLines( "", vecSV() );
-    checkLines( "\n", vecSV( "" ) );
-    checkLines( "hello", vecSV( "hello" ) );
-    checkLines( "hello\n", vecSV( "hello" ) );
-    checkLines( "hello\nworld", vecSV( "hello", "world" ) );
-    checkLines( "hello\nworld\n", vecSV( "hello", "world" ) );
-    checkLines( "hello\r\nworld", vecSV( "hello", "world" ) );
-    checkLines( "hello\r\nworld\r\n", vecSV( "hello", "world" ) );
+    check_lines( "", vec_sv() );
+    check_lines( "\n", vec_sv( "" ) );
+    check_lines( "hello", vec_sv( "hello" ) );
+    check_lines( "hello\n", vec_sv( "hello" ) );
+    check_lines( "hello\nworld", vec_sv( "hello", "world" ) );
+    check_lines( "hello\nworld\n", vec_sv( "hello", "world" ) );
+    check_lines( "hello\r\nworld", vec_sv( "hello", "world" ) );
+    check_lines( "hello\r\nworld\r\n", vec_sv( "hello", "world" ) );
 
     // Only '\r\n' is recognized and stripped; '\r' on it's own is not
     // stripped
-    checkLines( "hello\r\nworld\r", vecSV( "hello", "world\r" ) );
+    check_lines( "hello\r\nworld\r", vec_sv( "hello", "world\r" ) );
 
-    checkLines( "hello\n"
-                "\n"
-                "The quick brown fox jumps over the lazy dogs.\n"
-                "End.\n",
-        vecSV( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
+    check_lines( "hello\n"
+                 "\n"
+                 "The quick brown fox jumps over the lazy dogs.\n"
+                 "End.\n",
+        vec_sv( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
 
-    checkLines( "hello\n"
-                "\n"
-                "The quick brown fox jumps over the lazy dogs.\n"
-                "End.",
-        vecSV( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
+    check_lines( "hello\n"
+                 "\n"
+                 "The quick brown fox jumps over the lazy dogs.\n"
+                 "End.",
+        vec_sv( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
 
-    checkLines( "hello\n"
-                "\n"
-                "\n"
-                "\n"
-                "\n",
-        vecSV( "hello", "", "", "", "" ) );
+    check_lines( "hello\n"
+                 "\n"
+                 "\n"
+                 "\n"
+                 "\n",
+        vec_sv( "hello", "", "", "", "" ) );
 }
 
 
 TEST( vtz_parser, strip_comments ) {
-    ASSERT_EQ( stripComment( string_view() ), "" );
-    ASSERT_EQ( stripComment( "# This is a comment" ), "" );
-    ASSERT_EQ( stripComment( "#STDOFF" ), "" );
-    ASSERT_EQ( stripComment( "        #STDOFF" ), "        " );
-    ASSERT_EQ( stripComment( "hello # This is a comment" ), "hello " );
-    ASSERT_EQ( stripComment( "        hello #STDOFF" ), "        hello " );
+    ASSERT_EQ( strip_comment( string_view() ), "" );
+    ASSERT_EQ( strip_comment( "# This is a comment" ), "" );
+    ASSERT_EQ( strip_comment( "#STDOFF" ), "" );
+    ASSERT_EQ( strip_comment( "        #STDOFF" ), "        " );
+    ASSERT_EQ( strip_comment( "hello # This is a comment" ), "hello " );
+    ASSERT_EQ( strip_comment( "        hello #STDOFF" ), "        hello " );
 }
 
 STRUCT_INFO( vtz::Location, FIELD( vtz::Location, line ), FIELD( vtz::Location, col ) );
@@ -286,7 +286,7 @@ TEST( vtz_parser, parse_tzdata ) {
     constexpr auto lastSun = RuleOn::last( DOW::Sun );
     constexpr auto on      = []( u8 day ) { return RuleOn::on( day ); };
 
-    ASSERT_EQ( parseTZData(
+    ASSERT_EQ( parse_tzdata(
                    R"(#
 # Note that 1933-05-21 was a Sunday.
 # We're left to guess the time of day when Act 163 was approved; guess noon.
@@ -321,7 +321,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 
     /// Test rules immediately before or after zone declaration
 
-    ASSERT_EQ( parseTZData(
+    ASSERT_EQ( parse_tzdata(
                    R"(
 # Rule	NAME	FROM	TO	-	IN	ON	AT	SAVE	LETTER/S
 Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D
@@ -371,7 +371,7 @@ Rule	US	1974	only	-	Jan	6	2:00	1:00	D
         } ) );
 
 
-    ASSERT_EQ( parseTZData(
+    ASSERT_EQ( parse_tzdata(
                    R"(
 Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D
 Link	Africa/Abidjan	Africa/Accra
@@ -416,7 +416,7 @@ Link	Africa/Abidjan	Africa/Dakar
 
 
     /// Test comments within zone declaration
-    ASSERT_EQ( parseTZData(
+    ASSERT_EQ( parse_tzdata(
                    R"(#
 # Note that 1933-05-21 was a Sunday.
 # We're left to guess the time of day when Act 163 was approved; guess noon.
@@ -449,7 +449,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
         } ) );
 
     /// Test consecutive Zone declarations, with no spacing
-    ASSERT_EQ( parseTZData(
+    ASSERT_EQ( parse_tzdata(
                    R"(
 # From Paul Eggert (2023-01-23):
 # America/Adak is for the Aleutian Islands that are part of Alaska
@@ -539,10 +539,10 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 TEST( vtz_io, read_file ) {
     using namespace std::literals;
     // Check that we can read a text file
-    ASSERT_EQ( readFile( "etc/testdata/hello.txt" ), "hello" );
+    ASSERT_EQ( read_file( "etc/testdata/hello.txt" ), "hello" );
 
     // Check that we can read a binary file
-    ASSERT_EQ( readFile( "etc/testdata/test_file.bin" ),
+    ASSERT_EQ( read_file( "etc/testdata/test_file.bin" ),
         "z!\xFB;rh\x9F\xEB"
         "f\x84\xB8\xE5\xA6\xBC"
         "d\x9F\0\xD3\b\xE5"s );
@@ -550,9 +550,9 @@ TEST( vtz_io, read_file ) {
     EXPECT_THROW(
         try {
             // Attempt to open and read the file
-            auto s = readFile( nullptr );
+            auto s = read_file( nullptr );
         } catch( std::exception const& ex ) {
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -561,9 +561,9 @@ TEST( vtz_io, read_file ) {
     EXPECT_THROW(
         try {
             // Attempt to open and read the file
-            auto s = readFile( "" );
+            auto s = read_file( "" );
         } catch( std::exception const& ex ) {
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -571,9 +571,9 @@ TEST( vtz_io, read_file ) {
     EXPECT_THROW(
         try {
             // Attempt to open and read the file
-            auto s = readFile( "this-file-does-not-exist.txt" );
+            auto s = read_file( "this-file-does-not-exist.txt" );
         } catch( std::exception const& ex ) {
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -584,13 +584,13 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
                 "Rule	US	1942	only	-	Feb2	9	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -598,13 +598,13 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
                 "Rule	US	1942	only	-	# Feb	9	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -612,13 +612,13 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
                 "Rule	US	1942x	only	-	Feb	9	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -626,14 +626,14 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
                 "Rule	US	1942	only	-	Feb	92	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
             // BAD: Day of Month is out of range
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -641,14 +641,14 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
                 "Rule	US	1942	only	-	Feb	9x	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
             // BAD: Day of Month is not completely parsed
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -656,14 +656,14 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
                 "Rule	US	1942	only	-	Feb	0	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
             // BAD: Day of Month is out of range (0 is out of range)
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -671,14 +671,14 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
                 "Rule	US	1942	only	-	Feb	x9	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
             // BAD: Day of Month is not an int
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -686,14 +686,14 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
-                "Rule	US	1942	only	-	Feb	lastSud	2:00	1:00	W # War\n" );
+                "Rule	US	1942	only	-	Feb	last_sud	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
             // BAD: last[DOW] does not have a valid DOW
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -701,14 +701,14 @@ TEST( vtz_parser, parse_errors ) {
     // This is fine
     // clang-format off
     EXPECT_NO_THROW(
-        parseTZData(
+        parse_tzdata(
             "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
             "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
             "Rule	US	1942	only	-	Feb	Tue>=13	2:00	1:00	W # War\n" ) );
 
     // Also fine - we can have [DOW]<=[DOM]
     EXPECT_NO_THROW(
-        parseTZData(
+        parse_tzdata(
             "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
             "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
             "Rule	US	1942	only	-	Feb	Fri<=1	2:00	1:00	W # War\n" ) );
@@ -717,14 +717,14 @@ TEST( vtz_parser, parse_errors ) {
     EXPECT_THROW(
         try {
             // clang-format off
-            parseTZData(
+            parse_tzdata(
                 "Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D\n"
                 "Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S\n"
                 "Rule	US	1942	only	-	Feb	Sud>=13	2:00	1:00	W # War\n" );
             // clang-format on
         } catch( std::exception const& ex ) {
             // BAD: last[DOW] does not have a valid DOW
-            TEST_LOG.logGood( "error message", ex.what() );
+            TEST_LOG.log_good( "error message", ex.what() );
             throw;
         },
         std::exception );
@@ -732,34 +732,34 @@ TEST( vtz_parser, parse_errors ) {
 
 
 namespace {
-    std::pair<string, TZDataFile> testLoadFile( char const* fp ) {
+    std::pair<string, TZDataFile> test_load_file( char const* fp ) {
         using HRC = std::chrono::high_resolution_clock;
         using std::chrono::duration_cast;
 
         auto t0      = HRC::now();
-        auto content = readFile( fp );
+        auto content = read_file( fp );
         auto t1      = HRC::now();
-        auto result  = parseTZData( content, fp );
+        auto result  = parse_tzdata( content, fp );
         auto t2      = HRC::now();
 
-        using msR = std::chrono::duration<double, std::micro>;
+        using ms_r = std::chrono::duration<double, std::micro>;
 
         // Find longest rule name
-        string_view longestRuleName;
-        for( const auto& [ruleName, ruleEntries] : result.rules )
+        string_view longest_rule_name;
+        for( const auto& [rule_name, rule_entries] : result.rules )
         {
-            if( ruleName.size() > longestRuleName.size() ) { longestRuleName = ruleName; }
+            if( rule_name.size() > longest_rule_name.size() ) { longest_rule_name = rule_name; }
         }
 
-        TEST_LOG.logGood( " successfully loaded", fp );
-        TEST_LOG.logGood( "    time read_file()", duration_cast<msR>( t1 - t0 ) );
-        TEST_LOG.logGood( " time parse_tzdata()", duration_cast<msR>( t2 - t1 ) );
-        TEST_LOG.logGood( "               total", duration_cast<msR>( t2 - t0 ) );
+        TEST_LOG.log_good( " successfully loaded", fp );
+        TEST_LOG.log_good( "    time read_file()", duration_cast<ms_r>( t1 - t0 ) );
+        TEST_LOG.log_good( " time parse_tzdata()", duration_cast<ms_r>( t2 - t1 ) );
+        TEST_LOG.log_good( "               total", duration_cast<ms_r>( t2 - t0 ) );
 
-        if( !longestRuleName.empty() )
+        if( !longest_rule_name.empty() )
         {
-            TEST_LOG.logGood( "  longest rule name",
-                fmt::format( "{} (length={})", longestRuleName, longestRuleName.size() ) );
+            TEST_LOG.log_good( "  longest rule name",
+                fmt::format( "{} (length={})", longest_rule_name, longest_rule_name.size() ) );
         }
 
         return { std::move( content ), std::move( result ) };
@@ -768,63 +768,63 @@ namespace {
 
 
 TEST( vtz_io, load_all ) {
-    testLoadFile( "build/data/tzdata/africa" );
-    testLoadFile( "build/data/tzdata/antarctica" );
-    testLoadFile( "build/data/tzdata/asia" );
-    testLoadFile( "build/data/tzdata/australasia" );
-    testLoadFile( "build/data/tzdata/backward" );
-    testLoadFile( "build/data/tzdata/backzone" );
-    testLoadFile( "build/data/tzdata/etcetera" );
-    testLoadFile( "build/data/tzdata/europe" );
-    testLoadFile( "build/data/tzdata/factory" );
-    testLoadFile( "build/data/tzdata/northamerica" );
-    testLoadFile( "build/data/tzdata/southamerica" );
-    auto [file, allZones] = testLoadFile( "build/data/tzdata/tzdata.zi" );
+    test_load_file( "build/data/tzdata/africa" );
+    test_load_file( "build/data/tzdata/antarctica" );
+    test_load_file( "build/data/tzdata/asia" );
+    test_load_file( "build/data/tzdata/australasia" );
+    test_load_file( "build/data/tzdata/backward" );
+    test_load_file( "build/data/tzdata/backzone" );
+    test_load_file( "build/data/tzdata/etcetera" );
+    test_load_file( "build/data/tzdata/europe" );
+    test_load_file( "build/data/tzdata/factory" );
+    test_load_file( "build/data/tzdata/northamerica" );
+    test_load_file( "build/data/tzdata/southamerica" );
+    auto [file, all_zones] = test_load_file( "build/data/tzdata/tzdata.zi" );
 
-    ASSERT_EQ( allZones.links["GMT"], "Etc/GMT" );
-    ASSERT_EQ( allZones.links["EST5EDT"], "America/New_York" );
+    ASSERT_EQ( all_zones.links["GMT"], "Etc/GMT" );
+    ASSERT_EQ( all_zones.links["EST5EDT"], "America/New_York" );
 }
 
 
 TEST( vtz_tz, US_rules ) {
-    auto [content, zones] = testLoadFile( "build/data/tzdata/northamerica" );
+    auto [content, zones] = test_load_file( "build/data/tzdata/northamerica" );
 
-    auto US = zones.evaluateRules( "US" );
+    auto US = zones.evaluate_rules( "US" );
 
     using RE = RuleEntry;
     using RT = RuleTrans;
 
     // https://www.timeanddate.com/calendar/?year=1919&country=1
-    ASSERT_EQ( US.yearStart, 1918 );
-    ASSERT_EQ( US.yearEnd, 2007 );
+    ASSERT_EQ( US.year_start, 1918 );
+    ASSERT_EQ( US.year_end, 2007 );
 
     // There were 7 transitions before 1967, and then 2 transitions a year between 1967 and 2007
     // Transitions within or after 2007 are "active". We're currently using the 2007 rules,
     // so they are not listed as historical.
     ASSERT_EQ( US.historical.size(), 7 + ( 2007 - 1967 ) * 2 );
 
-    ASSERT_EQ( US.historical[0], RT::fromCivil( 1918, 3, 31, "2:00", "1:00", "D" ) );
-    ASSERT_EQ( US.historical[1], RT::fromCivil( 1918, 10, 27, "2:00", "0", "S" ) );
-    ASSERT_EQ( US.historical[2], RT::fromCivil( 1919, 3, 30, "2:00", "1:00", "D" ) );
-    ASSERT_EQ( US.historical[3], RT::fromCivil( 1919, 10, 26, "2:00", "0", "S" ) );
+    ASSERT_EQ( US.historical[0], RT::from_civil( 1918, 3, 31, "2:00", "1:00", "D" ) );
+    ASSERT_EQ( US.historical[1], RT::from_civil( 1918, 10, 27, "2:00", "0", "S" ) );
+    ASSERT_EQ( US.historical[2], RT::from_civil( 1919, 3, 30, "2:00", "1:00", "D" ) );
+    ASSERT_EQ( US.historical[3], RT::from_civil( 1919, 10, 26, "2:00", "0", "S" ) );
 
     // Enter War Time on February 9th, 1942
-    ASSERT_EQ( US.historical[4], RT::fromCivil( 1942, 2, 9, "2:00", "1:00", "W" ) );
+    ASSERT_EQ( US.historical[4], RT::from_civil( 1942, 2, 9, "2:00", "1:00", "W" ) );
     // Transition to Peace Time on August 14th, 1945
-    ASSERT_EQ( US.historical[5], RT::fromCivil( 1945, 8, 14, "23:00u", "1:00", "P" ) );
+    ASSERT_EQ( US.historical[5], RT::from_civil( 1945, 8, 14, "23:00u", "1:00", "P" ) );
 
     // On September 30th, 1945, the US moved back to Standard Time
-    ASSERT_EQ( US.historical[6], RT::fromCivil( 1945, 9, 30, "2:00", "0", "S" ) );
+    ASSERT_EQ( US.historical[6], RT::from_civil( 1945, 9, 30, "2:00", "0", "S" ) );
 
     // We started to do Daylight Savings Time again for some fucking reasons
-    ASSERT_EQ( US.historical[7], RT::fromCivil( 1967, 4, 30, "2:00", "1:00", "D" ) );
-    ASSERT_EQ( US.historical[8], RT::fromCivil( 1967, 10, 29, "2:00", "0", "S" ) );
+    ASSERT_EQ( US.historical[7], RT::from_civil( 1967, 4, 30, "2:00", "1:00", "D" ) );
+    ASSERT_EQ( US.historical[8], RT::from_civil( 1967, 10, 29, "2:00", "0", "S" ) );
 
     // Historical rules apply until 2006. From then onwards we started using the current set of
     // rules!
     size_t n = US.historical.size();
-    ASSERT_EQ( US.historical[n - 2], RT::fromCivil( 2006, 4, 2, "2:00", "1:00", "D" ) );
-    ASSERT_EQ( US.historical[n - 1], RT::fromCivil( 2006, 10, 29, "2:00", "0", "S" ) );
+    ASSERT_EQ( US.historical[n - 2], RT::from_civil( 2006, 4, 2, "2:00", "1:00", "D" ) );
+    ASSERT_EQ( US.historical[n - 1], RT::from_civil( 2006, 10, 29, "2:00", "0", "S" ) );
 
     ASSERT_EQ( US.active.at( 0 ),
         ( RE{ 2007, Y_MAX, Mon::Mar, RuleOn::ge( DOW::Sun, 8 ), "2:00", "1:00", "D" } ) );
@@ -835,28 +835,28 @@ TEST( vtz_tz, US_rules ) {
 
 TEST( vtz_tz, America_NewYork ) {
     using HRC             = std::chrono::high_resolution_clock;
-    auto [content, zones] = testLoadFile( "build/data/tzdata/northamerica" );
+    auto [content, zones] = test_load_file( "build/data/tzdata/northamerica" );
     auto t0               = HRC::now();
 
-    auto times = zones.getZoneStates( "America/New_York", 2050 );
+    auto times = zones.get_zone_states( "America/New_York", 2050 );
 
     auto t1 = HRC::now();
 
-    using msR = std::chrono::duration<double, std::micro>;
+    using ms_r = std::chrono::duration<double, std::micro>;
 
-    TEST_LOG.logGood( "time getZoneStates()", std::chrono::duration_cast<msR>( t1 - t0 ) );
+    TEST_LOG.log_good( "time get_zone_states()", std::chrono::duration_cast<ms_r>( t1 - t0 ) );
 
     fmt::println( "Initial state: stdoff={} save={} abbr={}",
         times.initial().stdoff,
         times.initial().save(),
         times.initial().abbr.sv() );
 
-    for( auto const& trans : times.getTransitions() )
+    for( auto const& trans : times.get_transitions() )
     {
         fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
-            fmt::styled( utcToString( trans.when ), FAINT_GRAY ),
+            fmt::styled( utc_to_string( trans.when ), FAINT_GRAY ),
             fmt::styled(
-                localToString( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
+                local_to_string( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
             trans.state.stdoff,
             trans.state.save(),
             trans.state.abbr.sv() );
@@ -866,27 +866,27 @@ TEST( vtz_tz, America_NewYork ) {
 
 TEST( vtz_tz, Asia_Singapore ) {
     using HRC             = std::chrono::high_resolution_clock;
-    auto [content, zones] = testLoadFile( "build/data/tzdata/asia" );
+    auto [content, zones] = test_load_file( "build/data/tzdata/asia" );
     auto t0               = HRC::now();
-    auto times            = zones.getZoneStates( "Asia/Singapore", 2050 );
+    auto times            = zones.get_zone_states( "Asia/Singapore", 2050 );
 
     auto t1 = HRC::now();
 
-    using msR = std::chrono::duration<double, std::micro>;
+    using ms_r = std::chrono::duration<double, std::micro>;
 
-    TEST_LOG.logGood( "time getZoneStates()", std::chrono::duration_cast<msR>( t1 - t0 ) );
+    TEST_LOG.log_good( "time get_zone_states()", std::chrono::duration_cast<ms_r>( t1 - t0 ) );
 
     fmt::println( "Initial state: stdoff={} save={} abbr={}",
         times.initial().stdoff,
         times.initial().save(),
         times.initial().abbr.sv() );
 
-    for( auto const& trans : times.getTransitions() )
+    for( auto const& trans : times.get_transitions() )
     {
         fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
-            fmt::styled( utcToString( trans.when ), FAINT_GRAY ),
+            fmt::styled( utc_to_string( trans.when ), FAINT_GRAY ),
             fmt::styled(
-                localToString( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
+                local_to_string( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
             trans.state.stdoff,
             trans.state.save(),
             trans.state.abbr.sv() );
@@ -895,65 +895,65 @@ TEST( vtz_tz, Asia_Singapore ) {
 
 
 TEST( vtz_parser, basics ) {
-    ASSERT_EQ( parseHHMMSSOffset( "0:12:12" ), 60 * 12 + 12 );
-    ASSERT_EQ( parseHHMMSSOffset( "2:00" ), 7200 );
-    ASSERT_EQ( parseSignedHHMMSSOffset( "2:00" ), 7200 );
-    ASSERT_EQ( parseSignedHHMMSSOffset( "-2:00" ), -7200 );
+    ASSERT_EQ( parse_hhmmssoffset( "0:12:12" ), 60 * 12 + 12 );
+    ASSERT_EQ( parse_hhmmssoffset( "2:00" ), 7200 );
+    ASSERT_EQ( parse_signed_hhmmssoffset( "2:00" ), 7200 );
+    ASSERT_EQ( parse_signed_hhmmssoffset( "-2:00" ), -7200 );
 
-    ASSERT_EQ( parseRuleOn( "lastSun" ).str(), "lastSun" );
-    ASSERT_EQ( parseRuleOn( "lastMon" ).str(), "lastMon" );
-    ASSERT_EQ( parseRuleOn( "lastTue" ).str(), "lastTue" );
-    ASSERT_EQ( parseRuleOn( "lastWed" ).str(), "lastWed" );
-    ASSERT_EQ( parseRuleOn( "lastThu" ).str(), "lastThu" );
-    ASSERT_EQ( parseRuleOn( "lastFri" ).str(), "lastFri" );
-    ASSERT_EQ( parseRuleOn( "lastSat" ).str(), "lastSat" );
+    ASSERT_EQ( parse_rule_on( "lastSun" ).str(), "lastSun" );
+    ASSERT_EQ( parse_rule_on( "lastMon" ).str(), "lastMon" );
+    ASSERT_EQ( parse_rule_on( "lastTue" ).str(), "lastTue" );
+    ASSERT_EQ( parse_rule_on( "lastWed" ).str(), "lastWed" );
+    ASSERT_EQ( parse_rule_on( "lastThu" ).str(), "lastThu" );
+    ASSERT_EQ( parse_rule_on( "lastFri" ).str(), "lastFri" );
+    ASSERT_EQ( parse_rule_on( "lastSat" ).str(), "lastSat" );
 
-    ASSERT_EQ( parseRuleOn( "Sun>=1" ).str(), "Sun>=1" );
-    ASSERT_EQ( parseRuleOn( "Mon>=2" ).str(), "Mon>=2" );
-    ASSERT_EQ( parseRuleOn( "Tue>=3" ).str(), "Tue>=3" );
-    ASSERT_EQ( parseRuleOn( "Wed>=10" ).str(), "Wed>=10" );
-    ASSERT_EQ( parseRuleOn( "Thu>=11" ).str(), "Thu>=11" );
-    ASSERT_EQ( parseRuleOn( "Fri>=12" ).str(), "Fri>=12" );
-    ASSERT_EQ( parseRuleOn( "Sat>=31" ).str(), "Sat>=31" );
+    ASSERT_EQ( parse_rule_on( "Sun>=1" ).str(), "Sun>=1" );
+    ASSERT_EQ( parse_rule_on( "Mon>=2" ).str(), "Mon>=2" );
+    ASSERT_EQ( parse_rule_on( "Tue>=3" ).str(), "Tue>=3" );
+    ASSERT_EQ( parse_rule_on( "Wed>=10" ).str(), "Wed>=10" );
+    ASSERT_EQ( parse_rule_on( "Thu>=11" ).str(), "Thu>=11" );
+    ASSERT_EQ( parse_rule_on( "Fri>=12" ).str(), "Fri>=12" );
+    ASSERT_EQ( parse_rule_on( "Sat>=31" ).str(), "Sat>=31" );
 
-    ASSERT_EQ( parseRuleOn( "Sun<=1" ).str(), "Sun<=1" );
-    ASSERT_EQ( parseRuleOn( "Mon<=2" ).str(), "Mon<=2" );
-    ASSERT_EQ( parseRuleOn( "Tue<=3" ).str(), "Tue<=3" );
-    ASSERT_EQ( parseRuleOn( "Wed<=10" ).str(), "Wed<=10" );
-    ASSERT_EQ( parseRuleOn( "Thu<=11" ).str(), "Thu<=11" );
-    ASSERT_EQ( parseRuleOn( "Fri<=12" ).str(), "Fri<=12" );
-    ASSERT_EQ( parseRuleOn( "Sat<=31" ).str(), "Sat<=31" );
+    ASSERT_EQ( parse_rule_on( "Sun<=1" ).str(), "Sun<=1" );
+    ASSERT_EQ( parse_rule_on( "Mon<=2" ).str(), "Mon<=2" );
+    ASSERT_EQ( parse_rule_on( "Tue<=3" ).str(), "Tue<=3" );
+    ASSERT_EQ( parse_rule_on( "Wed<=10" ).str(), "Wed<=10" );
+    ASSERT_EQ( parse_rule_on( "Thu<=11" ).str(), "Thu<=11" );
+    ASSERT_EQ( parse_rule_on( "Fri<=12" ).str(), "Fri<=12" );
+    ASSERT_EQ( parse_rule_on( "Sat<=31" ).str(), "Sat<=31" );
 
-    ASSERT_ANY_THROW( parseRuleOn( "Sun<=0" ); );
+    ASSERT_ANY_THROW( parse_rule_on( "Sun<=0" ); );
 
-    auto E_EurAsia    = parseZoneRule( "E-EurAsia" );
-    auto NT_YK        = parseZoneRule( "NT_YK" );
-    auto Indianapolis = parseZoneRule( "Indianapolis" );
-    auto hyphen       = parseZoneRule( "-" );
-    auto off1         = parseZoneRule( "1:23" );
-    auto off2         = parseZoneRule( "+1:23" );
-    auto off3         = parseZoneRule( "-1:23" );
+    auto E_EurAsia    = parse_zone_rule( "E-EurAsia" );
+    auto NT_YK        = parse_zone_rule( "NT_YK" );
+    auto Indianapolis = parse_zone_rule( "Indianapolis" );
+    auto hyphen       = parse_zone_rule( "-" );
+    auto off1         = parse_zone_rule( "1:23" );
+    auto off2         = parse_zone_rule( "+1:23" );
+    auto off3         = parse_zone_rule( "-1:23" );
 
     ASSERT_EQ( NT_YK.kind(), ZoneRule::NAMED );
     ASSERT_EQ( NT_YK.name(), "NT_YK" );
 
     ASSERT_EQ( Indianapolis.name(), "Indianapolis" );
 
-    ASSERT_EQ( E_EurAsia.isNamed(), true );
-    ASSERT_EQ( E_EurAsia.isHyphen(), false );
-    ASSERT_EQ( E_EurAsia.isOffset(), false );
+    ASSERT_EQ( E_EurAsia.is_named(), true );
+    ASSERT_EQ( E_EurAsia.is_hyphen(), false );
+    ASSERT_EQ( E_EurAsia.is_offset(), false );
     ASSERT_EQ( E_EurAsia.kind(), ZoneRule::NAMED );
     ASSERT_EQ( E_EurAsia.name(), "E-EurAsia" );
 
-    ASSERT_EQ( hyphen.isNamed(), false );
-    ASSERT_EQ( hyphen.isHyphen(), true );
-    ASSERT_EQ( hyphen.isOffset(), false );
+    ASSERT_EQ( hyphen.is_named(), false );
+    ASSERT_EQ( hyphen.is_hyphen(), true );
+    ASSERT_EQ( hyphen.is_offset(), false );
     ASSERT_EQ( hyphen.kind(), ZoneRule::HYPHEN );
     ASSERT_EQ( hyphen.name(), "-" );
 
-    ASSERT_EQ( off1.isNamed(), false );
-    ASSERT_EQ( off1.isHyphen(), false );
-    ASSERT_EQ( off1.isOffset(), true );
+    ASSERT_EQ( off1.is_named(), false );
+    ASSERT_EQ( off1.is_hyphen(), false );
+    ASSERT_EQ( off1.is_offset(), true );
     ASSERT_EQ( off1.kind(), ZoneRule::OFFSET );
     ASSERT_EQ( off1.offset(), 4980 );
     ASSERT_EQ( off1.str(), "01:23" );
@@ -968,7 +968,7 @@ TEST( vtz_parser, basics ) {
 }
 
 
-TEST( vtz_parser, zoneFormat ) {
+TEST( vtz_parser, zone_format ) {
     COUNT_ASSERTIONS();
 
     // Test ZoneFormat
@@ -976,12 +976,12 @@ TEST( vtz_parser, zoneFormat ) {
 
     // === LITERAL format tests ===
     static_assert( ZF{ "GMT" }.with( ZF::LITERAL, 3, 0 ).format( 0, false, "S" ).sv() == "GMT" );
-    ASSERT_EQ( parseZoneFormat( "EST" ), ZF{ "EST" }.with( ZF::LITERAL, 3 ) );
-    ASSERT_EQ( parseZoneFormat( "-00" ), ZF{ "-00" }.with( ZF::LITERAL, 3 ) );
+    ASSERT_EQ( parse_zone_format( "EST" ), ZF{ "EST" }.with( ZF::LITERAL, 3 ) );
+    ASSERT_EQ( parse_zone_format( "-00" ), ZF{ "-00" }.with( ZF::LITERAL, 3 ) );
 
     // Longer literal formats
-    ASSERT_EQ( parseZoneFormat( "WEST" ), ZF{ "WEST" }.with( ZF::LITERAL, 4 ) );
-    ASSERT_EQ( parseZoneFormat( "ACST" ), ZF{ "ACST" }.with( ZF::LITERAL, 4 ) );
+    ASSERT_EQ( parse_zone_format( "WEST" ), ZF{ "WEST" }.with( ZF::LITERAL, 4 ) );
+    ASSERT_EQ( parse_zone_format( "ACST" ), ZF{ "ACST" }.with( ZF::LITERAL, 4 ) );
 
     // === FMT_S (%s substitution) tests ===
     static_assert( ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ).tag() == ZF::FMT_S );
@@ -991,20 +991,20 @@ TEST( vtz_parser, zoneFormat ) {
     static_assert( ZF{ "ET" }.with( ZF::FMT_S, 0, 2 ).format( 0, false, "-xx-" ).sv() == "-xx-ET" );
     static_assert( ZF{ "ET" }.with( ZF::FMT_S, 2, 0 ).format( 0, false, "-xx-" ).sv() == "ET-xx-" );
 
-    ASSERT_EQ( parseZoneFormat( "E%sT" ), ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ) );
-    ASSERT_EQ( parseZoneFormat( "C%sT" ), ZF{ "CT" }.with( ZF::FMT_S, 1, 1 ) );
+    ASSERT_EQ( parse_zone_format( "E%sT" ), ZF{ "ET" }.with( ZF::FMT_S, 1, 1 ) );
+    ASSERT_EQ( parse_zone_format( "C%sT" ), ZF{ "CT" }.with( ZF::FMT_S, 1, 1 ) );
 
     // %s at the beginning
-    ASSERT_EQ( parseZoneFormat( "%sT" ), ZF{ "T" }.with( ZF::FMT_S, 0, 1 ) );
-    ASSERT_EQ( parseZoneFormat( "%sST" ), ZF{ "ST" }.with( ZF::FMT_S, 0, 2 ) );
+    ASSERT_EQ( parse_zone_format( "%sT" ), ZF{ "T" }.with( ZF::FMT_S, 0, 1 ) );
+    ASSERT_EQ( parse_zone_format( "%sST" ), ZF{ "ST" }.with( ZF::FMT_S, 0, 2 ) );
 
     // %s at the end
-    ASSERT_EQ( parseZoneFormat( "E%s" ), ZF{ "E" }.with( ZF::FMT_S, 1, 0 ) );
-    ASSERT_EQ( parseZoneFormat( "WE%s" ), ZF{ "WE" }.with( ZF::FMT_S, 2, 0 ) );
+    ASSERT_EQ( parse_zone_format( "E%s" ), ZF{ "E" }.with( ZF::FMT_S, 1, 0 ) );
+    ASSERT_EQ( parse_zone_format( "WE%s" ), ZF{ "WE" }.with( ZF::FMT_S, 2, 0 ) );
 
     // %s in the middle with more context
-    ASSERT_EQ( parseZoneFormat( "AC%sT" ), ZF{ "ACT" }.with( ZF::FMT_S, 2, 1 ) );
-    ASSERT_EQ( parseZoneFormat( "AE%sST" ), ZF{ "AEST" }.with( ZF::FMT_S, 2, 2 ) );
+    ASSERT_EQ( parse_zone_format( "AC%sT" ), ZF{ "ACT" }.with( ZF::FMT_S, 2, 1 ) );
+    ASSERT_EQ( parse_zone_format( "AE%sST" ), ZF{ "AEST" }.with( ZF::FMT_S, 2, 2 ) );
 
     // === FMT_Z (%z numeric offset) tests ===
     static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 0, false, "" ).sv() == "+00" );
@@ -1029,93 +1029,93 @@ TEST( vtz_parser, zoneFormat ) {
     static_assert(
         ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv() == "h+012345ello" );
 
-    ASSERT_EQ( parseZoneFormat( "E%zT" ), ZF{ "ET" }.with( ZF::FMT_Z, 1, 1 ) );
-    ASSERT_EQ( parseZoneFormat( "%z" ), ZF{}.with( ZF::FMT_Z ) );
+    ASSERT_EQ( parse_zone_format( "E%zT" ), ZF{ "ET" }.with( ZF::FMT_Z, 1, 1 ) );
+    ASSERT_EQ( parse_zone_format( "%z" ), ZF{}.with( ZF::FMT_Z ) );
 
     // %z with prefixes
-    ASSERT_EQ( parseZoneFormat( "GMT%z" ), ZF{ "GMT" }.with( ZF::FMT_Z, 3, 0 ) );
-    ASSERT_EQ( parseZoneFormat( "UTC%z" ), ZF{ "UTC" }.with( ZF::FMT_Z, 3, 0 ) );
+    ASSERT_EQ( parse_zone_format( "GMT%z" ), ZF{ "GMT" }.with( ZF::FMT_Z, 3, 0 ) );
+    ASSERT_EQ( parse_zone_format( "UTC%z" ), ZF{ "UTC" }.with( ZF::FMT_Z, 3, 0 ) );
 
     // %z with suffixes
-    ASSERT_EQ( parseZoneFormat( "%zST" ), ZF{ "ST" }.with( ZF::FMT_Z, 0, 2 ) );
+    ASSERT_EQ( parse_zone_format( "%zST" ), ZF{ "ST" }.with( ZF::FMT_Z, 0, 2 ) );
 
     // %z with both prefix and suffix
-    ASSERT_EQ( parseZoneFormat( "A%zB" ), ZF{ "AB" }.with( ZF::FMT_Z, 1, 1 ) );
+    ASSERT_EQ( parse_zone_format( "A%zB" ), ZF{ "AB" }.with( ZF::FMT_Z, 1, 1 ) );
 
     // === SLASH format tests ===
-    ASSERT_EQ( parseZoneFormat( "EST/EDT" ), ZF{ "ESTEDT" }.with( ZF::SLASH, 3, 3 ) );
-    ASSERT_EQ( parseZoneFormat( "GMT/BDST" ), ZF{ "GMTBDST" }.with( ZF::SLASH, 3, 4 ) );
-    ASSERT_EQ( parseZoneFormat( "GMT/BST" ), ZF{ "GMTBST" }.with( ZF::SLASH, 3, 3 ) );
-    ASSERT_EQ( parseZoneFormat( "CET/CEST" ), ZF{ "CETCEST" }.with( ZF::SLASH, 3, 4 ) );
-    ASSERT_EQ( parseZoneFormat( "EET/EEST" ), ZF{ "EETEEST" }.with( ZF::SLASH, 3, 4 ) );
+    ASSERT_EQ( parse_zone_format( "EST/EDT" ), ZF{ "ESTEDT" }.with( ZF::SLASH, 3, 3 ) );
+    ASSERT_EQ( parse_zone_format( "GMT/BDST" ), ZF{ "GMTBDST" }.with( ZF::SLASH, 3, 4 ) );
+    ASSERT_EQ( parse_zone_format( "GMT/BST" ), ZF{ "GMTBST" }.with( ZF::SLASH, 3, 3 ) );
+    ASSERT_EQ( parse_zone_format( "CET/CEST" ), ZF{ "CETCEST" }.with( ZF::SLASH, 3, 4 ) );
+    ASSERT_EQ( parse_zone_format( "EET/EEST" ), ZF{ "EETEEST" }.with( ZF::SLASH, 3, 4 ) );
 
     // Slash with asymmetric parts
-    ASSERT_EQ( parseZoneFormat( "A/BCDE" ), ZF{ "ABCDE" }.with( ZF::SLASH, 1, 4 ) );
-    ASSERT_EQ( parseZoneFormat( "A/BCDE" ).format( 0, false, "" ).sv(), "A" );
-    ASSERT_EQ( parseZoneFormat( "A/BCDE" ).format( 0, true, "" ).sv(), "BCDE" );
+    ASSERT_EQ( parse_zone_format( "A/BCDE" ), ZF{ "ABCDE" }.with( ZF::SLASH, 1, 4 ) );
+    ASSERT_EQ( parse_zone_format( "A/BCDE" ).format( 0, false, "" ).sv(), "A" );
+    ASSERT_EQ( parse_zone_format( "A/BCDE" ).format( 0, true, "" ).sv(), "BCDE" );
 
     // === Round-trip tests (parse then format) ===
 
     // Literal round-trips
-    auto lit1 = parseZoneFormat( "ACST" );
+    auto lit1 = parse_zone_format( "ACST" );
     ASSERT_EQ( lit1, ZF{ "ACST" }.with( ZF::LITERAL, 4 ) );
     static_assert( ZF{ "ACST" }.with( ZF::LITERAL, 4 ).format( 0, false, "" ).sv() == "ACST" );
 
     ASSERT_EQ( lit1.format( 0, false, "" ).sv(), "ACST" );
 
     // %s round-trips
-    auto fmts1 = parseZoneFormat( "WE%sT" );
+    auto fmts1 = parse_zone_format( "WE%sT" );
     ASSERT_EQ( fmts1.format( 0, false, "S" ).sv(), "WEST" );
     ASSERT_EQ( fmts1.format( 0, false, "D" ).sv(), "WEDT" );
 
-    auto fmts2 = parseZoneFormat( "%sT" );
+    auto fmts2 = parse_zone_format( "%sT" );
     ASSERT_EQ( fmts2.format( 0, false, "ES" ).sv(), "EST" );
     ASSERT_EQ( fmts2.format( 0, false, "ED" ).sv(), "EDT" );
 
     // %z round-trips
-    auto fmtz1 = parseZoneFormat( "%z" );
+    auto fmtz1 = parse_zone_format( "%z" );
     ASSERT_EQ( fmtz1.format( -10800, false, "" ).sv(), "-03" );
     ASSERT_EQ( fmtz1.format( 19800, false, "" ).sv(), "+0530" );
 
-    auto fmtz2 = parseZoneFormat( "GMT%z" );
+    auto fmtz2 = parse_zone_format( "GMT%z" );
     ASSERT_EQ( fmtz2.format( 0, false, "" ).sv(), "GMT+00" );
     ASSERT_EQ( fmtz2.format( -3600, false, "" ).sv(), "GMT-01" );
 
     // Slash round-trips
-    auto slash1 = parseZoneFormat( "CST/CDT" );
+    auto slash1 = parse_zone_format( "CST/CDT" );
     ASSERT_EQ( slash1.format( 0, false, "" ).sv(), "CST" );
     ASSERT_EQ( slash1.format( 0, true, "" ).sv(), "CDT" );
 
-    // Test slash format selection based on isDST flag
-    auto slashFmt = parseZoneFormat( "PST/PDT" );
-    ASSERT_EQ( slashFmt.format( 0, false, "" ).sv(), "PST" ); // isDST=false
-    ASSERT_EQ( slashFmt.format( 0, true, "" ).sv(), "PDT" );  // isDST=true
+    // Test slash format selection based on is_dst flag
+    auto slash_fmt = parse_zone_format( "PST/PDT" );
+    ASSERT_EQ( slash_fmt.format( 0, false, "" ).sv(), "PST" ); // is_dst=false
+    ASSERT_EQ( slash_fmt.format( 0, true, "" ).sv(), "PDT" );  // is_dst=true
 
     // === Edge cases ===
 
     // Empty format
-    ASSERT_ANY_THROW( parseZoneFormat( "" ) );
+    ASSERT_ANY_THROW( parse_zone_format( "" ) );
 
     // Single character
-    ASSERT_EQ( parseZoneFormat( "A" ), ZF{ "A" }.with( ZF::LITERAL, 1 ) );
+    ASSERT_EQ( parse_zone_format( "A" ), ZF{ "A" }.with( ZF::LITERAL, 1 ) );
 
     // Maximum reasonable length literal
-    ASSERT_EQ( parseZoneFormat( "VERYLONGZONE" ), ZF{ "VERYLONGZONE" }.with( ZF::LITERAL, 12 ) );
+    ASSERT_EQ( parse_zone_format( "VERYLONGZONE" ), ZF{ "VERYLONGZONE" }.with( ZF::LITERAL, 12 ) );
 
     // === Format with offset tests (for %z) ===
 
     // Test various offset values with %z format
-    auto zFmt = parseZoneFormat( "%z" );
-    ASSERT_EQ( zFmt.format( 0, false, "" ).sv(), "+00" );
-    ASSERT_EQ( zFmt.format( 1800, false, "" ).sv(), "+0030" );   // Half hour offset
-    ASSERT_EQ( zFmt.format( 5400, false, "" ).sv(), "+0130" );   // 1.5 hours
-    ASSERT_EQ( zFmt.format( 12600, false, "" ).sv(), "+0330" );  // 3.5 hours (Iran)
-    ASSERT_EQ( zFmt.format( 20700, false, "" ).sv(), "+0545" );  // Nepal
-    ASSERT_EQ( zFmt.format( -12600, false, "" ).sv(), "-0330" ); // Newfoundland
+    auto z_fmt = parse_zone_format( "%z" );
+    ASSERT_EQ( z_fmt.format( 0, false, "" ).sv(), "+00" );
+    ASSERT_EQ( z_fmt.format( 1800, false, "" ).sv(), "+0030" );   // Half hour offset
+    ASSERT_EQ( z_fmt.format( 5400, false, "" ).sv(), "+0130" );   // 1.5 hours
+    ASSERT_EQ( z_fmt.format( 12600, false, "" ).sv(), "+0330" );  // 3.5 hours (Iran)
+    ASSERT_EQ( z_fmt.format( 20700, false, "" ).sv(), "+0545" );  // Nepal
+    ASSERT_EQ( z_fmt.format( -12600, false, "" ).sv(), "-0330" ); // Newfoundland
 
     // Test %z with seconds
-    ASSERT_EQ( zFmt.format( 3601, false, "" ).sv(), "+010001" );
-    ASSERT_EQ( zFmt.format( -3661, false, "" ).sv(), "-010101" );
+    ASSERT_EQ( z_fmt.format( 3601, false, "" ).sv(), "+010001" );
+    ASSERT_EQ( z_fmt.format( -3661, false, "" ).sv(), "-010101" );
 }
 
 namespace vtz {
@@ -1130,46 +1130,47 @@ TEST( vtz, current_zone ) {
 
 TEST( vtz, reload_current_zone ) {
     ASSERT_EQ( _get_current_zone_name(), date::current_zone()->name() );
-    auto* oldTZ = vtz::current_zone();
-    ASSERT_EQ( oldTZ->name(), date::current_zone()->name() );
+    auto* old_tz = vtz::current_zone();
+    ASSERT_EQ( old_tz->name(), date::current_zone()->name() );
 
-    std::string newZoneName = oldTZ->name() == "America/New_York"
-                                  ? std::string( "America/Denver" )    // Switch to America/Denver
-                                  : std::string( "America/New_York" ); // Switch to America/New_York
+    std::string new_zone_name
+        = old_tz->name() == "America/New_York"
+              ? std::string( "America/Denver" )    // Switch to America/Denver
+              : std::string( "America/New_York" ); // Switch to America/New_York
 
     // Ensure that the new zone is different
-    ASSERT_NE( newZoneName, vtz::current_zone()->name() );
+    ASSERT_NE( new_zone_name, vtz::current_zone()->name() );
 
-    auto* newTZ = vtz::set_current_zone_for_application( newZoneName );
+    auto* new_tz = vtz::set_current_zone_for_application( new_zone_name );
 
     // check that the zone was updated
-    ASSERT_EQ( newTZ, vtz::current_zone() );
+    ASSERT_EQ( new_tz, vtz::current_zone() );
 
     // Assert that the old zone is different than the new zone
-    ASSERT_NE( oldTZ, newTZ );
+    ASSERT_NE( old_tz, new_tz );
 
-    ASSERT_EQ( vtz::current_zone()->name(), newZoneName );
+    ASSERT_EQ( vtz::current_zone()->name(), new_zone_name );
 
     ASSERT_NE( vtz::current_zone()->name(), date::current_zone()->name() );
 
     // Reload the current zone
     vtz::reload_current_zone();
-    ASSERT_NE( newZoneName, vtz::current_zone()->name() );
+    ASSERT_NE( new_zone_name, vtz::current_zone()->name() );
 
     ASSERT_EQ( vtz::current_zone()->name(), date::current_zone()->name() );
 
     // Assert that the 'restored' current_zone is the same as before
-    ASSERT_EQ( oldTZ, vtz::current_zone() );
+    ASSERT_EQ( old_tz, vtz::current_zone() );
 }
 
 
 namespace vtz::win32 {
-    string_view windowsZoneToNative( string_view windowsZone );
+    string_view windows_zone_to_native( string_view windows_zone );
 } // namespace vtz::win32
 
 
-TEST( vtz, windowsZones ) {
-    std::pair<string_view, string_view> testZones[]{
+TEST( vtz, windows_zones ) {
+    std::pair<string_view, string_view> test_zones[]{
         { "Dateline Standard Time", "Etc/GMT+12" },
         { "UTC-11", "Etc/GMT+11" },
         { "Aleutian Standard Time", "America/Adak" },
@@ -1312,9 +1313,9 @@ TEST( vtz, windowsZones ) {
     };
 
 
-    for( auto const& [windowsName, IANA_name] : testZones )
+    for( auto const& [windows_name, IANA_name] : test_zones )
     {
         // Check that the windows zone name matches the IANA name
-        ASSERT_EQ( win32::windowsZoneToNative( windowsName ), IANA_name );
+        ASSERT_EQ( win32::windows_zone_to_native( windows_name ), IANA_name );
     }
 }

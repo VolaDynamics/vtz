@@ -21,14 +21,14 @@ using vtz::i64;
 using vtz::sysdays_t;
 
 template<class T, class Dur = typename T::duration>
-vector<T> toChrono( vector<i64> const& tt ) {
+vector<T> to_chrono( vector<i64> const& tt ) {
     vector<T> result( tt.size() );
     for( size_t i = 0; i < tt.size(); ++i ) result[i] = T( Dur( tt[i] ) );
     return result;
 }
 
 template<class T, class F>
-auto randomValues( size_t count, T start, T end, F func ) {
+auto random_values( size_t count, T start, T end, F func ) {
     using value_type = decltype( func( start ) );
     auto result      = vector<value_type>( count );
     auto rng         = std::mt19937_64{};
@@ -39,37 +39,38 @@ auto randomValues( size_t count, T start, T end, F func ) {
 }
 
 template<class T>
-auto randomValues( size_t count, T start, T end ) {
-    return randomValues( count, start, end, []( auto x ) { return x; } );
+auto random_values( size_t count, T start, T end ) {
+    return random_values( count, start, end, []( auto x ) { return x; } );
 }
-vector<i64> randomTimes(
-    size_t count, int startYear, int endYear, i64 mul = 1 ) {
-    return randomValues( count,
-        vtz::daysToSeconds( vtz::resolveCivil( startYear ) ),
-        vtz::daysToSeconds( vtz::resolveCivil( endYear ) ),
+vector<i64> random_times(
+    size_t count, int start_year, int end_year, i64 mul = 1 ) {
+    return random_values( count,
+        vtz::days_to_seconds( vtz::resolve_civil( start_year ) ),
+        vtz::days_to_seconds( vtz::resolve_civil( end_year ) ),
         [=]( i64 x ) { return x * mul; } );
 }
 
 
-vector<sysdays_t> randomDays( size_t count, int startYear, int endYear ) {
-    return randomValues(
-        count, vtz::resolveCivil( startYear ), vtz::resolveCivil( endYear ) );
+vector<sysdays_t> random_days( size_t count, int start_year, int end_year ) {
+    return random_values( count,
+        vtz::resolve_civil( start_year ),
+        vtz::resolve_civil( end_year ) );
 }
 
-vector<vtz::sys_days> randomSysDays(
-    size_t count, int startYear, int endYear ) {
-    return randomValues( count,
-        vtz::resolveCivil( startYear ),
-        vtz::resolveCivil( endYear ),
+vector<vtz::sys_days> random_sys_days(
+    size_t count, int start_year, int end_year ) {
+    return random_values( count,
+        vtz::resolve_civil( start_year ),
+        vtz::resolve_civil( end_year ),
         []( sysdays_t days ) { return vtz::sys_days( vtz::days( days ) ); } );
 }
 
 
-vector<vtz::YMD> randomYMD( size_t count, int startYear, int endYear ) {
-    return randomValues( count,
-        vtz::resolveCivil( startYear ),
-        vtz::resolveCivil( endYear ),
-        []( sysdays_t days ) { return vtz::toCivil( days ); } );
+vector<vtz::YMD> random_ymd( size_t count, int start_year, int end_year ) {
+    return random_values( count,
+        vtz::resolve_civil( start_year ),
+        vtz::resolve_civil( end_year ),
+        []( sysdays_t days ) { return vtz::to_civil( days ); } );
 }
 
 
@@ -77,7 +78,7 @@ constexpr size_t COUNT = 65536;
 
 
 BENCH( hinnant_to_local, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -89,7 +90,8 @@ BENCH( hinnant_to_local, state ) {
 
 
 BENCH( hinnant_to_sys_latest, state ) {
-    auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt
+        = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto tz = date::locate_zone( "America/New_York" );
     size_t i = 0;
     for( auto _ : state )
@@ -102,7 +104,8 @@ BENCH( hinnant_to_sys_latest, state ) {
 
 
 BENCH( hinnant_to_sys_earliest, state ) {
-    auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt
+        = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto tz = date::locate_zone( "America/New_York" );
     size_t i = 0;
     for( auto _ : state )
@@ -115,7 +118,7 @@ BENCH( hinnant_to_sys_earliest, state ) {
 
 
 BENCH( hinnant_to_local_with_lookup, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
     {
@@ -127,7 +130,8 @@ BENCH( hinnant_to_local_with_lookup, state ) {
 
 
 BENCH( hinnant_to_sys_latest_with_lookup, state ) {
-    auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt
+        = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
     for( auto _ : state )
     {
@@ -139,7 +143,8 @@ BENCH( hinnant_to_sys_latest_with_lookup, state ) {
 
 
 BENCH( hinnant_to_sys_earliest_with_lookup, state ) {
-    auto tt = toChrono<date::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt
+        = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
     for( auto _ : state )
     {
@@ -151,7 +156,7 @@ BENCH( hinnant_to_sys_earliest_with_lookup, state ) {
 
 
 BENCH( vtz_to_local, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -163,7 +168,8 @@ BENCH( vtz_to_local, state ) {
 
 
 BENCH( vtz_to_sys_latest, state ) {
-    auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt
+        = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto tz  = vtz::locate_zone( "America/New_York" );
     size_t i = 0;
     for( auto _ : state )
@@ -176,7 +182,8 @@ BENCH( vtz_to_sys_latest, state ) {
 
 
 BENCH( vtz_to_sys_earliest, state ) {
-    auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt
+        = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto tz  = vtz::locate_zone( "America/New_York" );
     size_t i = 0;
     for( auto _ : state )
@@ -189,7 +196,7 @@ BENCH( vtz_to_sys_earliest, state ) {
 
 
 BENCH( vtz_to_local_with_lookup, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
     {
@@ -201,7 +208,8 @@ BENCH( vtz_to_local_with_lookup, state ) {
 
 
 BENCH( vtz_to_sys_latest_with_lookup, state ) {
-    auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt
+        = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
     for( auto _ : state )
     {
@@ -213,7 +221,8 @@ BENCH( vtz_to_sys_latest_with_lookup, state ) {
 
 
 BENCH( vtz_to_sys_earliest_with_lookup, state ) {
-    auto tt  = toChrono<vtz::local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt
+        = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
     for( auto _ : state )
     {
@@ -225,7 +234,7 @@ BENCH( vtz_to_sys_earliest_with_lookup, state ) {
 
 
 BENCH( vtz_to_local_s, state ) {
-    auto   tt = randomTimes( COUNT, 1900, 2100 );
+    auto   tt = random_times( COUNT, 1900, 2100 );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -237,7 +246,7 @@ BENCH( vtz_to_local_s, state ) {
 
 
 BENCH( vtz_to_sys_latest_s, state ) {
-    auto   tt = randomTimes( COUNT, 1900, 2100 );
+    auto   tt = random_times( COUNT, 1900, 2100 );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -250,7 +259,7 @@ BENCH( vtz_to_sys_latest_s, state ) {
 
 
 BENCH( vtz_to_sys_earliest_s, state ) {
-    auto   tt = randomTimes( COUNT, 1900, 2100 );
+    auto   tt = random_times( COUNT, 1900, 2100 );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -263,7 +272,7 @@ BENCH( vtz_to_sys_earliest_s, state ) {
 
 
 BENCH( hinnant_format, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -276,7 +285,7 @@ BENCH( hinnant_format, state ) {
 
 
 BENCH( vtz_format_strftime, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -287,7 +296,7 @@ BENCH( vtz_format_strftime, state ) {
 }
 
 BENCH( vtz_format_to_strftime, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     char   buff[64];
@@ -301,7 +310,7 @@ BENCH( vtz_format_to_strftime, state ) {
 
 BENCH( vtz_format_to_strftime_nanos, state ) {
     using nanos = vtz::sys_time<std::chrono::nanoseconds>;
-    auto   tt = toChrono<nanos>( randomTimes( COUNT, 1900, 2100, 1000000000 ) );
+    auto tt = to_chrono<nanos>( random_times( COUNT, 1900, 2100, 1000000000 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     char   buff[64];
@@ -314,7 +323,7 @@ BENCH( vtz_format_to_strftime_nanos, state ) {
 }
 
 BENCH( vtz_format, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -326,7 +335,7 @@ BENCH( vtz_format, state ) {
 
 
 BENCH( vtz_format_to, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     char   buff[64];
@@ -340,7 +349,7 @@ BENCH( vtz_format_to, state ) {
 
 
 BENCH( vtz_format_compact, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -352,7 +361,7 @@ BENCH( vtz_format_compact, state ) {
 
 
 BENCH( vtz_format_compact_to, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     char   buff[32];
@@ -365,7 +374,7 @@ BENCH( vtz_format_compact_to, state ) {
 }
 
 BENCH( vtz_format_iso8601, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -376,7 +385,7 @@ BENCH( vtz_format_iso8601, state ) {
 }
 
 BENCH( vtz_format_iso8601_to, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     char   buff[32];
@@ -389,7 +398,7 @@ BENCH( vtz_format_iso8601_to, state ) {
 }
 
 BENCH( vtz_format_date, state ) {
-    auto   dd = randomSysDays( COUNT, 1900, 2100 );
+    auto   dd = random_sys_days( COUNT, 1900, 2100 );
     size_t i  = 0;
     for( auto _ : state )
     {
@@ -399,7 +408,7 @@ BENCH( vtz_format_date, state ) {
 }
 
 BENCH( vtz_format_date_to, state ) {
-    auto   dd = randomSysDays( COUNT, 1900, 2100 );
+    auto   dd = random_sys_days( COUNT, 1900, 2100 );
     size_t i  = 0;
     char   buff[64];
     for( auto _ : state )
@@ -412,42 +421,42 @@ BENCH( vtz_format_date_to, state ) {
 
 
 BENCH( vtz_date_to_civil, state ) {
-    auto   dd = randomDays( COUNT, 1900, 2100 );
+    auto   dd = random_days( COUNT, 1900, 2100 );
     size_t i  = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize( vtz::toCivil( dd[i % COUNT] ) );
+        benchmark::DoNotOptimize( vtz::to_civil( dd[i % COUNT] ) );
         ++i;
     }
 }
 
 BENCH( vtz_date_from_civil_date, state ) {
-    auto   dd = randomYMD( COUNT, 1900, 2100 );
+    auto   dd = random_ymd( COUNT, 1900, 2100 );
     size_t i  = 0;
     for( auto _ : state )
     {
         auto const& entry = dd[i % COUNT];
         benchmark::DoNotOptimize(
-            vtz::resolveCivil( entry.year, entry.month, entry.day ) );
+            vtz::resolve_civil( entry.year, entry.month, entry.day ) );
         ++i;
     }
 }
 
 BENCH( vtz_date_from_civil_year, state ) {
-    auto   dd = randomYMD( COUNT, 1900, 2100 );
+    auto   dd = random_ymd( COUNT, 1900, 2100 );
     size_t i  = 0;
     for( auto _ : state )
     {
         auto const& entry = dd[i % COUNT];
-        benchmark::DoNotOptimize( vtz::resolveCivil( entry.year ) );
+        benchmark::DoNotOptimize( vtz::resolve_civil( entry.year ) );
         ++i;
     }
 }
 
 BENCH( vtz_parse_date, state ) {
-    auto   dd = randomValues( COUNT,
-        vtz::resolveCivil( 1900 ),
-        vtz::resolveCivil( 2100 ),
+    auto   dd = random_values( COUNT,
+        vtz::resolve_civil( 1900 ),
+        vtz::resolve_civil( 2100 ),
         []( sysdays_t days ) { return vtz::format_date_d( "%F", days ); } );
     size_t i  = 0;
     for( auto _ : state )
@@ -462,9 +471,9 @@ BENCH( vtz_parse_date, state ) {
 BENCH( vtz_parse_time, state ) {
     static auto const& utc = vtz::TimeZone::utc();
 
-    auto dd = randomValues( COUNT,
-        vtz::resolveCivilTime( 1900, 1, 1, 0, 0, 0 ),
-        vtz::resolveCivilTime( 2100, 1, 1, 0, 0, 0 ),
+    auto dd = random_values( COUNT,
+        vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
         []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
@@ -478,9 +487,9 @@ BENCH( vtz_parse_time, state ) {
 }
 
 BENCH( hinnant_parse_date, state ) {
-    auto   dd = randomValues( COUNT,
-        vtz::resolveCivil( 1900 ),
-        vtz::resolveCivil( 2100 ),
+    auto   dd = random_values( COUNT,
+        vtz::resolve_civil( 1900 ),
+        vtz::resolve_civil( 2100 ),
         []( sysdays_t days ) { return vtz::format_date_d( "%F", days ); } );
     size_t i  = 0;
     for( auto _ : state )
@@ -497,9 +506,9 @@ BENCH( hinnant_parse_date, state ) {
 BENCH( hinnant_parse_time, state ) {
     static auto const& utc = vtz::TimeZone::utc();
 
-    auto dd = randomValues( COUNT,
-        vtz::resolveCivilTime( 1900, 1, 1, 0, 0, 0 ),
-        vtz::resolveCivilTime( 2100, 1, 1, 0, 0, 0 ),
+    auto dd = random_values( COUNT,
+        vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
         []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
@@ -517,9 +526,9 @@ BENCH( hinnant_parse_time, state ) {
 BENCH( vtz_parse_date_compact, state ) {
     static auto const& utc = vtz::TimeZone::utc();
 
-    auto dd = randomValues( COUNT,
-        vtz::resolveCivilTime( 1900, 1, 1, 0, 0, 0 ),
-        vtz::resolveCivilTime( 2100, 1, 1, 0, 0, 0 ),
+    auto dd = random_values( COUNT,
+        vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
         []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
@@ -534,9 +543,9 @@ BENCH( vtz_parse_date_compact, state ) {
 BENCH( vtz_parse_time_compact, state ) {
     static auto const& utc = vtz::TimeZone::utc();
 
-    auto dd = randomValues( COUNT,
-        vtz::resolveCivilTime( 1900, 1, 1, 0, 0, 0 ),
-        vtz::resolveCivilTime( 2100, 1, 1, 0, 0, 0 ),
+    auto dd = random_values( COUNT,
+        vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
         []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
@@ -551,7 +560,7 @@ BENCH( vtz_parse_time_compact, state ) {
 // if std::chrono::locate_zone is available, benchmark std::chrono::time_zone
 #if __cpp_lib_chrono >= 201907L
 BENCH( chrono_to_local, state ) {
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = std::chrono::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -567,7 +576,7 @@ BENCH( chrono_to_sys_latest, state ) {
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
 
-    auto tt = toChrono<local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt = to_chrono<local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto tz = locate_zone( "America/New_York" );
 
     size_t i = 0;
@@ -584,7 +593,7 @@ BENCH( chrono_to_sys_earliest, state ) {
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
 
-    auto   tt = toChrono<local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -598,7 +607,7 @@ BENCH( chrono_to_sys_earliest, state ) {
 
 BENCH( chrono_to_local_with_lookup, state ) {
     using std::chrono::locate_zone;
-    auto   tt = toChrono<sys_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
     {
@@ -614,7 +623,7 @@ BENCH( chrono_to_sys_latest_with_lookup, state ) {
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
 
-    auto tt = toChrono<local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto tt = to_chrono<local_seconds>( random_times( COUNT, 1900, 2100 ) );
 
     size_t i = 0;
     for( auto _ : state )
@@ -631,7 +640,7 @@ BENCH( chrono_to_sys_earliest_with_lookup, state ) {
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
 
-    auto   tt = toChrono<local_seconds>( randomTimes( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
     {

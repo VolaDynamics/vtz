@@ -52,7 +52,7 @@ namespace vtz::_impl {
 
 
 
-    constexpr OptMon _parseMon( char const* src, size_t len ) noexcept {
+    constexpr OptMon _parse_mon( char const* src, size_t len ) noexcept {
         if( len == 3 )
         {
             switch( _load3( src ) )
@@ -111,7 +111,7 @@ namespace vtz::_impl {
         return none;
     }
 
-    constexpr OptDOW _parseDOW( char const* src, size_t len ) noexcept {
+    constexpr OptDOW _parse_dow( char const* src, size_t len ) noexcept {
         if( len == 3 )
         {
             switch( _load3( src ) )

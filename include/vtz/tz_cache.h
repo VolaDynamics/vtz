@@ -54,7 +54,7 @@ namespace vtz {
         ///
         /// @return the new value (if an assignment occurred) or the existing
         /// value (if this entry already held some value)
-        [[nodiscard]] T const* assignOnce(
+        [[nodiscard]] T const* assign_once(
             std::unique_ptr<T> tzptr ) const noexcept {
             T const* expected = nullptr;
 
@@ -85,7 +85,7 @@ namespace vtz {
 
 
     template<class T, class K, class V>
-    auto initEmptyMap( map<K, V> const& m ) -> map<K, AtomicEnt<T>> {
+    auto init_empty_map( map<K, V> const& m ) -> map<K, AtomicEnt<T>> {
         using result_t   = map<string_view, AtomicEnt<T>>;
         using value_type = typename result_t::value_type;
         struct Ent {
@@ -104,48 +104,48 @@ namespace vtz {
 
     struct TimeZoneCache {
         /// These are the zones that have been successfully loaded
-        map<string_view, AtomicEnt<TimeZone>> zoneCache;
+        map<string_view, AtomicEnt<TimeZone>> zone_cache;
 
         /// These are the rules that have been successfully loaded
-        map<string_view, AtomicEnt<RuleEvalResult>> ruleCache;
+        map<string_view, AtomicEnt<RuleEvalResult>> rule_cache;
 
         TZData data;
 
         /// Initialize the TimeZoneCache.
         explicit TimeZoneCache( TZData&& data )
-        : zoneCache( initEmptyMap<TimeZone>( data.zones ) )
-        , ruleCache( initEmptyMap<RuleEvalResult>( data.rules ) )
+        : zone_cache( init_empty_map<TimeZone>( data.zones ) )
+        , rule_cache( init_empty_map<RuleEvalResult>( data.rules ) )
         , data( std::move( data ) ) {}
 
-        std::unique_ptr<RuleEvalResult> loadRule( string_view name ) const {
+        std::unique_ptr<RuleEvalResult> load_rule( string_view name ) const {
             return std::make_unique<RuleEvalResult>(
-                data.evaluateRules( name ) );
+                data.evaluate_rules( name ) );
         }
 
-        ZoneStates computeStates( string_view name ) const;
+        ZoneStates compute_states( string_view name ) const;
 
         /// Returns an evaluated rule, loading it if necessary. If a load
         /// occurs, the rule will be added to the rule cache.
-        RuleEvalResult const& locateRule( string_view name ) const;
+        RuleEvalResult const& locate_rule( string_view name ) const;
 
         /// Attempts to load a zone by the canonical name.
         ///
         /// @return the loaded zone
         /// @throws an exception if there was an error parsing or loading the
         /// zone
-        std::unique_ptr<TimeZone> loadZone( string_view name ) const;
+        std::unique_ptr<TimeZone> load_zone( string_view name ) const;
 
         /// Attempt to locate a zone. Loads the zone if necessary.
         ///
         /// Returns null if the zone could not be found.
-        TimeZone const* tryLocateZone( string_view name ) const;
+        TimeZone const* try_locate_zone( string_view name ) const;
 
         /// Returns a timezone, loading it if necessary. If a load occurs,
         /// the zone will be added to the zone cache.
         ///
         /// Any rules that are loaded as part of loading the zone will also
         /// be cached.
-        TimeZone const& locateZone( string_view name ) const;
+        TimeZone const& locate_zone( string_view name ) const;
     };
 
 

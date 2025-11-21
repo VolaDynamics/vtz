@@ -12,11 +12,11 @@ namespace vtz {
 
 
         /// Return the date referred to by this ZoneUntil
-        constexpr sysdays_t resolveDate() const noexcept { return date; }
+        constexpr sysdays_t resolve_date() const noexcept { return date; }
 
         /// Return the time this 'until' refers to
         constexpr sysseconds_t resolve( ZoneTime time ) const noexcept {
-            return at.resolveAt( date, time );
+            return at.resolve_at( date, time );
         }
 
         bool operator==( ZoneUntil const& rhs ) const noexcept {

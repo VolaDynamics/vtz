@@ -18,13 +18,13 @@ namespace vtz {
         char const* what() const noexcept override { return what_; }
     };
 
-    FormatError bufferTooSmall() noexcept {
+    FormatError buffer_too_small() noexcept {
         return FormatError( "format error: destination buffer is too small" );
     }
 
     // Write a year, assuming the year is positive and fits in 4 digits, and
     // the bugger is big enough
-    VTZ_INLINE static char* _writeYear4( char* p, i64 year ) noexcept {
+    VTZ_INLINE static char* _write_year4( char* p, i64 year ) noexcept {
         u16  y      = u16( year );
         auto y1000  = y / 1000;
         y          %= 1000;
@@ -41,17 +41,17 @@ namespace vtz {
     }
     /// Writes the year. Assumes there are at least 22 characters of space in
     /// the buffer
-    VTZ_INLINE static char* _writeYear( char* p, i64 year ) noexcept {
+    VTZ_INLINE static char* _write_year( char* p, i64 year ) noexcept {
         // if the year is nonnegative and fits in 4 digits, write as 4-digit
         // year
         if( u64( year ) < 10000 ) [[likely]]
-            return _writeYear4( p, year );
+            return _write_year4( p, year );
         // fallback to std::to_chars
         return std::to_chars( p, p + 22, year ).ptr;
     }
 
     /// Writes the last 2 digits of the year, as a decimal number
-    VTZ_INLINE static char* _writeYearShort( char* p, i64 year ) noexcept {
+    VTZ_INLINE static char* _write_year_short( char* p, i64 year ) noexcept {
         u8 x = u8( std::abs( year ) % 100 );
         p[0] = '0' + x / 10;
         p[1] = '0' + x % 10;
@@ -59,14 +59,14 @@ namespace vtz {
     }
 
     /// %m specifier - write the month as a decimal in the range [01, 12]
-    VTZ_INLINE static char* _writeMon( char* p, u8 mon ) noexcept {
+    VTZ_INLINE static char* _write_mon( char* p, u8 mon ) noexcept {
         p[0] = '0' + ( mon >= 10 );
         p[1] = '0' + ( mon % 10 );
         return p + 2;
     }
 
     /// writes day of the month as a decimal number (range [01,31])
-    VTZ_INLINE static char* _writeDOM_d( char* p, u8 day ) noexcept {
+    VTZ_INLINE static char* _write_dom_d( char* p, u8 day ) noexcept {
         char c0 = '0' + day / 10;
         char c1 = '0' + day % 10;
         p[0]    = c0;
@@ -76,7 +76,7 @@ namespace vtz {
 
     /// writes day of the month as a decimal number (range [1,31]).
     /// Single digit is preceded by a space.
-    VTZ_INLINE static char* _writeDOM_e( char* p, u8 day ) noexcept {
+    VTZ_INLINE static char* _write_dom_e( char* p, u8 day ) noexcept {
         char c0 = '0' + day / 10;
         char c1 = '0' + day % 10;
         if( day < 10 ) c0 = ' ';
@@ -86,7 +86,7 @@ namespace vtz {
     }
 
     /// equivalent to "%H:%M"
-    VTZ_INLINE static char* _writeISO_HHMM( char* p, int h, int m ) noexcept {
+    VTZ_INLINE static char* _write_iso_hhmm( char* p, int h, int m ) noexcept {
         p[0] = '0' + h / 10;
         p[1] = '0' + h % 10;
         p[2] = ':';
@@ -96,7 +96,7 @@ namespace vtz {
     }
 
     /// equivalent to "%H%M%S" (the ISO 8601 time format)
-    VTZ_INLINE static char* _writeHHMMSScompact(
+    VTZ_INLINE static char* _write_hhmmsscompact(
         char* p, int h, int m, int s ) noexcept {
         p[0] = '0' + h / 10;
         p[1] = '0' + h % 10;
@@ -108,7 +108,7 @@ namespace vtz {
     }
 
     /// equivalent to "%H:%M:%S" (the ISO 8601 time format)
-    VTZ_INLINE static char* _writeHHMMSS(
+    VTZ_INLINE static char* _write_hhmmss(
         char* p, int h, int m, int s ) noexcept {
         p[0] = '0' + h / 10;
         p[1] = '0' + h % 10;
@@ -138,22 +138,22 @@ namespace vtz {
     /// equivalent to "%Y-%m-%d" (the ISO 8601 date format)
     /// Assumes there is at least 28 characters of space in the buffer
     /// (21 characters needed for excessively large negative/positive year)
-    VTZ_INLINE static char* _writeISO_date(
+    VTZ_INLINE static char* _write_iso_date(
         char* p, i64 y, int m, int d ) noexcept {
         if( u64( y ) < 10000 ) [[likely]]
         {
-            p    = _writeYear4( p, y );
+            p    = _write_year4( p, y );
             *p++ = '-';
-            p    = _writeMon( p, m );
+            p    = _write_mon( p, m );
             *p++ = '-';
-            p    = _writeDOM_d( p, d );
+            p    = _write_dom_d( p, d );
             return p;
         }
-        p    = _writeYear( p, y );
+        p    = _write_year( p, y );
         *p++ = '-';
-        p    = _writeMon( p, m );
+        p    = _write_mon( p, m );
         *p++ = '-';
-        p    = _writeDOM_d( p, d );
+        p    = _write_dom_d( p, d );
         return p;
     }
 
@@ -186,9 +186,9 @@ namespace vtz {
     template<class TimeZoneT, class F, class WriteFractional>
     auto _do_strformat( TimeZoneT const& tz,
         char const*                      format,
-        size_t                           formatSize,
+        size_t                           format_size,
         sysseconds_t                     t,
-        WriteFractional                  writeFrac,
+        WriteFractional                  write_frac,
         F                                func ) {
         constexpr size_t MAX_SPECIFIERS = 64;
         constexpr size_t MAX_SIZE       = MAX_SPECIFIERS * 2;
@@ -207,38 +207,38 @@ namespace vtz {
 
         static_assert( BUFF_SIZE >= REQUIRED_BUFF_SIZE );
 
-        if( formatSize >= MAX_SIZE )
+        if( format_size >= MAX_SIZE )
             throw FormatError(
-                "formatTime(): input format string is too long" );
+                "format_time(): input format string is too long" );
 
-        if( formatSize == 0 ) return func.dump( "", 0 );
+        if( format_size == 0 ) return func.dump( "", 0 );
 
         auto gmtoff        = tz.offset_s( t );
-        auto tLocal        = t + gmtoff;
-        auto parts         = vtz::math::divFloor2<86400>( tLocal );
+        auto t_local        = t + gmtoff;
+        auto parts          = vtz::math::div_floor2<86400>( t_local );
         auto date          = parts.quot;
-        u32  timeIntraday  = parts.rem;
-        int  hr            = timeIntraday / 3600;
-        timeIntraday      %= 3600;
-        int mi             = timeIntraday / 60;
-        timeIntraday      %= 60;
-        int  sec           = timeIntraday;
-        auto ymd           = toCivil( date );
+        u32  time_intraday  = parts.rem;
+        int  hr             = time_intraday / 3600;
+        time_intraday      %= 3600;
+        int mi              = time_intraday / 60;
+        time_intraday      %= 60;
+        int  sec            = time_intraday;
+        auto ymd            = to_civil( date );
 
         // We're going to handle as many format specifiers as we can ourselves,
         // so that we can avoid a call to strftime.
         //
         // How big do we need to make this buffer?
-        // Well, we know there are at most (formatSize/2) specifiers.
+        // Well, we know there are at most (format_size/2) specifiers.
         // This means a max of 64 specifiers.
-        char fmtStr[BUFF_SIZE];
+        char fmt_str[BUFF_SIZE];
 
-        char*  p = fmtStr;
+        char*  p = fmt_str;
         size_t i = 0;
         // Iterate until 1 before the end. This ensures we don't do an
         // out-of-bounds read on a format specifier
-        size_t len           = formatSize - 1;
-        bool   needsStrftime = false;
+        size_t len            = format_size - 1;
+        bool   needs_strftime = false;
         while( i < len )
         {
             char c = format[i++];
@@ -260,19 +260,19 @@ namespace vtz {
             // writes horizontal tab character
             case 't': *p++ = '\t'; continue;
             // writes year as a decimal number, e.g. 2017
-            case 'Y': p = _writeYear( p, ymd.year ); continue;
+            case 'Y': p = _write_year( p, ymd.year ); continue;
             // writes last 2 digits of year as a decimal number (range
             // [00,99])
-            case 'y': p = _writeYearShort( p, ymd.year ); continue;
+            case 'y': p = _write_year_short( p, ymd.year ); continue;
             // writes month as a decimal number (range [01,12])
-            case 'm': p = _writeMon( p, ymd.month ); continue;
+            case 'm': p = _write_mon( p, ymd.month ); continue;
             // 	writes day of the month as a decimal number (range
             // [01,31])
-            case 'd': p = _writeDOM_d( p, ymd.day ); continue;
+            case 'd': p = _write_dom_d( p, ymd.day ); continue;
             // writes day of the year as a decimal number (range [001,366])
             case 'j':
                 {
-                    u16 yday = date - resolveCivil( ymd.year, 1, 1 );
+                    u16 yday = date - resolve_civil( ymd.year, 1, 1 );
 
                     p = _write3Digit( p, 1 + yday );
                     continue;
@@ -282,7 +282,7 @@ namespace vtz {
             case 'w':
                 {
                     static_assert( int( DOW::Sun ) == 0 );
-                    auto dow = int( dowFromDays( date ) );
+                    auto dow = int( dow_from_days( date ) );
                     *p++     = '0' + dow;
                     continue;
                 }
@@ -290,7 +290,7 @@ namespace vtz {
             // format) (range [1-7])
             case 'u':
                 {
-                    auto dow = int( dowFromDays( date ) );
+                    auto dow = int( dow_from_days( date ) );
                     if( dow == 0 ) dow = 7;
                     *p++ = '0' + dow;
                     continue;
@@ -305,13 +305,13 @@ namespace vtz {
                 }
             // writes day of the month as a decimal number (range [1,31]).
             // Single digit is preceded by a space.
-            case 'e': p = _writeDOM_e( p, ymd.day ); continue;
+            case 'e': p = _write_dom_e( p, ymd.day ); continue;
             // equivalent to "%Y-%m-%d" (the ISO 8601 date format)
             case 'F':
-                p = _writeISO_date( p, ymd.year, ymd.month, ymd.day );
+                p = _write_iso_date( p, ymd.year, ymd.month, ymd.day );
                 continue;
             // equivalent to "%H:%M"
-            case 'R': p = _writeISO_HHMM( p, hr, mi ); continue;
+            case 'R': p = _write_iso_hhmm( p, hr, mi ); continue;
             // 	writes hour as a decimal number, 24 hour clock (range
             // [00-23])
             case 'H': p = _write2Digit( p, hr ); continue;
@@ -319,17 +319,19 @@ namespace vtz {
             case 'M': p = _write2Digit( p, mi ); continue;
             // writes second as a decimal number (range [00,60]). Will also
             // write a fractional component after the second.
-            case 'S': p = writeFrac( _write2Digit( p, sec ) ); continue;
+            case 'S': p = write_frac( _write2Digit( p, sec ) ); continue;
             // equivalent to "%H:%M:%S" (the ISO 8601 time format)
-            case 'T': p = writeFrac( _writeHHMMSS( p, hr, mi, sec ) ); continue;
+            case 'T':
+                p = write_frac( _write_hhmmss( p, hr, mi, sec ) );
+                continue;
             // writes offset from UTC in the ISO 8601 format (e.g. -0430)
-            case 'z': p += writeShortestOffset( gmtoff, p ); continue;
+            case 'z': p += write_shortest_offset( gmtoff, p ); continue;
             case 'Z': p += tz.abbrev_to_s( t, p ); continue;
             default:
                 {
                     *p++          = c;
                     *p++          = next;
-                    needsStrftime = true;
+                    needs_strftime = true;
                     continue;
                 }
             }
@@ -338,21 +340,21 @@ namespace vtz {
         // to copy the final character.
         if( i == len ) { *p++ = format[i]; }
 
-        if( !needsStrftime ) [[likely]]
+        if( !needs_strftime ) [[likely]]
         {
             // If we were able to handle all the specifiers, there's nothing
             // left to format. This means we don't need to do a call to
             // strftime, and we can exit early!
-            return func.dump( fmtStr, size_t( p - fmtStr ) );
+            return func.dump( fmt_str, size_t( p - fmt_str ) );
         }
 
         // Add null terminator to format string
         *p = '\0';
 
         auto stdoff = tz.stdoff_s( t );
-        bool isDST  = gmtoff != stdoff;
+        bool is_dst = gmtoff != stdoff;
 
-        auto tmValue = std::tm{
+        auto tm_value = std::tm{
             sec,
             mi,
             hr,
@@ -361,11 +363,11 @@ namespace vtz {
             // tm_year stores years since 1900
             ymd.year - 1900,
             // days since sunday - 0-6
-            int( dowFromDays( date ) - DOW::Sun ),
+            int( dow_from_days( date ) - DOW::Sun ),
             // days since January 1 – [​0​, 365]
-            int( date - resolveCivil( ymd.year, 1, 1 ) ),
+            int( date - resolve_civil( ymd.year, 1, 1 ) ),
             // true if daylight savings time is in effect
-            isDST,
+            is_dst,
         };
 
         // Fill in any remaining format specifiers with strftime.
@@ -374,7 +376,7 @@ namespace vtz {
 
         char   buffer[BUFF_SIZE];
         size_t count
-            = std::strftime( buffer, sizeof( buffer ), fmtStr, &tmValue );
+            = std::strftime( buffer, sizeof( buffer ), fmt_str, &tm_value );
         return func.dump( buffer, count );
     }
 
@@ -385,7 +387,7 @@ namespace vtz {
             format.data(),
             format.size(),
             t,
-            // There is no fractional component, so writeFrac is a noop
+            // There is no fractional component, so write_frac is a noop
             []( char* s ) noexcept -> char* { return s; },
             WriteToBuff{ buff, count } );
     }
@@ -404,8 +406,8 @@ namespace vtz {
             DummyTimeZone{},
             fmt.data(),
             fmt.size(),
-            daysToSeconds( days ),
-            // There is no fractional component, so writeFrac is a noop
+            days_to_seconds( days ),
+            // There is no fractional component, so write_frac is a noop
             []( char* s ) noexcept -> char* { return s; },
             WriteToString{} );
     }
@@ -416,13 +418,13 @@ namespace vtz {
             DummyTimeZone{},
             fmt.data(),
             fmt.size(),
-            daysToSeconds( days ),
-            // There is no fractional component, so writeFrac is a noop
+            days_to_seconds( days ),
+            // There is no fractional component, so write_frac is a noop
             []( char* s ) noexcept -> char* { return s; },
             WriteToBuff{ buff, count } );
     }
 
-    auto _writeNanos( u32 nanos, int precision ) noexcept {
+    auto _write_nanos( u32 nanos, int precision ) noexcept {
         return [nanos, precision]( char* p ) noexcept -> char* {
             // clang-format off
             u32 n = nanos;
@@ -461,7 +463,7 @@ namespace vtz {
             format.data(),
             format.size(),
             t,
-            _writeNanos( nanos, precision ),
+            _write_nanos( nanos, precision ),
             WriteToBuff{ buff, count } );
     }
 
@@ -471,7 +473,7 @@ namespace vtz {
             format.data(),
             format.size(),
             t,
-            _writeNanos( nanos, precision ),
+            _write_nanos( nanos, precision ),
             WriteToString{} );
     }
 
@@ -481,118 +483,118 @@ namespace vtz {
             format.data(),
             format.size(),
             t,
-            // There is no fractional component, so writeFrac is a noop
+            // There is no fractional component, so write_frac is a noop
             []( char* s ) noexcept -> char* { return s; },
             WriteToString{} );
     }
 
-    template<bool isSane, bool isCompact, class FWriteAbbrev, class FAction>
-    auto _format_local_to( sysseconds_t tLocal,
+    template<bool is_sane, bool is_compact, class FWriteAbbrev, class FAction>
+    auto _format_local_to( sysseconds_t t_local,
         char* const                     p,
-        char                            dateSep,
-        char                            dateTimeSep,
-        FWriteAbbrev                    writeAbbrev,
+        char                            date_sep,
+        char                            date_time_sep,
+        FWriteAbbrev                    write_abbrev,
         FAction action ) noexcept( noexcept( action.dump( p,
-        writeAbbrev( p ) ) ) ) {
+        write_abbrev( p ) ) ) ) {
         // t = utc_t + gmtoff;
-        auto parts         = vtz::math::divFloor2<86400>( tLocal );
+        auto parts          = vtz::math::div_floor2<86400>( t_local );
         auto date          = parts.quot;
-        u32  timeIntraday  = parts.rem;
-        int  hr            = timeIntraday / 3600;
-        timeIntraday      %= 3600;
-        int mi             = timeIntraday / 60;
-        timeIntraday      %= 60;
-        int  sec           = timeIntraday;
-        auto ymd           = toCivil( date );
+        u32  time_intraday  = parts.rem;
+        int  hr             = time_intraday / 3600;
+        time_intraday      %= 3600;
+        int mi              = time_intraday / 60;
+        time_intraday      %= 60;
+        int  sec            = time_intraday;
+        auto ymd            = to_civil( date );
 
-        if constexpr( isSane )
+        if constexpr( is_sane )
         {
             // the timestamp itself is 15 characters (if compact), otherwise 19
             // characters
-            constexpr size_t stampEnd = isCompact ? 15 : 19;
-            if constexpr( isCompact )
+            constexpr size_t stamp_end = is_compact ? 15 : 19;
+            if constexpr( is_compact )
             {
                 // We were promised that the year is 0000-9999
-                (void)_writeYear4( p, ymd.year );                // 0..4
-                (void)_writeMon( p + 4, ymd.month );             // 4..6
-                (void)_writeDOM_d( p + 6, ymd.day );             // 6..8
-                p[8] = dateTimeSep;                              // 8..9
-                (void)_writeHHMMSScompact( p + 9, hr, mi, sec ); // 9..15
+                (void)_write_year4( p, ymd.year );                // 0..4
+                (void)_write_mon( p + 4, ymd.month );             // 4..6
+                (void)_write_dom_d( p + 6, ymd.day );             // 6..8
+                p[8] = date_time_sep;                             // 8..9
+                (void)_write_hhmmsscompact( p + 9, hr, mi, sec ); // 9..15
             }
             else
             {
                 // YYYY-MM-DD HH:MM:SS
                 // 0123456789012345678
-                (void)_writeYear4( p, ymd.year );          // 0..4
-                p[4] = dateSep;                            // 4..5
-                (void)_writeMon( p + 5, ymd.month );       // 5..7
-                p[7] = dateSep;                            // 7..8
-                (void)_writeDOM_d( p + 8, ymd.day );       // 8..10
-                p[10] = dateTimeSep;                       // 10..11
-                (void)_writeHHMMSS( p + 11, hr, mi, sec ); // 11..19
+                (void)_write_year4( p, ymd.year );          // 0..4
+                p[4] = date_sep;                            // 4..5
+                (void)_write_mon( p + 5, ymd.month );       // 5..7
+                p[7] = date_sep;                            // 7..8
+                (void)_write_dom_d( p + 8, ymd.day );       // 8..10
+                p[10] = date_time_sep;                      // 10..11
+                (void)_write_hhmmss( p + 11, hr, mi, sec ); // 11..19
             }
 
-            return action.dump( p, stampEnd + writeAbbrev( p + stampEnd ) );
+            return action.dump( p, stamp_end + write_abbrev( p + stamp_end ) );
         }
         else
         {
             // the timestamp is longer than expected. Write the year first,
             // and then write the remainder after the year
-            char*  q       = _writeYear( p, ymd.year );
-            size_t yearLen = q - p;
+            char*  q        = _write_year( p, ymd.year );
+            size_t year_len = q - p;
 
-            constexpr size_t stampEnd = isCompact ? 11 : 15;
-            if constexpr( isCompact )
+            constexpr size_t stamp_end = is_compact ? 11 : 15;
+            if constexpr( is_compact )
             {
                 // MMDD HHMMSS
                 // 01234567890
-                (void)_writeMon( q, ymd.month );                 // 0..2
-                (void)_writeDOM_d( q + 2, ymd.day );             // 2..4
-                q[4] = dateTimeSep;                              // 4..5
-                (void)_writeHHMMSScompact( q + 5, hr, mi, sec ); // 5..11
+                (void)_write_mon( q, ymd.month );                 // 0..2
+                (void)_write_dom_d( q + 2, ymd.day );             // 2..4
+                q[4] = date_time_sep;                             // 4..5
+                (void)_write_hhmmsscompact( q + 5, hr, mi, sec ); // 5..11
             }
             else
             {
                 // -MM-DD HH:MM:SS
                 // 012345678901234
-                q[0] = dateSep;                           // 0..1
-                (void)_writeMon( q + 1, ymd.month );      // 1..3
-                q[3] = dateSep;                           // 3..4
-                (void)_writeDOM_d( q + 4, ymd.day );      // 4..6
-                q[6] = dateTimeSep;                       // 6..7
-                (void)_writeHHMMSS( q + 7, hr, mi, sec ); // 7..14
+                q[0] = date_sep;                           // 0..1
+                (void)_write_mon( q + 1, ymd.month );      // 1..3
+                q[3] = date_sep;                           // 3..4
+                (void)_write_dom_d( q + 4, ymd.day );      // 4..6
+                q[6] = date_time_sep;                      // 6..7
+                (void)_write_hhmmss( q + 7, hr, mi, sec ); // 7..14
             }
 
             return action.dump(
-                p, yearLen + stampEnd + writeAbbrev( q + stampEnd ) );
+                p, year_len + stamp_end + write_abbrev( q + stamp_end ) );
         }
     }
 
-    template<bool includeAbbrSep, bool useStdoff>
-    static auto _writeAbbrev(
-        TimeZone const& tz, sysseconds_t t, i32 gmtoff, char abbrevSep ) {
-        if constexpr( useStdoff )
+    template<bool include_abbr_sep, bool use_stdoff>
+    static auto _write_abbrev(
+        TimeZone const& tz, sysseconds_t t, i32 gmtoff, char abbrev_sep ) {
+        if constexpr( use_stdoff )
         {
-            if constexpr( includeAbbrSep )
+            if constexpr( include_abbr_sep )
             {
-                return [gmtoff, abbrevSep]( char* p ) noexcept {
-                    *p = abbrevSep;
-                    return 1 + writeShortestOffset( gmtoff, p + 1 );
+                return [gmtoff, abbrev_sep]( char* p ) noexcept {
+                    *p = abbrev_sep;
+                    return 1 + write_shortest_offset( gmtoff, p + 1 );
                 };
             }
             else
             {
                 return [gmtoff]( char* p ) noexcept {
-                    return writeShortestOffset( gmtoff, p );
+                    return write_shortest_offset( gmtoff, p );
                 };
             }
         }
         else
         {
-            if constexpr( includeAbbrSep )
+            if constexpr( include_abbr_sep )
             {
-                return [&tz, t, abbrevSep]( char* p ) noexcept {
-                    *p = abbrevSep;
+                return [&tz, t, abbrev_sep]( char* p ) noexcept {
+                    *p = abbrev_sep;
                     return 1 + tz.abbrev_to_s( t, p + 1 );
                 };
             }
@@ -605,64 +607,66 @@ namespace vtz {
         }
     }
 
-    template<bool isCompact, bool useStdoff, bool includeAbbrSep>
+    template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
     VTZ_INLINE static std::string _do_format( TimeZone const& tz,
         sysseconds_t                                          t,
-        char                                                  dateSep,
-        char                                                  dateTimeSep,
-        char                                                  abbrSep ) {
-        constexpr u64 LONG_TIME = resolveCivilTime( 10000, 1, 1, 0, 0, 0 );
+        char                                                  date_sep,
+        char                                                  date_time_sep,
+        char                                                  abbr_sep ) {
+        constexpr u64 LONG_TIME = resolve_civil_time( 10000, 1, 1, 0, 0, 0 );
 
         auto off    = tz.offset_s( t );
-        auto localT = t + off;
+        auto local_t = t + off;
 
         char buff[64];
 
-        if( u64( localT ) < LONG_TIME ) [[likely]]
+        if( u64( local_t ) < LONG_TIME ) [[likely]]
         {
-            return _format_local_to<true, isCompact>( localT,
+            return _format_local_to<true, is_compact>( local_t,
                 buff,
-                dateSep,
-                dateTimeSep,
-                _writeAbbrev<includeAbbrSep, useStdoff>( tz, t, off, abbrSep ),
+                date_sep,
+                date_time_sep,
+                _write_abbrev<include_abbr_sep, use_stdoff>(
+                    tz, t, off, abbr_sep ),
                 WriteToString{} );
         }
         else
         {
-            return _format_local_to<false, isCompact>( localT,
+            return _format_local_to<false, is_compact>( local_t,
                 buff,
-                dateSep,
-                dateTimeSep,
-                _writeAbbrev<includeAbbrSep, useStdoff>( tz, t, off, abbrSep ),
+                date_sep,
+                date_time_sep,
+                _write_abbrev<include_abbr_sep, use_stdoff>(
+                    tz, t, off, abbr_sep ),
                 WriteToString{} );
         }
     }
 
     /// Fast formatting - format as:
     ///
-    ///     `YYYY<dateSep>MM<dateSep>DD<dateTimeSep>HH:MM:SS<abbrSep>[Abbrev]
+    ///     `YYYY<date_sep>MM<date_sep>DD<date_time_sep>HH:MM:SS<abbr_sep>[Abbrev]
     ///
     /// The various flags control if the separators actually appear
 
-    template<bool isCompact, bool useStdoff, bool includeAbbrSep>
+    template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
     VTZ_INLINE static size_t _do_format_to( TimeZone const& tz,
         sysseconds_t                                        t,
         char*                                               p,
         size_t                                              count,
-        char                                                dateSep,
-        char                                                dateTimeSep,
-        char                                                abbrSep ) noexcept {
+        char                                                date_sep,
+        char                                                date_time_sep,
+        char abbr_sep ) noexcept {
         ///
-        constexpr u64 LONG_TIME = resolveCivilTime( 10000, 1, 1, 0, 0, 0 );
+        constexpr u64 LONG_TIME = resolve_civil_time( 10000, 1, 1, 0, 0, 0 );
 
         auto gmtoff = tz.offset_s( t );
-        auto localT = t + gmtoff;
-        if( u64( localT ) < LONG_TIME ) [[likely]]
+        auto local_t = t + gmtoff;
+        if( u64( local_t ) < LONG_TIME ) [[likely]]
         {
             // Required size is (number of characters for timestamp) + (1 for
             // abbr sep) + (max abbr length)
             constexpr size_t REQUIRED_SIZE
-                = ( isCompact ? 15 : 19 ) + includeAbbrSep + 7;
+                = ( is_compact ? 15 : 19 ) + include_abbr_sep + 7;
             // If we're _before_ LONG_TIME, we know the year is 0000-9999
             // So the length is at most, eg,
             // 9999-12-31T23:59:59 LongAbbr
@@ -670,24 +674,24 @@ namespace vtz {
             {
                 // If the buffer is big enough, we can write to the buffer
                 // directly
-                return _format_local_to<true, isCompact>( localT,
+                return _format_local_to<true, is_compact>( local_t,
                     p,
-                    dateSep,
-                    dateTimeSep,
-                    _writeAbbrev<includeAbbrSep, useStdoff>(
-                        tz, t, gmtoff, abbrSep ),
+                    date_sep,
+                    date_time_sep,
+                    _write_abbrev<include_abbr_sep, use_stdoff>(
+                        tz, t, gmtoff, abbr_sep ),
                     WriteNOOP{} );
             }
             else
             {
                 static_assert( REQUIRED_SIZE < 32 );
                 char buff[32];
-                return _format_local_to<true, isCompact>( localT,
+                return _format_local_to<true, is_compact>( local_t,
                     buff,
-                    dateSep,
-                    dateTimeSep,
-                    _writeAbbrev<includeAbbrSep, useStdoff>(
-                        tz, t, gmtoff, abbrSep ),
+                    date_sep,
+                    date_time_sep,
+                    _write_abbrev<include_abbr_sep, use_stdoff>(
+                        tz, t, gmtoff, abbr_sep ),
                     WriteToBuff{ p, count } );
             }
         }
@@ -700,57 +704,57 @@ namespace vtz {
             //
             //     len(str(-2**63 // (365 * 86400)))
             constexpr size_t REQUIRED_SIZE
-                = 13 + ( isCompact ? 11 : 15 ) + includeAbbrSep + 7;
+                = 13 + ( is_compact ? 11 : 15 ) + include_abbr_sep + 7;
             if( count >= REQUIRED_SIZE )
             {
                 // If the buffer is big enough, we can write to the buffer
                 // directly
-                return _format_local_to<false, isCompact>( localT,
+                return _format_local_to<false, is_compact>( local_t,
                     p,
-                    dateSep,
-                    dateTimeSep,
-                    _writeAbbrev<includeAbbrSep, useStdoff>(
-                        tz, t, gmtoff, abbrSep ),
+                    date_sep,
+                    date_time_sep,
+                    _write_abbrev<include_abbr_sep, use_stdoff>(
+                        tz, t, gmtoff, abbr_sep ),
                     WriteNOOP{} );
             }
             else
             {
                 static_assert( REQUIRED_SIZE < 64 );
                 char buff[64];
-                return _format_local_to<false, isCompact>( localT,
+                return _format_local_to<false, is_compact>( local_t,
                     buff,
-                    dateSep,
-                    dateTimeSep,
-                    _writeAbbrev<includeAbbrSep, useStdoff>(
-                        tz, t, gmtoff, abbrSep ),
+                    date_sep,
+                    date_time_sep,
+                    _write_abbrev<include_abbr_sep, use_stdoff>(
+                        tz, t, gmtoff, abbr_sep ),
                     WriteToBuff{ p, count } );
             }
         }
     }
 
     // clang-format off
-    string TimeZone::format_iso8601_s( sysseconds_t t, char dateSep, char dateTimeSep ) const {
-        return _do_format<false, true, false>( *this, t, dateSep, dateTimeSep, '\0' );
+    string TimeZone::format_iso8601_s( sysseconds_t t, char date_sep, char date_time_sep ) const {
+        return _do_format<false, true, false>( *this, t, date_sep, date_time_sep, '\0' );
     }
 
-    size_t TimeZone::format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char dateSep, char dateTimeSep ) const noexcept {
-        return _do_format_to<false, true, false>( *this, t, buff, count, dateSep, dateTimeSep, '\0' );
+    size_t TimeZone::format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char date_sep, char date_time_sep ) const noexcept {
+        return _do_format_to<false, true, false>( *this, t, buff, count, date_sep, date_time_sep, '\0' );
     }
 
-    string TimeZone::format_s( sysseconds_t t, char dateSep, char dateTimeSep, char abbrevSep ) const {
-        return _do_format<false, false, true>( *this, t, dateSep, dateTimeSep, abbrevSep );
+    string TimeZone::format_s( sysseconds_t t, char date_sep, char date_time_sep, char abbrev_sep ) const {
+        return _do_format<false, false, true>( *this, t, date_sep, date_time_sep, abbrev_sep );
     }
 
-    size_t TimeZone::format_to_s( sysseconds_t t, char* buff, size_t count, char dateSep, char dateTimeSep, char abbrevSep ) const noexcept {
-        return _do_format_to<false, false, true>( *this, t, buff, count, dateSep, dateTimeSep, abbrevSep );
+    size_t TimeZone::format_to_s( sysseconds_t t, char* buff, size_t count, char date_sep, char date_time_sep, char abbrev_sep ) const noexcept {
+        return _do_format_to<false, false, true>( *this, t, buff, count, date_sep, date_time_sep, abbrev_sep );
     }
 
-    string TimeZone::format_compact_s( sysseconds_t t, char dateTimeSep, char abbrevSep ) const {
-        return _do_format<true, false, true>( *this, t, '\0', dateTimeSep, abbrevSep );
+    string TimeZone::format_compact_s( sysseconds_t t, char date_time_sep, char abbrev_sep ) const {
+        return _do_format<true, false, true>( *this, t, '\0', date_time_sep, abbrev_sep );
     }
 
-    size_t TimeZone::format_compact_to_s( sysseconds_t t, char* p, size_t count, char dateTimeSep, char abbrevSep ) const noexcept {
-        return _do_format_to<true, false, true>( *this, t, p, count, '\0', dateTimeSep, abbrevSep );
+    size_t TimeZone::format_compact_to_s( sysseconds_t t, char* p, size_t count, char date_time_sep, char abbrev_sep ) const noexcept {
+        return _do_format_to<true, false, true>( *this, t, p, count, '\0', date_time_sep, abbrev_sep );
     }
     // clang-format on
 } // namespace vtz

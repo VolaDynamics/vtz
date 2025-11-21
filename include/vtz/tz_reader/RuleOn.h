@@ -48,21 +48,21 @@ namespace vtz {
             return repr_ == rhs.repr_;
         }
 
-        constexpr static RuleOn fromRepr( u16 repr ) noexcept {
+        constexpr static RuleOn from_repr( u16 repr ) noexcept {
             return RuleOn( repr );
         }
 
-        constexpr sysdays_t resolveDate( i32 year, Mon mon ) const noexcept {
-            return resolveDate( year, u32( mon ) );
+        constexpr sysdays_t resolve_date( i32 year, Mon mon ) const noexcept {
+            return resolve_date( year, u32( mon ) );
         }
 
-        constexpr sysdays_t resolveDate( i32 year, u32 mon ) const noexcept {
+        constexpr sysdays_t resolve_date( i32 year, u32 mon ) const noexcept {
             switch( kind() )
             {
-            case DAY: return resolveCivil( year, mon, day() );
-            case DOW_LAST: return resolveLastDOW( year, mon, dow() );
-            case DOW_GE: return resolveDOW_GE( year, mon, day(), dow() );
-            case DOW_LE: return resolveDOW_LE( year, mon, day(), dow() );
+            case DAY: return resolve_civil( year, mon, day() );
+            case DOW_LAST: return resolve_last_dow( year, mon, dow() );
+            case DOW_GE: return resolve_dow_ge( year, mon, day(), dow() );
+            case DOW_LE: return resolve_dow_le( year, mon, day(), dow() );
             }
         }
 
@@ -74,10 +74,13 @@ namespace vtz {
             {
             case DAY: return YMD( year, mon, day() );
             case DOW_LAST:
-                return YMD(
-                    year, mon, getLastDOWInMonth( year, u32( mon ), dow() ) );
-            case DOW_GE: return getYMD_DOW_GE( year, u32( mon ), day(), dow() );
-            case DOW_LE: return getYMD_DOW_LE( year, u32( mon ), day(), dow() );
+                return YMD( year,
+                    mon,
+                    get_last_dowin_month( year, u32( mon ), dow() ) );
+            case DOW_GE:
+                return get_ymd_dow_ge( year, u32( mon ), day(), dow() );
+            case DOW_LE:
+                return get_ymd_dow_le( year, u32( mon ), day(), dow() );
             }
         }
 
@@ -90,7 +93,7 @@ namespace vtz {
     struct OptTraits<RuleOn> {
         /// Corresponds to kind() == DAY, dow() == Sun, day() == 0, which is not
         /// a valid day of the month
-        constexpr static RuleOn NULL_VALUE = RuleOn::fromRepr( 0 );
+        constexpr static RuleOn NULL_VALUE = RuleOn::from_repr( 0 );
     };
 
     using OptRuleOn = OptClass<RuleOn>;

@@ -8,45 +8,45 @@
 
 namespace vtz {
 
-    RuleEvalResult const& TimeZoneCache::locateRule( string_view name ) const {
+    RuleEvalResult const& TimeZoneCache::locate_rule( string_view name ) const {
         try
         {
-            auto& entry = ruleCache.at( name );
+            auto& entry = rule_cache.at( name );
             if( auto ptr = entry.load() ) return *ptr;
 
             // Add the rule to the rule cache
-            return *entry.assignOnce( loadRule( name ) );
+            return *entry.assign_once( load_rule( name ) );
         }
         catch( std::exception const& ex )
         {
             throw std::runtime_error( fmt::format( "Unable to load rule {}. {}",
-                escapeString( name ),
+                escape_string( name ),
                 ex.what() ) );
         }
     }
 
 
-    std::unique_ptr<TimeZone> TimeZoneCache::loadZone(
+    std::unique_ptr<TimeZone> TimeZoneCache::load_zone(
         string_view name ) const {
-        return std::make_unique<TimeZone>( name, computeStates( name ) );
+        return std::make_unique<TimeZone>( name, compute_states( name ) );
     }
 
 
-    TimeZone const* TimeZoneCache::tryLocateZone( string_view name ) const {
-        auto it = zoneCache.find( name );
+    TimeZone const* TimeZoneCache::try_locate_zone( string_view name ) const {
+        auto it = zone_cache.find( name );
 
-        if( it == zoneCache.end() ) return nullptr;
+        if( it == zone_cache.end() ) return nullptr;
 
         auto& ent = it->second;
         if( auto ptr = ent.load() ) return ptr;
 
-        return ent.assignOnce( loadZone( it->first ) );
+        return ent.assign_once( load_zone( it->first ) );
     }
 
 
-    TimeZone const& TimeZoneCache::locateZone( string_view name ) const {
+    TimeZone const& TimeZoneCache::locate_zone( string_view name ) const {
         // If we successfully found the zone, dereference + return
-        if( auto ptr = tryLocateZone( name ) ) return *ptr;
+        if( auto ptr = try_locate_zone( name ) ) return *ptr;
 
         auto it = data.links.find( name );
         if( it == data.links.end() )
@@ -59,7 +59,7 @@ namespace vtz {
 
         // Get the zone this link refers to
         auto canonical = it->second;
-        if( auto ptr = tryLocateZone( canonical ) ) return *ptr;
+        if( auto ptr = try_locate_zone( canonical ) ) return *ptr;
 
         throw std::runtime_error( fmt::format(
             "'{}' is an alias for '{}', but '{}' could not be found",
@@ -68,16 +68,16 @@ namespace vtz {
             canonical ) );
     }
 
-    static std::string getTZDataPath() {
-        constexpr char const* envVars[]{
+    static std::string get_tzdata_path() {
+        constexpr char const* env_vars[]{
             "VOLA_TZDATA_PATH",
             "VOLAR_TZDATA_PATH",
         };
 
-        for( char const* envVar : envVars )
+        for( char const* env_var : env_vars )
         {
-            char const* tzdata = std::getenv( envVar );
-            if( tzdata ) { return joinPath( tzdata, "tzdata" ); }
+            char const* tzdata = std::getenv( env_var );
+            if( tzdata ) { return join_path( tzdata, "tzdata" ); }
         }
 
         throw std::runtime_error(
@@ -92,9 +92,9 @@ namespace vtz {
 
     /// Return a reference to the install path. The first time this function is
     /// called, the _install path is initialized.
-    static std::string& installPath( bool loadFromEnvVar ) {
+    static std::string& install_path( bool load_from_env_var ) {
         static std::string _install
-            = loadFromEnvVar ? getTZDataPath() : std::string();
+            = load_from_env_var ? get_tzdata_path() : std::string();
 
         return _install;
     }
@@ -109,7 +109,7 @@ namespace vtz {
                 "database has already been loaded." );
         }
 
-        installPath( false ) = std::move( path );
+        install_path( false ) = std::move( path );
     }
 
     std::string get_install() {
@@ -117,14 +117,14 @@ namespace vtz {
 
         // Return the install path. If no install path has been set, load it
         // from an environment variable.
-        return installPath( true );
+        return install_path( true );
     }
 
-    static TimeZoneCache doLoadCache() {
+    static TimeZoneCache do_load_cache() {
         std::scoped_lock _lock( INSTALL_PATH_MUTEX );
 
         auto result
-            = TimeZoneCache( loadZoneInfoFromDir( installPath( true ) ) );
+            = TimeZoneCache( load_zone_info_from_dir( install_path( true ) ) );
 
         // if result loaded successfully, mark this as true
         TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
@@ -133,7 +133,7 @@ namespace vtz {
     }
 
     TimeZoneCache const& tzdb_cache() {
-        static const TimeZoneCache cache( doLoadCache() );
+        static const TimeZoneCache cache( do_load_cache() );
         return cache;
     }
 
@@ -146,14 +146,14 @@ namespace vtz {
         {
             // Attempt to load the timezone. We'll provide some context if this
             // function fails.
-            return &cache.locateZone( name );
+            return &cache.locate_zone( name );
         }
         catch( std::exception const& ex )
         {
             throw std::runtime_error( fmt::format(
                 "locate_zone(): Unable to locate {} (source files: {}). {}",
-                escapeString( name ),
-                cache.data.sourceFiles(),
+                escape_string( name ),
+                cache.data.source_files(),
                 ex.what() ) );
         }
     }

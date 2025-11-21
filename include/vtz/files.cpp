@@ -20,7 +20,7 @@ namespace vtz {
         _guard( T ) -> _guard<T>;
 
 
-        constexpr bool isFileSep( char ch ) {
+        constexpr bool is_file_sep( char ch ) {
 #if _WIN32
             return ch == '\\' || ch == '/';
 #else
@@ -35,12 +35,12 @@ namespace vtz {
 #endif
     } // namespace
 
-    std::string joinPath( string_view prefix, string_view file ) {
+    std::string join_path( string_view prefix, string_view file ) {
         // If the prefix is empty, just return the file
         if( prefix.empty() ) return std::string( file );
 
         // If it already ends in a file separator, just add the file
-        if( isFileSep( prefix.back() ) )
+        if( is_file_sep( prefix.back() ) )
         {
             std::string result;
             result.reserve( prefix.size() + file.size() );
@@ -57,7 +57,7 @@ namespace vtz {
         return result;
     }
 
-    auto fileError( int errc, string_view fp, string_view verb )
+    auto file_error( int errc, string_view fp, string_view verb )
         -> std::runtime_error {
         return std::runtime_error(
             fmt::format( "Error when {} '{}'. What: {} (OS Error {})",
@@ -68,17 +68,17 @@ namespace vtz {
     }
 
 
-    std::string readFile( std::string const& fp ) {
-        return readFile( fp.c_str() );
+    std::string read_file( std::string const& fp ) {
+        return read_file( fp.c_str() );
     }
 
-    std::string readFile( char const* fp ) {
+    std::string read_file( char const* fp ) {
         if( fp == nullptr )
             throw std::runtime_error( "read_file(): given null filepath" );
 
         std::FILE* file = std::fopen( fp, "rb" );
 
-        if( file == nullptr ) throw fileError( errno, fp, "opening" );
+        if( file == nullptr ) throw file_error( errno, fp, "opening" );
 
         // Close the file when we leave the scope
         auto _close = _guard{ [file] {
@@ -97,7 +97,7 @@ namespace vtz {
 
             // Check the error code
             if( int errc = std::ferror( file ) )
-                throw fileError( errc, fp, "reading" );
+                throw file_error( errc, fp, "reading" );
 
             // Add the bytes to the buffer
             result.append( buffer, bytes );
@@ -107,19 +107,19 @@ namespace vtz {
     }
 
 
-    file_bytes readFileBytes( std::string const& fp ) {
-        return readFileBytes( fp.c_str() );
+    file_bytes read_file_bytes( std::string const& fp ) {
+        return read_file_bytes( fp.c_str() );
     }
 
-    file_bytes readFileBytes( char const* fp ) {
+    file_bytes read_file_bytes( char const* fp ) {
         if( fp == nullptr )
             throw std::runtime_error( "read_file(): given null filepath" );
 
-        return readFileBytes( std::fopen( fp, "rb" ), fp );
+        return read_file_bytes( std::fopen( fp, "rb" ), fp );
     }
 
-    file_bytes readFileBytes( std::FILE* file, char const* fp ) {
-        if( file == nullptr ) throw fileError( errno, fp, "opening" );
+    file_bytes read_file_bytes( std::FILE* file, char const* fp ) {
+        if( file == nullptr ) throw file_error( errno, fp, "opening" );
 
         // Close the file when we leave the scope
         auto _close = _guard{ [file] { std::fclose( file ); } };
@@ -136,7 +136,7 @@ namespace vtz {
 
             // Check the error code
             if( int errc = std::ferror( file ) )
-                throw fileError( errc, fp, "reading" );
+                throw file_error( errc, fp, "reading" );
 
             // Add the bytes to the buffer
             result.insert( result.end(), buffer, buffer + bytes );

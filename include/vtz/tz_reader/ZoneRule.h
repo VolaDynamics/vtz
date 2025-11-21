@@ -34,7 +34,7 @@ namespace vtz {
         ZoneRule() = default;
 
         constexpr explicit ZoneRule( i32 offset ) noexcept
-        : data_( fromOffsetBytes( u32( offset ) ) ) {}
+        : data_( from_offset_bytes( u32( offset ) ) ) {}
 
         constexpr ZoneRule( hyphen_t ) noexcept
         : data_{ 17, { '-' } } {}
@@ -43,16 +43,16 @@ namespace vtz {
         : data_( str ) {}
 
         constexpr Kind kind() const noexcept {
-            return isNamed() ? NAMED : isOffset() ? OFFSET : HYPHEN;
+            return is_named() ? NAMED : is_offset() ? OFFSET : HYPHEN;
         }
 
         /// Returns true if there is no rule for the zone entry (eg, the rule
         /// was '-')
-        constexpr bool isHyphen() const noexcept { return data_.size_ == 17; }
+        constexpr bool is_hyphen() const noexcept { return data_.size_ == 17; }
         /// Returns true if this rule is an offset
-        constexpr bool isOffset() const noexcept { return data_.size_ == 16; }
+        constexpr bool is_offset() const noexcept { return data_.size_ == 16; }
         /// Returns true if this is a named rule (eg, 'US')
-        constexpr bool isNamed() const noexcept { return data_.size_ < 16; }
+        constexpr bool is_named() const noexcept { return data_.size_ < 16; }
 
         constexpr char const* data() const noexcept { return data_.buff_; }
         constexpr size_t size() const noexcept { return data_.size_ & 0xf; }
@@ -85,7 +85,7 @@ namespace vtz {
 
         RuleName data_;
 
-        constexpr static RuleName fromOffsetBytes( u32 bb ) noexcept {
+        constexpr static RuleName from_offset_bytes( u32 bb ) noexcept {
             return RuleName{
                 16,
                 {

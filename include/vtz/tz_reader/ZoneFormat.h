@@ -40,14 +40,14 @@ namespace vtz {
 
         constexpr Tag tag() const noexcept { return Tag( fmt_ & 0x3 ); }
 
-        constexpr void setFmt( Tag tag, size_t sz0, size_t sz1 ) noexcept {
+        constexpr void set_fmt( Tag tag, size_t sz0, size_t sz1 ) noexcept {
             fmt_ = u16( ( sz0 << 2 ) | ( sz1 << 6 ) | tag );
         }
 
         [[nodiscard]] constexpr ZoneFormat with(
             Tag tag, size_t sz0 = 0, size_t sz1 = 0 ) const noexcept {
             auto result = *this;
-            result.setFmt( tag, sz0, sz1 );
+            result.set_fmt( tag, sz0, sz1 );
             return result;
         }
 
@@ -55,16 +55,16 @@ namespace vtz {
         /// selecting standard/DST (for SLASH based on whether DST is active)
         /// For PERCENT_Z, pass the offset in seconds via the offset parameter
         template<size_t N>
-        constexpr size_t writeN( char* dest,
-            i32                        off,
-            bool                       isDST,
-            char const*                letter,
-            size_t                     letterSize ) const noexcept {
+        constexpr size_t write_n( char* dest,
+            i32                         off,
+            bool                        is_dst,
+            char const*                 letter,
+            size_t                      letter_size ) const noexcept {
             size_t sz0 = ( fmt_ >> 2 ) & 0xf;
             size_t sz1 = ( fmt_ >> 6 ) & 0xf;
 
             /// Buffer to place offset (if the format contained a '%z')
-            char zBuff[16]{};
+            char z_buff[16]{};
 
             switch( tag() )
             {
@@ -79,8 +79,8 @@ namespace vtz {
             case SLASH:
                 {
                     // Select which half to copy
-                    size_t s = isDST ? sz1 : sz0;
-                    auto*  p = buff + ( isDST ? sz0 : 0 );
+                    size_t s = is_dst ? sz1 : sz0;
+                    auto*  p = buff + ( is_dst ? sz0 : 0 );
                     // Truncate if necessary
                     if( s > N ) s = N;
                     // Perform copy
@@ -89,8 +89,8 @@ namespace vtz {
                 }
             case FMT_Z:
                 // Ignore the letter, use shortest offset instead
-                letter     = zBuff;
-                letterSize = writeShortestOffset( off, zBuff );
+                letter      = z_buff;
+                letter_size = write_shortest_offset( off, z_buff );
 
                 [[fallthrough]];
             case FMT_S:
@@ -108,11 +108,11 @@ namespace vtz {
                     rem  -= sz0;
 
                     // Truncate if necessary
-                    if( letterSize > rem ) letterSize = rem;
-                    for( size_t i = 0; i < letterSize; ++i )
+                    if( letter_size > rem ) letter_size = rem;
+                    for( size_t i = 0; i < letter_size; ++i )
                         dest[i] = letter[i];
-                    dest += letterSize;
-                    rem  -= letterSize;
+                    dest += letter_size;
+                    rem  -= letter_size;
 
                     // Truncate if necessary
                     if( sz1 > rem ) sz1 = rem;
@@ -128,31 +128,32 @@ namespace vtz {
         }
 
         template<size_t N>
-        constexpr size_t writeN( char* dest,
-            i32                        off,
-            bool                       isDST,
-            string_view                letter ) const noexcept {
-            return writeN<N>( dest, off, isDST, letter.data(), letter.size() );
+        constexpr size_t write_n( char* dest,
+            i32                         off,
+            bool                        is_dst,
+            string_view                 letter ) const noexcept {
+            return write_n<N>(
+                dest, off, is_dst, letter.data(), letter.size() );
         }
 
         template<size_t N>
         constexpr void format( FixStr<N>& dest,
             i32                           off,
-            bool                          isDST,
+            bool                          is_dst,
             string_view                   letter ) const noexcept {
-            dest.size_ = writeN<N>( dest.buff_, off, isDST, letter );
+            dest.size_ = write_n<N>( dest.buff_, off, is_dst, letter );
         }
 
         constexpr ZoneAbbr format(
-            i32 off, bool isDST, string_view letter ) const noexcept {
+            i32 off, bool is_dst, string_view letter ) const noexcept {
             ZoneAbbr result{};
-            format( result, off, isDST, letter );
+            format( result, off, is_dst, letter );
             return result;
         }
 
         constexpr ZoneAbbr format(
-            FromUTC off, bool isDST, string_view letter ) const noexcept {
-            return format( off.off, isDST, letter );
+            FromUTC off, bool is_dst, string_view letter ) const noexcept {
+            return format( off.off, is_dst, letter );
         }
 
         bool operator==( ZoneFormat const& rhs ) const noexcept {

@@ -7,14 +7,14 @@
 #include <string_view>
 
 namespace vtz {
-    i32 parseHHMMSSOffset( char const* p, size_t size, int sign = 1 ) noexcept;
-    i32 parseSignedHHMMSSOffset( char const* p, size_t size ) noexcept;
+    i32 parse_hhmmssoffset( char const* p, size_t size, int sign = 1 ) noexcept;
+    i32 parse_signed_hhmmssoffset( char const* p, size_t size ) noexcept;
 
-    inline i32 parseHHMMSSOffset( string_view sv ) noexcept {
-        return parseHHMMSSOffset( sv.data(), sv.size(), 1 );
+    inline i32 parse_hhmmssoffset( string_view sv ) noexcept {
+        return parse_hhmmssoffset( sv.data(), sv.size(), 1 );
     }
-    inline i32 parseSignedHHMMSSOffset( string_view sv ) noexcept {
-        return parseSignedHHMMSSOffset( sv.data(), sv.size() );
+    inline i32 parse_signed_hhmmssoffset( string_view sv ) noexcept {
+        return parse_signed_hhmmssoffset( sv.data(), sv.size() );
     }
 
 
@@ -30,10 +30,10 @@ namespace vtz {
         FromUTC() = default;
 
         /// Add offset to get from utc time to local time
-        constexpr i64 toLocal( i64 utc ) const noexcept { return utc + off; }
+        constexpr i64 to_local( i64 utc ) const noexcept { return utc + off; }
 
         /// Subtract offset to get from local time to UTC time
-        constexpr i64 toUTC( i64 local ) const noexcept { return local - off; }
+        constexpr i64 to_utc( i64 local ) const noexcept { return local - off; }
 
         /// Consider America/New_York. When we 'save' 1 hour, our offset from
         /// UTC goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
@@ -44,15 +44,15 @@ namespace vtz {
         /// Consider America/New_York. When we 'save' 1 hour, our offset from
         /// UTC
         /// goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
-        constexpr FromUTC save( i32 saveSeconds ) const noexcept {
-            return { off + saveSeconds };
+        constexpr FromUTC save( i32 save_seconds ) const noexcept {
+            return { off + save_seconds };
         }
 
         constexpr FromUTC( i32 off ) noexcept
         : off( off ) {}
 
         explicit FromUTC( string_view sv )
-        : off( parseSignedHHMMSSOffset( sv ) ) {}
+        : off( parse_signed_hhmmssoffset( sv ) ) {}
 
         template<size_t N>
         FromUTC( char const ( &arr )[N] )

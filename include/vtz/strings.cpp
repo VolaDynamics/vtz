@@ -4,12 +4,12 @@
 
 namespace vtz {
     namespace {
-        size_t countNewlines( string_view text ) {
+        size_t count_newlines( string_view text ) {
             return std::count( text.data(), text.data() + text.size(), '\n' );
         }
     } // namespace
 
-    Location Location::wherePtr( string_view body, char const* pos ) noexcept {
+    Location Location::where_ptr( string_view body, char const* pos ) noexcept {
         return Location::where( body, size_t( pos - body.data() ) );
     }
 
@@ -29,7 +29,7 @@ namespace vtz {
         size_t line_start = substr.rfind( '\n' ) + 1;
 
         // line index
-        size_t li = countNewlines( substr );
+        size_t li = count_newlines( substr );
 
         // column index
         size_t ci = substr.size() - line_start;
@@ -51,10 +51,10 @@ namespace vtz {
         return result;
     }
 
-    size_t countLines( string_view input ) {
+    size_t count_lines( string_view input ) {
         if( input.empty() ) return 0;
 
-        size_t count = countNewlines( input );
+        size_t count = count_newlines( input );
 
         // If the last line ends in a newline, the number of lines in identical
         // to the number of newlines
@@ -65,7 +65,7 @@ namespace vtz {
 
 
     vector<string_view> lines( string_view input ) {
-        auto result = vector<string_view>( countLines( input ) );
+        auto result = vector<string_view>( count_lines( input ) );
 
         LineIter r( input );
         for( auto& elem : result ) { elem = r.next(); }
@@ -83,7 +83,7 @@ namespace vtz {
     }
 
 
-    std::string escapeString( std::string_view sv ) {
+    std::string escape_string( std::string_view sv ) {
         std::string s;
         s += '"';
         for( char ch : sv )
