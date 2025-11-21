@@ -194,16 +194,16 @@ namespace vtz {
         /// Treats the result as a signed integer, and sign-extends it back to
         /// 64 bits.
         VTZ_INLINE constexpr i64 lookup( i64 t ) const noexcept {
-            i64  i        = t >> g;
+            i64  i         = t >> g;
             bool select_lo = t < tt[i];
-            u64  block    = bb[i];
+            u64  block     = bb[i];
             return i64( block << ( int( select_lo ) << 5 ) ) >> 32;
         }
 
         VTZ_INLINE constexpr u32 lookup_u32( i64 t ) const noexcept {
-            i64  i        = t >> g;
+            i64  i         = t >> g;
             bool select_hi = t >= tt[i];
-            u64  block    = bb[i];
+            u64  block     = bb[i];
             return u32( block >> ( int( select_hi ) << 5 ) );
         }
     };
@@ -1025,3 +1025,8 @@ namespace vtz {
     /// atomically reload the current zone. The new current zone is returned.
     time_zone const* reload_current_zone();
 } // namespace vtz
+
+
+#ifdef VTZ_DATE_COMPAT
+namespace date = vtz;
+#endif
