@@ -2,6 +2,7 @@
 
 #include <vtz/civil.h>
 
+#include <chrono>
 
 namespace vtz {
     using std::chrono::hours;

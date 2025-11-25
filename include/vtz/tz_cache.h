@@ -11,8 +11,10 @@
 #include <vtz/bit.h>
 #include <vtz/tz.h>
 #include <vtz/tz_reader.h>
+#include <cstddef>
 
 #include <ankerl/unordered_dense.h>
+
 
 namespace vtz {
     using std::string;
@@ -29,7 +31,7 @@ namespace vtz {
 
         AtomicEnt() = default;
 
-        AtomicEnt( nullptr_t )
+        AtomicEnt( std::nullptr_t )
         : tz( nullptr ) {}
 
         AtomicEnt( std::unique_ptr<T>&& tz ) noexcept
