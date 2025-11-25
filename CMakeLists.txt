@@ -102,7 +102,7 @@ if(PROJECT_IS_TOP_LEVEL)
         SYMBOLIC
     )
 
-    # This is required by the Hinnant date library, which is used for tests and bencmarks
+    # This is required by the Hinnant date library, which is used for tests and benchmarks
     file(
         DOWNLOAD
             "https://raw.githubusercontent.com/unicode-org/cldr/refs/heads/main/common/supplemental/windowsZones.xml"
