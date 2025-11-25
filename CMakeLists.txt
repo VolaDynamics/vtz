@@ -109,15 +109,8 @@ if(PROJECT_IS_TOP_LEVEL)
             "${BUILD}/data/tzdata/windowsZones.xml"
     )
 
-    add_executable(test_vtz
-        test/test_vtz.cpp
-        test/test_civil.cpp
-        test/test_math.cpp
-        test/test_versus_hinnant_tz.cpp
-        test/test_formatting.cpp
-        test/test_parsing.cpp
-        test/test_tzfile.cpp
-    )
+    file(GLOB test_files etc/test/*.cpp)
+    add_executable(test_vtz ${test_files})
     target_link_libraries(
         test_vtz
         PRIVATE
@@ -127,10 +120,8 @@ if(PROJECT_IS_TOP_LEVEL)
             date::date
             date::date-tz
     )
-    add_executable(
-        bench_vtz
-        bench/bench_vtz.cpp
-    )
+    file(GLOB bench_files etc/bench/*.cpp)
+    add_executable(bench_vtz ${bench_files})
     target_compile_features(bench_vtz PRIVATE cxx_std_20)
     target_link_libraries(
         bench_vtz
