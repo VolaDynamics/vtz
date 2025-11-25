@@ -116,6 +116,7 @@ if(PROJECT_IS_TOP_LEVEL)
         test/test_versus_hinnant_tz.cpp
         test/test_formatting.cpp
         test/test_parsing.cpp
+        test/test_tzfile.cpp
     )
     target_link_libraries(
         test_vtz
