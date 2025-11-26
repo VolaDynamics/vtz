@@ -70,6 +70,11 @@ namespace vtz {
             return i < count ? p[i] : alternative;
         }
 
+
+        VTZ_INLINE constexpr span subspan( size_t offset ) const noexcept {
+            return span( p + offset, count - offset );
+        }
+
       private:
 
         T*     p     = nullptr;
