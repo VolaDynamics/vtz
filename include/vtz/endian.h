@@ -38,7 +38,7 @@ namespace vtz::endian {
     // clang-format off
 
     /// Loads p[0..N] as a value of type T
-    template<class T> T _load( char const* p ) noexcept { T result; _vtz_memcpy( &result, p, sizeof( T ) ); return result; }
+    template<class T> VTZ_INLINE T _load( char const* p ) noexcept { T result; _vtz_memcpy( &result, p, sizeof( T ) ); return result; }
 
     /// Obtain native u16 from Big Endian u16
     VTZ_INLINE u16 _native_from_be( u16 value ) noexcept { if constexpr( endian::native == endian::big ) { return value; } else { return _vtz_bswap16( value ); } }
@@ -68,6 +68,46 @@ namespace vtz::endian {
     /// Interpret p[0..N] as a int with Big Endian byte order, where
     /// N=sizeof(T). Return the corresponding native int of the given type T.
     template<class T> VTZ_INLINE T load_be( char const* p ) noexcept { return _load_int_be_t<T>::load( p ); }
+
+
+    /// Iterator which uses memcpy to reinterpret raw bytes as elements of type T
+    template<class T>
+    class byte_iterator {
+        constexpr static size_t N = sizeof( T );
+
+      public:
+
+        using self = byte_iterator;
+
+        char const* p = nullptr; ///< Underlying pointer to bytes
+
+        // MUTATING OPERATIONS
+        VTZ_INLINE self& operator++() noexcept { return ( p += N ), *this; }
+        VTZ_INLINE self& operator--() noexcept { return ( p -= N ), *this; }
+        VTZ_INLINE self  operator++( int ) noexcept { auto old = *this; p += N; return old; }
+        VTZ_INLINE self  operator--( int ) noexcept { auto old = *this; p -= N; return old; }
+        VTZ_INLINE self& operator+=( ptrdiff_t n ) noexcept { return p += n * N, *this; }
+        VTZ_INLINE self& operator-=( ptrdiff_t n ) noexcept { return p -= n * N, *this; }
+
+        // CONST OPERATIONS
+        VTZ_INLINE self      operator +( ptrdiff_t n ) const noexcept { return { p + n * N }; }
+        VTZ_INLINE self      operator -( ptrdiff_t n ) const noexcept { return { p - n * N }; }
+        VTZ_INLINE ptrdiff_t operator -( self const& rhs ) const noexcept { return ( p - rhs.p ) / N; }
+        VTZ_INLINE bool      operator==( self const& rhs ) const noexcept { return p == rhs.p; }
+        VTZ_INLINE bool      operator!=( self const& rhs ) const noexcept { return p != rhs.p; }
+        VTZ_INLINE bool      operator <( self const& rhs ) const noexcept { return p  < rhs.p; }
+        VTZ_INLINE bool      operator >( self const& rhs ) const noexcept { return p  > rhs.p; }
+        VTZ_INLINE bool      operator<=( self const& rhs ) const noexcept { return p <= rhs.p; }
+        VTZ_INLINE bool      operator>=( self const& rhs ) const noexcept { return p >= rhs.p; }
+        VTZ_INLINE T         operator *() const noexcept { return _load<T>( p ); }
+        VTZ_INLINE T         operator[]( ptrdiff_t i ) const noexcept { return _load<T>( p + i * N ); }
+
+        using difference_type   = ptrdiff_t;
+        using value_type        = T;
+        using pointer           = void;
+        using reference         = T;
+        using iterator_category = std::random_access_iterator_tag;
+    };
 
 
     /// Provides iterator over bytes representing sequence of big-endian ints
@@ -139,6 +179,39 @@ namespace vtz::endian {
         VTZ_INLINE size_t   size()  const noexcept { return n; }
         VTZ_INLINE bool     empty() const noexcept { return n == 0; }
         VTZ_INLINE T        front() const noexcept { return load_be<T>( p ); }
+        VTZ_INLINE T        back()  const noexcept { return operator[]( n - 1 ); }
+        VTZ_INLINE iterator begin() const noexcept { return { p }; }
+        VTZ_INLINE iterator end()   const noexcept { return { p + N * n }; }
+
+        VTZ_INLINE size_t           size_bytes() const noexcept { return n * N; }
+        VTZ_INLINE span<char const> bytes()      const noexcept { return span<char const>( p, size_bytes() ); }
+    };
+
+
+    /// Imposes a view over some bytes b such that we can treat it as containing elements T, even if T is not aligned.
+    /// Elements are accessed via _load<T>, which uses memcpy to reinterpret the bytes.
+    template<class T>
+    class span_bytes {
+        char const* p = nullptr;
+        size_t      n = 0;
+
+        constexpr static size_t N = sizeof( T );
+
+      public:
+
+        using iterator   = byte_iterator<T>;
+        using value_type = T;
+
+        span_bytes() = default;
+        span_bytes( char const* p, size_t count ) noexcept : p( p ), n( count ) {}
+
+        /// Interpret p[i..i+N] as a int with Big Endian byte order, and load it
+        /// as a native int
+        VTZ_INLINE T        operator[]( ptrdiff_t i ) const noexcept { return _load<T>( p + i * N ); }
+
+        VTZ_INLINE size_t   size()  const noexcept { return n; }
+        VTZ_INLINE bool     empty() const noexcept { return n == 0; }
+        VTZ_INLINE T        front() const noexcept { return _load<T>( p ); }
         VTZ_INLINE T        back()  const noexcept { return operator[]( n - 1 ); }
         VTZ_INLINE iterator begin() const noexcept { return { p }; }
         VTZ_INLINE iterator end()   const noexcept { return { p + N * n }; }
