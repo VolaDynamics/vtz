@@ -131,4 +131,11 @@ if(PROJECT_IS_TOP_LEVEL)
             fmt::fmt
             date::date-tz
     )
+
+    file(GLOB tools etc/tools/*.cpp)
+    foreach(file IN LISTS tools)
+        cmake_path(GET file STEM exe)
+        add_executable(${exe} ${file})
+        target_link_libraries(${exe} PRIVATE vtz::vtz fmt::fmt)
+    endforeach()
 endif()
