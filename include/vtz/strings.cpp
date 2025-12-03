@@ -76,7 +76,7 @@ namespace vtz {
     std::string Location::str() const {
         char buffer[64];
 
-        auto r1 = std::to_chars( buffer, buffer + sizeof( buffer ), line );
+        auto r1 = std::to_chars( buffer, buffer + 30, line );
         *r1.ptr = ':';
         auto r2 = std::to_chars( r1.ptr + 1, buffer + sizeof( buffer ), col );
         return std::string( buffer, r2.ptr - buffer );
