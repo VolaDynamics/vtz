@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vtz/civil.h>
+#include <chrono>
 
 using namespace vtz;
 using std::chrono::duration;
