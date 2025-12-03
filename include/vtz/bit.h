@@ -14,9 +14,11 @@
 #if _MSC_VER
     #define VTZ_INLINE            __forceinline
     #define VTZ_IS_LIKELY( expr ) bool( expr )
+    #define VTZ_UNREACHABLE() __assume(0)
 #else
     #define VTZ_INLINE            [[gnu::always_inline]] inline
     #define VTZ_IS_LIKELY( expr ) __builtin_expect( bool( expr ), 1 )
+    #define VTZ_UNREACHABLE() __builtin_unreachable()
 #endif
 
 namespace vtz {
