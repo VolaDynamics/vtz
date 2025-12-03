@@ -1562,6 +1562,8 @@ namespace vtz {
         case NAMED: return string( name() );
         case OFFSET: return to_hhmmss( offset() );
         }
+
+        throw std::runtime_error( "ZoneRule::str(): kind() is invalid/corrupt" );
     }
     vector<ZoneTransition> ZoneStates::get_transitions() const {
         constexpr static sysseconds_t MAX_TIME

@@ -125,6 +125,8 @@ namespace vtz {
                     return N - rem;
                 }
             }
+
+            VTZ_UNREACHABLE();
         }
 
         template<size_t N>

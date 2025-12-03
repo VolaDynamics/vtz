@@ -81,6 +81,9 @@ namespace vtz {
             /// Time of day represents an offset from UTC time within the zone
             case UTC: return T + time_of_day;
             }
+
+            // Fallback - handle as UTC. We just have this here to prevent UB
+            return T + time_of_day;
         }
 
 

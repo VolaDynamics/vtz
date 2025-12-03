@@ -64,6 +64,8 @@ namespace vtz {
             case DOW_GE: return resolve_dow_ge( year, mon, day(), dow() );
             case DOW_LE: return resolve_dow_le( year, mon, day(), dow() );
             }
+
+            VTZ_UNREACHABLE();
         }
 
 
@@ -82,6 +84,8 @@ namespace vtz {
             case DOW_LE:
                 return get_ymd_dow_le( year, u32( mon ), day(), dow() );
             }
+
+            VTZ_UNREACHABLE();
         }
 
         string str() const;
