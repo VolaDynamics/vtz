@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <vtz/bit.h>
 
 #include <optional>
@@ -121,8 +122,12 @@ namespace vtz {
     /// An empty token may still, however, have a valid data() pointer. This is
     /// used to simplify error handling:
     struct OptTok : string_view {
-        using string_view::string_view;
+        OptTok() = default;
 
+        constexpr OptTok( char const* cstr )
+        : string_view( cstr ) {}
+        constexpr OptTok( char const* p, size_t len ) noexcept
+        : string_view( p, len ) {}
         constexpr OptTok( string_view rhs ) noexcept
         : string_view( rhs ) {}
 
@@ -145,7 +150,7 @@ namespace vtz {
         /// `data()` must still be valid, so that we can obtain a proper
         /// lineno/column when providing an error message to the user.
         constexpr static OptTok missing_at( char const* at ) noexcept {
-            return OptTok( at, 0 );
+            return OptTok( at, size_t( 0 ) );
         }
     };
 

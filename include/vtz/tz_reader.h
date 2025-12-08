@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vtz/tz_reader/TZString.h"
 #include <algorithm>
 #include <utility>
 #include <vtz/bit.h>
@@ -42,6 +43,9 @@ namespace vtz {
         char const* expected; ///< What was expected
         char const* but;      ///< Reason why input was bad
         OptTok      token;    ///< token where failure occurred
+
+        std::string getErrorMessage(
+            string_view input, string_view filename ) const;
     };
 
 
@@ -320,7 +324,7 @@ namespace vtz {
     /// if no active rule with a save of 0 is found
     inline RuleEntry const* earliest_active_with_save_zero(
         RuleEntry const* active, size_t active_count, i32 year ) noexcept {
-        size_t    result       = -1;
+        size_t    result        = -1;
         sysdays_t earliest_date = MAX_DAYS;
         for( size_t i = 0; i < active_count; ++i )
         {
@@ -329,7 +333,7 @@ namespace vtz {
             if( date <= earliest_date )
             {
                 earliest_date = date;
-                result       = i;
+                result        = i;
             }
         }
         return result < active_count // did we find an entry?
@@ -698,6 +702,9 @@ namespace vtz {
     Mon         parse_month( OptTok tok );
     u8          parse_day_of_month( OptTok tok );
     RuleOn      parse_rule_on( OptTok tok );
+
+    /// Parse a POSIX TZ String that may appear at the end of a tzfile
+    TZString parse_tz_string( string_view sv );
 
     /// Parse a Zone Rule entry
     ///

@@ -7,14 +7,15 @@
 #include <string_view>
 
 namespace vtz {
-    i32 parse_hhmmssoffset( char const* p, size_t size, int sign = 1 ) noexcept;
-    i32 parse_signed_hhmmssoffset( char const* p, size_t size ) noexcept;
+    i32 parse_hhmmss_offset(
+        char const* p, size_t size, int sign = 1 ) noexcept;
+    i32 parse_signed_hhmmss_offset( char const* p, size_t size ) noexcept;
 
-    inline i32 parse_hhmmssoffset( string_view sv ) noexcept {
-        return parse_hhmmssoffset( sv.data(), sv.size(), 1 );
+    inline i32 parse_hhmmss_offset( string_view sv ) noexcept {
+        return parse_hhmmss_offset( sv.data(), sv.size(), 1 );
     }
-    inline i32 parse_signed_hhmmssoffset( string_view sv ) noexcept {
-        return parse_signed_hhmmssoffset( sv.data(), sv.size() );
+    inline i32 parse_signed_hhmmss_offset( string_view sv ) noexcept {
+        return parse_signed_hhmmss_offset( sv.data(), sv.size() );
     }
 
 
@@ -61,14 +62,15 @@ namespace vtz {
                 // We treat eg -9:30:05 as meaning all components are negative
                 return i32( hh ) * 3600 - mm * 60 - ss;
             }
-            else return hh * 3600 + mm * 60 + ss;
+            else
+                return hh * 3600 + mm * 60 + ss;
         }
 
         constexpr FromUTC( i32 off ) noexcept
         : off( off ) {}
 
         explicit FromUTC( string_view sv )
-        : off( parse_signed_hhmmssoffset( sv ) ) {}
+        : off( parse_signed_hhmmss_offset( sv ) ) {}
 
         template<size_t N>
         FromUTC( char const ( &arr )[N] )

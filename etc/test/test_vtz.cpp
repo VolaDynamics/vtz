@@ -895,10 +895,10 @@ TEST( vtz_tz, Asia_Singapore ) {
 
 
 TEST( vtz_parser, basics ) {
-    ASSERT_EQ( parse_hhmmssoffset( "0:12:12" ), 60 * 12 + 12 );
-    ASSERT_EQ( parse_hhmmssoffset( "2:00" ), 7200 );
-    ASSERT_EQ( parse_signed_hhmmssoffset( "2:00" ), 7200 );
-    ASSERT_EQ( parse_signed_hhmmssoffset( "-2:00" ), -7200 );
+    ASSERT_EQ( parse_hhmmss_offset( "0:12:12" ), 60 * 12 + 12 );
+    ASSERT_EQ( parse_hhmmss_offset( "2:00" ), 7200 );
+    ASSERT_EQ( parse_signed_hhmmss_offset( "2:00" ), 7200 );
+    ASSERT_EQ( parse_signed_hhmmss_offset( "-2:00" ), -7200 );
 
     ASSERT_EQ( parse_rule_on( "lastSun" ).str(), "lastSun" );
     ASSERT_EQ( parse_rule_on( "lastMon" ).str(), "lastMon" );

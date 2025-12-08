@@ -33,7 +33,8 @@ struct ankerl::unordered_dense::hash<vtz::ZoneAbbr> {
 
 namespace vtz {
     namespace {
-        constexpr char const* no_token = "no token was given";
+        constexpr char const* no_token    = "no token was given";
+        constexpr char const* empty_input = "input was empty";
         constexpr char const* bad_save
             = "is not a valid SAVE. SAVE must fits one of the following "
               "forms: "
@@ -66,9 +67,20 @@ namespace vtz {
               "an amount of time (eg, \"1:00\"), which we set our clocks ahead "
               "by; or it must be an alphabetic string which names a rule.";
 
+        constexpr static char const* TZ_expected_rule
+            = "Expected rules describing when zone transition occurs";
+        constexpr static char const* end_of_string = "reached end of string";
 
-        /// Return true if the character is an ascii letter (either lowercase or
-        /// uppercase)
+
+        /// Return true if the character is an ascii letter (either
+        /// lowercase or uppercase)
+        constexpr auto is_alphabetic = []( char ch ) noexcept -> bool {
+            return ( 'a' <= ch && ch <= 'z' )     // ch is lowercase
+                   || ( 'A' <= ch && ch <= 'Z' ); // ch is uppercase;
+        };
+
+        /// Return true if the character is an ascii letter (either
+        /// lowercase or uppercase) or an underscore
         constexpr auto is_alpha = []( char ch ) noexcept -> bool {
             return ( 'a' <= ch && ch <= 'z' )    // ch is lowercase
                    || ( 'A' <= ch && ch <= 'Z' ) // ch is uppercase
@@ -112,7 +124,43 @@ namespace vtz {
             }
             return { 0, false };
         }
+
+        u32 eat_u32_or_throw( char const*& p, char const* end ) {
+            u32  x;
+            auto result = std::from_chars( p, end, x );
+            if( result.ec == std::errc{} )
+            {
+                p = result.ptr;
+                return x;
+            }
+            throw ParseError{ "Expected unsigned int",
+                "error occurred when parsing",
+                OptTok( p, end - p ) };
+        }
     } // namespace
+
+    std::string ParseError::getErrorMessage(
+        string_view input, string_view filename ) const {
+        auto loc = Location::where_ptr( input, token.data() );
+
+        if( token.has_value() )
+        {
+            return fmt::format( "Error @ {}:{}: {} but {} {}",
+                filename,
+                loc.str(),
+                expected,
+                escape_string( token ),
+                but );
+        }
+        else
+        {
+            return fmt::format( "Error @ {}:{}: {} but {}",
+                filename,
+                loc.str(),
+                expected,
+                but );
+        }
+    }
 
     rule_year_t parse_year( OptTok tok ) {
         char const* begin = tok.data();
@@ -261,7 +309,7 @@ namespace vtz {
         };
     }
 
-    i32 parse_hhmmssoffset( char const* p, size_t size, int sign ) noexcept {
+    i32 parse_hhmmss_offset( char const* p, size_t size, int sign ) noexcept {
         if( !size ) return OFFSET_NPOS;
 
         if( size <= 8 )
@@ -315,15 +363,44 @@ namespace vtz {
         return OFFSET_NPOS;
     }
 
-    i32 parse_signed_hhmmssoffset( char const* p, size_t size ) noexcept {
+    i32 parse_signed_hhmmss_offset( char const* p, size_t size ) noexcept {
         if( size > 0 )
         {
             char ch = p[0];
-            if( is_d10( ch - '0' ) ) return parse_hhmmssoffset( p, size, 1 );
-            if( ch == '-' ) return parse_hhmmssoffset( p + 1, size - 1, -1 );
-            if( ch == '+' ) return parse_hhmmssoffset( p + 1, size - 1, 1 );
+            if( is_d10( ch - '0' ) ) return parse_hhmmss_offset( p, size, 1 );
+            if( ch == '-' ) return parse_hhmmss_offset( p + 1, size - 1, -1 );
+            if( ch == '+' ) return parse_hhmmss_offset( p + 1, size - 1, 1 );
         }
         return OFFSET_NPOS;
+    }
+
+
+    i32 eat_signed_hhmmss( char const*& p, char const* end ) {
+        constexpr char const* expected = "Expected offset - [sign]HH[:MM][:SS]";
+        if( p == end ) throw ParseError{ expected, empty_input };
+
+        int  sign = 1;
+        char ch   = p[0];
+
+        // Consume and set the sign
+        if( ch == '-' || ch == '+' )
+        {
+            ++p;
+            if( ch == '-' ) sign = -1;
+        }
+
+        ptrdiff_t i    = 0;
+        ptrdiff_t size = end - p;
+        while( i < size && ( ( '0' <= p[i] && p[i] <= '9' ) || p[i] == ':' ) )
+            ++i;
+
+        i32 offset = parse_hhmmss_offset( p, i, sign );
+        if( offset == OFFSET_NPOS )
+            throw ParseError{
+                expected, "was not an offset", OptTok( p, end - p )
+            };
+        p += i;
+        return offset;
     }
 
     namespace {
@@ -332,7 +409,7 @@ namespace vtz {
             size_t      size = tok.size();
             char const* p    = tok.data();
 
-            auto result = parse_signed_hhmmssoffset( p, size );
+            auto result = parse_signed_hhmmss_offset( p, size );
             if( result != OFFSET_NPOS ) return RuleSave{ result };
 
             // throw failure
@@ -350,13 +427,13 @@ namespace vtz {
                 char suffix = p[size - 1];
                 if( is_d10( suffix - '0' ) )
                 {
-                    auto off = parse_signed_hhmmssoffset( p, size );
+                    auto off = parse_signed_hhmmss_offset( p, size );
                     if( off != OFFSET_NPOS )
                         return RuleAt{ off, RuleAt::LOCAL_WALL };
                 }
                 else
                 {
-                    auto off = parse_signed_hhmmssoffset( p, size - 1 );
+                    auto off = parse_signed_hhmmss_offset( p, size - 1 );
                     if( off != OFFSET_NPOS )
                     {
                         switch( suffix )
@@ -407,7 +484,7 @@ namespace vtz {
             size_t      size = tok.size();
             char const* p    = tok.data();
 
-            auto result = parse_signed_hhmmssoffset( p, size );
+            auto result = parse_signed_hhmmss_offset( p, size );
             if( result != OFFSET_NPOS ) return FromUTC{ result };
 
             // throw failure
@@ -505,7 +582,7 @@ namespace vtz {
         }
         else
         {
-            auto offset = parse_signed_hhmmssoffset( p, size );
+            auto offset = parse_signed_hhmmss_offset( p, size );
             if( offset != OFFSET_NPOS ) return ZoneRule( offset );
         }
 
@@ -728,7 +805,6 @@ namespace vtz {
         catch( ParseError err )
         { //
             auto loc = Location::where_ptr( input, err.token.data() );
-
             if( err.token.has_value() )
             {
                 throw std::runtime_error(
@@ -748,6 +824,204 @@ namespace vtz {
                         err.expected,
                         err.but ) );
             }
+        }
+    }
+
+
+    static OptSV eat_tz_string_zone_abbr( char const*& p, char const* end ) {
+        if( p == end ) return OptSV();
+        if( *p == '<' )
+        {
+            ++p;
+            char const* s0 = p;
+            while( p != end )
+            {
+                if( *p++ == '>' )
+                {
+                    size_t sz = ( p - 1 ) - s0;
+                    return string_view( s0, sz );
+                }
+            }
+            throw ParseError{
+                "Expected '>' delimiting end of zone abbreviation",
+                "Found end of string"
+            };
+        }
+        char const* s0 = p;
+        while( p != end )
+        {
+            if( !is_alphabetic( *p ) ) return string_view( s0, p - s0 );
+            ++p;
+        }
+        return string_view( s0, p - s0 );
+    }
+
+
+    ZoneAbbr to_zone_abbr( string_view sv ) {
+        if( sv.size() < ZoneAbbr::max_size )
+        {
+            ZoneAbbr result;
+            _vtz_memcpy( result.buff_, sv.data(), sv.size() );
+            result.size_ = sv.size();
+            return result;
+        }
+
+        throw ParseError{
+            "Expected zone abbreviation",
+            "is too long",
+            sv,
+        };
+    }
+
+    ZoneAbbr to_zone_abbr( OptSV sv ) {
+        if( sv ) return to_zone_abbr( *sv );
+        throw ParseError{
+            "Expected zone abbreviation",
+            "no zone abbreviation was given",
+        };
+    }
+
+    TZDate eat_tzdate( char const*& p, char const* end ) {
+        char const* s0 = p;
+        if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
+        if( *p != ',' )
+            throw ParseError{
+                TZ_expected_rule, "isn't a valid rule", OptTok( p, end - p )
+            };
+        ++p;
+        if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
+        if( *p == 'M' )
+        {
+            // Parse Mm.n.d
+            ++p;
+            auto m = eat_u32_or_throw( p, end );
+            if( p == end || *p != '.' )
+                throw ParseError{ "expected week (range [1-5]) following '.'",
+                    "didn't match \".[1-5]\"",
+                    OptTok( p, end - p ) };
+            ++p;
+            auto n = eat_u32_or_throw( p, end );
+            if( p == end || *p != '.' )
+                throw ParseError{
+                    "expected day of week (range [0-6]) following '.'",
+                    "didn't match \".[0-6]\"",
+                    OptTok( p, end - p )
+                };
+            ++p;
+            auto d = eat_u32_or_throw( p, end );
+            if( m < 1 || m > 12 )
+                throw ParseError{ "Expected Mm.n.d",
+                    "had an out-of-bounds month (expected range [1-12])",
+                    OptTok( s0, end - s0 ) };
+            if( n < 1 || n > 5 )
+                throw ParseError{ "Expected Mm.n.d",
+                    "had an out-of-bounds week of month (expected range [1-5])",
+                    OptTok( s0, end - s0 ) };
+            if( d > 6 )
+                throw ParseError{ "Expected Mm.n.d",
+                    "had an out-of-bounds day of the week (expected range "
+                    "[0-6])",
+                    OptTok( s0, end - s0 ) };
+            return TZDate::make_dom( Mon( m ), n, DOW( d ) );
+        }
+        else if( *p == 'J' )
+        {
+            // Parse Julian: Jn
+            ++p;
+            auto n = eat_u32_or_throw( p, end );
+            if( n < 1 || n > 365 )
+                throw ParseError{
+                    "Expected Rule Date of form Jn where 1 <= n <= 365",
+                    "contained an out-of-bounds value for n",
+                    OptTok( s0, end - s0 )
+                };
+            return TZDate::make_julian( n );
+        }
+        else
+        {
+            auto n = eat_u32_or_throw( p, end );
+            if( n > 365 )
+                throw ParseError{ "Expected Rule Date n where 0 <= n <= 365",
+                    "contained an out-of-bounds value for n",
+                    OptTok( s0, end - s0 ) };
+            return TZDate::make_doy( n );
+        }
+    }
+
+    TZRule eat_tzrule( char const*& p, char const* end ) {
+        auto date = eat_tzdate( p, end );
+        if( p == end ) { return TZRule{ date, 7200 }; }
+        if( *p == '/' )
+        {
+            ++p;
+            return TZRule{ date, eat_signed_hhmmss( p, end ) };
+        }
+        return TZRule{ date, 7200 };
+    }
+
+    static TZString _parse_tz_string( char const* p, size_t size ) {
+        char const* end   = p + size;
+        ZoneAbbr    abbr1 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
+        auto        off1  = FromUTC( -eat_signed_hhmmss( p, end ) );
+
+        if( p == end )
+        {
+            return TZString{
+                abbr1,
+                abbr1,
+                off1,
+                off1,
+                TZRule{},
+                TZRule{},
+            };
+        }
+
+        ZoneAbbr abbr2 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
+        // From TZ String documentation:
+        //
+        // > ... If no offset follows dst, the alternative time is assumed
+        // > to be one hour ahead of standard time
+        //
+        // See:
+        // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html#tag_08_03
+        auto off2 = off1.save( 3600 );
+
+        if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
+
+        if( *p != ',' )
+        {
+            // Expect that we have an offset of some kind...
+            off2 = FromUTC( -eat_signed_hhmmss( p, end ) );
+        }
+
+        auto result = TZString{
+            abbr1,
+            abbr2,
+            off1,
+            off2,
+            eat_tzrule( p, end ),
+            eat_tzrule( p, end ),
+        };
+        if( p != end )
+            throw ParseError{
+                "Expected end of TZ string",
+                "came after what should have been the end",
+                OptTok( p, end - p ),
+            };
+
+        return result;
+    }
+
+    TZString parse_tz_string( string_view sv ) {
+        try
+        {
+            // Parse the tz string (throws a ParseError if parse failure occurs)
+            return _parse_tz_string( sv.data(), sv.size() );
+        }
+        catch( vtz::ParseError const& err )
+        {
+            throw std::runtime_error(
+                err.getErrorMessage( sv, "(TZ string)" ) );
         }
     }
 
@@ -1436,7 +1710,7 @@ namespace vtz {
             auto const& rule = ent.rules;
             if( rule.is_named() )
             {
-                auto name       = rule.name();
+                auto name          = rule.name();
                 auto eval          = evaluate_rules( name );
                 last_rule_end_year = eval.year_end;
                 rules.emplace( name, std::move( eval ) );
@@ -1563,7 +1837,8 @@ namespace vtz {
         case OFFSET: return to_hhmmss( offset() );
         }
 
-        throw std::runtime_error( "ZoneRule::str(): kind() is invalid/corrupt" );
+        throw std::runtime_error(
+            "ZoneRule::str(): kind() is invalid/corrupt" );
     }
     vector<ZoneTransition> ZoneStates::get_transitions() const {
         constexpr static sysseconds_t MAX_TIME
@@ -1639,4 +1914,5 @@ namespace vtz {
                     ex.what() ) );
         }
     }
+
 } // namespace vtz

@@ -1,9 +1,148 @@
 #include <vtz/endian.h>
-
+#include <vtz/tz.h>
+#include <vtz/tz_reader.h>
 
 #include "test_utils.h"
 #include "test_zones.h"
 #include "vtz_testing.h"
+
+using namespace vtz;
+
+TEST( vtz, tz_string ) {
+    auto utc = time_zone::utc();
+
+    {
+        auto tz = parse_tz_string( "KST-9" );
+
+        ASSERT_EQ( tz.abbr1.sv(), "KST" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( 9 ) );
+        ASSERT_FALSE( tz.has_daylight_rules() );
+    }
+
+    {
+        // America/Panama
+        auto tz = parse_tz_string( "EST5" );
+        ASSERT_EQ( tz.abbr1.sv(), "EST" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -5 ) );
+        ASSERT_FALSE( tz.has_daylight_rules() );
+    }
+
+    {
+        // America/Belem
+        auto tz = parse_tz_string( "<-03>3" );
+        ASSERT_EQ( tz.abbr1.sv(), "-03" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -3 ) );
+        ASSERT_FALSE( tz.has_daylight_rules() );
+    }
+
+    {
+        // America/New_York
+        auto tz = parse_tz_string( "EST5EDT,M3.2.0,M11.1.0" );
+        ASSERT_EQ( tz.abbr1.sv(), "EST" );
+        ASSERT_EQ( tz.abbr2.sv(), "EDT" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -5 ) );
+        ASSERT_EQ( tz.off2, FromUTC::hhmmss( -4 ) );
+        ASSERT_EQ( tz.r1.time, 3600 * 2 );
+        ASSERT_EQ( tz.r2.time, 3600 * 2 );
+
+        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_start( 2025 ) ), "2025-03-09 07:00:00 UTC" );
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_end( 2025 ) ), "2025-11-02 06:00:00 UTC" );
+
+        ASSERT_TRUE( tz.has_daylight_rules() );
+    }
+
+    {
+        // America/Godthab
+        auto tz = parse_tz_string( "<-02>2<-01>,M3.5.0/-1,M10.5.0/0" );
+        ASSERT_EQ( tz.abbr1.sv(), "-02" );
+        ASSERT_EQ( tz.abbr2.sv(), "-01" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -2 ) );
+        ASSERT_EQ( tz.off2, FromUTC::hhmmss( -1 ) );
+        ASSERT_EQ( tz.r1.time, -3600 );
+        ASSERT_EQ( tz.r2.time, 0 );
+
+        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_start( 2025 ) ), "2025-03-30 01:00:00 UTC" );
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_end( 2025 ) ), "2025-10-26 01:00:00 UTC" );
+
+        ASSERT_TRUE( tz.has_daylight_rules() );
+    }
+
+    {
+        // Asia/Gaza
+        auto tz = parse_tz_string( "EET-2EEST,M3.4.4/50,M10.4.4/50" );
+        ASSERT_EQ( tz.abbr1.sv(), "EET" );
+        ASSERT_EQ( tz.abbr2.sv(), "EEST" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( 2 ) );
+        ASSERT_EQ( tz.off2, FromUTC::hhmmss( 3 ) );
+        ASSERT_EQ( tz.r1.time, 50 * 3600 );
+        ASSERT_EQ( tz.r2.time, 50 * 3600 );
+
+        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_start( 2100 ) ), "2100-03-27 00:00:00 UTC" );
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_end( 2100 ) ), "2100-10-29 23:00:00 UTC" );
+
+        ASSERT_TRUE( tz.has_daylight_rules() );
+    }
+
+    {
+        // America/Miquelon
+        auto tz = parse_tz_string( "<-03>3<-02>,M3.2.0,M11.1.0" );
+        ASSERT_EQ( tz.abbr1.sv(), "-03" );
+        ASSERT_EQ( tz.abbr2.sv(), "-02" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -3 ) );
+        ASSERT_EQ( tz.off2, FromUTC::hhmmss( -2 ) );
+        ASSERT_EQ( tz.r1.time, 3600 * 2 );
+        ASSERT_EQ( tz.r2.time, 3600 * 2 );
+
+        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_start( 2025 ) ), "2025-03-09 05:00:00 UTC" );
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_end( 2025 ) ), "2025-11-02 04:00:00 UTC" );
+        ASSERT_TRUE( tz.has_daylight_rules() );
+    }
+
+    {
+        ADD_CONTEXT( "Australia/Lord_Howe" );
+        auto tz = parse_tz_string( "<+1030>-10:30<+11>-11,M10.1.0,M4.1.0" );
+        ASSERT_EQ( tz.abbr1.sv(), "+1030" );
+        ASSERT_EQ( tz.abbr2.sv(), "+11" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( 10, 30 ) );
+        ASSERT_EQ( tz.off2, FromUTC::hhmmss( 11 ) );
+        ASSERT_EQ( tz.r1.time, 3600 * 2 );
+        ASSERT_EQ( tz.r2.time, 3600 * 2 );
+
+        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_start( 2025 ) ), "2025-10-04 15:30:00 UTC" );
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_end( 2025 ) ), "2025-04-05 15:00:00 UTC" );
+        ASSERT_TRUE( tz.has_daylight_rules() );
+    }
+
+    {
+        // Africa/Casablanca
+        auto tz = parse_tz_string( "XXX-2<+01>-1,0/0,J365/23" );
+        ASSERT_EQ( tz.abbr1.sv(), "XXX" );
+        ASSERT_EQ( tz.abbr2.sv(), "+01" );
+        ASSERT_EQ( tz.off1, FromUTC::hhmmss( +2 ) );
+        ASSERT_EQ( tz.off2, FromUTC::hhmmss( +1 ) );
+        ASSERT_EQ( tz.r1.time, 0 );
+        ASSERT_EQ( tz.r2.time, 23 * 3600 );
+
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_start( 2100 ) ), "2099-12-31 22:00:00 UTC" );
+        ASSERT_EQ( utc.format_s( tz.resolve_dst_end( 2100 ) ), "2100-12-31 22:00:00 UTC" );
+        ASSERT_TRUE( tz.has_daylight_rules() );
+    }
+}
 
 
 TEST( vtz, endian ) {

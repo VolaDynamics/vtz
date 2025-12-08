@@ -1,6 +1,7 @@
 #pragma once
 
-#include "vtz/civil.h"
+#include <vtz/bit.h>
+#include <vtz/civil.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader/FromUTC.h>
 #include <vtz/tz_reader/ZoneState.h>
@@ -13,14 +14,19 @@ namespace vtz {
     /// component of a POSIX TZ string.
 
     class TZDate {
-        u16 repr_;
+        u32 repr_{};
 
-        constexpr explicit TZDate( u16 repr ) noexcept
+        constexpr explicit TZDate( u32 repr ) noexcept
         : repr_( repr ) {}
 
       public:
 
+        TZDate() = default;
+
+
         enum Kind {
+            /// No TZDate
+            None,
 
             /// TZ Date String of form `'n'` where `0 <= n <= 365`. It just
             /// directly measures the number of days since the start of the year
@@ -42,9 +48,47 @@ namespace vtz {
             DayOfMonth,
         };
 
+        constexpr bool     has_value() const noexcept { return bool( repr_ ); }
+        constexpr explicit operator bool() const noexcept {
+            return bool( repr_ );
+        }
+
+
+        /// Empty tzdate
+        constexpr static TZDate none() noexcept { return {}; }
+
+        /// TZ Date String of form `'n'` where `0 <= n <= 365`. It just
+        /// directly measures the number of days since the start of the year
+        constexpr static TZDate make_doy( int n ) noexcept {
+            return TZDate( u32( n ) << 2 | u32( DayOfYear ) );
+        }
+
+        /// TZ Date String of form `'Jn'` where `1 <= n <= 365`. Leap days
+        /// shall not be counted.
+        constexpr static TZDate make_julian( int n ) noexcept {
+            return TZDate( u32( n ) << 2 | u32( Julian ) );
+        }
+
+        /// TZ Date String of form Mm.n.d. Ex: M3.2.0 (2nd Sunday of March)
+        /// or M11.1.0 (1st Sunday of November)
+        ///
+        /// - m is month (range [1-12])
+        /// - n is week (range [1-5])
+        /// - d is day of week (range [0-6], 0 is Sunday)
+        ///
+        /// if n==5, this means "last instance of the given day of the week,
+        /// in the month"
+        constexpr static TZDate make_dom( Mon m, u32 w, DOW d ) noexcept {
+            return TZDate( ( u32( m ) & 0xf ) << 2 //
+                           | u32( w & 0x7 ) << 6   //
+                           | u32( d ) << 9         //
+                           | u32( DayOfMonth ) );
+        }
+
         sysdays_t resolve_date( i32 year ) const noexcept {
             switch( kind() )
             {
+            case None: return resolve_civil( year );
             case Julian:
                 {
                     // March 1st is 59 days into the year for NON-leap years
@@ -77,14 +121,14 @@ namespace vtz {
                     {
                         // If the week is 5, return the last appearance of that
                         // weekday within the month
-                        return resolve_last_dow( year, m, d );
+                        return resolve_last_dow( year, u32( m ), d );
                     }
-                    return resolve_dow_ge( year, m, 1, d ) + ( w - 1 ) * 7;
+                    return resolve_dow_ge( year, u32( m ), 1, d )
+                           + ( w - 1 ) * 7;
                 }
             }
 
-            // Fallback - the kind is invalid
-            return resolve_civil( year );
+            VTZ_UNREACHABLE();
         }
 
         constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
@@ -93,13 +137,43 @@ namespace vtz {
         constexpr int dayOfYear() const noexcept { return repr_ >> 2; }
 
         /// month range [1-12] (when kind() == DayOfMonth)
-        constexpr u32 month() const noexcept { return ( repr_ >> 2 ) & 0xf; }
+        constexpr Mon month() const noexcept {
+            return Mon( ( repr_ >> 2 ) & 0xf );
+        }
 
-        /// week range [0-6] (when kind() == DayOfMonth)
+        /// week range [1-5] (when kind() == DayOfMonth)
         constexpr u32 week() const noexcept { return ( repr_ >> 6 ) & 0x7; }
 
         /// dow range [0-6] (when kind() == DayOfMonth)
         constexpr DOW dow() const noexcept { return DOW( repr_ >> 9 ); }
+
+        bool operator==( TZDate r ) const noexcept { return repr_ == r.repr_; }
+        bool operator!=( TZDate r ) const noexcept { return repr_ != r.repr_; }
+    };
+
+
+    struct TZRule : TZDate {
+        i32 time; //< local time when transition occurs
+
+        using TZDate::dayOfYear;
+        using TZDate::dow;
+        using TZDate::has_value;
+        using TZDate::kind;
+        using TZDate::week;
+        using TZDate::operator bool;
+
+        sysseconds_t resolve( i32 year, FromUTC when ) const noexcept {
+            return when.to_utc( resolve_date( year ) * 86400ll + time );
+        }
+
+        TZDate const& date() const noexcept { return *this; }
+
+        bool operator==( TZRule const& rhs ) const noexcept {
+            return B8{ *this } == B8{ rhs };
+        }
+        bool operator!=( TZRule const& rhs ) const noexcept {
+            return B8{ *this } != B8{ rhs };
+        }
     };
 
 
@@ -112,9 +186,16 @@ namespace vtz {
         ZoneAbbr abbr2; /// Daylight abbreviation
         FromUTC  off1;  /// Standard offset
         FromUTC  off2;  /// DST offset
-        TZDate   d1; /// Start of daylight savings time
-        TZDate   d2; /// End of daylight savings time
-        i32      t1; /// Time intraday when transition happens (start of daylight savings time), as seconds
-        i32      t2; /// Time intraday when transition happens (end of daylight savings time), as seconds
+        TZRule   r1;
+        TZRule   r2;
+
+        sysseconds_t resolve_dst_start( i32 year ) const noexcept {
+            return r1.resolve( year, off1 );
+        }
+        sysseconds_t resolve_dst_end( i32 year ) const noexcept {
+            return r2.resolve( year, off2 );
+        }
+
+        bool has_daylight_rules() const noexcept { return r1.has_value(); }
     };
 } // namespace vtz
