@@ -374,6 +374,7 @@ namespace _test_vtz {
         return result;
     }
 
+    inline std::string print_values( size_t ident, string_view macro_args ) { return {}; }
     template<class First, class... T>
     std::string print_values(
         size_t indent, string_view macro_args, First&& first, T&&... values ) {
@@ -395,7 +396,7 @@ namespace _test_vtz {
         }
         std::string s;
         auto        pad         = std::string( max_len, ' ' );
-        auto        ind        = std::string( indent, ' ' );
+        auto        ind         = std::string( indent, ' ' );
         auto        print_value = [&, i = 0]( auto const& value ) mutable {
             s += args[i];
             s += string_view( pad.data(), pad.size() - args[i].size() );
@@ -410,6 +411,13 @@ namespace _test_vtz {
         ( ( ( s += '\n', s += ind ), print_value( values ) ), ... );
         return s;
     }
+
+    struct _do_print_values {
+        std::string result;
+        template<class... Args>
+        _do_print_values( Args&&... args )
+        : result( print_values( static_cast<Args&&>( args )... ) ) {}
+    };
 
     struct CmpBadInfo {
         std::string lhs_;
@@ -462,7 +470,7 @@ using _test_vtz::_current_test_context;
     auto _test_context_ptr = &_current_test_context;                                               \
     auto _current_test_context                                                                     \
         = _test_vtz::TestContext( _test_context_ptr, header, [&]( size_t indent ) {                \
-              return _test_vtz::print_values( indent, #__VA_ARGS__, __VA_ARGS__ );                 \
+              return _test_vtz::_do_print_values{ indent, #__VA_ARGS__, __VA_ARGS__ }.result;      \
           } )
 
 
