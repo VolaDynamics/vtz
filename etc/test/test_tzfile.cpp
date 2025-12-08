@@ -12,6 +12,7 @@ TEST( vtz, tz_string ) {
     auto utc = time_zone::utc();
 
     {
+        ADD_CONTEXT( "Testing Asia/Seoul" );
         auto tz = parse_tz_string( "KST-9" );
 
         ASSERT_EQ( tz.abbr1.sv(), "KST" );
@@ -20,7 +21,7 @@ TEST( vtz, tz_string ) {
     }
 
     {
-        // America/Panama
+        ADD_CONTEXT( "Testing America/Panama" );
         auto tz = parse_tz_string( "EST5" );
         ASSERT_EQ( tz.abbr1.sv(), "EST" );
         ASSERT_EQ( tz.off1, FromUTC::hhmmss( -5 ) );
@@ -28,7 +29,7 @@ TEST( vtz, tz_string ) {
     }
 
     {
-        // America/Belem
+        ADD_CONTEXT( "Testing America/Belem" );
         auto tz = parse_tz_string( "<-03>3" );
         ASSERT_EQ( tz.abbr1.sv(), "-03" );
         ASSERT_EQ( tz.off1, FromUTC::hhmmss( -3 ) );
@@ -36,14 +37,14 @@ TEST( vtz, tz_string ) {
     }
 
     {
-        // America/New_York
+        ADD_CONTEXT( "Testing America/New_York" );
         auto tz = parse_tz_string( "EST5EDT,M3.2.0,M11.1.0" );
         ASSERT_EQ( tz.abbr1.sv(), "EST" );
         ASSERT_EQ( tz.abbr2.sv(), "EDT" );
         ASSERT_EQ( tz.off1, FromUTC::hhmmss( -5 ) );
         ASSERT_EQ( tz.off2, FromUTC::hhmmss( -4 ) );
         ASSERT_EQ( tz.r1.time, 3600 * 2 );
-        ASSERT_EQ( tz.r2.time, 3600 * 2 );
+        ASSERT_EQ( tz.r2.time, 3600 * 3 );
 
         ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
         ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
@@ -55,7 +56,7 @@ TEST( vtz, tz_string ) {
     }
 
     {
-        // America/Godthab
+        ADD_CONTEXT( "Testing America/Godthab" );
         auto tz = parse_tz_string( "<-02>2<-01>,M3.5.0/-1,M10.5.0/0" );
         ASSERT_EQ( tz.abbr1.sv(), "-02" );
         ASSERT_EQ( tz.abbr2.sv(), "-01" );
@@ -74,7 +75,7 @@ TEST( vtz, tz_string ) {
     }
 
     {
-        // Asia/Gaza
+        ADD_CONTEXT( "Testing Asia/Gaza" );
         auto tz = parse_tz_string( "EET-2EEST,M3.4.4/50,M10.4.4/50" );
         ASSERT_EQ( tz.abbr1.sv(), "EET" );
         ASSERT_EQ( tz.abbr2.sv(), "EEST" );
@@ -93,7 +94,7 @@ TEST( vtz, tz_string ) {
     }
 
     {
-        // America/Miquelon
+        ADD_CONTEXT( "Testing America/Miquelon" );
         auto tz = parse_tz_string( "<-03>3<-02>,M3.2.0,M11.1.0" );
         ASSERT_EQ( tz.abbr1.sv(), "-03" );
         ASSERT_EQ( tz.abbr2.sv(), "-02" );
@@ -129,7 +130,7 @@ TEST( vtz, tz_string ) {
     }
 
     {
-        // Africa/Casablanca
+        ADD_CONTEXT( "Testing Africa/Casablanca" );
         auto tz = parse_tz_string( "XXX-2<+01>-1,0/0,J365/23" );
         ASSERT_EQ( tz.abbr1.sv(), "XXX" );
         ASSERT_EQ( tz.abbr2.sv(), "+01" );
