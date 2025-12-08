@@ -26,6 +26,8 @@ namespace vtz {
         u8   size_{};
         char buff_[N]{};
 
+        constexpr static size_t max_size = N;
+
 
         constexpr string_view sv() const noexcept { return { data(), size() }; }
 
