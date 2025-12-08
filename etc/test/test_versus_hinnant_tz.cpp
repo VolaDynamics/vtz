@@ -646,8 +646,8 @@ TEST( vtz, TimeZone ) {
             int64_t TMax         = days_to_seconds( resolve_civil( 2899, 1, 1 ) );
             auto    current_off  = zone_states.walloff_initial_;
             auto    current_abbr = zone_states.abbr_initial_;
-            size_t  zi          = 0;
-            size_t  ai          = 0;
+            size_t  zi           = 0;
+            size_t  ai           = 0;
             // loop through times in 1h intervals until we get to the end of the states we
             // calculated
             for( ; T0 < TMax; T0 += 3600 )
@@ -760,7 +760,7 @@ TEST( vtz, TimeZoneFuzz ) {
     COUNT_ASSERTIONS();
     constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
     constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
-    auto const&            fp     = "build/data/tzdata/tzdata.zi";
+    auto const&            fp      = "build/data/tzdata/tzdata.zi";
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );
@@ -779,7 +779,7 @@ TEST( vtz, TimeZoneFuzz ) {
         if( zone == "Factory" ) continue;
 
         auto states     = file.get_zone_states( zone, 2901 );
-        auto tz        = TimeZone( zone, states );
+        auto tz         = TimeZone( zone, states );
         auto tz_hinnant = date::locate_zone( zone );
         auto zone_info  = get_sys_info( zone, start_t, end_t );
         fmt::println( "Testing {:>5} sys_info entries from {}", zone_info.size(), zone );
@@ -792,10 +792,10 @@ TEST( vtz, TimeZoneFuzz ) {
 
         for( date::sys_info const& info : zone_info )
         {
-            auto Tbegin     = info.begin.time_since_epoch().count();
-            auto Tend       = info.end.time_since_epoch().count();
-            auto offset     = info.offset.count();
-            auto Tmid       = Tbegin / 2 + Tend / 2;
+            auto Tbegin      = info.begin.time_since_epoch().count();
+            auto Tend        = info.end.time_since_epoch().count();
+            auto offset      = info.offset.count();
+            auto Tmid        = Tbegin / 2 + Tend / 2;
             auto zone_stdoff = seconds( info.offset - info.save ).count();
 
             ADD_CONTEXT( "Times",
@@ -836,7 +836,7 @@ TEST( vtz, TimeZoneFuzz ) {
             auto sys_t = info.begin.time_since_epoch().count();
             // Last time that previous sys_info applied
             auto sys_t0      = sys_t - 1;
-            auto offset     = info.offset.count();
+            auto offset      = info.offset.count();
             auto prev_offset = prev.offset.count();
 
             auto local_prev = sys_t + prev_offset - 1;
@@ -874,7 +874,7 @@ TEST( vtz, TimeZoneFuzz ) {
 
         for( size_t i = 0; i < NUM_RANDOM_SAMPLES; ++i )
         {
-            auto T       = dist( rng );
+            auto T        = dist( rng );
             auto ll_tv    = local_seconds( seconds( T ) );
             auto ll_th    = date::local_seconds( seconds( T ) );
             auto ss_t     = sys_seconds( seconds( T ) );
@@ -903,7 +903,7 @@ TEST( vtz, TimeZoneToString ) {
     COUNT_ASSERTIONS();
     constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
     constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
-    auto const&            fp     = "build/data/tzdata/tzdata.zi";
+    auto const&            fp      = "build/data/tzdata/tzdata.zi";
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );
@@ -921,7 +921,7 @@ TEST( vtz, TimeZoneToString ) {
         if( zone == "Factory" ) continue;
 
         auto states     = file.get_zone_states( zone, 2901 );
-        auto tz        = TimeZone( zone, states );
+        auto tz         = TimeZone( zone, states );
         auto tz_hinnant = date::locate_zone( zone );
 
         ADD_CONTEXT( "Zone information", zone );
