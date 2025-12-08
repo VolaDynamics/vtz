@@ -48,6 +48,22 @@ namespace vtz {
             return { off + save_seconds };
         }
 
+
+        /// Construct FromUTC in terms of HH, MM, and SS.
+        ///
+        /// - `hhmmss( 9, 30 )` -> +0930
+        /// - `hhmmss( -9, 30 )` -> -0930
+        ///
+        /// etc
+        constexpr static FromUTC hhmmss( i32 hh, i32 mm = 0, i32 ss = 0 ) {
+            if( hh < 0 )
+            {
+                // We treat eg -9:30:05 as meaning all components are negative
+                return i32( hh ) * 3600 - mm * 60 - ss;
+            }
+            else return hh * 3600 + mm * 60 + ss;
+        }
+
         constexpr FromUTC( i32 off ) noexcept
         : off( off ) {}
 
