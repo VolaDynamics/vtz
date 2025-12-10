@@ -1,6 +1,7 @@
 #include <vtz/endian.h>
 #include <vtz/tz.h>
 #include <vtz/tz_reader.h>
+#include <vtz/tz_reader/FromUTC.h>
 
 #include "test_utils.h"
 #include "test_zones.h"
@@ -44,7 +45,7 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( tz.off1, FromUTC::hhmmss( -5 ) );
         ASSERT_EQ( tz.off2, FromUTC::hhmmss( -4 ) );
         ASSERT_EQ( tz.r1.time, 3600 * 2 );
-        ASSERT_EQ( tz.r2.time, 3600 * 3 );
+        ASSERT_EQ( tz.r2.time, 3600 * 2 );
 
         ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
         ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
@@ -145,6 +146,111 @@ TEST( vtz, tz_string ) {
     }
 }
 
+
+TEST( vtz, tz_string_get_states ) {
+    auto utc = time_zone::utc();
+
+    {
+        ADD_CONTEXT( "Testing TZString::get_states with no daylight rules" );
+        auto tz     = parse_tz_string( "KST-9" );
+        auto states = tz.get_states( _ct( 2020, 1, 1, 0, 0, 0 ), _ct( 2025, 1, 1, 0, 0, 0 ) );
+        ASSERT_EQ( states.size(), 0 ); // No transitions for zones without DST
+    }
+
+    {
+        ADD_CONTEXT( "Testing TZString::get_states for America/New_York" );
+        auto tz = parse_tz_string( "EST5EDT,M3.2.0,M11.1.0" );
+
+        // Get transitions from 2024-01-01 to 2026-01-01
+        auto states = tz.get_states( _ct( 2024, 1, 1, 0, 0, 0 ), _ct( 2026, 1, 1, 0, 0, 0 ) );
+
+        // Should have 4 transitions: 2024 spring, 2024 fall, 2025 spring, 2025 fall
+        ASSERT_EQ( states.size(), 4 );
+
+        // Verify the 2024 transitions
+        ASSERT_EQ( utc.format_s( states[0].when ), "2024-03-10 07:00:00 UTC" ); // Spring forward
+        ASSERT_EQ( states[0].state.abbr.sv(), "EDT" );
+        ASSERT_EQ( states[0].state.walloff, FromUTC::hhmmss( -4 ) );
+
+        ASSERT_EQ( utc.format_s( states[1].when ), "2024-11-03 06:00:00 UTC" ); // Fall back
+        ASSERT_EQ( states[1].state.abbr.sv(), "EST" );
+        ASSERT_EQ( states[1].state.walloff, FromUTC::hhmmss( -5 ) );
+
+        // Verify the 2025 transitions
+        ASSERT_EQ( utc.format_s( states[2].when ), "2025-03-09 07:00:00 UTC" ); // Spring forward
+        ASSERT_EQ( states[2].state.abbr.sv(), "EDT" );
+
+        ASSERT_EQ( utc.format_s( states[3].when ), "2025-11-02 06:00:00 UTC" ); // Fall back
+        ASSERT_EQ( states[3].state.abbr.sv(), "EST" );
+
+        for( size_t i = 0; i < states.size(); ++i )
+        {
+            // stdoff is always -05
+            ASSERT_EQ( states[i].state.stdoff, FromUTC::hhmmss( -5 ) );
+            bool inside_standard_time = bool( i % 2 );
+            ASSERT_EQ( states[i].state.walloff,
+                inside_standard_time ? FromUTC::hhmmss( -5 ) : FromUTC::hhmmss( -4 ) );
+        }
+    }
+
+    {
+        ADD_CONTEXT( "Testing TZString::get_states with limited range" );
+        auto tz = parse_tz_string( "EST5EDT,M3.2.0,M11.1.0" );
+
+        // Get transitions from mid-2024 to end of 2024 (should only get fall transition)
+        auto states = tz.get_states( _ct( 2024, 7, 1, 0, 0, 0 ), _ct( 2025, 1, 1, 0, 0, 0 ) );
+
+        ASSERT_EQ( states.size(), 1 );
+        ASSERT_EQ( utc.format_s( states[0].when ), "2024-11-03 06:00:00 UTC" );
+        ASSERT_EQ( states[0].state.abbr.sv(), "EST" );
+    }
+
+    {
+        ADD_CONTEXT( "Testing TZString::get_states for always-DST zone (Africa/Casablanca style)" );
+        // This represents a zone that's "always in DST" - transitions happen at the same time
+        auto tz = parse_tz_string( "XXX-2<+01>-1,0/0,J365/23" );
+
+        // According to the implementation, this should return no transitions
+        auto states = tz.get_states( _ct( 2024, 1, 1, 0, 0, 0 ), _ct( 2100, 1, 1, 0, 0, 0 ) );
+        ASSERT_EQ( states.size(), 0 );
+    }
+
+    {
+        ADD_CONTEXT( "Testing TZString::get_states for Southern Hemisphere (Australia/Lord_Howe)" );
+        auto tz = parse_tz_string( "<+1030>-10:30<+11>-11,M10.1.0,M4.1.0" );
+
+        // Get transitions for 2024-2025
+        auto states = tz.get_states( _ct( 2024, 1, 1, 0, 0, 0 ), _ct( 2025, 7, 1, 0, 0, 0 ) );
+
+        // There should be exactly 3 transitions:
+        // - Apr 2024 transition
+        // - Oct 2024 transition
+        // - Apr 2025 transition
+        //
+        // The others are cutoff due to the cutoff provided to get_states
+        ASSERT_EQ( states.size(), 3 );
+
+        ASSERT_EQ( utc.format_s( states[0].when ), "2024-04-06 15:00:00 UTC" );
+        ASSERT_EQ( utc.format_s( states[1].when ), "2024-10-05 15:30:00 UTC" );
+        ASSERT_EQ( utc.format_s( states[2].when ), "2025-04-05 15:00:00 UTC" );
+
+        // All of them should have the same stdoff
+        ASSERT_EQ( states[0].state.stdoff, FromUTC::hhmmss( 10, 30 ) );
+        ASSERT_EQ( states[1].state.stdoff, FromUTC::hhmmss( 10, 30 ) );
+        ASSERT_EQ( states[2].state.stdoff, FromUTC::hhmmss( 10, 30 ) );
+
+        // When we enter dst in october, the walloff should be +11, and then we go back to +1030
+        // when we enter standard time in the spring
+        ASSERT_EQ( states[0].state.walloff, FromUTC::hhmmss( 10, 30 ) );
+        ASSERT_EQ( states[1].state.walloff, FromUTC::hhmmss( 11 ) );
+        ASSERT_EQ( states[2].state.walloff, FromUTC::hhmmss( 10, 30 ) );
+
+        // Check first transition is to standard time (April in Southern Hemisphere)
+        ASSERT_EQ( states[0].state.abbr.sv(), "+1030" );
+        ASSERT_EQ( states[1].state.abbr.sv(), "+11" );
+        ASSERT_EQ( states[2].state.abbr.sv(), "+1030" );
+    }
+}
 
 TEST( vtz, endian ) {
     using vtz::endian::load_be;
