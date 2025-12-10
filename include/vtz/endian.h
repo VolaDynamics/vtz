@@ -176,6 +176,10 @@ namespace vtz::endian {
         /// as a native int
         VTZ_INLINE T        operator[]( ptrdiff_t i ) const noexcept { return load_be<T>( p + i * N ); }
 
+        /// If i is within range, return the value at index i, otherwise
+        /// return the given alternative
+        VTZ_INLINE T        value_or( size_t i, T const& alt ) const noexcept { return i < n ? operator[](i) : T( alt ); }
+
         VTZ_INLINE size_t   size()  const noexcept { return n; }
         VTZ_INLINE bool     empty() const noexcept { return n == 0; }
         VTZ_INLINE T        front() const noexcept { return load_be<T>( p ); }

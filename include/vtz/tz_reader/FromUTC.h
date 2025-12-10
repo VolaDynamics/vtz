@@ -49,6 +49,11 @@ namespace vtz {
             return { off + save_seconds };
         }
 
+        /// Remove the save (eg, to get the stdoff from the walloff)
+        constexpr FromUTC unsave( RuleSave save ) const noexcept {
+            return { off - save.save };
+        }
+
 
         /// Construct FromUTC in terms of HH, MM, and SS.
         ///

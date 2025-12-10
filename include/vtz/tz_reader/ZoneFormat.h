@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vtz/date_types.h"
 #include <vtz/bit.h>
 #include <vtz/civil.h>
 #include <vtz/strings.h>
@@ -12,6 +13,18 @@ namespace vtz {
         }
         bool operator!=( ZoneAbbr const& rhs ) const noexcept {
             return B16( *this ) != B16( rhs );
+        }
+
+
+        /// Construct a ZoneAbbr from a string_view. Clamp to the max length of a ZoneAbbr
+        static ZoneAbbr from_sv( string_view sv ) noexcept {
+            ZoneAbbr    abbr{};
+            char const* p = sv.data();
+            size_t      s = sv.size();
+            if( s > max_size ) s = max_size;
+            _vtz_memcpy( abbr.buff_, p, s );
+            abbr.size_ = s;
+            return abbr;
         }
     };
 

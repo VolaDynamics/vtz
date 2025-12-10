@@ -3,6 +3,7 @@
 #include <vtz/bit.h>
 #include <vtz/civil.h>
 #include <vtz/strings.h>
+#include <vtz/tz_reader/ZoneTransition.h>
 #include <vtz/tz_reader/FromUTC.h>
 #include <vtz/tz_reader/ZoneState.h>
 
@@ -189,13 +190,98 @@ namespace vtz {
         TZRule   r1;
         TZRule   r2;
 
-        sysseconds_t resolve_dst_start( i32 year ) const noexcept {
+
+        /// Resolve the start of dst within the year
+        sysseconds_t resolve_dst( i32 year ) const noexcept {
             return r1.resolve( year, off1 );
         }
-        sysseconds_t resolve_dst_end( i32 year ) const noexcept {
+
+
+        /// Resolve the return to standard time within the year
+        sysseconds_t resolve_std( i32 year ) const noexcept {
             return r2.resolve( year, off2 );
         }
 
+        /// Zone State during standard time
+        ZoneState std() const noexcept {
+            return ZoneState{ off1, off1, abbr1 };
+        }
+
+        /// Zone State during daylight savings time
+        ZoneState dst() const noexcept {
+            return ZoneState{ off1, off2, abbr2 };
+        }
+
+
         bool has_daylight_rules() const noexcept { return r1.has_value(); }
+
+
+        /// Get zone transitions appearing strictly _after_ T
+        vector<ZoneTransition> get_states( sysseconds_t T, sysseconds_t max ) const;
+    };
+
+
+    class TZStringIter {
+        using ZT = ZoneTransition;
+
+        sysseconds_t peek_next_time() const noexcept {
+            return dst_next_ ? s.resolve_dst( year_dst )
+                             : s.resolve_std( year_std );
+        }
+
+      public:
+
+        /// Advance until the next transition time is _after_ T
+        void advance_past( sysseconds_t T ) {
+            while( peek_next_time() <= T ) { advance(); }
+        }
+
+        /// Advance the iterator
+        void advance() noexcept {
+            dst_next_ ? year_dst++ : year_std++;
+            dst_next_ = !dst_next_;
+        }
+
+        /// peek at the next transition, without advancing
+        ZT peek() const noexcept {
+            return dst_next_ ? ZT{ s.resolve_dst( year_dst ), s.dst() }
+                             : ZT{ s.resolve_std( year_std ), s.std() };
+        }
+
+        /// Get the next zone transition
+        ZoneTransition next() noexcept {
+            auto result = peek();
+            advance();
+            return result;
+        }
+
+        /// Construct a TZStringIter from the given string spec, starting at the
+        /// given year. Assumes that the given string has daylight rules.
+        TZStringIter( TZString const& s, i32 y )
+        : s( s )
+        , year_dst( y )
+        , year_std( y )
+        , dst_next_( s.resolve_dst( y ) < s.resolve_std( y ) ) {
+            if( !s.has_daylight_rules() )
+            {
+                throw std::runtime_error(
+                    "TZStringIter(): constructing a TZStringIter for a string "
+                    "that doesn't have dst rules" );
+            }
+        }
+
+        static TZStringIter start_after( TZString const& s, sysseconds_t T ) {
+            sysdays_t date = vtz::math::div_floor<86400>( T );
+            auto      it   = TZStringIter( s, civil_year( date ) );
+            it.advance_past( T );
+            return it;
+        }
+
+      private:
+
+        TZString s;
+        i32      year_dst;
+        i32      year_std;
+        bool     dst_next_;
     };
 } // namespace vtz

@@ -4,13 +4,14 @@
 #include <array>
 #include <cstddef>
 #include <cstdio>
-#include <iterator>
 #include <string_view>
 #include <type_traits>
 #include <vtz/bit.h>
 #include <vtz/endian.h>
 #include <vtz/span.h>
 #include <vtz/strings.h>
+#include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/ZoneState.h>
 
 
 namespace vtz {
@@ -308,6 +309,80 @@ namespace vtz {
 
             // Footer found
             return footer.substr( 0, end );
+        }
+
+        bool has_transition_times() const noexcept { return tzh_timecnt > 0; }
+
+        string_view get_abbrev_sv( size_t desigidx ) const {
+            auto buff = abbrev_buff();
+
+            if( desigidx >= buff.size() )
+                throw std::logic_error( "invalid desigidx" );
+
+            char const* p     = buff.data() + desigidx;
+            size_t      max_n = buff.size() - desigidx;
+
+            auto result   = string_view( p, max_n );
+            auto abbr_end = result.find( '\0' );
+
+            // If there is no null terminator, use the full input
+            if( abbr_end == string_view::npos ) return result;
+
+            return string_view( p, abbr_end );
+        }
+
+        ZoneAbbr get_abbrev( size_t desigidx ) const {
+            return ZoneAbbr::from_sv( get_abbrev_sv( desigidx ) );
+        }
+
+
+        /// Get the zone state described by the given type index.
+        /// If the corresponding type info indicates that it is currently DST,
+        /// then the stdoff is assumed to be one hour behind the walloff
+
+        ZoneState state_from_ti( size_t ti ) const {
+            ttinfo_bytes ty = ttinfo()[ti];
+
+            auto utoff  = FromUTC( ty.tt_utoff() );
+            auto abbrev = get_abbrev( ty.tt_desigidx() );
+
+            // if we're in daylight savings time, remove the save quantity
+            // to get the stdoff this is a HEURISTIC to try and obtain a
+            // reasonable stdoff quantity when the zone is always in dst
+            auto stdoff
+                = ty.tt_isdst() ? utoff.unsave( RuleSave( 3600 ) ) : utoff;
+            return {
+                stdoff,
+                utoff,
+                abbrev,
+            };
+        }
+
+
+        /// Get the zone state described by the given type index.
+        /// If the corresponding type info indicates that it is dst, use the
+        /// stdoff given as input. Otherwise, if it is NOT dst, update the input
+        /// stdoff
+
+        ZoneState state_from_ti( size_t ti, FromUTC& stdoff ) const {
+            ttinfo_bytes ty     = ttinfo()[ti];
+            FromUTC      utoff  = FromUTC( ty.tt_utoff() );
+            ZoneAbbr     abbrev = get_abbrev( ty.tt_desigidx() );
+
+            // If we're not within daylight savings time, update the standard
+            // offset
+            if( !ty.tt_isdst() ) { stdoff = utoff; }
+
+            return ZoneState{ stdoff, utoff, abbrev };
+        }
+
+        ZoneState initial_state() const {
+            // if we have transition times, get the type of the
+            // first one. Otherwise, use the first type entry in the tzfile
+            size_t ti = has_transition_times() ? type_indices()[0] : 0;
+
+            // If there are no transition times, get the state from the
+            return state_from_ti( ti );
         }
     };
 

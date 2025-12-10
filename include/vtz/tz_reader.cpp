@@ -1,9 +1,10 @@
-#include "vtz/files.h"
 #include <cerrno>
 #include <fmt/base.h>
 #include <limits>
+#include <string_view>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
+#include <vtz/files.h>
 #include <vtz/span.h>
 #include <vtz/strings.h>
 #include <vtz/tz_cache.h>
@@ -11,6 +12,7 @@
 #include <vtz/tz_reader/FromUTC.h>
 #include <vtz/tz_reader/ZoneFormat.h>
 #include <vtz/tz_reader/ZoneRule.h>
+#include <vtz/tzfile.h>
 
 #include <algorithm>
 #include <charconv>
@@ -33,6 +35,15 @@ struct ankerl::unordered_dense::hash<vtz::ZoneAbbr> {
 
 namespace vtz {
     namespace {
+        /// Number of days in 400 years. Every 400 year period contains the same
+        /// number of days, because leap years follow a 400-year cycle.
+        constexpr i64 DAYS_400_YEARS = 365ll * 400 + 97;
+
+        /// Number of seconds in 400 years. Every 400 year period contains the
+        /// same number of seconds, because leap years follow a 400-year cycle,
+        /// so each 400 year period is the same length.
+        constexpr i64 SECS_400_YEARS = DAYS_400_YEARS * 86400ll;
+
         constexpr char const* no_token    = "no token was given";
         constexpr char const* empty_input = "input was empty";
         constexpr char const* bad_save
@@ -1486,17 +1497,114 @@ namespace vtz {
         return days_to_seconds( cycle_date );
     }
 
+
+    vector<ZoneTransition> TZString::get_states(
+        sysseconds_t T, sysseconds_t maxT ) const {
+        // If there are no daylight rules, there are no transitions
+        if( !has_daylight_rules() ) return {};
+
+
+        // Occasionally, you will have a zone such as Africa/Casablanca, which
+        // is marked as being 'always in daylight savings time'. An example TZ
+        // String is:
+        //
+        // `"XXX-2<+01>-1,0/0,J365/23"`
+        //
+        // Note here that 'XXX' is never intended to actually show up - standard
+        // time ends, and then daylight savings time begins again immediately
+        // after, so the time actually spend in standard time in 0.
+        //
+        // In this case, there should be no generated zone transitions.
+        if( resolve_dst( 2001 ) == resolve_std( 2000 ) ) return {};
+
+        auto it = TZStringIter::start_after( *this, T );
+
+        std::vector<ZoneTransition> result;
+        for( ;; )
+        {
+            ZoneTransition trans = it.next();
+            if( trans.when >= maxT ) return result;
+            result.push_back( trans );
+        }
+    }
+
+    template<tzfile_kind KindT>
+    ZoneStates load_zone_states_tzfile( basic_tzfile<KindT> const& file ) {
+        using namespace endian;
+
+        ZoneState initial = file.initial_state();
+
+        size_t timecnt = file.tzh_timecnt;
+
+        /// If there are no transition times, just get the initial state of the
+        /// file
+
+        if( timecnt == 0 ) return ZoneStates::make_static( initial );
+
+        auto TT           = file.transition_times();
+        auto type_indices = file.type_indices();
+
+        // We are going to keep track of the current stdoff. This will be
+        // updated as we compute Zone States
+        FromUTC stdoff = initial.stdoff;
+
+        ZTAgglomerator agg;
+
+        for( size_t i = 0;; )
+        {
+            i64  T     = TT[i];
+            auto ti    = type_indices[i];
+            auto state = file.state_from_ti( ti, stdoff );
+            agg.add( ZoneTransition{ T, state } );
+
+            ++i;
+
+            // We are going to exit the loop. But first we want to do some stuff
+            // with the values that are still in scope
+            if( i < timecnt ) continue;
+
+            i64 safe_cycle_time = T + 1;
+
+            if constexpr( basic_tzfile<KindT>::is_64_bit )
+            {
+                /// Load the posix tz string.
+                TZString posix_tz = parse_tz_string( file.tz_string() );
+
+                auto states = posix_tz.get_states(
+                    T, safe_cycle_time + SECS_400_YEARS );
+
+                for( auto st : states ) { agg.add( st ); }
+            }
+
+            return std::move( agg ).get_states( safe_cycle_time );
+        }
+    }
+
+    ZoneStates load_zone_states_tzfile( std::string const& fp ) {
+        auto contents = vtz::read_file_bytes( fp );
+        auto bytes    = vtz::span<char const>( contents );
+        auto file32   = vtz::tzfile32( bytes );
+
+        if( file32.version_is_modern() )
+        {
+            auto file64 = file32.load_modern();
+            return load_zone_states_tzfile( file64 );
+        }
+
+        return load_zone_states_tzfile( file32 );
+    }
+
     ZoneStates load_zone_states( span<ZoneEntry const> entries,
         map<string_view, ZoneTransIter>                cache,
         i64                                            safe_cycle_time,
-        i32                                            end_year = -1 ) {
+        i32                                            end_year ) {
         sysseconds_t const STOP_TIME
             = end_year > 0
                   // If the end year is specified, use that as the stop time
                   ? days_to_seconds( resolve_civil( end_year, 1, 1 ) )
                   // Otherwise, use the time the rule becomes cyclic, plus 400
                   // years
-                  : safe_cycle_time + 12622780800;
+                  : safe_cycle_time + SECS_400_YEARS;
 
         if( entries.size() == 0 )
             return ZoneStates::make_static(

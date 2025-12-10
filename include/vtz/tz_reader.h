@@ -49,24 +49,6 @@ namespace vtz {
     };
 
 
-    struct ZoneTransition {
-        sysseconds_t when; // UTC time of change
-        ZoneState    state;
-
-        ZoneTransition() = default;
-        constexpr ZoneTransition( i64 when, ZoneState state ) noexcept
-        : when( when )
-        , state( state ) {}
-
-        constexpr ZoneTransition( NoneType ) noexcept
-        : when( INT64_MAX )
-        , state() {}
-
-        bool     has_value() const noexcept { return when < INT64_MAX; }
-        explicit operator bool() const noexcept { return when < INT64_MAX; }
-    };
-
-
     struct RuleTrans {
         sysdays_t  date;
         RuleAt     at;
@@ -748,4 +730,11 @@ namespace vtz {
     void append_tzdata(
         TZDataFile& file, string_view input, string_view filename = "(none)" );
 
+
+    ZoneStates load_zone_states( span<ZoneEntry const> entries,
+        map<string_view, ZoneTransIter>                cache,
+        i64                                            safe_cycle_time,
+        i32                                            end_year = -1 );
+
+    ZoneStates load_zone_states_tzfile( std::string const& fp );
 } // namespace vtz
