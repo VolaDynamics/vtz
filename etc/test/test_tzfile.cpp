@@ -321,3 +321,76 @@ TEST( vtz, endian ) {
     ASSERT_EQ( ( std::vector<u16>{ 0xdead, 0xbeef, 0x0102, 0x0304 } ),
         std::vector<u16>( ss.begin(), ss.end() ) );
 }
+
+
+TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
+    COUNT_ASSERTIONS();
+
+    auto const& fp = "build/data/tzdata/tzdata.zi";
+
+    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
+    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
+
+
+    fmt::println( "Start time: {}", utc_to_string( start_t ) );
+    fmt::println( "End time:   {}", utc_to_string( end_t ) );
+
+    auto content = read_file( fp );
+    auto file    = parse_tzdata( content, fp );
+
+
+    auto zones = file.list_zones();
+
+    ASSERT_GT( zones.size(), 0 );
+
+    struct Info {
+        bool extends_forever;
+        int  end_year;
+        // Name of zone being tested
+        string_view zone_name;
+
+        // This will usually be the same as the zone name but we may want to alternative versions of
+        // a file for a particular zone
+        string_view tzfile_name = zone_name;
+    };
+
+    for( auto zone : {
+             Info{ true, 2437, "America/New_York" },
+             Info{ true, 2437, "Australia/Lord_Howe" },
+             Info{ false, 2087, "Africa/Casablanca" },
+         } )
+    {
+        ADD_CONTEXT( "Comparing parsed zone against tzfile", zone.zone_name, zone.tzfile_name );
+
+        auto ny_1 = file.get_zone_states( zone.zone_name, 2900 );
+        auto tt1  = ny_1.get_transitions();
+
+
+        auto ny_2 = load_zone_states_tzfile( join_path( "etc/testdata", zone.tzfile_name ) );
+        auto tt2  = ny_2.get_transitions();
+
+        fmt::println(
+            "Checking transitions for zone {} (tzfile={})", zone.zone_name, zone.tzfile_name );
+
+        fmt::println( "First time: {}", utc_to_string( tt2.front().when ) );
+        fmt::println( "Last time:  {}", utc_to_string( tt2.back().when ) );
+        ASSERT_GT( tt2.back().when, _ct( zone.end_year, 1, 1, 0, 0, 0 ) );
+
+        // Number of transition times in zone states from tzfile should not exceed number of zone
+        // states from tzdata.zi (which we computed out to 2900)
+        //
+        // If this assertion is wrong, then the likely cause is we are adding too many states
+        ASSERT_LE( tt2.size(), tt1.size() );
+        size_t count = std::min( tt1.size(), tt2.size() );
+
+        if( !zone.extends_forever ) { ASSERT_EQ( tt1.size(), tt2.size() ); }
+
+        for( size_t i = 0; i < count; ++i )
+        {
+            ASSERT_EQ_QUIET( tt1[i].when, tt2[i].when );
+            ASSERT_EQ_QUIET( tt1[i].state.abbr.sv(), tt2[i].state.abbr.sv() );
+            ASSERT_EQ_QUIET( tt1[i].state.stdoff, tt2[i].state.stdoff );
+            ASSERT_EQ_QUIET( tt1[i].state.walloff, tt2[i].state.walloff );
+        }
+    }
+}
