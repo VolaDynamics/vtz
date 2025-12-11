@@ -32,8 +32,8 @@ namespace vtz {
         template<class T>
         LeapTable( endian::span_bytes<leap_bytes<T>> tt )
         : leapcnt_( tt.size() )
-        , counts_( new i32[tt.size()] )
-        , when_( new i64[tt.size()] ) {
+        , counts_( tt.empty() ? nullptr : new i32[tt.size()] )
+        , when_( tt.empty() ? nullptr : new i64[tt.size()] ) {
             for( size_t i = 0; i < leapcnt_; ++i )
             {
                 leap_bytes<T> ent = tt[i];
