@@ -6,6 +6,7 @@
 #include "test_utils.h"
 #include "test_zones.h"
 #include "vtz_testing.h"
+#include "vtz_debug.h"
 
 using namespace vtz;
 
@@ -328,6 +329,8 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
 
     auto const& fp = "build/data/tzdata/tzdata.zi";
 
+    auto utc = time_zone::utc();
+
     constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
     constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
 
@@ -355,9 +358,9 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
     };
 
     for( auto zone : {
-             Info{ true, 2437, "America/New_York" },
-             Info{ true, 2437, "Australia/Lord_Howe" },
-             Info{ false, 2087, "Africa/Casablanca" },
+             Info{ 1, 2437, "America/New_York" },
+             Info{ 1, 2437, "Australia/Lord_Howe" },
+             Info{ 0, 2087, "Africa/Casablanca" },
          } )
     {
         ADD_CONTEXT( "Comparing parsed zone against tzfile", zone.zone_name, zone.tzfile_name );
@@ -387,6 +390,13 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
 
         for( size_t i = 0; i < count; ++i )
         {
+            ADD_CONTEXT( "Checking that ZoneState matches",
+                i,
+                utc.format_s( tt1[i].when ),
+                utc.format_s( tt2[i].when ),
+                tt1[i].state,
+                tt2[i].state );
+
             ASSERT_EQ_QUIET( tt1[i].when, tt2[i].when );
             ASSERT_EQ_QUIET( tt1[i].state.abbr.sv(), tt2[i].state.abbr.sv() );
             ASSERT_EQ_QUIET( tt1[i].state.stdoff, tt2[i].state.stdoff );

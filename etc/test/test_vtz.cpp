@@ -13,9 +13,11 @@
 #include <fmt/color.h>
 #include <fmt/format.h>
 
-#include "vtz_testing.h"
 #include <vtz/civil.h>
 #include <vtz/tz.h>
+
+#include "vtz_testing.h"
+#include "vtz_debug.h"
 
 using namespace vtz;
 using _test_vtz::TEST_LOG;
@@ -250,32 +252,6 @@ TEST( vtz_parser, strip_comments ) {
     ASSERT_EQ( strip_comment( "hello # This is a comment" ), "hello " );
     ASSERT_EQ( strip_comment( "        hello #STDOFF" ), "        hello " );
 }
-
-STRUCT_INFO( vtz::Location, FIELD( vtz::Location, line ), FIELD( vtz::Location, col ) );
-
-STRUCT_INFO( vtz::RuleEntry,
-    FIELD( vtz::RuleEntry, from ),
-    FIELD( vtz::RuleEntry, to ),
-    FIELD( vtz::RuleEntry, in ),
-    FIELD( vtz::RuleEntry, on ),
-    FIELD( vtz::RuleEntry, at ),
-    FIELD( vtz::RuleEntry, save ),
-    FIELD( vtz::RuleEntry, letter ) );
-
-STRUCT_INFO( vtz::ZoneEntry,
-    FIELD( vtz::ZoneEntry, stdoff ),
-    FIELD( vtz::ZoneEntry, rules ),
-    FIELD( vtz::ZoneEntry, format ),
-    FIELD( vtz::ZoneEntry, until ) );
-
-STRUCT_INFO( vtz::Zone, FIELD( vtz::Zone, name ), FIELD( vtz::Zone, ents ) );
-
-STRUCT_INFO( vtz::Link, FIELD( vtz::Link, canonical ), FIELD( vtz::Link, alias ) );
-
-STRUCT_INFO( vtz::TZDataFile,
-    FIELD( vtz::TZDataFile, rules ),
-    FIELD( vtz::TZDataFile, zones ),
-    FIELD( vtz::TZDataFile, links ) );
 
 
 using namespace vtz;

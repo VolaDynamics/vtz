@@ -18,6 +18,7 @@
 
 #include "test_utils.h"
 #include "test_zones.h"
+#include "vtz_debug.h"
 #include "vtz_testing.h"
 
 #include <date/date.h>
@@ -37,19 +38,6 @@ static vector<sys_seconds> to_sys_vec( span<sysseconds_t> tt ) {
     for( size_t i = 0; i < tt.size(); ++i ) { result[i] = sys_seconds( seconds( tt[i] ) ); }
     return result;
 }
-
-
-STRUCT_INFO( vtz::sys_info,
-    FIELD( vtz::sys_info, begin ),
-    FIELD( vtz::sys_info, end ),
-    FIELD( vtz::sys_info, offset ),
-    FIELD( vtz::sys_info, save ),
-    FIELD( vtz::sys_info, abbrev ) );
-
-STRUCT_INFO( vtz::local_info,
-    FIELD( vtz::local_info, result ),
-    FIELD( vtz::local_info, first ),
-    FIELD( vtz::local_info, second ) );
 
 
 struct entry {

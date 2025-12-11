@@ -5,6 +5,8 @@
 #include <vtz/tz_reader.h>
 
 #include "vtz_testing.h"
+#include "vtz_debug.h"
+
 #include <random>
 using namespace vtz;
 
@@ -13,13 +15,6 @@ using _test_vtz::TEST_LOG;
 namespace {
     int _do_set_install = ( set_install( "build/data/tzdata" ), 0 );
 } // namespace
-
-STRUCT_INFO( vtz::math::div_t<int>,
-    FIELD( vtz::math::div_t<int>, quot ),
-    FIELD( vtz::math::div_t<int>, rem ) );
-
-STRUCT_INFO( vtz::YMD, FIELD( vtz::YMD, year ), FIELD( vtz::YMD, month ), FIELD( vtz::YMD, day ) );
-STRUCT_INFO( vtz::year_doy, FIELD( vtz::year_doy, year ), FIELD( vtz::year_doy, doy ) );
 
 TEST( vtz_math, div_floor ) {
     using vtz::math::div_floor;
