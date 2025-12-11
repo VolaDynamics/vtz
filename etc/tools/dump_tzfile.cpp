@@ -1,9 +1,11 @@
-#include <vtz/strings.h>
+#include <cstdint>
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <vtz/files.h>
+#include <vtz/strings.h>
 #include <vtz/tz.h>
 #include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/LeapTable.h>
 #include <vtz/tzfile.h>
 
 using color = fmt::terminal_color;
@@ -15,7 +17,7 @@ using em = fmt::emphasis;
 
 using std::string_view;
 
-constexpr auto bold_blue    = fg( color::blue ) | em::bold;
+constexpr auto bold_blue = fg( color::blue ) | em::bold;
 // constexpr auto bold_cyan    = fg( color::cyan ) | em::bold;
 constexpr auto bold_magenta = fg( color::magenta ) | em::bold;
 constexpr auto bold_green   = fg( color::green ) | em::bold;
@@ -78,43 +80,108 @@ static void print_tzif_header( vtz::tzfile_header const& header,
         "tzh_charcnt:", header.tzh_charcnt, "(timezone abbreviation bytes)" );
 }
 
+static std::string describe(
+    vtz::ttinfo_bytes type, string_view designations ) {
+    return fmt::format( "isdst={}  abbr={:>4}  utoff={:>9}",
+        type.tt_isdst() ? 1 : 0,
+        designations.data() + type.tt_desigidx(),
+        vtz::FromUTC( type.tt_utoff() )
+        //
+    );
+}
+
 template<vtz::tzfile_kind kind>
 void print_file(
-    vtz::basic_tzfile<kind> const& file32, string_view title = "TZif Header" ) {
-    print_tzif_header( file32.header(), title );
+    vtz::basic_tzfile<kind> const& ff, string_view title = "TZif Header" ) {
+    print_tzif_header( ff.header(), title );
+
+    using vtz::leap_bytes;
+    using vtz::endian::span_be;
+    using vtz::endian::span_bytes;
 
     auto utc = vtz::TimeZone::utc();
 
-    size_t timecnt      = file32.tzh_timecnt;
-    auto   TT           = file32.transition_times();
-    auto   types        = file32.type_indices();
-    auto   ttinfo       = file32.ttinfo();
-    auto   designations = file32.abbrev_buff();
+    size_t timecnt      = ff.tzh_timecnt;
+    auto   TT           = ff.transition_times();
+    auto   type_indices = ff.type_indices();
+    auto   ttinfo       = ff.ttinfo();
+    auto   designations = ff.abbrev_buff();
+
+    vtz::LeapTable leaps = ff.leap();
+
+    auto is_std = ff.isstd();
+    auto is_utc = ff.isutc();
 
     for( size_t i = 0; i < timecnt; ++i )
     {
         // Print transition times
-        int64_t T        = TT[i];
-        auto    type     = types[i];
-        auto    info     = ttinfo[type];
+        int64_t Traw     = TT[i];
+        int64_t T        = leaps.remove_leap( Traw );
+        auto    ti       = type_indices[i];
+        auto    info     = ttinfo[ti];
         auto    utoff    = info.tt_utoff();
         auto    isdst    = info.tt_isdst();
         auto    desigidx = info.tt_desigidx();
 
         char const* abbr = designations.data() + desigidx;
 
-        println( "utc={} local={} utoff={} isdst={} abbr={}",
-            styled( utc.format_s( "%F %T (dow=%w)", T ), bold_magenta ),
-            styled( utc.format_s( "%F %T", T + utoff ), bold_blue ),
-            styled( vtz::FromUTC( utoff ), bold_green ),
-            styled( int( isdst ), bold_white ),
-            styled( abbr, bold_red ) );
+        if( !leaps.empty() )
+        {
+            println( "raw={} utc={} local={} off={} dst={} abbr={} ti={}",
+                styled( utc.format_s( "%F %T", Traw ), bold_magenta ),
+                styled( utc.format_s( "%F %T", T ), bold_magenta ),
+                styled( utc.format_s( "%F %T", T + utoff ), bold_blue ),
+                styled( vtz::FromUTC( utoff ), bold_green ),
+                styled( int( isdst ), bold_white ),
+                styled( abbr, bold_red ),
+                styled( ti, bold_white ) );
+        }
+        else
+        {
+            println( "utc={} local={} off={} dst={} abbr={} ti={}",
+                styled( utc.format_s( "%F %T", T ), bold_magenta ),
+                styled( utc.format_s( "%F %T", T + utoff ), bold_blue ),
+                styled( vtz::FromUTC( utoff ), bold_green ),
+                styled( int( isdst ), bold_white ),
+                styled( abbr, bold_red ),
+                styled( ti, bold_white ) );
+        }
     }
+
+    if( ff.tzh_leapcnt )
+    {
+        fmt::println( "\nLeap entries:" );
+        for( size_t i = 0; i < leaps.size(); ++i )
+        {
+            fmt::println( "  [{:>2}] count={:>2} when={}",
+                i,
+                leaps.counts( i ),
+                utc.format_s( "%F %T", leaps.when( i ) ) );
+        }
+    }
+
+    size_t ttcnt
+        = std::max( { ff.tzh_ttisutcnt, ff.tzh_ttisstdcnt, ff.tzh_typecnt } );
+
+    fmt::println( "\nType entries:" );
+    for( size_t i = 0; i < ttcnt; ++i )
+    {
+        bool has_ty  = i < ff.tzh_typecnt;
+        bool has_std = i < ff.tzh_ttisstdcnt;
+        bool has_utc = i < ff.tzh_ttisutcnt;
+
+        std::string _ttinfo = has_ty ? describe( ttinfo[i], designations ) : "";
+        std::string _std = has_std ? fmt::format( "isstd={}", is_std[i] ) : "";
+        std::string _utc = has_utc ? fmt::format( "isutc={}", is_utc[i] ) : "";
+
+        fmt::println( "  [{}] {:>36} {:>10} {:>10}", i, _ttinfo, _std, _utc );
+    }
+
 
     if constexpr( kind == vtz::tzfile_kind::modern )
     {
         /// Print the tz string at the end of the file
-        println( "TZ={}", vtz::escape_string( file32.tz_string() ) );
+        println( "\nTZ={}", vtz::escape_string( ff.tz_string() ) );
     }
 }
 
