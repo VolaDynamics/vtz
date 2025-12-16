@@ -377,12 +377,8 @@ namespace vtz {
         }
 
         ZoneState initial_state() const {
-            // if we have transition times, get the type of the
-            // first one. Otherwise, use the first type entry in the tzfile
-            size_t ti = has_transition_times() ? type_indices()[0] : 0;
-
-            // If there are no transition times, get the state from the
-            return state_from_ti( ti );
+            // The first type entry corresponds to the initial state
+            return state_from_ti( 0 );
         }
     };
 
