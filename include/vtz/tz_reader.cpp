@@ -10,6 +10,7 @@
 #include <vtz/tz_cache.h>
 #include <vtz/tz_reader.h>
 #include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/LeapTable.h>
 #include <vtz/tz_reader/ZoneFormat.h>
 #include <vtz/tz_reader/ZoneRule.h>
 #include <vtz/tzfile.h>
@@ -1543,6 +1544,7 @@ namespace vtz {
 
         auto TT           = file.transition_times();
         auto type_indices = file.type_indices();
+        auto leap         = LeapTable( file.leap() );
 
         // We are going to keep track of the current stdoff. This will be
         // updated as we compute Zone States
@@ -1554,7 +1556,7 @@ namespace vtz {
 
         for( size_t i = 0;; )
         {
-            i64  T     = TT[i];
+            i64  T     = leap.remove_leap( TT[i] );
             auto ti    = type_indices[i];
             auto state = file.state_from_ti( ti, stdoff );
             agg.add( ZoneTransition{ T, state } );
