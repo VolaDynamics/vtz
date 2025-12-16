@@ -1550,6 +1550,8 @@ namespace vtz {
 
         ZTAgglomerator agg;
 
+        agg.set_initial( initial );
+
         for( size_t i = 0;; )
         {
             i64  T     = TT[i];
