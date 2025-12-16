@@ -361,6 +361,7 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
              Info{ 1, 2437, "America/New_York" },
              Info{ 1, 2437, "Australia/Lord_Howe" },
              Info{ 0, 2087, "Africa/Casablanca" },
+             Info{ 1, 2407, "America/New_York", "America/New_York_leap" },
          } )
     {
         ADD_CONTEXT( "Comparing parsed zone against tzfile", zone.zone_name, zone.tzfile_name );
