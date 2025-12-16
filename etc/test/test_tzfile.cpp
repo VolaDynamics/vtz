@@ -5,8 +5,8 @@
 
 #include "test_utils.h"
 #include "test_zones.h"
-#include "vtz_testing.h"
 #include "vtz_debug.h"
+#include "vtz_testing.h"
 
 using namespace vtz;
 
@@ -377,6 +377,10 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
 
         fmt::println( "First time: {}", utc_to_string( tt2.front().when ) );
         fmt::println( "Last time:  {}", utc_to_string( tt2.back().when ) );
+
+        // Check that the initial states match
+        ASSERT_EQ_QUIET( ny_1.initial(), ny_2.initial() );
+
         ASSERT_GT( tt2.back().when, _ct( zone.end_year, 1, 1, 0, 0, 0 ) );
 
         // Number of transition times in zone states from tzfile should not exceed number of zone
