@@ -43,30 +43,34 @@ namespace vtz {
         }
 
         i32 get_count( i64 T ) const noexcept {
-            auto   TT = when();
-            size_t i = std::upper_bound( TT.begin(), TT.end(), T ) - TT.begin();
+            auto TT    = when();
+            auto begin = TT.begin();
+            auto end   = TT.end();
+            auto it    = std::upper_bound( begin, end, T );
 
-            if( i > 0 )
+            if( it == begin )
             {
-                // Because i > 0, we know that TT[i-1] <= T < TT[i]
-                // So: the correct number of leap seconds is counts_[i-1]
-                return counts_[i - 1];
+                // it == begin, so either T < TT[0] or the leap table is empty.
+                //
+                // From the documentation:
+                //
+                // > ...the leap-second correction is zero if the first pair's
+                // > correction is 1 or -1, and is unspecified otherwise (which
+                // can > happen only in files truncated at the start)
+                //
+                // <https://man7.org/linux/man-pages/man5/tzfile.5.html>
+                //
+                // In the case that it's specified, it's specified to be 0. In
+                // the case that it's unspecified, 0 is a sensible value.
+
+                return 0;
             }
 
-            // i == 0, so either T < TT[0] or the leap table is empty.
-            //
-            // From the documentation:
-            //
-            // > ...the leap-second correction is zero if the first pair's
-            // > correction is 1 or -1, and is unspecified otherwise (which can
-            // > happen only in files truncated at the start)
-            //
-            // <https://man7.org/linux/man-pages/man5/tzfile.5.html>
-            //
-            // In the case that it's specified, it's specified to be 0. In the
-            // case that it's unspecified, 0 is a sensible value.
-
-            return 0;
+            size_t i = begin - it;
+            // Because it != begin, we know that i>0
+            // and therefore TT[i-1] <= T < TT[i]
+            // So: the correct number of leap seconds is counts_[i-1]
+            return counts_[i - 1];
         }
 
         i64 remove_leap( i64 T ) const noexcept { return T - get_count( T ); }
