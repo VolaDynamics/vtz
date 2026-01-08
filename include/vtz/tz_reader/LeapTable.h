@@ -66,7 +66,7 @@ namespace vtz {
                 return 0;
             }
 
-            size_t i = begin - it;
+            size_t i = it - begin;
             // Because it != begin, we know that i>0
             // and therefore TT[i-1] <= T < TT[i]
             // So: the correct number of leap seconds is counts_[i-1]
