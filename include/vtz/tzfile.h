@@ -372,6 +372,23 @@ namespace vtz {
             // If we're not within daylight savings time, update the standard
             // offset
             if( !ty.tt_isdst() ) { stdoff = utoff; }
+            else
+            {
+                // if it's now daylight savings time, but the new walloff is the
+                // same as the stdoff, we should assume that we have a situation
+                // like what occurred on October 3rd, 1999 in Buenos Aires:
+                //
+                // Argentina entered daylight savings time with save=1:00, and
+                // AT THE SAME TIME the standard offset was moved an hour, such
+                // that the changes cancelled out.
+                //
+                // The end result is that the old stdoff is the same as the
+                // new wall offset, despite it being in daylight savings time.
+                //
+                // the tzfile doesn't encode that this is the case, but we
+                // should assume that it is
+                if( stdoff == utoff ) stdoff = utoff.unsave( RuleSave{ 3600 } );
+            }
 
             return ZoneState{ stdoff, utoff, abbrev };
         }
