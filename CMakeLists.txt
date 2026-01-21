@@ -109,6 +109,7 @@ if(PROJECT_IS_TOP_LEVEL)
             "${BUILD}/data/tzdata/windowsZones.xml"
     )
 
+
     file(GLOB test_files etc/test/*.cpp)
     add_executable(test_vtz ${test_files})
     target_link_libraries(
@@ -120,6 +121,26 @@ if(PROJECT_IS_TOP_LEVEL)
             date::date
             date::date-tz
     )
+
+    find_program(zic_exe zic)
+    if(zic_exe)
+        add_custom_command(
+            OUTPUT data/zoneinfo/America/New_York
+            COMMAND
+                "${zic_exe}"
+                ARGS -b fat -d "${BUILD}/data/zoneinfo" "${BUILD}/data/tzdata/tzdata.zi"
+            DEPENDS
+                "${BUILD}/data/tzdata/tzdata.zi"
+        )
+        add_custom_target(
+            compile_tzdata
+            DEPENDS data/zoneinfo/America/New_York
+        )
+        add_dependencies(test_vtz compile_tzdata)
+    else()
+        message(WARNING "Cannot find zic.exe - unable to compile zoneinfo files for testing purposes")
+    endif()
+
     file(GLOB bench_files etc/bench/*.cpp)
     add_executable(bench_vtz ${bench_files})
     target_compile_features(bench_vtz PRIVATE cxx_std_20)

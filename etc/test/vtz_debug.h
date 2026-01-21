@@ -4,6 +4,7 @@
 #include "vtz_testing.h"
 
 
+#include <vtz/tz_reader/ZoneTransition.h>
 #include <vtz/math.h>
 #include <vtz/tz.h>
 #include <fmt/chrono.h>

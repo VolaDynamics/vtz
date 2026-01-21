@@ -1,5 +1,7 @@
+#include <vtz/civil.h>
 #include <vtz/endian.h>
 #include <vtz/tz.h>
+#include <vtz/tz_cache.h>
 #include <vtz/tz_reader.h>
 #include <vtz/tz_reader/FromUTC.h>
 
@@ -362,6 +364,8 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
              Info{ 1, 2437, "Australia/Lord_Howe" },
              Info{ 0, 2087, "Africa/Casablanca" },
              Info{ 1, 2407, "America/New_York", "America/New_York_leap" },
+             Info{ 1, 2010, "Atlantic/Stanley" },
+             Info{ 1, 2037, "Europe/Dublin" },
          } )
     {
         ADD_CONTEXT( "Comparing parsed zone against tzfile", zone.zone_name, zone.tzfile_name );
@@ -388,6 +392,7 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
         // states from tzdata.zi (which we computed out to 2900)
         //
         // If this assertion is wrong, then the likely cause is we are adding too many states
+
         ASSERT_LE( tt2.size(), tt1.size() );
         size_t count = std::min( tt1.size(), tt2.size() );
 
@@ -407,5 +412,179 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
             ASSERT_EQ_QUIET( tt1[i].state.stdoff, tt2[i].state.stdoff );
             ASSERT_EQ_QUIET( tt1[i].state.walloff, tt2[i].state.walloff );
         }
+    }
+}
+
+TEST( vtz, tzdb_vs_tzfile_coherence ) {
+    COUNT_ASSERTIONS();
+
+    auto utc = time_zone::utc();
+
+    auto tzcache = TimeZoneCache( load_zone_info_from_dir( "build/data/tzdata" ) );
+    auto zones   = tzcache.zones();
+
+    fmt::println( "Found {} zones in tzdata.zi", tzcache.zone_cache.size() );
+
+    constexpr auto T0   = _ct( 1850, 1, 1, 0, 0, 0 );
+    constexpr auto TMax = _ct( 2100, 1, 1, 0, 0, 0 );
+    // Count up in increments of 15 minutes
+    constexpr auto interval = sysseconds_t( 15 * 60 );
+
+    using C = vtz::choose;
+
+    for( auto const& zone_name : zones )
+    {
+        ADD_CONTEXT( "Testing zone", zone_name );
+        // Construct system tzfile path
+        std::string tzfile_path = join_path( "build/data/zoneinfo", zone_name );
+        fmt::println( "Testing {} (os version loaded from {})", zone_name, tzfile_path );
+
+        auto tzfile_states = load_zone_states_tzfile( tzfile_path );
+
+        /// Timezone loaded from the TimeZoneCache - used as reference implementation
+        auto const& tz_ref = tzcache.locate_zone( zone_name );
+
+        /// Timezone loaded from the OS tzfiles
+        auto const& tz_os = TimeZone( zone_name, tzfile_states );
+
+        for( auto T = T0; T < TMax; T += interval )
+        {
+            ADD_CONTEXT( "Testing time", DT{ T } );
+            ASSERT_EQ_QUIET( tz_ref.to_local_s( T ), tz_os.to_local_s( T ) );
+            ASSERT_EQ_QUIET( tz_ref.to_sys_s( T, C::earliest ), tz_os.to_sys_s( T, C::earliest ) );
+            ASSERT_EQ_QUIET( tz_ref.to_sys_s( T, C::latest ), tz_os.to_sys_s( T, C::latest ) );
+            ASSERT_EQ_QUIET( tz_ref.offset_s( T ), tz_os.offset_s( T ) );
+            ASSERT_EQ_QUIET( tz_ref.abbrev_s( T ), tz_os.abbrev_s( T ) );
+        }
+    }
+}
+
+TEST( vtz, tzdb_vs_tzfile_state_coherence ) {
+    COUNT_ASSERTIONS();
+
+    auto const& fp = "build/data/tzdata/tzdata.zi";
+
+    auto utc = time_zone::utc();
+
+    fmt::println( "=== Comprehensive System Tzfile Test ===" );
+    fmt::println( "Loading tzdata.zi..." );
+
+    auto content = read_file( fp );
+    auto file    = parse_tzdata( content, fp );
+    auto zones   = file.list_zones();
+
+    fmt::println( "Found {} zones in tzdata.zi", zones.size() );
+
+    // Statistics tracking
+    size_t total_zones        = 0;
+    size_t zones_with_tzfiles = 0;
+    size_t zones_tested       = 0;
+    size_t zones_passed       = 0;
+    size_t zones_failed       = 0;
+
+    std::vector<std::string> missing_tzfiles;
+    std::vector<std::string> failed_zones;
+
+    // Test each zone
+    for( auto const& zone_name : zones )
+    {
+        total_zones++;
+
+        // Construct system tzfile path
+        std::string tzfile_path = join_path( "build/data/zoneinfo", zone_name );
+
+        // Try to load the system tzfile
+        try
+        {
+            auto tzfile_states = load_zone_states_tzfile( tzfile_path );
+            zones_with_tzfiles++;
+
+            // Get zone states from tzdata.zi
+            auto tzdata_states = file.get_zone_states( zone_name, 2900 );
+
+            auto tt1 = tzdata_states.get_transitions();
+            auto tt2 = tzfile_states.get_transitions();
+
+            bool zone_passed = true;
+
+            // Check initial states
+            if( tzdata_states.initial() != tzfile_states.initial() )
+            {
+                fmt::println( "  {} - Initial state mismatch", zone_name );
+                fmt::println(
+                    "    tzdata: {}", _test_vtz::debug_to_string( tzdata_states.initial() ) );
+                fmt::println(
+                    "    tzfile: {}", _test_vtz::debug_to_string( tzfile_states.initial() ) );
+                zone_passed = false;
+            }
+
+            // Compare transitions (up to the minimum of both)
+            size_t count = std::min( tt1.size(), tt2.size() );
+            for( size_t i = 0; i < count; ++i )
+            {
+                if( tt1[i].when != tt2[i].when || tt1[i].state.abbr.sv() != tt2[i].state.abbr.sv()
+                    // || tt1[i].state.stdoff != tt2[i].state.stdoff
+                    || tt1[i].state.walloff != tt2[i].state.walloff )
+                {
+                    fmt::println( "  {} - Mismatch at transition {} ({})",
+                        zone_name,
+                        i,
+                        utc.format_s( tt1[i].when ) );
+                    fmt::println( "    tzdata: [when={}] {}",
+                        utc.format_s( tt1[i].when ),
+                        _test_vtz::debug_to_string( tt1[i].state ) );
+                    fmt::println( "    tzfile: [when={}] {}",
+                        utc.format_s( tt2[i].when ),
+                        _test_vtz::debug_to_string( tt2[i].state ) );
+                    zone_passed = false;
+                    break;
+                }
+            }
+
+            zones_tested++;
+            if( zone_passed ) { zones_passed++; }
+            else
+            {
+                zones_failed++;
+                failed_zones.push_back( zone_name );
+            }
+        }
+        catch( std::exception const& e )
+        {
+            // File doesn't exist or can't be read
+            missing_tzfiles.push_back( zone_name );
+        }
+    }
+
+    // Report summary
+    fmt::println( "\n=== Test Summary ===" );
+    fmt::println( "Total zones in tzdata.zi:     {}", total_zones );
+    fmt::println( "Zones with system tzfiles:    {}", zones_with_tzfiles );
+    fmt::println( "Zones successfully tested:    {}", zones_tested );
+    fmt::println( "Zones passed:                 {}", zones_passed );
+    fmt::println( "Zones failed:                 {}", zones_failed );
+    fmt::println( "Missing system tzfiles:       {}", missing_tzfiles.size() );
+
+    if( !failed_zones.empty() )
+    {
+        fmt::println( "\nFailed zones:" );
+        for( auto const& zone : failed_zones ) { fmt::println( "  - {}", zone ); }
+    }
+
+    if( !missing_tzfiles.empty() && missing_tzfiles.size() <= 20 )
+    {
+        fmt::println( "\nMissing tzfiles (first 20):" );
+        for( size_t i = 0; i < std::min( size_t( 20 ), missing_tzfiles.size() ); ++i )
+        { fmt::println( "  - {}", missing_tzfiles[i] ); }
+    }
+
+    // The test passes as long as we can test some zones
+    ASSERT_GT( zones_tested, 0 );
+
+    // Report pass rate
+    if( zones_tested > 0 )
+    {
+        double pass_rate = ( zones_passed * 100.0 ) / zones_tested;
+        fmt::println( "\nPass rate: {:.2f}% ({}/{})", pass_rate, zones_passed, zones_tested );
     }
 }

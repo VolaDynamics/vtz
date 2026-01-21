@@ -2,6 +2,7 @@
 
 
 #include <atomic>
+#include <cstddef>
 #include <fmt/format.h>
 #include <stdexcept>
 #include <string>
@@ -11,7 +12,6 @@
 #include <vtz/bit.h>
 #include <vtz/tz.h>
 #include <vtz/tz_reader.h>
-#include <cstddef>
 
 #include <ankerl/unordered_dense.h>
 
@@ -148,8 +148,18 @@ namespace vtz {
         /// Any rules that are loaded as part of loading the zone will also
         /// be cached.
         TimeZone const& locate_zone( string_view name ) const;
+
+        std::vector<std::string_view> zones() {
+            auto result = std::vector<std::string_view>( zone_cache.size() );
+
+            size_t i = 0;
+            for( auto const& kv : zone_cache ) { result[i++] = kv.first; }
+
+            return result;
+        }
     };
 
+    TZData load_zone_info_from_dir( string dir );
 
     TimeZoneCache const& tzdb_cache();
 } // namespace vtz
