@@ -495,22 +495,23 @@ constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
     _test_vtz::CountAssertions _test_count_assertions { __func__ }
 
 
-#define FIELD( type, member )                                                                      \
+#define FIELD( member )                                                                            \
     _test_vtz::Field<&type::member> { #member }
 
-#define STRUCT_INFO( type, ... )                                                                   \
+#define STRUCT_INFO( TYPE, ... )                                                                   \
     template<>                                                                                     \
-    struct _test_vtz::StructInfo<type> {                                                           \
+    struct _test_vtz::StructInfo<TYPE> {                                                           \
         constexpr static bool             has  = true;                                             \
-        constexpr static std::string_view name = #type;                                            \
+        constexpr static std::string_view name = #TYPE;                                            \
+        using type                             = TYPE;                                             \
         template<class F>                                                                          \
         constexpr static void apply( F&& func ) {                                                  \
             func( __VA_ARGS__ );                                                                   \
         }                                                                                          \
     };                                                                                             \
     template<>                                                                                     \
-    struct fmt::formatter<type> : fmt::formatter<std::string_view> {                               \
-        auto format( type const& value, format_context& ctx ) const {                              \
+    struct fmt::formatter<TYPE> : fmt::formatter<std::string_view> {                               \
+        auto format( TYPE const& value, format_context& ctx ) const {                              \
             std::string s;                                                                         \
             _test_vtz::debug_print( s, value );                                                    \
             return fmt::formatter<std::string_view>::format( s, ctx );                             \
