@@ -1,5 +1,5 @@
 build/
-
+install/
 .cache/
 
 /tzdata/
