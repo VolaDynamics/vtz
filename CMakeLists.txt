@@ -132,6 +132,22 @@ if(PROJECT_IS_TOP_LEVEL)
             "${BUILD}/data/tzdata/windowsZones.xml"
     )
 
+    # Generate known_zones.h from tzdata.zi
+    set(TZDATA_ZI_FILE "${BUILD}/data/tzdata/tzdata.zi")
+    file(STRINGS "${TZDATA_ZI_FILE}" TZDATA_ZI_LINES REGEX "^Z ")
+    set(KNOWN_ZONES_LIST "")
+    foreach(line IN LISTS TZDATA_ZI_LINES)
+        # Extract zone name (second field after "Z ")
+        string(REGEX REPLACE "^Z ([^ ]+) .*" "\\1" zone_name "${line}")
+        list(APPEND KNOWN_ZONES_LIST "\"${zone_name}\"")
+    endforeach()
+    list(JOIN KNOWN_ZONES_LIST ",\n        " KNOWN_ZONES)
+    configure_file(
+        "${PROJECT_SOURCE_DIR}/include/vtz/known_zones.h.in"
+        "${PROJECT_SOURCE_DIR}/include/vtz/known_zones.h"
+        @ONLY
+    )
+
 
     file(GLOB test_files etc/test/*.cpp)
     add_executable(test_vtz ${test_files})
