@@ -50,7 +50,7 @@ endif()
 file(GLOB_RECURSE sources include/*.cpp)
 add_library(
     vtz
-    STATIC
+    SHARED
         ${sources})
 
 target_link_libraries(
@@ -75,6 +75,29 @@ target_sources(
     BASE_DIRS include
     FILES ${headers}
 )
+
+include(GNUInstallDirs)
+install(
+    TARGETS
+    vtz
+    unordered_dense
+    EXPORT vtz
+    FILE_SET HEADERS
+)
+install(
+    EXPORT vtz
+    NAMESPACE vtz::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/vtz
+)
+
+configure_package_config_file(
+    "${PROJECT_SOURCE_DIR}/cmake/vtzConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/vtzConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/vtz)
+
+install(FILES "${PROJECT_BINARY_DIR}/vtzConfig.cmake"
+            #   "${PROJECT_BINARY_DIR}/vtzConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/vtz)
 
 # Add tests and benchmarks
 if(PROJECT_IS_TOP_LEVEL)
