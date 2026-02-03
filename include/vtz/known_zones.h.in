@@ -1,0 +1,10 @@
+#pragma once
+
+#include <string_view>
+
+namespace vtz {
+    /// Contains a list of known timezone names. Used to construct timezone cache if the timezone source files cannot be found.
+    constexpr std::string_view KNOWN_ZONES[] {
+        @KNOWN_ZONES@
+    };
+}
