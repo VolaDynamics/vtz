@@ -142,6 +142,18 @@ if(PROJECT_IS_TOP_LEVEL)
         list(APPEND KNOWN_ZONES_LIST "\"${zone_name}\"")
     endforeach()
     list(JOIN KNOWN_ZONES_LIST ",\n        " KNOWN_ZONES)
+
+
+    file(STRINGS "${TZDATA_ZI_FILE}" TZDATA_ZI_LINKS REGEX "^L ")
+    set(KNOWN_LINKS_LIST "")
+    foreach(line IN LISTS TZDATA_ZI_LINKS)
+        # Extract Link of form "L <name> <alias>"
+        string(REGEX REPLACE "^L ([^ ]+) ([^ ]+)" "{ \"\\1\", \"\\2\" }" zone_link "${line}")
+        list(APPEND KNOWN_LINKS_LIST "Link${zone_link}")
+    endforeach()
+    list(JOIN KNOWN_LINKS_LIST ",\n        " KNOWN_LINKS)
+
+    # Configure with KNOWN_ZONES and KNOWN_LINKS
     configure_file(
         "${PROJECT_SOURCE_DIR}/include/vtz/known_zones.h.in"
         "${PROJECT_SOURCE_DIR}/include/vtz/known_zones.h"
