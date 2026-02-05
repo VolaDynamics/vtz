@@ -51,21 +51,51 @@ namespace vtz {
         auto it = data.links.find( name );
         if( it == data.links.end() )
         {
-            throw std::runtime_error(
-                fmt::format( "Could not find '{}' (checked both canonical "
-                             "zones & legacy names)",
-                    name ) );
+            // If the zone info directory is empty, don't bother checking the
+            // fallback cache, because that will fail.
+            if( zoneinfo_dir.empty() )
+            {
+                throw std::runtime_error( fmt::format(
+                    "Could not find {} (checked both canonical "
+                    "zones & legacy names; zoneinfo_dir is empty so no attempt "
+                    "was made to load from a OS tzfile)",
+                    escape_string( name ) ) );
+            }
+
+            try
+            {
+                // Attempt to locate the zone within the fallback cache
+                auto tz = fallback_cache.locate_zone(
+                    name, [this]( string_view name ) {
+                        return this->load_zone( name );
+                    } );
+                if( tz == nullptr )
+                    throw std::runtime_error( "fallback cache returned a null "
+                                              "zone (is load_zone broken?)" );
+
+                return *tz;
+            }
+            catch( std::exception const& e )
+            {
+                throw std::runtime_error( fmt::format(
+                    "Could not find {} (checked both canonical zones & legacy "
+                    "names). Attempted to load tzfile from {}, but the "
+                    "following error occurred: {}",
+                    escape_string( name ),
+                    zoneinfo_dir,
+                    e.what() ) );
+            }
         }
 
         // Get the zone this link refers to
         auto canonical = it->second;
         if( auto ptr = try_locate_zone( canonical ) ) return *ptr;
 
-        throw std::runtime_error( fmt::format(
-            "'{}' is an alias for '{}', but '{}' could not be found",
-            name,
-            canonical,
-            canonical ) );
+        throw std::runtime_error(
+            fmt::format( "{} is an alias for {}, but {} could not be found",
+                escape_string( name ),
+                escape_string( canonical ),
+                escape_string( canonical ) ) );
     }
 
     static std::string get_tzdata_path() {

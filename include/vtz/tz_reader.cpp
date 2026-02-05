@@ -1771,8 +1771,43 @@ namespace vtz {
         // Represents a map of rule names to evaluated rules
         using RuleCache = map<string_view, ZoneTransIter>;
 
-        auto const& entries = data.zones.at( name );
+        auto zone_it = data.zones.find( name );
 
+        if( zone_it == data.zones.end() )
+        {
+            // If we don't have a zoneinfo directory, just bail
+            if( !has_zoneinfo_dir() )
+            {
+                throw std::runtime_error( fmt::format(
+                    "TimeZoneCache::compute_states(): zone {} does not exist "
+                    "(no ZoneEntries found; zoneinfo_dir is not set)",
+                    escape_string( name ) ) );
+            }
+
+            // Otherwise, attempt load from zoneinfo directory
+            auto tzfile_path = join_path( zoneinfo_dir, name );
+
+            try
+            {
+                /// Attempt to load the zone from a file. This will throw an
+                /// exception if the file cannot be read, or does not exist.
+                return load_zone_states_tzfile( tzfile_path );
+            }
+            catch( std::exception const& e )
+            {
+                throw std::runtime_error( fmt::format(
+                    "TimeZoneCache::compute_states(): unable to load {}. "
+                    "No ZoneEntries found; load from tzfile @ {} failed (see "
+                    "below):\n\n{}",
+                    escape_string( name ),
+                    escape_string( tzfile_path ),
+                    e.what() ) );
+            }
+        }
+
+        auto const& entries = zone_it->second;
+
+        // This is unlikely, and should only occur if there was a parsing bug.
         if( entries.empty() )
             throw std::runtime_error(
                 fmt::format( "Error: zone '{}' contained no entries",
