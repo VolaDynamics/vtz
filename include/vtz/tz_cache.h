@@ -373,6 +373,19 @@ namespace vtz {
             return result;
         }
 
+        std::vector<Link> links() {
+            auto result = std::vector<Link>( data.links.size() );
+
+            size_t i = 0;
+            for( auto const& [key, value] : data.links )
+            {
+                // value goes first because the key is the alias, which resolves to a canonical name
+                result[i++] = Link{ value, key };
+            }
+
+            return result;
+        }
+
         /// Returns true if the TimeZoneCache has a zoneinfo directory
         /// containing OS tzfiles, which can be used if the
         bool has_zoneinfo_dir() const noexcept { return !zoneinfo_dir.empty(); }
