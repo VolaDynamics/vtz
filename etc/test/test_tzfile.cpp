@@ -423,6 +423,18 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
     auto tzcache = TimeZoneCache( load_zone_info_from_dir( "build/data/tzdata" ) );
     auto zones   = tzcache.zones();
 
+    auto tzcache_tzfile = TimeZoneCache( "build/data/zoneinfo", tzcache.zones(), tzcache.links() );
+
+    // For the tzcache loaded from source, we should NOT have a null set of zones, or a null set of
+    // rules
+    ASSERT_NE( tzcache.data.zones.size(), 0 );
+    ASSERT_NE( tzcache.data.rules.size(), 0 );
+
+    // For the tzcache loaded from OS tzfiles, zones and rules should be zero, because there is no
+    // source files to load from
+    ASSERT_EQ( tzcache_tzfile.data.zones.size(), 0 );
+    ASSERT_EQ( tzcache_tzfile.data.rules.size(), 0 );
+
     fmt::println( "Found {} zones in tzdata.zi", tzcache.zone_cache.size() );
 
     constexpr auto T0   = _ct( 1850, 1, 1, 0, 0, 0 );
@@ -439,13 +451,11 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
         std::string tzfile_path = join_path( "build/data/zoneinfo", zone_name );
         fmt::println( "Testing {} (os version loaded from {})", zone_name, tzfile_path );
 
-        auto tzfile_states = load_zone_states_tzfile( tzfile_path );
-
         /// Timezone loaded from the TimeZoneCache - used as reference implementation
         auto const& tz_ref = tzcache.locate_zone( zone_name );
 
         /// Timezone loaded from the OS tzfiles
-        auto const& tz_os = TimeZone( zone_name, tzfile_states );
+        auto const& tz_os = tzcache_tzfile.locate_zone( zone_name );
 
         for( auto T = T0; T < TMax; T += interval )
         {
@@ -522,7 +532,8 @@ TEST( vtz, tzdb_vs_tzfile_state_coherence ) {
             size_t count = std::min( tt1.size(), tt2.size() );
             for( size_t i = 0; i < count; ++i )
             {
-                if( tt1[i].when != tt2[i].when || tt1[i].state.abbr.sv() != tt2[i].state.abbr.sv()
+                if( tt1[i].when != tt2[i].when
+                    || tt1[i].state.abbr.sv() != tt2[i].state.abbr.sv()
                     // || tt1[i].state.stdoff != tt2[i].state.stdoff
                     || tt1[i].state.walloff != tt2[i].state.walloff )
                 {
