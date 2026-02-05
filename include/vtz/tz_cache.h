@@ -39,7 +39,7 @@ namespace vtz {
 
         AtomicEnt( AtomicEnt&& rhs )
         : tz( rhs.tz.exchange(
-              nullptr, std::memory_order::memory_order_relaxed ) ) {}
+              nullptr, std::memory_order_relaxed ) ) {}
 
         T const* load() const noexcept {
             return tz.load( std::memory_order_relaxed );
@@ -80,7 +80,7 @@ namespace vtz {
         }
 
         ~AtomicEnt() {
-            auto* ptr = tz.load( std::memory_order::memory_order_relaxed );
+            auto* ptr = tz.load( std::memory_order_relaxed );
             delete ptr;
         }
     };
