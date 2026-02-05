@@ -12,6 +12,7 @@
 #include <vtz/strings.h>
 
 #include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/Link.h>
 #include <vtz/tz_reader/RuleAt.h>
 #include <vtz/tz_reader/RuleLetter.h>
 #include <vtz/tz_reader/RuleOn.h>
@@ -179,17 +180,6 @@ namespace vtz {
 
         constexpr static auto has_expiry() noexcept {
             return []( RuleEntry const& rule ) { return rule.to != Y_MAX; };
-        }
-    };
-
-
-    struct Link {
-        string_view canonical;
-        string_view alias;
-
-        bool operator==( Link rhs ) const noexcept {
-            return canonical == rhs.canonical //
-                   && alias == rhs.alias;
         }
     };
 
