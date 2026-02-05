@@ -1,5 +1,6 @@
 #include <mutex>
 #include <vtz/date_types.h>
+#include <vtz/known_zones.h>
 #include <vtz/tz_cache.h>
 
 #include <fmt/ranges.h>
@@ -98,6 +99,8 @@ namespace vtz {
                 escape_string( canonical ) ) );
     }
 
+    /// Attempts to determine the tzdata path. Returns an empty string if the
+    /// path could not be determined.
     static std::string get_tzdata_path() {
         constexpr char const* env_vars[]{
             "VOLA_TZDATA_PATH",
@@ -110,10 +113,7 @@ namespace vtz {
             if( tzdata ) { return join_path( tzdata, "tzdata" ); }
         }
 
-        throw std::runtime_error(
-            "Unable to determine VOLA_TZDATA_PATH. Please configure the "
-            "VOLA_TZDATA_PATH env variable to the directory containing "
-            "'tzdata'" );
+        return std::string();
     }
 
 
@@ -122,6 +122,9 @@ namespace vtz {
 
     /// Return a reference to the install path. The first time this function is
     /// called, the _install path is initialized.
+    ///
+    /// If none of the tzpath environment variables are set, the returned path
+    /// will be empty.
     static std::string& install_path( bool load_from_env_var ) {
         static std::string _install
             = load_from_env_var ? get_tzdata_path() : std::string();
@@ -153,8 +156,28 @@ namespace vtz {
     static TimeZoneCache do_load_cache() {
         std::scoped_lock _lock( INSTALL_PATH_MUTEX );
 
-        auto result
-            = TimeZoneCache( load_zone_info_from_dir( install_path( true ) ) );
+        auto const& path = install_path( true );
+
+        if( path.empty() )
+        {
+#ifdef _WIN32
+            throw std::runtime_error(
+                "Unable to determine VOLA_TZDATA_PATH. Please configure the "
+                "VOLA_TZDATA_PATH env variable to the directory containing "
+                "'tzdata'" );
+#else
+            // TODO: do we want to support checking any other directories for
+            // zoneinfo?
+            auto result = TimeZoneCache(
+                "/usr/share/zoneinfo", KNOWN_ZONES, KNOWN_LINKS );
+
+            TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
+
+            return result;
+#endif
+        }
+
+        auto result = TimeZoneCache( load_zone_info_from_dir( path ) );
 
         // if result loaded successfully, mark this as true
         TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
