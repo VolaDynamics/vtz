@@ -21,13 +21,17 @@ if(COMPILER_CACHE)
 endif()
 
 # Add dev compile flags (if on unix)
-if(PROJECT_IS_TOP_LEVEL AND UNIX)
-    add_compile_options(
-        -fdiagnostics-color=always
-        -Werror=uninitialized
-        -Wunused
-        -Wimplicit-fallthrough
-    )
+if(PROJECT_IS_TOP_LEVEL)
+    if(UNIX)
+        add_compile_options(
+            -fdiagnostics-color=always
+            -Werror=uninitialized
+            -Wunused
+            -Wimplicit-fallthrough
+        )
+    elseif(MSVC)
+        add_compile_options("/W4")
+    endif()
 endif()
 
 # (For development) add SANITIZE and PROFILE compile flags when on unix
