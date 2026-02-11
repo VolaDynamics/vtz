@@ -271,8 +271,8 @@ namespace vtz {
         }
 
         static TZStringIter start_after( TZString const& s, sysseconds_t T ) {
-            sysdays_t date = vtz::math::div_floor<86400>( T );
-            auto      it   = TZStringIter( s, civil_year( date ) );
+            auto date = sysdays_t( vtz::math::div_floor<86400>( T ) );
+            auto it   = TZStringIter( s, civil_year( date ) );
             it.advance_past( T );
             return it;
         }
