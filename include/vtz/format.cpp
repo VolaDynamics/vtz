@@ -44,7 +44,7 @@ namespace vtz {
     VTZ_INLINE static char* _write_year( char* p, i64 year ) noexcept {
         // if the year is nonnegative and fits in 4 digits, write as 4-digit
         // year
-        if( u64( year ) < 10000 ) [[likely]]
+        if( u64( year ) < 10000 ) VTZ_LIKELY
             return _write_year4( p, year );
         // fallback to std::to_chars
         return std::to_chars( p, p + 22, year ).ptr;
@@ -140,7 +140,7 @@ namespace vtz {
     /// (21 characters needed for excessively large negative/positive year)
     VTZ_INLINE static char* _write_iso_date(
         char* p, i64 y, int m, int d ) noexcept {
-        if( u64( y ) < 10000 ) [[likely]]
+        if( u64( y ) < 10000 ) VTZ_LIKELY
         {
             p    = _write_year4( p, y );
             *p++ = '-';
@@ -340,7 +340,7 @@ namespace vtz {
         // to copy the final character.
         if( i == len ) { *p++ = format[i]; }
 
-        if( !needs_strftime ) [[likely]]
+        if( !needs_strftime ) VTZ_LIKELY
         {
             // If we were able to handle all the specifiers, there's nothing
             // left to format. This means we don't need to do a call to
@@ -620,7 +620,7 @@ namespace vtz {
 
         char buff[64];
 
-        if( u64( local_t ) < LONG_TIME ) [[likely]]
+        if( u64( local_t ) < LONG_TIME ) VTZ_LIKELY
         {
             return _format_local_to<true, is_compact>( local_t,
                 buff,
@@ -661,7 +661,7 @@ namespace vtz {
 
         auto gmtoff = tz.offset_s( t );
         auto local_t = t + gmtoff;
-        if( u64( local_t ) < LONG_TIME ) [[likely]]
+        if( u64( local_t ) < LONG_TIME ) VTZ_LIKELY
         {
             // Required size is (number of characters for timestamp) + (1 for
             // abbr sep) + (max abbr length)
@@ -670,7 +670,7 @@ namespace vtz {
             // If we're _before_ LONG_TIME, we know the year is 0000-9999
             // So the length is at most, eg,
             // 9999-12-31T23:59:59 LongAbbr
-            if( count >= REQUIRED_SIZE ) [[likely]]
+            if( count >= REQUIRED_SIZE ) VTZ_LIKELY
             {
                 // If the buffer is big enough, we can write to the buffer
                 // directly

@@ -11,6 +11,7 @@
 #include <vtz/span.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader/ZoneFormat.h>
+#include <vtz/export.h>
 
 #include <vtz/bit.h>
 
@@ -277,7 +278,7 @@ namespace vtz {
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t offset_s( sec_t t ) const noexcept {
             // If the time is in-bounds, use the lookup table
-            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return TTutc.lookup( t );
 
             // t is _early_: use initial zone state
@@ -291,7 +292,7 @@ namespace vtz {
         /// the timezone's current offset from UTC, in seconds.
         VTZ_INLINE sec_t to_local_s( sec_t t ) const noexcept {
             // If the time is in-bounds we can use the lookup table
-            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return t + TTutc.lookup( t );
 
             // t is _early_: use initial zone state
@@ -408,7 +409,7 @@ namespace vtz {
         int lookup_local(
             sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
             // If the time is in-bounds, we can use the lookup table
-            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return _lookup_local( t, t, result );
 
             // t is _early_: this means it occurs before any timezone
@@ -428,7 +429,7 @@ namespace vtz {
         template<bool choose_latest>
         sec_t _to_utc( sec_t t ) const noexcept {
             // If the time is in-bounds, we can use the lookup table
-            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return _lookup_utc<choose_latest>( t, t );
 
             // t is _early_: use initial zone state
@@ -519,7 +520,7 @@ namespace vtz {
         };
 
         VTZ_INLINE Range sys_range_s( sysseconds_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return sys_range_impl( t );
 
             if( t < 0 ) { return Range{ when[0], when[1] }; }
@@ -563,7 +564,7 @@ namespace vtz {
         std::unique_ptr<ZoneAbbr[]> abbr_table;
 
         u32 abbr_block_s( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return abbr.lookup( t );
 
             // t is _early_: use initial zone state
@@ -585,7 +586,7 @@ namespace vtz {
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
         string_view abbrev_s( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return abbr_from_block( abbr.lookup( t ) );
 
             // t is _early_: use initial zone state
@@ -599,7 +600,7 @@ namespace vtz {
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
         string abbrev_string_s( sec_t t ) const noexcept {
-            if( u64( t ) + tz0_ <= tz_max_ ) [[likely]]
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return abbr_string_from_block( abbr.lookup( t ) );
 
             // t is _early_: use initial zone state
