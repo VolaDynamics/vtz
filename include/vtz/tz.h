@@ -856,7 +856,7 @@ namespace vtz {
         string format_precise( string_view format, sys_time<Dur> t, int precision ) const {
             auto sec = std::chrono::floor<seconds>( t.time_since_epoch() );
             auto nanos = std::chrono::floor<nanoseconds>( t.time_since_epoch() - sec );
-            return format_precise_s( format, sec.count(), nanos.count(), precision );
+            return format_precise_s( format, sec.count(), u32( nanos.count() ), precision );
         }
 
         /// Format the given time. If the input time has a precision higher than
@@ -878,7 +878,7 @@ namespace vtz {
             {
                 auto sec = std::chrono::floor<seconds>( t.time_since_epoch() );
                 auto nanos = std::chrono::floor<nanoseconds>( t.time_since_epoch() - sec );
-                return format_precise_to_s( format, sec.count(), nanos.count(), prec, buff, count );
+                return format_precise_to_s( format, sec.count(), u32( nanos.count() ), prec, buff, count );
             }
         }
 
@@ -898,7 +898,7 @@ namespace vtz {
             {
                 auto sec = std::chrono::floor<seconds>( t.time_since_epoch() );
                 auto nanos = std::chrono::floor<nanoseconds>( t.time_since_epoch() - sec );
-                return format_precise_s( format, sec.count(), nanos.count(), prec );
+                return format_precise_s( format, sec.count(), u32( nanos.count() ), prec );
             }
         }
 
