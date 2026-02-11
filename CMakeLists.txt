@@ -6,6 +6,12 @@ project(vtz)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(BUILD "${CMAKE_CURRENT_BINARY_DIR}")
 
+# Symbols should be hidden by default
+# set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+# set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+# TODO: fix symbol visibility
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 # Add dev compile flags (if on unix)
 if(PROJECT_IS_TOP_LEVEL AND UNIX)
     add_compile_options(
