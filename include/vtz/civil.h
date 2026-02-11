@@ -464,7 +464,7 @@ namespace vtz {
         i32 year, u32 month, DOW dow ) noexcept {
         u32  last     = last_day_of_month( year, month );
         auto dow_last = dow_from_civil( year, month, last );
-        u32  day      = last - ( dow_last - dow );
+        u32  day      = last - u32( dow_last - dow );
         return day;
     }
 
