@@ -377,9 +377,9 @@ namespace vtz {
         ///
         /// Returns `RuleLetter("-")` if there are no entries with a save of 0
         RuleLetter initial_letter() const noexcept {
-            for( size_t i = 0; i < hist_size_; ++i )
+            for( size_t j = 0; j < hist_size_; ++j )
             {
-                if( hist_[i].save.save == 0 ) { return hist_[i].letter; }
+                if( hist_[j].save.save == 0 ) { return hist_[j].letter; }
             }
             /// NOTE: we are living in a state of sin by doing this... active
             /// transitions are not necessarily sorted by the one we enter
