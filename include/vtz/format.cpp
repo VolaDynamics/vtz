@@ -33,10 +33,10 @@ namespace vtz {
         auto y10    = y / 10;
         y          %= 10;
         auto y1     = y;
-        p[0]        = '0' + y1000;
-        p[1]        = '0' + y100;
-        p[2]        = '0' + y10;
-        p[3]        = '0' + y1;
+        p[0]        = char( '0' + y1000 );
+        p[1]        = char( '0' + y100 );
+        p[2]        = char( '0' + y10 );
+        p[3]        = char( '0' + y1 );
         return p + 4;
     }
     /// Writes the year. Assumes there are at least 22 characters of space in
@@ -87,51 +87,51 @@ namespace vtz {
 
     /// equivalent to "%H:%M"
     VTZ_INLINE static char* _write_iso_hhmm( char* p, int h, int m ) noexcept {
-        p[0] = '0' + h / 10;
-        p[1] = '0' + h % 10;
+        p[0] = char( '0' + h / 10 );
+        p[1] = char( '0' + h % 10 );
         p[2] = ':';
-        p[3] = '0' + m / 10;
-        p[4] = '0' + m % 10;
+        p[3] = char( '0' + m / 10 );
+        p[4] = char( '0' + m % 10 );
         return p + 5;
     }
 
     /// equivalent to "%H%M%S" (the ISO 8601 time format)
     VTZ_INLINE static char* _write_hhmmsscompact(
         char* p, int h, int m, int s ) noexcept {
-        p[0] = '0' + h / 10;
-        p[1] = '0' + h % 10;
-        p[2] = '0' + m / 10;
-        p[3] = '0' + m % 10;
-        p[4] = '0' + s / 10;
-        p[5] = '0' + s % 10;
+        p[0] = char( '0' + h / 10 );
+        p[1] = char( '0' + h % 10 );
+        p[2] = char( '0' + m / 10 );
+        p[3] = char( '0' + m % 10 );
+        p[4] = char( '0' + s / 10 );
+        p[5] = char( '0' + s % 10 );
         return p + 6;
     }
 
     /// equivalent to "%H:%M:%S" (the ISO 8601 time format)
     VTZ_INLINE static char* _write_hhmmss(
         char* p, int h, int m, int s ) noexcept {
-        p[0] = '0' + h / 10;
-        p[1] = '0' + h % 10;
+        p[0] = char( '0' + h / 10 );
+        p[1] = char( '0' + h % 10 );
         p[2] = ':';
-        p[3] = '0' + m / 10;
-        p[4] = '0' + m % 10;
+        p[3] = char( '0' + m / 10 );
+        p[4] = char( '0' + m % 10 );
         p[5] = ':';
-        p[6] = '0' + s / 10;
-        p[7] = '0' + s % 10;
+        p[6] = char( '0' + s / 10 );
+        p[7] = char( '0' + s % 10 );
         return p + 8;
     }
     /// Write a 2-digit int. Assumes value is < 100
     VTZ_INLINE static char* _write2Digit( char* p, u8 x ) noexcept {
-        p[0] = '0' + x / 10;
-        p[1] = '0' + x % 10;
+        p[0] = char( '0' + x / 10 );
+        p[1] = char( '0' + x % 10 );
         return p + 2;
     }
     /// Write a 3-digit int. Assumes value is < 1000
     VTZ_INLINE static char* _write3Digit( char* p, u16 x ) noexcept {
-        p[0]  = '0' + x / 100;
+        p[0]  = char( '0' + x / 100 );
         x    %= 100;
-        p[1]  = '0' + x / 10;
-        p[2]  = '0' + x % 10;
+        p[1]  = char( '0' + x / 10 );
+        p[2]  = char( '0' + x % 10 );
         return p + 3;
     }
 
