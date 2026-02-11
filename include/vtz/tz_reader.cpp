@@ -1857,10 +1857,10 @@ namespace vtz {
             auto const& rule = ent.rules;
             if( rule.is_named() )
             {
-                auto name          = rule.name();
-                auto eval          = evaluate_rules( name );
+                auto rule_name     = rule.name();
+                auto eval          = evaluate_rules( rule_name );
                 last_rule_end_year = eval.year_end;
-                rules.emplace( name, std::move( eval ) );
+                rules.emplace( rule_name, std::move( eval ) );
             }
         }
 
