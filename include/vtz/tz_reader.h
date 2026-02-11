@@ -296,7 +296,7 @@ namespace vtz {
     /// if no active rule with a save of 0 is found
     inline RuleEntry const* earliest_active_with_save_zero(
         RuleEntry const* active, size_t active_count, i32 year ) noexcept {
-        size_t    result        = -1;
+        size_t    result        = size_t( -1 );
         sysdays_t earliest_date = MAX_DAYS;
         for( size_t i = 0; i < active_count; ++i )
         {
