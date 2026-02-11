@@ -333,7 +333,7 @@ namespace vtz {
         auto tz_max_ = u64( max_t ) + tz0_;
 
         struct GetIndex {
-            i32 operator[]( ptrdiff_t i ) const noexcept { return i + 1; };
+            i32 operator[]( ptrdiff_t i ) const noexcept { return i32( i + 1 ); };
         };
 
         auto times = _new<sysseconds_t>( tt.size() + 2 );
