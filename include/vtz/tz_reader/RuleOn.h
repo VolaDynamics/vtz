@@ -23,9 +23,9 @@ namespace vtz {
         RuleOn() = default;
 
         constexpr RuleOn( Kind kind, u8 day, DOW dow ) noexcept
-        : repr_( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) {}
+        : repr_( u16( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) ) {}
         constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
-        constexpr u32  day() const noexcept { return repr_ >> 5; }
+        constexpr u16  day() const noexcept { return repr_ >> 5; }
         constexpr DOW  dow() const noexcept {
             return DOW( ( repr_ >> 2 ) & 0x7 );
         }
@@ -78,7 +78,7 @@ namespace vtz {
             case DOW_LAST:
                 return YMD( year,
                     mon,
-                    get_last_dowin_month( year, u32( mon ), dow() ) );
+                    u16( get_last_dowin_month( year, u32( mon ), dow() ) ) );
             case DOW_GE:
                 return get_ymd_dow_ge( year, u32( mon ), day(), dow() );
             case DOW_LE:
