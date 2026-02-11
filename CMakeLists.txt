@@ -12,6 +12,14 @@ set(BUILD "${CMAKE_CURRENT_BINARY_DIR}")
 # TODO: fix symbol visibility
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+# Set up ccache/sccache for the project
+find_program(COMPILER_CACHE sccache ccache)
+if(COMPILER_CACHE)
+    message("Using compile cache @ ${COMPILER_CACHE}")
+    set(CMAKE_C_COMPILER_LAUNCHER "${COMPILER_CACHE}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${COMPILER_CACHE}")
+endif()
+
 # Add dev compile flags (if on unix)
 if(PROJECT_IS_TOP_LEVEL AND UNIX)
     add_compile_options(
