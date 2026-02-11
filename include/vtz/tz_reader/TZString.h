@@ -7,6 +7,8 @@
 #include <vtz/tz_reader/FromUTC.h>
 #include <vtz/tz_reader/ZoneState.h>
 
+#include <stdexcept>
+
 
 namespace vtz {
 
