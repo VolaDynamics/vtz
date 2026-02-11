@@ -53,16 +53,17 @@ namespace {
                || ch == '\xc';
     }
 
-    VTZ_INLINE bool parse_digit_to( char ch, i64& dest ) noexcept {
+    template <class Int>
+    VTZ_INLINE bool parse_digit_to( char ch, Int& dest ) noexcept {
         int  x      = ch - '0';
         bool good   = size_t( x ) < 10;
-        i64  new_val = dest * 10 + x;
+        Int  new_val = dest * 10 + x;
         if( good ) { dest = new_val; }
         return good;
     }
 
-    VTZ_INLINE i64 parse_year( char const*& p, char const* end ) {
-        i64 result = 0;
+    VTZ_INLINE int parse_year( char const*& p, char const* end ) {
+        int result = 0;
 
         if( p != end && parse_digit_to( *p, result ) )
             ++p;
@@ -75,8 +76,8 @@ namespace {
     }
 
 
-    VTZ_INLINE i64 parse_d2( char const*& p, char const* end ) {
-        i64 result = 0;
+    VTZ_INLINE int parse_d2( char const*& p, char const* end ) {
+        int result = 0;
 
         if( p != end && parse_digit_to( *p, result ) )
             ++p;
@@ -86,8 +87,8 @@ namespace {
         return result;
     }
 
-    VTZ_INLINE i64 parse_d3( char const*& p, char const* end ) {
-        i64 result = 0;
+    VTZ_INLINE int parse_d3( char const*& p, char const* end ) {
+        int result = 0;
 
         if( p != end && parse_digit_to( *p, result ) )
             ++p;
