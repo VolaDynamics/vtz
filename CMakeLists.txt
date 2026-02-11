@@ -33,6 +33,9 @@ endif()
 if(PROJECT_IS_TOP_LEVEL)
     include(cmake/get_cpm.cmake)
 
+    set(RUN_HAVE_STD_REGEX 1)
+    set(HAVE_STD_REGEX ON)
+
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
     CPMAddPackage("gh:martinus/unordered_dense@4.7.0")
 
