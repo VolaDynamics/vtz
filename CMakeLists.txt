@@ -12,6 +12,9 @@ set(BUILD "${CMAKE_CURRENT_BINARY_DIR}")
 # TODO: fix symbol visibility
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+# Code should be position independent
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # Set up ccache/sccache for the project
 find_program(COMPILER_CACHE sccache ccache)
 if(COMPILER_CACHE)
