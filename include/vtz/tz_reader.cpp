@@ -1277,7 +1277,7 @@ namespace vtz {
         RuleTrans*                       p ) {
         // Compute transitions for all active rules for the given year
         for( size_t i = 0; i < active_count; i++ )
-            p[i] = active[i].resolve_trans( year );
+            p[i] = active[i].resolve_trans( i32( year ) );
 
         // Ensure the added transitions are sorted by date
         std::sort( p, p + active_count, RuleTrans::compare_date() );
