@@ -210,6 +210,4 @@ namespace vtz {
                 ex.what() ) );
         }
     }
-
-
 } // namespace vtz
