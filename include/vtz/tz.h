@@ -784,7 +784,7 @@ namespace vtz {
         /// Given nanoseconds since the epoch, return the current date (as days
         /// since the epoch)
         i64 local_date_ns( nanos_t nanos ) const noexcept {
-            return math::div_floor<86400000000000>( to_local_ns( nanos ) );
+            return math::div_floor<86400000000000ll>( to_local_ns( nanos ) );
         }
 
         template<class Dur>
