@@ -15,12 +15,15 @@ namespace vtz {
 
     sysdays_t parse_date_d( string_view fmt, string_view date_str ) {
         return _do_parse( fmt, date_str, []( i32 date, i32 time, i32 nanos ) {
+            (void)time;
+            (void)nanos;
             return date;
         } );
     }
 
     sec_t parse_time_s( string_view fmt, string_view date_str ) {
         return _do_parse( fmt, date_str, []( i32 date, i32 time, i32 nanos ) {
+            (void)nanos;
             return date * 86400ll + time;
         } );
     }
