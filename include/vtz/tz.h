@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vtz/date.h>
 #include <chrono>
 #include <climits>
 #include <cstdint>
@@ -8,10 +7,11 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vtz/date.h>
+#include <vtz/export.h>
 #include <vtz/span.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader/ZoneFormat.h>
-#include <vtz/export.h>
 
 #include <vtz/bit.h>
 
@@ -156,6 +156,16 @@ namespace vtz {
             return i64( block << 32 ) >> 32;
         }
 
+        constexpr i32 initial_i32() const noexcept {
+            u64 block = *data_bb();
+            return i32( i64( block << 32 ) >> 32 );
+        }
+
+        constexpr u32 initial_u32() const noexcept {
+            u64 block = *data_bb();
+            return u32( i64( block << 32 ) >> 32 );
+        }
+
         VTZ_INLINE constexpr Entry first_entry() const noexcept {
             return Entry{ *data_tt(), *data_bb() };
         }
@@ -179,6 +189,15 @@ namespace vtz {
             return i64( block << ( int( select_lo ) << 5 ) ) >> 32;
         }
 
+        /// Same as lookup_i64, but returns i32
+        VTZ_INLINE constexpr i32 lookup_i32( i64 t ) const noexcept {
+            i64  i         = t >> g;
+            bool select_lo = t < tt[i];
+            u64  block     = bb[i];
+            return i32( i64( block << ( int( select_lo ) << 5 ) ) >> 32 );
+        }
+
+        /// Same as lookup_i64, but returns u32
         VTZ_INLINE constexpr u32 lookup_u32( i64 t ) const noexcept {
             i64  i         = t >> g;
             bool select_hi = t >= tt[i];
@@ -550,7 +569,7 @@ namespace vtz {
         VTZ_INLINE i32 stdoff_s( sysseconds_t t ) const noexcept {
             if( t < t_min ) t = t_min;
             if( t > t_max ) t = t_max;
-            return stdoff.lookup( t );
+            return stdoff.lookup_i32( t );
         }
     };
 
@@ -565,13 +584,13 @@ namespace vtz {
 
         u32 abbr_block_s( sec_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return abbr.lookup( t );
+                return abbr.lookup_i32( t );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return abbr.initial();
+            if( t < 0 ) return abbr.initial_i32();
 
             // use zone symmetry to compute state for equivalent time
-            return abbr.lookup( get_cyclic( t, cycle_time ) );
+            return abbr.lookup_u32( get_cyclic( t, cycle_time ) );
         }
 
         /// Writes up to 7 characters, representing the abbreviation
@@ -587,28 +606,28 @@ namespace vtz {
         /// timestamp
         string_view abbrev_s( sec_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return abbr_from_block( abbr.lookup( t ) );
+                return abbr_from_block( abbr.lookup_i32( t ) );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return abbr_from_block( abbr.initial() );
+            if( t < 0 ) return abbr_from_block( abbr.initial_u32() );
 
             // use zone symmetry to compute state for equivalent time
             return abbr_from_block(
-                abbr.lookup( get_cyclic( t, cycle_time ) ) );
+                abbr.lookup_u32( get_cyclic( t, cycle_time ) ) );
         }
 
         /// Return the abbreviation (eg, 'EST' or 'EDT') for a given
         /// timestamp
         string abbrev_string_s( sec_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return abbr_string_from_block( abbr.lookup( t ) );
+                return abbr_string_from_block( abbr.lookup_u32( t ) );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return abbr_string_from_block( abbr.initial() );
+            if( t < 0 ) return abbr_string_from_block( abbr.initial_u32() );
 
             // use zone symmetry to compute state for equivalent time
             return abbr_string_from_block(
-                abbr.lookup( get_cyclic( t, cycle_time ) ) );
+                abbr.lookup_u32( get_cyclic( t, cycle_time ) ) );
         }
 
         string_view abbr_from_block( u32 block ) const noexcept {
@@ -653,7 +672,7 @@ namespace vtz {
 
         /// Return the current save, in seconds
         i32 save_s( sysseconds_t t ) const noexcept {
-            return offset_s( t ) - stdoff_s( t );
+            return i32( offset_s( t ) - stdoff_s( t ) );
         }
 
         /// Convert the given time (sys_seconds) to local seconds
