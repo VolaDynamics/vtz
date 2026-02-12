@@ -589,17 +589,17 @@ namespace vtz {
 
         i32 const& stdoff( sysseconds_t t ) const noexcept {
             auto i = _find( stdoff_trans_, t );
-            return i >= 0 ? stdoff_[i] : stdoff_initial_;
+            return i >= 0 ? stdoff_[size_t( i )] : stdoff_initial_;
         }
 
         i32 const& walloff( sysseconds_t t ) const noexcept {
             auto i = _find( walloff_trans_, t );
-            return i >= 0 ? walloff_[i] : walloff_initial_;
+            return i >= 0 ? walloff_[size_t( i )] : walloff_initial_;
         }
 
         AbbrBlock const& abbr( sysseconds_t t ) const noexcept {
             auto i = _find( abbr_trans_, t );
-            return i >= 0 ? abbr_[i] : abbr_initial_;
+            return i >= 0 ? abbr_[size_t( i )] : abbr_initial_;
         }
 
 
