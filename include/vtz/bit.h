@@ -145,10 +145,10 @@ namespace vtz::_impl {
     /// Load 1 byte from the input and return the result as a u32
     constexpr u32 _load1( char const* src ) noexcept { return u8( src[0] ); }
     /// Load 2 bytes from the input and return the result as a u32.
-    constexpr u32 _load2( char const* src ) noexcept { return u8( src[0] ) | ( u8( src[1] ) << 8 ); }
+    constexpr u32 _load2( char const* src ) noexcept { return u32( u8( src[0] ) | ( u8( src[1] ) << 8 ) ); }
     /// Load 3 bytes from the input and return the result as a u32.
-    constexpr u32 _load3( char const* src ) noexcept { return u8( src[0] ) | ( u8( src[1] ) << 8 ) | ( u8( src[2] ) << 16 ); }
+    constexpr u32 _load3( char const* src ) noexcept { return u32( u8( src[0] ) | ( u8( src[1] ) << 8 ) | ( u8( src[2] ) << 16 ) ); }
     /// Load 4 bytes from the input and return the result as a u32.
-    constexpr u32 _load4( char const* src ) noexcept { return u8( src[0] ) | ( u8( src[1] ) << 8 ) | ( u8( src[2] ) << 16 ) | ( u8( src[3] ) << 24 ); }
+    constexpr u32 _load4( char const* src ) noexcept { return u32( u8( src[0] ) | ( u8( src[1] ) << 8 ) | ( u8( src[2] ) << 16 ) | ( u8( src[3] ) << 24 ) ); }
     // clang-format on
 } // namespace vtz::_impl
