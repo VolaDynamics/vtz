@@ -213,11 +213,11 @@ namespace vtz {
 
         if( format_size == 0 ) return func.dump( "", 0 );
 
-        auto gmtoff        = tz.offset_s( t );
+        auto gmtoff         = i32( tz.offset_s( t ) );
         auto t_local        = t + gmtoff;
         auto parts          = vtz::math::div_floor2<86400>( t_local );
-        auto date          = parts.quot;
-        u32  time_intraday  = parts.rem;
+        auto date           = sysdays_t( parts.quot );
+        auto time_intraday  = u32( parts.rem );
         int  hr             = time_intraday / 3600;
         time_intraday      %= 3600;
         int mi              = time_intraday / 60;
@@ -265,10 +265,10 @@ namespace vtz {
             // [00,99])
             case 'y': p = _write_year_short( p, ymd.year ); continue;
             // writes month as a decimal number (range [01,12])
-            case 'm': p = _write_mon( p, ymd.month ); continue;
+            case 'm': p = _write_mon( p, u8( ymd.month ) ); continue;
             // 	writes day of the month as a decimal number (range
             // [01,31])
-            case 'd': p = _write_dom_d( p, ymd.day ); continue;
+            case 'd': p = _write_dom_d( p, u8( ymd.day ) ); continue;
             // writes day of the year as a decimal number (range [001,366])
             case 'j':
                 {
@@ -305,7 +305,7 @@ namespace vtz {
                 }
             // writes day of the month as a decimal number (range [1,31]).
             // Single digit is preceded by a space.
-            case 'e': p = _write_dom_e( p, ymd.day ); continue;
+            case 'e': p = _write_dom_e( p, u8( ymd.day ) ); continue;
             // equivalent to "%Y-%m-%d" (the ISO 8601 date format)
             case 'F':
                 p = _write_iso_date( p, ymd.year, ymd.month, ymd.day );
@@ -329,8 +329,8 @@ namespace vtz {
             case 'Z': p += tz.abbrev_to_s( t, p ); continue;
             default:
                 {
-                    *p++          = c;
-                    *p++          = next;
+                    *p++           = c;
+                    *p++           = next;
                     needs_strftime = true;
                     continue;
                 }
@@ -498,8 +498,8 @@ namespace vtz {
         write_abbrev( p ) ) ) ) {
         // t = utc_t + gmtoff;
         auto parts          = vtz::math::div_floor2<86400>( t_local );
-        auto date          = parts.quot;
-        u32  time_intraday  = parts.rem;
+        auto date           = sysdays_t( parts.quot );
+        auto time_intraday  = u32( parts.rem );
         int  hr             = time_intraday / 3600;
         time_intraday      %= 3600;
         int mi              = time_intraday / 60;
@@ -615,7 +615,7 @@ namespace vtz {
         char                                                  abbr_sep ) {
         constexpr u64 LONG_TIME = resolve_civil_time( 10000, 1, 1, 0, 0, 0 );
 
-        auto off    = tz.offset_s( t );
+        auto off     = i32( tz.offset_s( t ) ); // offset should be 32-bit
         auto local_t = t + off;
 
         char buff[64];
@@ -659,7 +659,7 @@ namespace vtz {
         ///
         constexpr u64 LONG_TIME = resolve_civil_time( 10000, 1, 1, 0, 0, 0 );
 
-        auto gmtoff = tz.offset_s( t );
+        auto gmtoff  = i32( tz.offset_s( t ) );
         auto local_t = t + gmtoff;
         if( u64( local_t ) < LONG_TIME ) VTZ_LIKELY
         {
