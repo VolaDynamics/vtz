@@ -73,9 +73,9 @@ namespace vtz::win32 {
         if( wlen < sizeof( buf ) )
         {
             size_t      count = wcstombs( buf, tzi.TimeZoneKeyName, wlen );
-            string_view result( buf, count );
-            if( result == "Coordinated Universal Time" ) return "UTC";
-            return std::string( result );
+            string_view name( buf, count );
+            if( name == "Coordinated Universal Time" ) return "UTC";
+            return std::string( name );
         }
 
         throw std::runtime_error(
