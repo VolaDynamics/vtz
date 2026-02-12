@@ -292,7 +292,7 @@ namespace vtz {
         u32  doy
             = ( 153 * ( m > 2 ? m - 3 : m + 9 ) + 2 ) / 5 + d - 1; // [0, 365]
         u32 doe = yoe * 365 + yoe / 4 - yoe / 100 + doy; // [0, 146096]
-        return era * 146097 + static_cast<i32>( doe ) - 719468;
+        return sysdays_t( era * 146097 + static_cast<i32>( doe ) - 719468 );
     }
 
     /// Returns a civil date (as days since epoch) based on Jan 1st of the given
@@ -302,7 +302,7 @@ namespace vtz {
         i64  era       = era_parts.quot;
         i32  yoe       = era_parts.rem;                         // [0, 399]
         i32  doe      = yoe * 365 + yoe / 4 - yoe / 100 + 306; // [0, 146096]
-        return era * 146097 + doe - 719468;
+        return sysdays_t( era * 146097 + doe - 719468 );
     }
 
     /// Resolve a civil date, expressed as (year, doy), where doy starts at 1
