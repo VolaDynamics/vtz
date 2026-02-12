@@ -179,7 +179,7 @@ namespace vtz {
         size_t      size  = tok.size();
         if( size == 4 )
         {
-            if( auto y = parse4( begin ) ) { return *y; }
+            if( auto y = parse4( begin ) ) { return rule_year_t( *y ); }
         }
         else
         {
@@ -205,7 +205,7 @@ namespace vtz {
 
         if( size == 4 )
         {
-            if( auto y = parse4( begin ) ) { return *y; }
+            if( auto y = parse4( begin ) ) { return rule_year_t( *y ); }
         }
         else
         {
@@ -476,7 +476,7 @@ namespace vtz {
                 {
                     RuleLetter r{};
                     memcpy( r.buff_, p, size );
-                    r.size_ = size;
+                    r.size_ = u8( size );
                     // Special case - if the rule letter is "-", then
                     // the thing we insert into our format string should be ""
                     //
@@ -874,7 +874,7 @@ namespace vtz {
         {
             ZoneAbbr result;
             _vtz_memcpy( result.buff_, sv.data(), sv.size() );
-            result.size_ = sv.size();
+            result.size_ = u8( sv.size() );
             return result;
         }
 
