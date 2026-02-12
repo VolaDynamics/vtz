@@ -208,7 +208,7 @@ namespace vtz {
         : b_( line.data() )
         , e_( line.data() + line.size() ) {}
 
-        string_view rest() const noexcept { return string_view( b_, e_ - b_ ); }
+        string_view rest() const noexcept { return string_view( b_, size_t( e_ - b_ ) ); }
 
         void clear() noexcept { b_ = e_; }
 
