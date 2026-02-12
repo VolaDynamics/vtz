@@ -39,6 +39,7 @@ AttributeMacros:
       "DLL_PUBLIC_DEPRECATED",
       "VOLA_CONSTEXPR_CPP14",
       "VOLA_LIFETIMEBOUND",
+      "VTZ_LIKELY",
    ]
 BinPackParameters: OnePerLine
 BinPackArguments: false
