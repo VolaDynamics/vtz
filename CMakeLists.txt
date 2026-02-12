@@ -32,6 +32,7 @@ if(PROJECT_IS_TOP_LEVEL)
             -Wunused
             -Wimplicit-fallthrough
             -Wnarrowing
+            -Wunused-parameter
         )
         if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             add_compile_options(-Wshorten-64-to-32)
