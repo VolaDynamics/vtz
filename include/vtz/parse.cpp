@@ -99,12 +99,12 @@ namespace {
         return result;
     }
 
-    i64 parse_frac_as_nanos( char const*& p, char const* end ) noexcept {
+    i32 parse_frac_as_nanos( char const*& p, char const* end ) noexcept {
         // If there are fewer than 2 characters left, or there's no decimal
         // point, there's nothing to parse. return 0
         if( end - p < 2 || *p != '.' ) return 0;
 
-        i64 frac = 0;
+        i32 frac = 0;
         if( !parse_digit_to( p[1], frac ) )
         {
             // If we couldn't parse the digit, don't consume the '.', just
@@ -169,9 +169,9 @@ namespace {
         }
     }
 
-    /// Convert from `tm` struct to seconds since the epoch
-    sec_t time_from_tm( std::tm const& t ) noexcept {
-        return t.tm_hour * 3600ll + t.tm_min * 60ll + t.tm_sec;
+    /// Get the time intraday in seconds
+    i32 time_from_tm( std::tm const& t ) noexcept {
+        return i32( t.tm_hour ) * 3600 + t.tm_min * 60 + t.tm_sec;
     }
 } // namespace
 
@@ -199,7 +199,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
     bool has_c       = false;
     bool has_small_y = false;
 
-    i64 year  = 1970;
+    i32 year  = 1970;
     int month = 1;
     int dom   = 1;
     int doy   = 0;
