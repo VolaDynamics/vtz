@@ -31,7 +31,11 @@ if(PROJECT_IS_TOP_LEVEL)
             -Werror=uninitialized
             -Wunused
             -Wimplicit-fallthrough
+            -Wnarrowing
         )
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            add_compile_options(-Wshorten-64-to-32)
+        endif()
     elseif(MSVC)
         add_compile_options("/W4")
     endif()
