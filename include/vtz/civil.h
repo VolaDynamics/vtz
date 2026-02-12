@@ -141,18 +141,18 @@ namespace vtz {
         i32 hours      = abs_offset / 3600;
         i32 minutes    = ( abs_offset % 3600 ) / 60;
         i32 seconds    = abs_offset % 60;
-        p[0]          = offset < 0 ? '-' : '+';
-        p[1]          = '0' + ( hours / 10 );
-        p[2]          = '0' + ( hours % 10 );
+        p[0]           = offset < 0 ? '-' : '+';
+        p[1]           = char( '0' + ( hours / 10 ) );
+        p[2]           = char( '0' + ( hours % 10 ) );
         if( minutes || seconds )
         {
-            p[3] = '0' + ( minutes / 10 );
-            p[4] = '0' + ( minutes % 10 );
+            p[3] = char( '0' + ( minutes / 10 ) );
+            p[4] = char( '0' + ( minutes % 10 ) );
 
             if( seconds )
             {
-                p[5] = '0' + ( seconds / 10 );
-                p[6] = '0' + ( seconds % 10 );
+                p[5] = char( '0' + ( seconds / 10 ) );
+                p[6] = char( '0' + ( seconds % 10 ) );
                 return 7;
             }
             return 5;
@@ -301,7 +301,7 @@ namespace vtz {
         auto era_parts = vtz::math::div_floor2<400>( y - 1 );
         i64  era       = era_parts.quot;
         i32  yoe       = era_parts.rem;                         // [0, 399]
-        i32  doe      = yoe * 365 + yoe / 4 - yoe / 100 + 306; // [0, 146096]
+        i32  doe       = yoe * 365 + yoe / 4 - yoe / 100 + 306; // [0, 146096]
         return sysdays_t( era * 146097 + doe - 719468 );
     }
 
@@ -475,7 +475,7 @@ namespace vtz {
         i32 year, u32 month, u32 dom, DOW dow ) noexcept {
         sysdays_t d = resolve_civil( year, month, dom );
         // Add as many days as needed to get to the desired weekday
-        d += dow - dow_from_days( d );
+        d += sysdays_t( dow - dow_from_days( d ) );
         return d;
     }
 
@@ -485,7 +485,7 @@ namespace vtz {
         i32 year, u32 month, u32 dom, DOW dow ) noexcept {
         sysdays_t d = resolve_civil( year, month, dom );
         // Subtract as many days as needed to get from the desired weekday
-        d -= dow_from_days( d ) - dow;
+        d -= sysdays_t( dow_from_days( d ) - dow );
         return d;
     }
 
@@ -515,7 +515,7 @@ namespace vtz {
         u32 last_dom = last_day_of_month( year, month );
 
         // Add as many days as needed to get to the desired weekday
-        dom += dow - dow_from_civil( year, month, dom );
+        dom += u32( dow - dow_from_civil( year, month, dom ) );
 
         if( dom > last_dom )
         {
