@@ -729,9 +729,8 @@ namespace vtz {
         sys_info get_info_sys_s( sysseconds_t t ) const {
             auto range = sys_range_s( t );
 
-            auto stdoff = stdoff_s( t );
             auto off    = offset_s( t );
-            auto save   = off - stdoff;
+            auto save   = off - stdoff_s( t );
 
             return sys_info{
                 sys_seconds( seconds( range.begin ) ),
