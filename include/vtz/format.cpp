@@ -144,16 +144,16 @@ namespace vtz {
         {
             p    = _write_year4( p, y );
             *p++ = '-';
-            p    = _write_mon( p, m );
+            p    = _write_mon( p, u8( m ) );
             *p++ = '-';
-            p    = _write_dom_d( p, d );
+            p    = _write_dom_d( p, u8( d ) );
             return p;
         }
         p    = _write_year( p, y );
         *p++ = '-';
-        p    = _write_mon( p, m );
+        p    = _write_mon( p, u8( m ) );
         *p++ = '-';
-        p    = _write_dom_d( p, d );
+        p    = _write_dom_d( p, u8( d ) );
         return p;
     }
 
@@ -272,7 +272,7 @@ namespace vtz {
             // writes day of the year as a decimal number (range [001,366])
             case 'j':
                 {
-                    u16 yday = date - resolve_civil( ymd.year, 1, 1 );
+                    auto yday = u16( date - resolve_civil( ymd.year, 1, 1 ) );
 
                     p = _write3Digit( p, 1 + yday );
                     continue;
@@ -283,7 +283,7 @@ namespace vtz {
                 {
                     static_assert( int( DOW::Sun ) == 0 );
                     auto dow = int( dow_from_days( date ) );
-                    *p++     = '0' + dow;
+                    *p++     = char( '0' + dow );
                     continue;
                 }
             // 	writes weekday as a decimal number, where Monday is 1 (ISO 8601
@@ -292,7 +292,7 @@ namespace vtz {
                 {
                     auto dow = int( dow_from_days( date ) );
                     if( dow == 0 ) dow = 7;
-                    *p++ = '0' + dow;
+                    *p++ = char( '0' + dow );
                     continue;
                 }
             // writes hour as a decimal number, 12 hour clock (range [01,12])
@@ -314,12 +314,12 @@ namespace vtz {
             case 'R': p = _write_iso_hhmm( p, hr, mi ); continue;
             // 	writes hour as a decimal number, 24 hour clock (range
             // [00-23])
-            case 'H': p = _write2Digit( p, hr ); continue;
+            case 'H': p = _write2Digit( p, u8( hr ) ); continue;
             // writes minute as a decimal number (range [00,59])
-            case 'M': p = _write2Digit( p, mi ); continue;
+            case 'M': p = _write2Digit( p, u8( mi ) ); continue;
             // writes second as a decimal number (range [00,60]). Will also
             // write a fractional component after the second.
-            case 'S': p = write_frac( _write2Digit( p, sec ) ); continue;
+            case 'S': p = write_frac( _write2Digit( p, u8( sec ) ) ); continue;
             // equivalent to "%H:%M:%S" (the ISO 8601 time format)
             case 'T':
                 p = write_frac( _write_hhmmss( p, hr, mi, sec ) );
@@ -396,7 +396,7 @@ namespace vtz {
     struct DummyTimeZone {
         /// NOOP - offset is 0
         static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
-        static sec_t stdoff_s( sysseconds_t t ) noexcept { return 0; }
+        static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
         /// NOOP - no abbreviation to write
         static size_t abbrev_to_s( sec_t, char* ) noexcept { return 0; }
     };
@@ -516,8 +516,8 @@ namespace vtz {
             {
                 // We were promised that the year is 0000-9999
                 (void)_write_year4( p, ymd.year );                // 0..4
-                (void)_write_mon( p + 4, ymd.month );             // 4..6
-                (void)_write_dom_d( p + 6, ymd.day );             // 6..8
+                (void)_write_mon( p + 4, u8( ymd.month ) );       // 4..6
+                (void)_write_dom_d( p + 6, u8( ymd.day ) );       // 6..8
                 p[8] = date_time_sep;                             // 8..9
                 (void)_write_hhmmsscompact( p + 9, hr, mi, sec ); // 9..15
             }
@@ -527,9 +527,9 @@ namespace vtz {
                 // 0123456789012345678
                 (void)_write_year4( p, ymd.year );          // 0..4
                 p[4] = date_sep;                            // 4..5
-                (void)_write_mon( p + 5, ymd.month );       // 5..7
+                (void)_write_mon( p + 5, u8( ymd.month ) ); // 5..7
                 p[7] = date_sep;                            // 7..8
-                (void)_write_dom_d( p + 8, ymd.day );       // 8..10
+                (void)_write_dom_d( p + 8, u8( ymd.day ) ); // 8..10
                 p[10] = date_time_sep;                      // 10..11
                 (void)_write_hhmmss( p + 11, hr, mi, sec ); // 11..19
             }
@@ -548,8 +548,8 @@ namespace vtz {
             {
                 // MMDD HHMMSS
                 // 01234567890
-                (void)_write_mon( q, ymd.month );                 // 0..2
-                (void)_write_dom_d( q + 2, ymd.day );             // 2..4
+                (void)_write_mon( q, u8( ymd.month ) );                 // 0..2
+                (void)_write_dom_d( q + 2, u8( ymd.day ) );             // 2..4
                 q[4] = date_time_sep;                             // 4..5
                 (void)_write_hhmmsscompact( q + 5, hr, mi, sec ); // 5..11
             }
@@ -558,9 +558,9 @@ namespace vtz {
                 // -MM-DD HH:MM:SS
                 // 012345678901234
                 q[0] = date_sep;                           // 0..1
-                (void)_write_mon( q + 1, ymd.month );      // 1..3
+                (void)_write_mon( q + 1, u8( ymd.month ) );      // 1..3
                 q[3] = date_sep;                           // 3..4
-                (void)_write_dom_d( q + 4, ymd.day );      // 4..6
+                (void)_write_dom_d( q + 4, u8( ymd.day ) );      // 4..6
                 q[6] = date_time_sep;                      // 6..7
                 (void)_write_hhmmss( q + 7, hr, mi, sec ); // 7..14
             }
