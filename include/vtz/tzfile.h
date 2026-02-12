@@ -124,9 +124,9 @@ namespace vtz {
     struct ttinfo_bytes {
         char bb[6];
 
-        int32_t tt_utoff() const noexcept { return endian::load_be<i32>( bb ); }
-        uint8_t tt_isdst() const noexcept { return bb[4]; }
-        uint8_t tt_desigidx() const noexcept { return bb[5]; }
+        i32 tt_utoff() const noexcept { return endian::load_be<i32>( bb ); }
+        u8  tt_isdst() const noexcept { return u8( bb[4] ); }
+        u8  tt_desigidx() const noexcept { return u8( bb[5] ); }
     };
 
     template<class T>
