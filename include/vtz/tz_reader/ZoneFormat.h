@@ -23,7 +23,7 @@ namespace vtz {
             size_t      s = sv.size();
             if( s > max_size ) s = max_size;
             _vtz_memcpy( abbr.buff_, p, s );
-            abbr.size_ = s;
+            abbr.size_ = u8( s );
             return abbr;
         }
     };
@@ -156,7 +156,7 @@ namespace vtz {
             i32                           off,
             bool                          is_dst,
             string_view                   letter ) const noexcept {
-            dest.size_ = write_n<N>( dest.buff_, off, is_dst, letter );
+            dest.size_ = u8( write_n<N>( dest.buff_, off, is_dst, letter ) );
         }
 
         constexpr ZoneAbbr format(
