@@ -379,6 +379,7 @@ namespace _test_vtz {
 
     inline std::string print_values( size_t ident, string_view macro_args = "" ) {
         (void)macro_args;
+        (void)ident;
         return "(no additional info)";
     }
 
