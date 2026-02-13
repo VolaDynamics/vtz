@@ -58,6 +58,7 @@ if(PROJECT_IS_TOP_LEVEL)
 
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
     CPMAddPackage("gh:martinus/unordered_dense@4.7.0")
+    CPMAddPackage("gh:abseil/abseil-cpp#20260107.1")
 
     # Test dependencies
     CPMAddPackage("gh:google/googletest@1.17.0")
@@ -231,6 +232,8 @@ if(PROJECT_IS_TOP_LEVEL)
             benchmark::benchmark
             fmt::fmt
             date::date-tz
+            absl::time
+            absl::time_zone
     )
 
     file(GLOB tools etc/tools/*.cpp)

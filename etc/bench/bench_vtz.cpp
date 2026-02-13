@@ -1,4 +1,5 @@
 #include "vtz/bit.h"
+#include <absl/time/time.h>
 #include <benchmark/benchmark.h>
 #include <chrono>
 #include <date/date.h>
@@ -73,6 +74,21 @@ vector<vtz::YMD> random_ymd( size_t count, int start_year, int end_year ) {
         []( sysdays_t days ) { return vtz::to_civil( days ); } );
 }
 
+
+static vector<absl::Time> to_absl_time( vector<i64> const& tt ) {
+    vector<absl::Time> result( tt.size() );
+    for( size_t i = 0; i < tt.size(); ++i )
+        result[i] = absl::FromUnixSeconds( tt[i] );
+    return result;
+}
+
+static vector<absl::CivilSecond> to_absl_civil( vector<i64> const& tt ) {
+    auto utc = absl::UTCTimeZone();
+    vector<absl::CivilSecond> result( tt.size() );
+    for( size_t i = 0; i < tt.size(); ++i )
+        result[i] = utc.At( absl::FromUnixSeconds( tt[i] ) ).cs;
+    return result;
+}
 
 constexpr size_t COUNT = 65536;
 
@@ -228,6 +244,58 @@ BENCH( vtz_to_sys_earliest_with_lookup, state ) {
     {
         benchmark::DoNotOptimize( vtz::locate_zone( "America/New_York" )
                 ->to_sys( tt[i % COUNT], vtz::choose::earliest ) );
+        ++i;
+    }
+}
+
+
+BENCH( absl_to_local, state ) {
+    auto tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
+    absl::TimeZone tz;
+    absl::LoadTimeZone( "America/New_York", &tz );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz.At( tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( absl_to_sys_latest, state ) {
+    auto cs = to_absl_civil( random_times( COUNT, 1900, 2100 ) );
+    absl::TimeZone tz;
+    absl::LoadTimeZone( "America/New_York", &tz );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz.At( cs[i % COUNT] ).post );
+        ++i;
+    }
+}
+
+
+BENCH( absl_to_sys_earliest, state ) {
+    auto cs = to_absl_civil( random_times( COUNT, 1900, 2100 ) );
+    absl::TimeZone tz;
+    absl::LoadTimeZone( "America/New_York", &tz );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz.At( cs[i % COUNT] ).pre );
+        ++i;
+    }
+}
+
+
+BENCH( absl_to_local_with_lookup, state ) {
+    auto   tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        absl::TimeZone tz;
+        absl::LoadTimeZone( "America/New_York", &tz );
+        benchmark::DoNotOptimize( tz.At( tt[i % COUNT] ) );
         ++i;
     }
 }
