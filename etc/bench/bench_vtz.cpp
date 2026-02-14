@@ -352,6 +352,20 @@ BENCH( hinnant_format, state ) {
 }
 
 
+BENCH( absl_format, state ) {
+    auto tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
+    absl::TimeZone tz;
+    absl::LoadTimeZone( "America/New_York", &tz );
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            absl::FormatTime( "%F %T %Z", tt[i % COUNT], tz ) );
+        ++i;
+    }
+}
+
+
 BENCH( vtz_format_strftime, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
