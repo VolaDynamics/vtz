@@ -27,13 +27,13 @@ namespace vtz {
     }
 
 
-    std::unique_ptr<TimeZone> TimeZoneCache::load_zone(
+    std::unique_ptr<time_zone> TimeZoneCache::load_zone(
         string_view name ) const {
-        return std::make_unique<TimeZone>( name, compute_states( name ) );
+        return std::make_unique<time_zone>( name, compute_states( name ) );
     }
 
 
-    TimeZone const* TimeZoneCache::try_locate_zone( string_view name ) const {
+    time_zone const* TimeZoneCache::try_locate_zone( string_view name ) const {
         auto it = zone_cache.find( name );
 
         if( it == zone_cache.end() ) return nullptr;
@@ -45,7 +45,7 @@ namespace vtz {
     }
 
 
-    TimeZone const& TimeZoneCache::locate_zone( string_view name ) const {
+    time_zone const& TimeZoneCache::locate_zone( string_view name ) const {
         // If we successfully found the zone, dereference + return
         if( auto ptr = try_locate_zone( name ) ) return *ptr;
 

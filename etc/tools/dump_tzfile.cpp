@@ -99,7 +99,7 @@ void print_file(
     using vtz::endian::span_be;
     using vtz::endian::span_bytes;
 
-    auto utc = vtz::TimeZone::utc();
+    auto utc = vtz::time_zone::utc();
 
     size_t timecnt      = ff.tzh_timecnt;
     auto   TT           = ff.transition_times();

@@ -176,7 +176,7 @@ namespace vtz {
         /// Uses ankerl::unordered_dense::map's [heterogenous overload
         /// capability](https://github.com/martinus/unordered_dense?tab=readme-ov-file#324-heterogeneous-overloads-using-is_transparent)
         using zone_map = map<std::string,
-            std::unique_ptr<TimeZone>,
+            std::unique_ptr<time_zone>,
             string_hash,
             std::equal_to<>>;
 
@@ -202,7 +202,7 @@ namespace vtz {
         /// cache remains available even while a zone is being loaded.
 
         template<class F>
-        TimeZone const* locate_zone(
+        time_zone const* locate_zone(
             std::string_view name, F const& load_zone ) const {
             // Attempt to find the zone within the map
             auto& m     = st->m;
@@ -220,7 +220,7 @@ namespace vtz {
             // We DO NOT want to be holding the lock while doing file IO, so
             // loading the zone MUST be done outside of the locked portion.
 
-            std::unique_ptr<TimeZone> tz = load_zone( name );
+            std::unique_ptr<time_zone> tz = load_zone( name );
 
             {
                 auto  guard = std::lock_guard( m );
@@ -242,7 +242,7 @@ namespace vtz {
     };
 
 
-    /// Provides a cache for lookup of TimeZone objects.
+    /// Provides a cache for lookup of time_zone objects.
     ///
     /// If timezone source files were provided to the cache (in the form of a
     /// `TZData` object), then the TimeZoneCache will construct zones from the
@@ -258,7 +258,7 @@ namespace vtz {
     struct TimeZoneCache {
         /// These are the zones that have been successfully loaded. When
         /// attempting to locate a zone, `locate_zone()` will check here first.
-        map<string_view, AtomicEnt<TimeZone>> zone_cache;
+        map<string_view, AtomicEnt<time_zone>> zone_cache;
 
 
         /// These are the rules that have been successfully loaded. This cache
@@ -294,7 +294,7 @@ namespace vtz {
 
         explicit TimeZoneCache(
             TZData&& data, std::string zoneinfo_dir = std::string() )
-        : zone_cache( init_empty_map<TimeZone>( data.zones ) )
+        : zone_cache( init_empty_map<time_zone>( data.zones ) )
         , rule_cache( init_empty_map<RuleEvalResult>( data.rules ) )
         , data( std::move( data ) )
         , zoneinfo_dir( std::move( zoneinfo_dir ) ) {}
@@ -314,7 +314,7 @@ namespace vtz {
         explicit TimeZoneCache( std::string zoneinfo_dir,
             span<std::string_view const>    known_zones = KNOWN_ZONES,
             span<Link const>                known_links = KNOWN_LINKS )
-        : zone_cache( init_empty_map<TimeZone>( known_zones ) )
+        : zone_cache( init_empty_map<time_zone>( known_zones ) )
         , rule_cache()
         , data()
         , zoneinfo_dir( std::move( zoneinfo_dir ) ) {
@@ -350,19 +350,19 @@ namespace vtz {
         /// @return the loaded zone
         /// @throws an exception if there was an error parsing or loading the
         /// zone
-        std::unique_ptr<TimeZone> load_zone( string_view name ) const;
+        std::unique_ptr<time_zone> load_zone( string_view name ) const;
 
         /// Attempt to locate a zone. Loads the zone if necessary.
         ///
         /// Returns null if the zone could not be found.
-        TimeZone const* try_locate_zone( string_view name ) const;
+        time_zone const* try_locate_zone( string_view name ) const;
 
         /// Returns a timezone, loading it if necessary. If a load occurs,
         /// the zone will be added to the zone cache.
         ///
         /// Any rules that are loaded as part of loading the zone will also
         /// be cached.
-        TimeZone const& locate_zone( string_view name ) const;
+        time_zone const& locate_zone( string_view name ) const;
 
         std::vector<std::string_view> zones() {
             auto result = std::vector<std::string_view>( zone_cache.size() );

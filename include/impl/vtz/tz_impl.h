@@ -4,7 +4,7 @@
 #include <vtz/tz.h>
 
 namespace vtz {
-    struct TimeZone::Impl {
+    struct time_zone::Impl {
         static auto local_block_s( OffTables const& table, sec_t t ) {
             // If the time is in-bounds, we can use the lookup table
             if( u64( t ) + table.tz0_ <= table.tz_max_ )
@@ -16,14 +16,14 @@ namespace vtz {
             // use zone symmetry to compute state for equivalent time
             return table.TTutc.get( get_cyclic( t, table.cycle_time ) );
         }
-        static auto local_block_s( TimeZone const& table, sec_t t ) {
+        static auto local_block_s( time_zone const& table, sec_t t ) {
             return local_block_s( static_cast<OffTables const&>( table ), t );
         }
 
-        static AbbrTable const& get_abbr_table( TimeZone const& tz ) noexcept {
+        static AbbrTable const& get_abbr_table( time_zone const& tz ) noexcept {
             return tz;
         }
-        static decltype( auto ) get_tt( TimeZone const& tz ) noexcept {
+        static decltype( auto ) get_tt( time_zone const& tz ) noexcept {
             return ( tz.TTutc );
         }
     };

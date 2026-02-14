@@ -164,7 +164,7 @@ TEST( vtz, America_NewYork ) {
 
     auto states = file.get_zone_states( "America/New_York", 2500 );
 
-    auto tz = TimeZone( "America/New_York", states );
+    auto tz = time_zone( "America/New_York", states );
 
 
     // 2025-10-29 - the current offset from UTC is UTC-04
@@ -304,7 +304,7 @@ TEST( vtz, FirstTransition ) {
     auto zone_staten_ny = file.get_zone_states( "America/New_York", 2500 );
 
     /// America/New_York
-    auto NY = TimeZone( "America/New_York", zone_staten_ny );
+    auto NY = time_zone( "America/New_York", zone_staten_ny );
 
     // clang-format off
     ASSERT_EQ( NY.abbrev_s( _ct( 1883, 11, 18, 16, 59, 59 ) ), "LMT" );
@@ -348,7 +348,7 @@ TEST( vtz, FirstTransition ) {
     auto zone_state_phoenix = file.get_zone_states( "America/Phoenix", 2500 );
 
     /// America/Phoenix
-    auto PH = TimeZone( "America/Phoenix", zone_state_phoenix );
+    auto PH = time_zone( "America/Phoenix", zone_state_phoenix );
 
     // clang-format off
     ASSERT_EQ( PH.offset_s( _ct( 1883, 11, 18, 18, 59, 59 ) ), -26898 );
@@ -444,7 +444,7 @@ TEST( vtz, all_timezones ) {
 }
 
 
-TEST( vtz, TimeZone ) {
+TEST( vtz, time_zone ) {
     COUNT_ASSERTIONS();
 
     auto const& fp = "build/data/tzdata/tzdata.zi";
@@ -481,7 +481,7 @@ TEST( vtz, TimeZone ) {
         span tt          = zone_states.walloff_trans_;
         span TTabbr      = zone_states.abbr_trans_;
 
-        auto tz = TimeZone( zone, zone_states );
+        auto tz = time_zone( zone, zone_states );
 
         // Check that all the abbreviations are correct
         {
@@ -605,8 +605,8 @@ TEST( vtz, TimeZone ) {
                 for( i64 i = 0; i < n; ++i )
                 {
                     auto local_t    = ambig_start_local + i;
-                    auto prev_block = TimeZone::Impl::local_block_s( tz, local_t - 1 );
-                    auto block      = TimeZone::Impl::local_block_s( tz, local_t );
+                    auto prev_block = time_zone::Impl::local_block_s( tz, local_t - 1 );
+                    auto block      = time_zone::Impl::local_block_s( tz, local_t );
 
                     ADD_CONTEXT( "Check local -> UTC, choosing earliest",
                         DT{ local_t },
@@ -617,11 +617,11 @@ TEST( vtz, TimeZone ) {
                         block.hi(),
                         block.lo(),
                         local_t,
-                        TimeZone::Impl::get_tt( tz ).block_size(),
-                        TimeZone::Impl::get_tt( tz ).block_start_t( local_t ),
-                        TimeZone::Impl::get_tt( tz ).block_end_t( local_t ),
-                        DT{ TimeZone::Impl::get_tt( tz ).block_start_t( local_t ) },
-                        DT{ TimeZone::Impl::get_tt( tz ).block_end_t( local_t ) } );
+                        time_zone::Impl::get_tt( tz ).block_size(),
+                        time_zone::Impl::get_tt( tz ).block_start_t( local_t ),
+                        time_zone::Impl::get_tt( tz ).block_end_t( local_t ),
+                        DT{ time_zone::Impl::get_tt( tz ).block_start_t( local_t ) },
+                        DT{ time_zone::Impl::get_tt( tz ).block_end_t( local_t ) } );
                     ASSERT_EQ_QUIET( DT{ tz.to_sys_s( local_t, E ) }, DT{ t + i + delta } );
                 }
             }
@@ -644,7 +644,7 @@ TEST( vtz, TimeZone ) {
                 if( T0 >= TTabbr.value_or( ai, INT64_MAX ) ) current_abbr = zone_states.abbr_[ai++];
 
                 ASSERT_EQ_QUIET(
-                    AbbrBlock{ TimeZone::Impl::get_abbr_table( tz ).abbr_block_s( T0 ) },
+                    AbbrBlock{ time_zone::Impl::get_abbr_table( tz ).abbr_block_s( T0 ) },
                     current_abbr );
                 ASSERT_EQ_QUIET( tz.offset_s( T0 ), current_off );
             }
@@ -696,7 +696,7 @@ TEST( vtz, SelfTest ) {
         fmt::println( "Testing zone {}", zone );
 
         auto  s1  = file.get_zone_states( zone, 2901 );
-        auto  tz  = TimeZone( zone, s1 );
+        auto  tz  = time_zone( zone, s1 );
         auto  s2  = cache.compute_states( zone );
         auto& tz2 = *locate_zone( zone );
 
@@ -767,7 +767,7 @@ TEST( vtz, TimeZoneFuzz ) {
         if( zone == "Factory" ) continue;
 
         auto states     = file.get_zone_states( zone, 2901 );
-        auto tz         = TimeZone( zone, states );
+        auto tz         = time_zone( zone, states );
         auto tz_hinnant = date::locate_zone( zone );
         auto zone_info  = get_sys_info( zone, start_t, end_t );
         fmt::println( "Testing {:>5} sys_info entries from {}", zone_info.size(), zone );
@@ -909,7 +909,7 @@ TEST( vtz, TimeZoneToString ) {
         if( zone == "Factory" ) continue;
 
         auto states     = file.get_zone_states( zone, 2901 );
-        auto tz         = TimeZone( zone, states );
+        auto tz         = time_zone( zone, states );
         auto tz_hinnant = date::locate_zone( zone );
 
         ADD_CONTEXT( "Zone information", zone );

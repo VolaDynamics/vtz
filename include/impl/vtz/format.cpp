@@ -380,7 +380,7 @@ namespace vtz {
         return func.dump( buffer, count );
     }
 
-    size_t TimeZone::format_to_s(
+    size_t time_zone::format_to_s(
         string_view format, sysseconds_t t, char* buff, size_t count ) const {
         return _do_strformat(
             *this,
@@ -453,7 +453,7 @@ namespace vtz {
         };
     }
 
-    size_t TimeZone::format_precise_to_s( string_view format,
+    size_t time_zone::format_precise_to_s( string_view format,
         sysseconds_t                                  t,
         u32                                           nanos,
         int                                           precision,
@@ -467,7 +467,7 @@ namespace vtz {
             WriteToBuff{ buff, count } );
     }
 
-    std::string TimeZone::format_precise_s(
+    std::string time_zone::format_precise_s(
         string_view format, sysseconds_t t, u32 nanos, int precision ) const {
         return _do_strformat( *this,
             format.data(),
@@ -477,7 +477,7 @@ namespace vtz {
             WriteToString{} );
     }
 
-    string TimeZone::format_s( std::string_view format, sysseconds_t t ) const {
+    string time_zone::format_s( std::string_view format, sysseconds_t t ) const {
         return _do_strformat(
             *this,
             format.data(),
@@ -572,7 +572,7 @@ namespace vtz {
 
     template<bool include_abbr_sep, bool use_stdoff>
     static auto _write_abbrev(
-        TimeZone const& tz, sysseconds_t t, i32 gmtoff, char abbrev_sep ) {
+        time_zone const& tz, sysseconds_t t, i32 gmtoff, char abbrev_sep ) {
         if constexpr( use_stdoff )
         {
             if constexpr( include_abbr_sep )
@@ -608,7 +608,7 @@ namespace vtz {
     }
 
     template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
-    VTZ_INLINE static std::string _do_format( TimeZone const& tz,
+    VTZ_INLINE static std::string _do_format( time_zone const& tz,
         sysseconds_t                                          t,
         char                                                  date_sep,
         char                                                  date_time_sep,
@@ -649,7 +649,7 @@ namespace vtz {
     /// The various flags control if the separators actually appear
 
     template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
-    VTZ_INLINE static size_t _do_format_to( TimeZone const& tz,
+    VTZ_INLINE static size_t _do_format_to( time_zone const& tz,
         sysseconds_t                                        t,
         char*                                               p,
         size_t                                              count,
@@ -733,27 +733,27 @@ namespace vtz {
     }
 
     // clang-format off
-    string TimeZone::format_iso8601_s( sysseconds_t t, char date_sep, char date_time_sep ) const {
+    string time_zone::format_iso8601_s( sysseconds_t t, char date_sep, char date_time_sep ) const {
         return _do_format<false, true, false>( *this, t, date_sep, date_time_sep, '\0' );
     }
 
-    size_t TimeZone::format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char date_sep, char date_time_sep ) const noexcept {
+    size_t time_zone::format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char date_sep, char date_time_sep ) const noexcept {
         return _do_format_to<false, true, false>( *this, t, buff, count, date_sep, date_time_sep, '\0' );
     }
 
-    string TimeZone::format_s( sysseconds_t t, char date_sep, char date_time_sep, char abbrev_sep ) const {
+    string time_zone::format_s( sysseconds_t t, char date_sep, char date_time_sep, char abbrev_sep ) const {
         return _do_format<false, false, true>( *this, t, date_sep, date_time_sep, abbrev_sep );
     }
 
-    size_t TimeZone::format_to_s( sysseconds_t t, char* buff, size_t count, char date_sep, char date_time_sep, char abbrev_sep ) const noexcept {
+    size_t time_zone::format_to_s( sysseconds_t t, char* buff, size_t count, char date_sep, char date_time_sep, char abbrev_sep ) const noexcept {
         return _do_format_to<false, false, true>( *this, t, buff, count, date_sep, date_time_sep, abbrev_sep );
     }
 
-    string TimeZone::format_compact_s( sysseconds_t t, char date_time_sep, char abbrev_sep ) const {
+    string time_zone::format_compact_s( sysseconds_t t, char date_time_sep, char abbrev_sep ) const {
         return _do_format<true, false, true>( *this, t, '\0', date_time_sep, abbrev_sep );
     }
 
-    size_t TimeZone::format_compact_to_s( sysseconds_t t, char* p, size_t count, char date_time_sep, char abbrev_sep ) const noexcept {
+    size_t time_zone::format_compact_to_s( sysseconds_t t, char* p, size_t count, char date_time_sep, char abbrev_sep ) const noexcept {
         return _do_format_to<true, false, true>( *this, t, p, count, '\0', date_time_sep, abbrev_sep );
     }
     // clang-format on

@@ -19,18 +19,18 @@
 namespace vtz {
     using std::string;
 
-    class TimeZone
+    class time_zone
     : private OffTables
     , private AbbrTable
     , private StdoffTable
     , private TransTable {
       public:
 
-        /// Constructs a TimeZone representing UTC (stdoff of 0, walloff of 0,
+        /// Constructs a time_zone representing UTC (stdoff of 0, walloff of 0,
         /// abbreviation is UTC, etc)
-        static TimeZone utc();
+        static time_zone utc();
 
-        TimeZone( string_view name, ZoneStates const& states );
+        time_zone( string_view name, ZoneStates const& states );
 
         using AbbrTable::abbrev_s;
         using AbbrTable::abbrev_string_s;
@@ -363,9 +363,6 @@ namespace vtz {
     /// Eg, 2025-11-14 09:30:05.3948, this is interpreted as 394,800,000
     /// nanoseconds after 2025-11-14 09:30:05
     nanos_t parse_time_ns( string_view fmt, string_view time_str );
-
-
-    using time_zone = TimeZone;
 
     std::string tzdb_version();
 

@@ -88,7 +88,7 @@ namespace vtz {
             if( t1 <= t0 )
             {
                 throw std::runtime_error(
-                    "TimeZone(): zone transitions were not ordered" );
+                    "time_zone(): zone transitions were not ordered" );
             }
             auto delta = u64( t1 ) - u64( t0 );
 
@@ -132,7 +132,7 @@ namespace vtz {
             if( Tearly <= Tlast )
             {
                 throw std::runtime_error(
-                    "TimeZone(): transition times overlap when converted to "
+                    "time_zone(): transition times overlap when converted to "
                     "local time" );
             }
 
@@ -484,7 +484,7 @@ namespace vtz {
         auto Tmax = tt.back();
         return { Tmin, Tmax, make_table( initial, tt, off, Tmin, Tmax ) };
     }
-    TimeZone::TimeZone( string_view name, ZoneStates const& states )
+    time_zone::time_zone( string_view name, ZoneStates const& states )
     : OffTables( make_off_tables( states ) )
     , AbbrTable( make_abbr_table( states.abbr_initial_,
           states.abbr_trans_,
@@ -499,8 +499,8 @@ namespace vtz {
     using TZHolder = AtomicEnt<time_zone>;
 
 
-    TimeZone TimeZone::utc() {
-        return TimeZone{ "UTC",
+    time_zone time_zone::utc() {
+        return time_zone{ "UTC",
             ZoneStates::make_static( ZoneState{
                 FromUTC( 0 ),
                 FromUTC( 0 ),

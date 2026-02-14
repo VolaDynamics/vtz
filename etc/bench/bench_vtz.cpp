@@ -551,7 +551,7 @@ BENCH( vtz_parse_date, state ) {
 
 
 BENCH( vtz_parse_time, state ) {
-    static auto const& utc = vtz::TimeZone::utc();
+    static auto const& utc = vtz::time_zone::utc();
 
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
@@ -586,7 +586,7 @@ BENCH( hinnant_parse_date, state ) {
 }
 
 BENCH( hinnant_parse_time, state ) {
-    static auto const& utc = vtz::TimeZone::utc();
+    static auto const& utc = vtz::time_zone::utc();
 
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
@@ -606,7 +606,7 @@ BENCH( hinnant_parse_time, state ) {
 }
 
 BENCH( vtz_parse_date_compact, state ) {
-    static auto const& utc = vtz::TimeZone::utc();
+    static auto const& utc = vtz::time_zone::utc();
 
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
@@ -623,7 +623,7 @@ BENCH( vtz_parse_date_compact, state ) {
 }
 
 BENCH( vtz_parse_time_compact, state ) {
-    static auto const& utc = vtz::TimeZone::utc();
+    static auto const& utc = vtz::time_zone::utc();
 
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
