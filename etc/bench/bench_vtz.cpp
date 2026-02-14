@@ -1,4 +1,4 @@
-#include "vtz/bit.h"
+#include <vtz/impl/bit.h>
 #include <absl/time/time.h>
 #include <benchmark/benchmark.h>
 #include <chrono>

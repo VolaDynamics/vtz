@@ -2,8 +2,8 @@
 #include "vtz_testing.h"
 #include <climits>
 #include <random>
-#include <vtz/bit.h>
-#include <vtz/math.h>
+#include <vtz/impl/bit.h>
+#include <vtz/impl/math.h>
 
 using namespace vtz;
 

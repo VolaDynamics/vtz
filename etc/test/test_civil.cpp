@@ -1,6 +1,6 @@
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
-#include <vtz/math.h>
+#include <vtz/impl/math.h>
 #include <vtz/tz.h>
 #include <vtz/tz_reader.h>
 

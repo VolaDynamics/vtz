@@ -78,6 +78,8 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 file(GLOB_RECURSE sources include/*.cpp)
+
+
 add_library(
     vtz
     SHARED
@@ -97,14 +99,23 @@ target_compile_features(
 )
 add_library(vtz::vtz ALIAS vtz)
 
-file(GLOB_RECURSE headers include/*.h)
+file(GLOB_RECURSE headers include/api/*.h)
 target_sources(
     vtz
     PUBLIC
     FILE_SET HEADERS
-    BASE_DIRS include
+    BASE_DIRS include/api
     FILES ${headers}
 )
+
+# Implementation details
+target_include_directories(vtz PRIVATE include/impl)
+add_library(vtz_impl INTERFACE)
+target_include_directories(vtz_impl INTERFACE include/impl)
+target_link_libraries(vtz_impl INTERFACE vtz)
+add_library(vtz::impl ALIAS vtz_impl)
+
+
 
 include(GNUInstallDirs)
 install(
@@ -185,8 +196,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
     # Configure with KNOWN_ZONES and KNOWN_LINKS
     configure_file(
-        "${PROJECT_SOURCE_DIR}/include/vtz/known_zones.h.in"
-        "${PROJECT_SOURCE_DIR}/include/vtz/known_zones.h"
+        "${PROJECT_SOURCE_DIR}/include/impl/vtz/known_zones.h.in"
+        "${PROJECT_SOURCE_DIR}/include/impl/vtz/known_zones.h"
         @ONLY
     )
 
@@ -198,6 +209,7 @@ if(PROJECT_IS_TOP_LEVEL)
         PRIVATE
             GTest::gtest_main
             vtz::vtz
+            vtz::impl
             fmt::fmt
             date::date
             date::date-tz
@@ -229,6 +241,7 @@ if(PROJECT_IS_TOP_LEVEL)
         bench_vtz
         PRIVATE
             vtz::vtz
+            vtz::impl
             benchmark::benchmark
             fmt::fmt
             date::date-tz
@@ -240,6 +253,6 @@ if(PROJECT_IS_TOP_LEVEL)
     foreach(file IN LISTS tools)
         cmake_path(GET file STEM exe)
         add_executable(${exe} ${file})
-        target_link_libraries(${exe} PRIVATE vtz::vtz fmt::fmt)
+        target_link_libraries(${exe} PRIVATE vtz::vtz vtz::impl fmt::fmt)
     endforeach()
 endif()
