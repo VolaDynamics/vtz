@@ -49,6 +49,8 @@ if(PROJECT_IS_TOP_LEVEL AND UNIX)
     set(CMAKE_CXX_FLAGS_PROFILE "-Og -g")
 endif()
 
+add_subdirectory(etc/examples)
+
 # (For development) download dependencies
 if(PROJECT_IS_TOP_LEVEL)
     include(cmake/get_cpm.cmake)
