@@ -3,9 +3,9 @@
 #include <vtz/known_zones.h>
 #include <vtz/tz_cache.h>
 
-#include <fmt/ranges.h>
 #include <string>
 #include <string_view>
+#include <vtz/util/microfmt.h>
 
 namespace vtz {
 
@@ -20,8 +20,9 @@ namespace vtz {
         }
         catch( std::exception const& ex )
         {
-            throw std::runtime_error( fmt::format( "Unable to load rule {}. {}",
+            throw std::runtime_error( util::join( "Unable to load rule ",
                 escape_string( name ),
+                ". ",
                 ex.what() ) );
         }
     }
@@ -56,11 +57,11 @@ namespace vtz {
             // fallback cache, because that will fail.
             if( zoneinfo_dir.empty() )
             {
-                throw std::runtime_error( fmt::format(
-                    "Could not find {} (checked both canonical "
+                throw std::runtime_error( util::join( "Could not find ",
+                    escape_string( name ),
+                    " (checked both canonical "
                     "zones & legacy names; zoneinfo_dir is empty so no attempt "
-                    "was made to load from a OS tzfile)",
-                    escape_string( name ) ) );
+                    "was made to load from a OS tzfile)" ) );
             }
 
             try
@@ -78,12 +79,12 @@ namespace vtz {
             }
             catch( std::exception const& e )
             {
-                throw std::runtime_error( fmt::format(
-                    "Could not find {} (checked both canonical zones & legacy "
-                    "names). Attempted to load tzfile from {}, but the "
-                    "following error occurred: {}",
+                throw std::runtime_error( util::join( "Could not find ",
                     escape_string( name ),
-                    zoneinfo_dir,
+                    " (checked both canonical zones & legacy "
+                    "names). Attempted to load tzfile from ",
+                    escape_string( zoneinfo_dir ),
+                    ", but the following error occurred: ",
                     e.what() ) );
             }
         }
@@ -92,11 +93,12 @@ namespace vtz {
         auto canonical = it->second;
         if( auto ptr = try_locate_zone( canonical ) ) return *ptr;
 
-        throw std::runtime_error(
-            fmt::format( "{} is an alias for {}, but {} could not be found",
-                escape_string( name ),
-                escape_string( canonical ),
-                escape_string( canonical ) ) );
+        throw std::runtime_error( util::join( escape_string( name ),
+            " is an alias for ",
+            escape_string( canonical ),
+            ", but ",
+            escape_string( canonical ),
+            " could not be found" ) );
     }
 
     /// Attempts to determine the tzdata path. Returns an empty string if the
@@ -203,11 +205,13 @@ namespace vtz {
         }
         catch( std::exception const& ex )
         {
-            throw std::runtime_error( fmt::format(
-                "locate_zone(): Unable to locate {} (source files: {}). {}",
-                escape_string( name ),
-                cache.data.source_files(),
-                ex.what() ) );
+            throw std::runtime_error(
+                util::join( "locate_zone(): Unable to locate ",
+                    escape_string( name ),
+                    " (source files: ",
+                    util::joined{ cache.data.source_files(), ", " },
+                    "). ",
+                    ex.what() ) );
         }
     }
 } // namespace vtz

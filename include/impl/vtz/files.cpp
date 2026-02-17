@@ -3,9 +3,9 @@
 
 #include <cerrno>
 #include <cstdio>
-#include <fmt/format.h>
 #include <stdexcept>
 #include <system_error>
+#include <vtz/util/microfmt.h>
 
 namespace vtz {
     using std::string_view;
@@ -78,12 +78,15 @@ namespace vtz {
 
     auto file_error( int errc, string_view fp, string_view verb )
         -> std::runtime_error {
-        return std::runtime_error(
-            fmt::format( "Error when {} '{}'. What: {} (OS Error {})",
-                verb,
-                fp,
-                std::make_error_code( std::errc( errc ) ).message(),
-                errc ) );
+        return std::runtime_error( util::join( "Error when ",
+            verb,
+            " ",
+            escape_string( fp ),
+            ". What: ",
+            std::make_error_code( std::errc( errc ) ).message(),
+            " (OS Error ",
+            errc,
+            ")" ) );
     }
 
 

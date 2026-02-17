@@ -93,8 +93,6 @@ add_library(
 target_link_libraries(
     vtz
     PRIVATE
-        fmt::fmt
-    PUBLIC
         unordered_dense::unordered_dense
 )
 target_compile_features(
@@ -117,7 +115,7 @@ target_sources(
 target_include_directories(vtz PRIVATE include/impl)
 add_library(vtz_impl INTERFACE)
 target_include_directories(vtz_impl INTERFACE include/impl)
-target_link_libraries(vtz_impl INTERFACE vtz)
+target_link_libraries(vtz_impl INTERFACE vtz unordered_dense::unordered_dense)
 add_library(vtz::impl ALIAS vtz_impl)
 
 

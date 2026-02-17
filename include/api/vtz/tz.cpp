@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <ctime>
-#include <fmt/format.h>
 #include <initializer_list>
 #include <limits>
 

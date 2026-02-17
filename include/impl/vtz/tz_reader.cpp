@@ -1,5 +1,4 @@
 #include <cerrno>
-#include <fmt/base.h>
 #include <limits>
 #include <string_view>
 #include <vtz/civil.h>
@@ -19,8 +18,8 @@
 #include <charconv>
 #include <cstdlib>
 
-#include <fmt/format.h>
 #include <stdexcept>
+#include <vtz/util/microfmt.h>
 
 template<>
 struct ankerl::unordered_dense::hash<vtz::ZoneAbbr> {
@@ -157,19 +156,26 @@ namespace vtz {
 
         if( token.has_value() )
         {
-            return fmt::format( "Error @ {}:{}: {} but {} {}",
+            return util::join( "Error @ ",
                 filename,
+                ":",
                 loc.str(),
+                ": ",
                 expected,
+                " but ",
                 escape_string( token ),
+                " ",
                 but );
         }
         else
         {
-            return fmt::format( "Error @ {}:{}: {} but {}",
+            return util::join( "Error @ ",
                 filename,
+                ":",
                 loc.str(),
+                ": ",
                 expected,
+                " but ",
                 but );
         }
     }
@@ -814,22 +820,27 @@ namespace vtz {
             auto loc = Location::where_ptr( input, err.token.data() );
             if( err.token.has_value() )
             {
-                throw std::runtime_error(
-                    fmt::format( "Error @ {}:{}: {} but {} {}",
-                        filename,
-                        loc.str(),
-                        err.expected,
-                        escape_string( err.token ),
-                        err.but ) );
+                throw std::runtime_error( util::join( "Error @ ",
+                    filename,
+                    ":",
+                    loc.str(),
+                    ": ",
+                    err.expected,
+                    " but ",
+                    escape_string( err.token ),
+                    " ",
+                    err.but ) );
             }
             else
             {
-                throw std::runtime_error(
-                    fmt::format( "Error @ {}:{}: {} but {}",
-                        filename,
-                        loc.str(),
-                        err.expected,
-                        err.but ) );
+                throw std::runtime_error( util::join( "Error @ ",
+                    filename,
+                    ":",
+                    loc.str(),
+                    ": ",
+                    err.expected,
+                    " but ",
+                    err.but ) );
             }
         }
     }
@@ -1703,10 +1714,11 @@ namespace vtz {
             // If we don't have a zoneinfo directory, just bail
             if( !has_zoneinfo_dir() )
             {
-                throw std::runtime_error( fmt::format(
-                    "TimeZoneCache::compute_states(): zone {} does not exist "
-                    "(no ZoneEntries found; zoneinfo_dir is not set)",
-                    escape_string( name ) ) );
+                throw std::runtime_error(
+                    util::join( "TimeZoneCache::compute_states(): zone ",
+                        escape_string( name ),
+                        " does not exist "
+                        "(no ZoneEntries found; zoneinfo_dir is not set)" ) );
             }
 
             // Otherwise, attempt load from zoneinfo directory
@@ -1720,12 +1732,12 @@ namespace vtz {
             }
             catch( std::exception const& e )
             {
-                throw std::runtime_error( fmt::format(
-                    "TimeZoneCache::compute_states(): unable to load {}. "
-                    "No ZoneEntries found; load from tzfile @ {} failed (see "
-                    "below):\n\n{}",
+                throw std::runtime_error( util::join(
+                    "TimeZoneCache::compute_states(): unable to load ",
                     escape_string( name ),
+                    ". No ZoneEntries found; load from tzfile @ ",
                     escape_string( tzfile_path ),
+                    " failed (see below):\n\n",
                     e.what() ) );
             }
         }
@@ -1734,9 +1746,9 @@ namespace vtz {
 
         // This is unlikely, and should only occur if there was a parsing bug.
         if( entries.empty() )
-            throw std::runtime_error(
-                fmt::format( "Error: zone '{}' contained no entries",
-                    escape_string( name ) ) );
+            throw std::runtime_error( util::join( "Error: zone ",
+                escape_string( name ),
+                " contained no entries" ) );
 
         auto cache = RuleCache( 16 );
 
@@ -1768,9 +1780,9 @@ namespace vtz {
 
         auto const& entries = zones.at( name );
         if( entries.empty() )
-            throw std::runtime_error(
-                fmt::format( "Error: zone '{}' contained no entries",
-                    escape_string( name ) ) );
+            throw std::runtime_error( util::join( "Error: zone ",
+                escape_string( name ),
+                " contained no entries" ) );
 
 
         auto rules = map<string_view, RuleEvalResult>( 16 );
@@ -1934,8 +1946,8 @@ namespace vtz {
         auto it = rules.find( rule );
         if( it == rules.end() )
         {
-            throw std::runtime_error( fmt::format(
-                "Unable to load rule {}", escape_string( rule ) ) );
+            throw std::runtime_error(
+                util::join( "Unable to load rule ", escape_string( rule ) ) );
         }
 
         try
@@ -1945,10 +1957,10 @@ namespace vtz {
         }
         catch( std::exception const& ex )
         {
-            throw std::runtime_error(
-                fmt::format( "Error when loading rule {}. {}",
-                    escape_string( rule ),
-                    ex.what() ) );
+            throw std::runtime_error( util::join( "Error when loading rule ",
+                escape_string( rule ),
+                ". ",
+                ex.what() ) );
         }
     }
 

@@ -1,12 +1,12 @@
 
 
 #include <ctime>
-#include <fmt/format.h>
 #include <iomanip>
 #include <sstream>
 #include <string>
 #include <vtz/civil.h>
 #include <vtz/strings.h>
+#include <vtz/util/microfmt.h>
 
 namespace vtz {
     template<class F>
@@ -407,14 +407,14 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                         if( ss.fail() )
                         {
                             throw std::runtime_error(
-                                fmt::format( "parse_time(): Unable to "
-                                             "parse {} as {}. NOTE: "
-                                             "fallback to standard library "
-                                             "required because "
-                                             "of '%{}' specifier",
+                                util::join( "parse_time(): Unable to parse ",
                                     escape_string( input ),
+                                    " as ",
                                     escape_string( format_cstr ),
-                                    next ) );
+                                    ". NOTE: fallback to standard library "
+                                    "required because of '%",
+                                    next,
+                                    "' specifier" ) );
                         }
 
                         return func(
@@ -454,22 +454,25 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
         if( size_t( pos ) < input.size() )
         {
             char ch = *p.p;
-            throw std::runtime_error(
-                fmt::format( "Error @ input[{}] (char='{}'). Unable to parse "
-                             "{} with format={}: {}",
-                    pos,
-                    ch,
-                    escape_string( input ),
-                    escape_string( format ),
-                    p.msg ) );
+            throw std::runtime_error( util::join( "Error @ input[",
+                pos,
+                "] (char='",
+                ch,
+                "'). Unable to parse ",
+                escape_string( input ),
+                " with format=",
+                escape_string( format ),
+                ": ",
+                p.msg ) );
         }
         else
         {
             throw std::runtime_error(
-                fmt::format( "Error: unexpected end of input. Unable to parse "
-                             "{} with format={}: {}",
+                util::join( "Error: unexpected end of input. Unable to parse ",
                     escape_string( input ),
+                    " with format=",
                     escape_string( format ),
+                    ": ",
                     p.msg ) );
         }
     }

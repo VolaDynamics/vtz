@@ -1,14 +1,14 @@
 #include <atomic>
 #include <cerrno>
 #include <cstdlib>
-#include <fmt/format.h>
 #include <mutex>
 #include <stdexcept>
 #include <string_view>
 #include <vtz/files.h>
 #include <vtz/span.h>
-#include <vtz/tz.h>
 #include <vtz/strings.h>
+#include <vtz/tz.h>
+#include <vtz/util/microfmt.h>
 
 #include <optional>
 
@@ -25,17 +25,17 @@ namespace vtz::win32 {
         auto p0  = data.find( key );
         if( p0 == npos )
         {
-            throw std::runtime_error( fmt::format(
-                "Unable to find '{}' within windowsZones.xml", key ) );
+            throw std::runtime_error( util::join( "Unable to find ",
+                escape_string( key ),
+                " within windowsZones.xml" ) );
         }
         p0      += key.size();
         auto p1  = data.find( "type=\"", p0 );
         if( p1 == npos )
         {
-            throw std::runtime_error( fmt::format(
-                "'{}' appeared in windowsZones.xml but the associated zone "
-                "could not be determined (expected 'type=\"')",
-                key ) );
+            throw std::runtime_error( util::join( escape_string( key ),
+                " appeared in windowsZones.xml but the associated zone "
+                "could not be determined (expected 'type=\"')" ) );
         }
         p1 += 6;
 
@@ -142,10 +142,10 @@ namespace vtz::unix {
             buf_size *= 2;
         }
 
-        throw std::runtime_error( fmt::format(
-            "Error when attempting to read {}: readlink() "
-            "returned an insanely long symlink. Link (truncated): {}",
+        throw std::runtime_error( util::join( "Error when attempting to read ",
             escape_string( link ),
+            ": readlink() returned an insanely long symlink. "
+            "Link (truncated): ",
             escape_string( string_view( buf, sizeof( buf ) ) ) ) );
     }
 
@@ -195,10 +195,11 @@ namespace vtz::unix {
             return std::string( result );
 
         throw std::runtime_error(
-            fmt::format( "Unable to determine current timezone. "
-                         "/etc/localtime resolved to {}, which does not "
-                         "contain either 'zoneinfo/' or a valid zone name.",
-                escape_string( path ) ) );
+            util::join( "Unable to determine current timezone. "
+                        "/etc/localtime resolved to ",
+                escape_string( path ),
+                ", which does not "
+                "contain either 'zoneinfo/' or a valid zone name." ) );
     };
 } // namespace vtz::unix
 

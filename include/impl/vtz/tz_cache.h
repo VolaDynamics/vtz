@@ -4,7 +4,6 @@
 #include "vtz/known_zones.h"
 #include <atomic>
 #include <cstddef>
-#include <fmt/format.h>
 #include <mutex>
 #include <stdexcept>
 #include <string>
