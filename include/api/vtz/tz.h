@@ -19,7 +19,7 @@
 namespace vtz {
     using std::string;
 
-    class time_zone
+    class VTZ_EXPORT time_zone
     : private OffTables
     , private AbbrTable
     , private StdoffTable
@@ -338,7 +338,7 @@ namespace vtz {
     };
 
 
-    std::string format_date_d( string_view fmt, sysdays_t days );
+    VTZ_EXPORT std::string format_date_d( string_view fmt, sysdays_t days );
 
     size_t format_date_to_d(
         string_view format, sysdays_t days, char* buff, size_t count );
@@ -356,12 +356,12 @@ namespace vtz {
     /// Parse a date
     ///
     /// format specifier describes layout of a date (eg, "%Y-%m-%d")
-    sysdays_t parse_date_d( string_view fmt, string_view date_str );
+    VTZ_EXPORT sysdays_t parse_date_d( string_view fmt, string_view date_str );
 
     /// Parse a time.
     ///
     /// Format specifier describes layout of time (eg, "%Y-%m-%d %H:%M:%S")
-    sec_t parse_time_s( string_view fmt, string_view time_str );
+    VTZ_EXPORT sec_t parse_time_s( string_view fmt, string_view time_str );
 
     /// Parse a time with nanosecond precision
     ///
@@ -372,19 +372,19 @@ namespace vtz {
     ///
     /// Eg, 2025-11-14 09:30:05.3948, this is interpreted as 394,800,000
     /// nanoseconds after 2025-11-14 09:30:05
-    nanos_t parse_time_ns( string_view fmt, string_view time_str );
+    VTZ_EXPORT nanos_t parse_time_ns( string_view fmt, string_view time_str );
 
-    std::string tzdb_version();
+    VTZ_EXPORT std::string tzdb_version();
 
     /// Set the path to use for the timezone database. Will throw an exception
     /// if the timezone database is already loaded.
-    void set_install( std::string path );
+    VTZ_EXPORT void set_install( std::string path );
 
-    std::string get_install();
+    VTZ_EXPORT std::string get_install();
 
-    time_zone const* locate_zone( string_view name );
+    VTZ_EXPORT time_zone const* locate_zone( string_view name );
 
-    time_zone const* current_zone();
+    VTZ_EXPORT time_zone const* current_zone();
 
 
     /// Sets the current zone used by vtz. This does NOT change the system
@@ -394,7 +394,7 @@ namespace vtz {
     ///
     /// Throws an exception if the given zone name could not be found within the
     /// timezone database.
-    time_zone const* set_current_zone_for_application( string_view name );
+    VTZ_EXPORT time_zone const* set_current_zone_for_application( string_view name );
 
 
     /// VTZ operates under the assumption that the current timezone will not
@@ -402,7 +402,7 @@ namespace vtz {
     ///
     /// In order to override this behavior, you can call this function to
     /// atomically reload the current zone. The new current zone is returned.
-    time_zone const* reload_current_zone();
+    VTZ_EXPORT time_zone const* reload_current_zone();
 } // namespace vtz
 
 

@@ -14,6 +14,8 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Code should be position independent
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 # Set up ccache/sccache for the project
 find_program(COMPILER_CACHE sccache ccache)
@@ -82,25 +84,28 @@ if(PROJECT_IS_TOP_LEVEL)
     )
 endif()
 
-file(GLOB_RECURSE sources include/api/*.cpp include/impl/*.cpp)
 
-
-add_library(
-    vtz
-    SHARED
-        ${sources})
-
-target_link_libraries(
-    vtz
+file(GLOB_RECURSE src include/api/*.cpp include/impl/*.cpp)
+add_library(vtz_objects OBJECT ${src})
+target_include_directories(
+    vtz_objects
     PRIVATE
-        unordered_dense::unordered_dense
+        include/impl
+        include/api
 )
+target_link_libraries(
+    vtz_objects
+    PRIVATE
+        unordered_dense::unordered_dense)
 target_compile_features(
-    vtz
+    vtz_objects
     PRIVATE
         cxx_std_17
 )
+
+add_library(vtz SHARED $<TARGET_OBJECTS:vtz_objects>)
 add_library(vtz::vtz ALIAS vtz)
+
 
 file(GLOB_RECURSE headers include/api/*.h)
 target_sources(
@@ -111,12 +116,21 @@ target_sources(
     FILES ${headers}
 )
 
-# Implementation details
-target_include_directories(vtz PRIVATE include/impl)
-add_library(vtz_impl INTERFACE)
-target_include_directories(vtz_impl INTERFACE include/impl)
-target_link_libraries(vtz_impl INTERFACE vtz unordered_dense::unordered_dense)
+
+
+add_library(vtz_impl STATIC $<TARGET_OBJECTS:vtz_objects>)
 add_library(vtz::impl ALIAS vtz_impl)
+
+target_include_directories(
+    vtz_impl
+    PUBLIC
+        include/impl
+        include/api)
+
+target_link_libraries(
+    vtz_impl
+    PUBLIC
+        unordered_dense::unordered_dense)
 
 
 
@@ -152,7 +166,6 @@ if(PROJECT_IS_TOP_LEVEL)
         vtz_extras
         PUBLIC
             fmt::fmt
-            vtz::vtz
             vtz::impl
     )
     add_library(vtz::extras ALIAS vtz_extras)
@@ -223,9 +236,7 @@ if(PROJECT_IS_TOP_LEVEL)
         test_vtz
         PRIVATE
             GTest::gtest_main
-            vtz::vtz
-            vtz::impl
-            vtz::extras # Formatting code
+            vtz::extras # vtz::impl + Formatting code
             fmt::fmt
             date::date
             date::date-tz
@@ -256,7 +267,6 @@ if(PROJECT_IS_TOP_LEVEL)
     target_link_libraries(
         bench_vtz
         PRIVATE
-            vtz::vtz
             vtz::impl
             benchmark::benchmark
             fmt::fmt
@@ -269,6 +279,6 @@ if(PROJECT_IS_TOP_LEVEL)
     foreach(file IN LISTS tools)
         cmake_path(GET file STEM exe)
         add_executable(${exe} ${file})
-        target_link_libraries(${exe} PRIVATE vtz::vtz vtz::impl vtz::extras fmt::fmt)
+        target_link_libraries(${exe} PRIVATE vtz::extras fmt::fmt)
     endforeach()
 endif()
