@@ -117,6 +117,8 @@ target_sources(
 )
 
 
+set_target_properties(vtz PROPERTIES VERIFY_INTERFACE_HEADER_SETS ON)
+
 
 add_library(vtz_impl STATIC $<TARGET_OBJECTS:vtz_objects>)
 add_library(vtz::impl ALIAS vtz_impl)
