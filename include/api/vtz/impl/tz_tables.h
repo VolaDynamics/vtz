@@ -4,6 +4,7 @@
 #include <vtz/types.h>
 #include <vtz/impl/macros.h>
 #include <vtz/date.h>
+#include <vtz/impl/math.h>
 
 namespace vtz {
     using std::string;
