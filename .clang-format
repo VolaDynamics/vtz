@@ -40,6 +40,7 @@ AttributeMacros:
       "VOLA_CONSTEXPR_CPP14",
       "VOLA_LIFETIMEBOUND",
       "VTZ_LIKELY",
+      "VTZ_EXPORT",
    ]
 BinPackParameters: OnePerLine
 BinPackArguments: false
