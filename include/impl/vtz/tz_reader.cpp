@@ -360,11 +360,6 @@ namespace vtz {
             {
                 int p0 = sep_pos[0];
                 int p1 = sep_pos[1];
-                // fmt::println( "input = {} sep={} pos={}, {}",
-                //     string_view( p, size ),
-                //     num_sep,
-                //     p0,
-                //     p1 );
                 auto hh = parse1or2( buff, p0 );
                 auto mm = parse1or2( buff + p0 + 1, p1 - p0 - 1 );
                 auto ss = parse1or2( buff + p1 + 1, size - p1 - 1 );
