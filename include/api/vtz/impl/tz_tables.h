@@ -5,6 +5,7 @@
 #include <vtz/impl/macros.h>
 #include <vtz/impl/chrono_types.h>
 #include <vtz/impl/math.h>
+#include <vtz/impl/zone_abbr.h>
 
 namespace vtz {
     using std::string;
