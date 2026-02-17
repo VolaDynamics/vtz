@@ -1,4 +1,4 @@
-#include <vtz/impl/bit.h>
+#include "bench_zones.h"
 #include <absl/time/time.h>
 #include <benchmark/benchmark.h>
 #include <chrono>
@@ -8,6 +8,7 @@
 #include <random>
 #include <vector>
 #include <vtz/civil.h>
+#include <vtz/impl/bit.h>
 #include <vtz/tz.h>
 
 #define BENCH( name, state )                                                   \
@@ -25,6 +26,16 @@ template<class T, class Dur = typename T::duration>
 vector<T> to_chrono( vector<i64> const& tt ) {
     vector<T> result( tt.size() );
     for( size_t i = 0; i < tt.size(); ++i ) result[i] = T( Dur( tt[i] ) );
+    return result;
+}
+
+/// Get a shuffled list of zones for benchmarking
+vector<std::string_view> random_zones( size_t count ) {
+    vector<std::string_view> result( count );
+    constexpr size_t         ZONE_COUNT = std::size( ZONES_FOR_BENCH );
+    for( size_t i = 0; i < count; ++i )
+        result[i] = ZONES_FOR_BENCH[i % ZONE_COUNT];
+    std::shuffle( result.begin(), result.end(), std::mt19937_64{} );
     return result;
 }
 
@@ -83,7 +94,7 @@ static vector<absl::Time> to_absl_time( vector<i64> const& tt ) {
 }
 
 static vector<absl::CivilSecond> to_absl_civil( vector<i64> const& tt ) {
-    auto utc = absl::UTCTimeZone();
+    auto                      utc = absl::UTCTimeZone();
     vector<absl::CivilSecond> result( tt.size() );
     for( size_t i = 0; i < tt.size(); ++i )
         result[i] = utc.At( absl::FromUnixSeconds( tt[i] ) ).cs;
@@ -108,8 +119,8 @@ BENCH( hinnant_to_local, state ) {
 BENCH( hinnant_to_sys_latest, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
-    auto tz = date::locate_zone( "America/New_York" );
-    size_t i = 0;
+    auto   tz = date::locate_zone( "America/New_York" );
+    size_t i  = 0;
     for( auto _ : state )
     {
         benchmark::DoNotOptimize(
@@ -122,8 +133,8 @@ BENCH( hinnant_to_sys_latest, state ) {
 BENCH( hinnant_to_sys_earliest, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
-    auto tz = date::locate_zone( "America/New_York" );
-    size_t i = 0;
+    auto   tz = date::locate_zone( "America/New_York" );
+    size_t i  = 0;
     for( auto _ : state )
     {
         benchmark::DoNotOptimize(
@@ -186,8 +197,8 @@ BENCH( vtz_to_local, state ) {
 BENCH( vtz_to_sys_latest, state ) {
     auto tt
         = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
-    auto tz  = vtz::locate_zone( "America/New_York" );
-    size_t i = 0;
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
     for( auto _ : state )
     {
         benchmark::DoNotOptimize(
@@ -200,8 +211,8 @@ BENCH( vtz_to_sys_latest, state ) {
 BENCH( vtz_to_sys_earliest, state ) {
     auto tt
         = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
-    auto tz  = vtz::locate_zone( "America/New_York" );
-    size_t i = 0;
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
     for( auto _ : state )
     {
         benchmark::DoNotOptimize(
@@ -249,8 +260,57 @@ BENCH( vtz_to_sys_earliest_with_lookup, state ) {
 }
 
 
+BENCH( vtz_locate_random_zone, state ) {
+    auto zones = random_zones( COUNT );
+
+    for( auto z : ZONES_FOR_BENCH ) { (void)vtz::locate_zone( z ); }
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( vtz::locate_zone( zones[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( hinnant_locate_random_zone, state ) {
+    auto zones = random_zones( COUNT );
+
+    for( auto z : ZONES_FOR_BENCH ) { (void)date::locate_zone( z ); }
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( date::locate_zone( zones[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( absl_locate_random_zone, state ) {
+    auto zones = random_zones( COUNT );
+
+    for( auto z : ZONES_FOR_BENCH )
+    {
+        absl::TimeZone tz;
+        absl::LoadTimeZone( z, &tz );
+        (void)tz;
+    }
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        absl::TimeZone tz;
+        absl::LoadTimeZone( zones[i % COUNT], &tz );
+        benchmark::DoNotOptimize( tz );
+        ++i;
+    }
+}
+
+
 BENCH( absl_to_local, state ) {
-    auto tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
+    auto           tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
     size_t i = 0;
@@ -263,7 +323,7 @@ BENCH( absl_to_local, state ) {
 
 
 BENCH( absl_to_sys_latest, state ) {
-    auto cs = to_absl_civil( random_times( COUNT, 1900, 2100 ) );
+    auto           cs = to_absl_civil( random_times( COUNT, 1900, 2100 ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
     size_t i = 0;
@@ -276,7 +336,7 @@ BENCH( absl_to_sys_latest, state ) {
 
 
 BENCH( absl_to_sys_earliest, state ) {
-    auto cs = to_absl_civil( random_times( COUNT, 1900, 2100 ) );
+    auto           cs = to_absl_civil( random_times( COUNT, 1900, 2100 ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
     size_t i = 0;
@@ -353,7 +413,7 @@ BENCH( hinnant_format, state ) {
 
 
 BENCH( absl_format, state ) {
-    auto tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
+    auto           tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
     size_t i = 0;
@@ -393,8 +453,8 @@ BENCH( vtz_format_to_strftime, state ) {
 BENCH( vtz_format_to_strftime_nanos, state ) {
     using nanos = vtz::sys_time<std::chrono::nanoseconds>;
     auto tt = to_chrono<nanos>( random_times( COUNT, 1900, 2100, 1000000000 ) );
-    auto   tz = vtz::locate_zone( "America/New_York" );
-    size_t i  = 0;
+    auto tz = vtz::locate_zone( "America/New_York" );
+    size_t i = 0;
     char   buff[64];
     for( auto _ : state )
     {
@@ -731,6 +791,21 @@ BENCH( chrono_to_sys_earliest_with_lookup, state ) {
         ++i;
     }
 }
+
+
+BENCH( chrono_locate_random_zone, state ) {
+    auto zones = random_zones( COUNT );
+
+    for( auto z : ZONES_FOR_BENCH ) { (void)std::chrono::locate_zone( z ); }
+
+    size_t i = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( std::chrono::locate_zone( zones[i % COUNT] ) );
+        ++i;
+    }
+}
+
 #endif
 
 #include <fmt/core.h>
