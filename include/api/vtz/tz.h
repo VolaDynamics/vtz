@@ -7,9 +7,9 @@
 #include <type_traits>
 #include <vtz/date.h>
 #include <vtz/impl/export.h>
-#include <vtz/types.h>
-#include <vtz/impl/zone_abbr.h>
 #include <vtz/impl/math.h>
+#include <vtz/impl/zone_abbr.h>
+#include <vtz/types.h>
 
 #include <vtz/impl/bit.h>
 #include <vtz/impl/tz_impl.h>
@@ -41,6 +41,16 @@ namespace vtz {
         using OffTables::to_sys_ns;
         using OffTables::to_sys_s;
         using StdoffTable::stdoff_s;
+
+        /// For a given system time T, represented as "offsets from UTC", return
+        /// the timezone's current offset from UTC, in seconds.
+        template<class Dur>
+        std::chrono::seconds offset( sys_time<Dur> t ) const {
+            return std::chrono::seconds(
+                offset_s( std::chrono::duration_cast<std::chrono::seconds>(
+                    t.time_since_epoch() )
+                        .count() ) );
+        }
 
         /// Return the name of the zone
         string_view name() const noexcept { return name_; }
@@ -104,8 +114,8 @@ namespace vtz {
         sys_info get_info_sys_s( sysseconds_t t ) const {
             auto range = sys_range_s( t );
 
-            auto off    = offset_s( t );
-            auto save   = off - stdoff_s( t );
+            auto off  = offset_s( t );
+            auto save = off - stdoff_s( t );
 
             return sys_info{
                 sys_seconds( seconds( range.begin ) ),
