@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 #include <vtz/util/microfmt.h>
 
 using namespace vtz::util;
@@ -102,4 +103,15 @@ TEST( microfmt, join ) {
     std::string big2( 16000, 'A' );
     auto        s2 = join( std::string_view( big2 ), big2, "---trailing" );
     ASSERT_EQ_QUIET( s2, big2 + big2 + "---trailing" );
+
+    // joined range
+    std::vector<std::string> empty_vec;
+    ASSERT_EQ( join( joined{ empty_vec, ", " } ), std::string() );
+
+    std::vector<std::string> one = { "only" };
+    ASSERT_EQ( join( joined{ one, ", " } ), std::string( "only" ) );
+
+    std::vector<std::string> files = { "a.txt", "b.txt", "c.txt" };
+    ASSERT_EQ( join( "files: [", joined{ files, ", " }, "]" ),
+        std::string( "files: [a.txt, b.txt, c.txt]" ) );
 }

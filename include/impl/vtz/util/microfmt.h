@@ -70,6 +70,49 @@ namespace vtz::util {
     // clang-format on
 
 
+    // Join a range with a separator
+    template<class Range>
+    struct joined {
+        Range const&     range;
+        std::string_view sep;
+    };
+
+    template<class Range>
+    joined( Range const&, std::string_view ) -> joined<Range>;
+
+    template<class Range>
+    struct fmt_traits<joined<Range>> {
+        using ElemT = std::decay_t<decltype( *std::begin( std::declval<Range const&>() ) )>;
+        using Traits = fmt_traits<ElemT>;
+
+        static size_t max_space( joined<Range> const& j ) {
+            auto it  = std::begin( j.range );
+            auto end = std::end( j.range );
+            if( it == end ) return 0;
+
+            size_t total = Traits::max_space( *it );
+            for( ++it; it != end; ++it )
+                total += j.sep.size() + Traits::max_space( *it );
+            return total;
+        }
+
+        static size_t dump( char* dest, joined<Range> const& j ) {
+            auto it  = std::begin( j.range );
+            auto end = std::end( j.range );
+            if( it == end ) return 0;
+
+            char* p = dest;
+            p += Traits::dump( p, *it );
+            for( ++it; it != end; ++it )
+            {
+                _vtz_memcpy( p, j.sep.data(), j.sep.size() );
+                p += j.sep.size();
+                p += Traits::dump( p, *it );
+            }
+            return size_t( p - dest );
+        }
+    };
+
     template<class T>
     size_t max_space( T const& e ) {
         return fmt_traits<T>::max_space( e );
