@@ -87,10 +87,7 @@ namespace vtz {
 
             VTZ_UNREACHABLE();
         }
-
-        string str() const;
     };
-    inline string format_as( RuleOn r ) { return r.str(); }
 
 
     template<>

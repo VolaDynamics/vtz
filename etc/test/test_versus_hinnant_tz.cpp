@@ -16,6 +16,8 @@
 #include <vtz/tz.h>
 #include <vtz/tz_cache.h>
 
+#include <vtz/format.h>
+
 #include "test_utils.h"
 #include "test_zones.h"
 #include "vtz_debug.h"

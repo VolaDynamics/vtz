@@ -27,6 +27,4 @@ namespace vtz {
 
         constexpr static ZoneUntil none() noexcept { return { MAX_DAYS, {} }; }
     };
-
-    string format_as( ZoneUntil );
 } // namespace vtz

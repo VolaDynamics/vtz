@@ -4,6 +4,8 @@
 #include <vtz/tz.h>
 #include <vtz/tz_reader.h>
 
+#include <vtz/format.h>
+
 #include "vtz_testing.h"
 #include "vtz_debug.h"
 

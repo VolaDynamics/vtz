@@ -159,8 +159,5 @@ namespace vtz {
         bool operator!=( ZoneFormat const& rhs ) const noexcept {
             return B16( *this ) != B16( rhs );
         }
-
-        string str() const;
     };
-    inline string format_as( ZoneFormat const& f ) { return f.str(); }
 } // namespace vtz

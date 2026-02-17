@@ -98,7 +98,6 @@ namespace vtz {
             return RuleAt( repr );
         }
     };
-    string format_as( RuleAt r );
 
     template<>
     struct OptTraits<RuleAt> {

@@ -89,5 +89,4 @@ namespace vtz {
             return off != rhs.off;
         }
     };
-    string format_as( FromUTC off );
 } // namespace vtz

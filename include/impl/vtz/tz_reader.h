@@ -80,8 +80,6 @@ namespace vtz {
             };
         }
 
-        string str() const;
-
         static RuleTrans from_civil( int year,
             u32                          mon,
             u32                          day,
@@ -108,7 +106,6 @@ namespace vtz {
         }
     };
 
-    inline string format_as( RuleTrans const& rule ) { return rule.str(); }
 
 
     /// Example rules:
@@ -549,7 +546,6 @@ namespace vtz {
             return data_ == rhs.data_;
         }
     };
-    std::string format_as( AbbrBlock b );
 
     struct ZoneStates {
         /// Return the _last_ value less than or equal to 'when'.

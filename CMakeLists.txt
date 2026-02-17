@@ -82,7 +82,7 @@ if(PROJECT_IS_TOP_LEVEL)
     )
 endif()
 
-file(GLOB_RECURSE sources include/*.cpp)
+file(GLOB_RECURSE sources include/api/*.cpp include/impl/*.cpp)
 
 
 add_library(
@@ -147,6 +147,18 @@ install(FILES "${PROJECT_BINARY_DIR}/vtzConfig.cmake"
 
 # Add tests and benchmarks
 if(PROJECT_IS_TOP_LEVEL)
+    file(GLOB_RECURSE src include/extras/*.cpp)
+    add_library(vtz_extras ${src})
+    target_include_directories(vtz_extras PUBLIC include/extras)
+    target_link_libraries(
+        vtz_extras
+        PUBLIC
+            fmt::fmt
+            vtz::vtz
+            vtz::impl
+    )
+    add_library(vtz::extras ALIAS vtz_extras)
+
     set(tzdb_file tzdb-2025b.tar.lz)
     cmake_path(GET tzdb_file STEM tzdb_stem)
 
@@ -215,6 +227,7 @@ if(PROJECT_IS_TOP_LEVEL)
             GTest::gtest_main
             vtz::vtz
             vtz::impl
+            vtz::extras # Formatting code
             fmt::fmt
             date::date
             date::date-tz
@@ -258,6 +271,6 @@ if(PROJECT_IS_TOP_LEVEL)
     foreach(file IN LISTS tools)
         cmake_path(GET file STEM exe)
         add_executable(${exe} ${file})
-        target_link_libraries(${exe} PRIVATE vtz::vtz vtz::impl fmt::fmt)
+        target_link_libraries(${exe} PRIVATE vtz::vtz vtz::impl vtz::extras fmt::fmt)
     endforeach()
 endif()

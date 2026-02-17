@@ -16,8 +16,10 @@
 #include <vtz/civil.h>
 #include <vtz/tz.h>
 
-#include "vtz_testing.h"
+#include <vtz/format.h>
+
 #include "vtz_debug.h"
+#include "vtz_testing.h"
 
 using namespace vtz;
 using _test_vtz::TEST_LOG;
@@ -876,29 +878,29 @@ TEST( vtz_parser, basics ) {
     ASSERT_EQ( parse_signed_hhmmss_offset( "2:00" ), 7200 );
     ASSERT_EQ( parse_signed_hhmmss_offset( "-2:00" ), -7200 );
 
-    ASSERT_EQ( parse_rule_on( "lastSun" ).str(), "lastSun" );
-    ASSERT_EQ( parse_rule_on( "lastMon" ).str(), "lastMon" );
-    ASSERT_EQ( parse_rule_on( "lastTue" ).str(), "lastTue" );
-    ASSERT_EQ( parse_rule_on( "lastWed" ).str(), "lastWed" );
-    ASSERT_EQ( parse_rule_on( "lastThu" ).str(), "lastThu" );
-    ASSERT_EQ( parse_rule_on( "lastFri" ).str(), "lastFri" );
-    ASSERT_EQ( parse_rule_on( "lastSat" ).str(), "lastSat" );
+    ASSERT_EQ( format_as( parse_rule_on( "lastSun" ) ), "lastSun" );
+    ASSERT_EQ( format_as( parse_rule_on( "lastMon" ) ), "lastMon" );
+    ASSERT_EQ( format_as( parse_rule_on( "lastTue" ) ), "lastTue" );
+    ASSERT_EQ( format_as( parse_rule_on( "lastWed" ) ), "lastWed" );
+    ASSERT_EQ( format_as( parse_rule_on( "lastThu" ) ), "lastThu" );
+    ASSERT_EQ( format_as( parse_rule_on( "lastFri" ) ), "lastFri" );
+    ASSERT_EQ( format_as( parse_rule_on( "lastSat" ) ), "lastSat" );
 
-    ASSERT_EQ( parse_rule_on( "Sun>=1" ).str(), "Sun>=1" );
-    ASSERT_EQ( parse_rule_on( "Mon>=2" ).str(), "Mon>=2" );
-    ASSERT_EQ( parse_rule_on( "Tue>=3" ).str(), "Tue>=3" );
-    ASSERT_EQ( parse_rule_on( "Wed>=10" ).str(), "Wed>=10" );
-    ASSERT_EQ( parse_rule_on( "Thu>=11" ).str(), "Thu>=11" );
-    ASSERT_EQ( parse_rule_on( "Fri>=12" ).str(), "Fri>=12" );
-    ASSERT_EQ( parse_rule_on( "Sat>=31" ).str(), "Sat>=31" );
+    ASSERT_EQ( format_as( parse_rule_on( "Sun>=1" ) ), "Sun>=1" );
+    ASSERT_EQ( format_as( parse_rule_on( "Mon>=2" ) ), "Mon>=2" );
+    ASSERT_EQ( format_as( parse_rule_on( "Tue>=3" ) ), "Tue>=3" );
+    ASSERT_EQ( format_as( parse_rule_on( "Wed>=10" ) ), "Wed>=10" );
+    ASSERT_EQ( format_as( parse_rule_on( "Thu>=11" ) ), "Thu>=11" );
+    ASSERT_EQ( format_as( parse_rule_on( "Fri>=12" ) ), "Fri>=12" );
+    ASSERT_EQ( format_as( parse_rule_on( "Sat>=31" ) ), "Sat>=31" );
 
-    ASSERT_EQ( parse_rule_on( "Sun<=1" ).str(), "Sun<=1" );
-    ASSERT_EQ( parse_rule_on( "Mon<=2" ).str(), "Mon<=2" );
-    ASSERT_EQ( parse_rule_on( "Tue<=3" ).str(), "Tue<=3" );
-    ASSERT_EQ( parse_rule_on( "Wed<=10" ).str(), "Wed<=10" );
-    ASSERT_EQ( parse_rule_on( "Thu<=11" ).str(), "Thu<=11" );
-    ASSERT_EQ( parse_rule_on( "Fri<=12" ).str(), "Fri<=12" );
-    ASSERT_EQ( parse_rule_on( "Sat<=31" ).str(), "Sat<=31" );
+    ASSERT_EQ( format_as( parse_rule_on( "Sun<=1" ) ), "Sun<=1" );
+    ASSERT_EQ( format_as( parse_rule_on( "Mon<=2" ) ), "Mon<=2" );
+    ASSERT_EQ( format_as( parse_rule_on( "Tue<=3" ) ), "Tue<=3" );
+    ASSERT_EQ( format_as( parse_rule_on( "Wed<=10" ) ), "Wed<=10" );
+    ASSERT_EQ( format_as( parse_rule_on( "Thu<=11" ) ), "Thu<=11" );
+    ASSERT_EQ( format_as( parse_rule_on( "Fri<=12" ) ), "Fri<=12" );
+    ASSERT_EQ( format_as( parse_rule_on( "Sat<=31" ) ), "Sat<=31" );
 
     ASSERT_ANY_THROW( parse_rule_on( "Sun<=0" ); );
 
@@ -932,15 +934,15 @@ TEST( vtz_parser, basics ) {
     ASSERT_EQ( off1.is_offset(), true );
     ASSERT_EQ( off1.kind(), ZoneRule::OFFSET );
     ASSERT_EQ( off1.offset(), 4980 );
-    ASSERT_EQ( off1.str(), "01:23" );
+    ASSERT_EQ( format_as( off1 ), "01:23" );
 
     ASSERT_EQ( off2.kind(), ZoneRule::OFFSET );
     ASSERT_EQ( off2.offset(), 4980 );
-    ASSERT_EQ( off2.str(), "01:23" );
+    ASSERT_EQ( format_as( off2 ), "01:23" );
 
     ASSERT_EQ( off3.kind(), ZoneRule::OFFSET );
     ASSERT_EQ( off3.offset(), -4980 );
-    ASSERT_EQ( off3.str(), "-01:23" );
+    ASSERT_EQ( format_as( off3 ), "-01:23" );
 }
 
 

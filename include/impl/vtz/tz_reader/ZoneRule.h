@@ -71,8 +71,6 @@ namespace vtz {
         /// Return the offset as a RuleSave
         constexpr RuleSave save() const noexcept { return offset(); }
 
-        string str() const;
-
         bool operator==( ZoneRule const& rhs ) const noexcept {
             return B16( *this ) == B16( rhs );
         }
@@ -100,7 +98,6 @@ namespace vtz {
             };
         }
     };
-    inline string format_as( ZoneRule const& rule ) { return rule.str(); }
 
 
     static_assert( ZoneRule().kind() == ZoneRule::NAMED );

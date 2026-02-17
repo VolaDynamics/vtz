@@ -34,5 +34,4 @@ namespace vtz {
             return save == rhs.save;
         }
     };
-    string format_as( RuleSave );
 } // namespace vtz

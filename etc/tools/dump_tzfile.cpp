@@ -8,6 +8,8 @@
 #include <vtz/tz_reader/LeapTable.h>
 #include <vtz/tzfile.h>
 
+#include <vtz/format.h>
+
 using color = fmt::terminal_color;
 using fmt::fg;
 using fmt::print;

@@ -1182,64 +1182,6 @@ namespace vtz {
         return file;
     }
 
-    std::string RuleOn::str() const {
-        switch( kind() )
-        {
-        case RuleOn::DAY: return fmt::format( "{}", day() );
-        case RuleOn::DOW_LE: return fmt::format( "{}<={}", dow(), day() );
-        case RuleOn::DOW_GE: return fmt::format( "{}>={}", dow(), day() );
-        case RuleOn::DOW_LAST: return fmt::format( "last{}", dow() );
-        }
-
-        throw std::runtime_error( "RuleOn::str(): bad kind()" );
-    }
-
-
-    std::string to_hhmmss( int time_seconds ) {
-        bool is_neg = time_seconds < 0;
-        u32  save   = u32( std::abs( time_seconds ) );
-
-        u32 hour  = save / 3600;
-        save     %= 3600;
-        u32 min   = save / 60;
-        save     %= 60;
-        u32 sec   = save;
-
-        if( is_neg )
-        {
-            if( sec )
-                return fmt::format( "-{:0>2}:{:0>2}:{:0>2}", hour, min, sec );
-            else
-                return fmt::format( "-{:0>2}:{:0>2}", hour, min );
-        }
-        else
-        {
-            if( sec )
-                return fmt::format( "{:0>2}:{:0>2}:{:0>2}", hour, min, sec );
-            else
-                return fmt::format( "{:0>2}:{:0>2}", hour, min );
-        }
-    }
-    std::string format_as( RuleSave s ) {
-        if( s.save == 0 ) { return "0"; }
-
-        return to_hhmmss( s.save );
-    }
-
-    std::string format_as( FromUTC off ) { return to_hhmmss( off.off ); }
-
-
-    std::string format_as( RuleAt r ) {
-        auto time = to_hhmmss( r.offset() );
-        switch( r.kind() )
-        {
-        case RuleAt::LOCAL_WALL: return time;
-        case RuleAt::LOCAL_STANDARD: return time + 's';
-        case RuleAt::UTC: return time + 'u';
-        default: return time + "<bad kind>";
-        }
-    }
-
 
     RuleSave::RuleSave( string_view text ) {
         save = parse_rule_save( OptTok( text ) ).save;
@@ -1257,18 +1199,6 @@ namespace vtz {
     , rules( parse_zone_rule( rules ) )
     , format( parse_zone_format( format ) )
     , until( parse_zone_until( until ) ) {}
-
-
-    std::string format_as( ZoneUntil until ) {
-        if( until.has_value() )
-        {
-            auto ymd = to_civil( until.date );
-            return fmt::format(
-                "{:>4} {} {:>2} {}", ymd.year, ymd.mon(), ymd.day, until.at );
-        }
-
-        return "(none)";
-    }
 
 
     size_t dump_active( RuleEntry const* active,
@@ -1954,39 +1884,6 @@ namespace vtz {
         return evaluate_rules( rules.data(), rules.data() + rules.size() );
     }
 
-    string RuleTrans::str() const {
-        return fmt::format( "{} @ {} SAVE={} LETTER='{}'",
-            to_civil( date ),
-            at,
-            save,
-            letter.sv() );
-    }
-    string ZoneFormat::str() const {
-        size_t      sz0 = ( fmt_ >> 2 ) & 0xf;
-        size_t      sz1 = ( fmt_ >> 6 ) & 0xf;
-        string_view h0( buff, sz0 );
-        string_view h1( buff + sz0, sz1 );
-        string_view mid;
-        switch( tag() )
-        {
-        case LITERAL: mid = {}; break;
-        case SLASH: mid = "/"; break;
-        case FMT_S: mid = "%s"; break;
-        case FMT_Z: mid = "%z"; break;
-        }
-        return fmt::format( "{}{}{}", h0, mid, h1 );
-    }
-    string ZoneRule::str() const {
-        switch( kind() )
-        {
-        case HYPHEN: return "-";
-        case NAMED: return string( name() );
-        case OFFSET: return to_hhmmss( offset() );
-        }
-
-        throw std::runtime_error(
-            "ZoneRule::str(): kind() is invalid/corrupt" );
-    }
     vector<ZoneTransition> ZoneStates::get_transitions() const {
         constexpr static sysseconds_t MAX_TIME
             = std::numeric_limits<sysseconds_t>::max();
@@ -2037,9 +1934,7 @@ namespace vtz {
 
         return result;
     }
-    std::string format_as( AbbrBlock b ) {
-        return fmt::format( "(index: {}, size: {})", b.index(), b.size() );
-    }
+
     RuleEvalResult TZDataFile::evaluate_rules( string_view rule ) const {
         auto it = rules.find( rule );
         if( it == rules.end() )
