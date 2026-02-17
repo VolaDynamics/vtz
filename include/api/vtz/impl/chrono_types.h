@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <string>
 #include <vtz/types.h>
 
 namespace vtz {

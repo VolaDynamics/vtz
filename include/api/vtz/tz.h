@@ -5,7 +5,7 @@
 #include <memory>
 #include <string_view>
 #include <type_traits>
-#include <vtz/date.h>
+#include <vtz/impl/chrono_types.h>
 #include <vtz/impl/export.h>
 #include <vtz/impl/math.h>
 #include <vtz/impl/zone_abbr.h>
