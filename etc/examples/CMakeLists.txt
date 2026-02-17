@@ -21,4 +21,10 @@ foreach(example_file IN LISTS examples)
             vtz::vtz
             fmt::fmt
     )
+
+    target_compile_features(
+        ${target}
+        PRIVATE
+            cxx_std_17
+    )
 endforeach()
