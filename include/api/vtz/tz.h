@@ -44,7 +44,7 @@ namespace vtz {
     }
 
 
-    /// Formats a date to to the provided buffer, with date given as as days
+    /// Formats a date to the given buffer, with date given as as days
     /// since the unix epoch. Output is truncated if it would exceed `count`.
     ///
     /// For format specifiers, see:
@@ -59,7 +59,7 @@ namespace vtz {
         string_view format, sysdays_t days, char* buff, size_t count );
 
 
-    /// Formats a date to to the provided buffer, with date given as a
+    /// Formats a date to the given buffer, with date given as a
     /// `std::chrono::sys_days`. Output is truncated if it would exceed `count`.
     ///
     /// For format specifiers, see:
@@ -116,9 +116,9 @@ namespace vtz {
     /// https://en.cppreference.com/w/cpp/chrono/parse.html
     ///
     /// @param fmt format specifier describes layout of a date (eg,
-    /// `"%Y-%m-%d %H-%M-%S"`)
-    /// @param time_str string describing date, eg `"2026-02-19"`
-    /// @return the number of days since the epoch, as an int
+    /// `"%Y-%m-%d %H:%M:%S"`)
+    /// @param time_str string describing time, eg `"2026-02-19 16:19:27"`
+    /// @return the number of seconds since the epoch, as a 64-bit int
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT sec_t parse_time_s( string_view fmt, string_view time_str );
@@ -131,9 +131,9 @@ namespace vtz {
     /// https://en.cppreference.com/w/cpp/chrono/parse.html
     ///
     /// @param fmt format specifier describes layout of a date (eg,
-    /// `"%Y-%m-%d %H-%M-%S"`)
-    /// @param time_str string describing date, eg `"2026-02-19"`
-    /// @return a `std::chrono::sys_seconds` value representing the date
+    /// `"%Y-%m-%d %H:%M:%S"`)
+    /// @param time_str string describing the time, eg `"2026-02-19 16:19:27"`
+    /// @return a `std::chrono::sys_seconds` value representing the time
     /// @throws if the given format specifier is invalid
 
     inline sys_seconds parse_sys_seconds(
@@ -146,7 +146,7 @@ namespace vtz {
     /// integral number of nanoseconds since the Unix Epoch.
     ///
     /// Decimal digits are permitted after the number of seconds. For example,
-    /// if the format string is `"%Y-%m-%d %H-%M-%S"` then `"2025-02-19
+    /// if the format string is `"%Y-%m-%d %H:%M:%S"` then `"2025-02-19
     /// 16:19:27.12878"` is interpreted as "2025-02-19 16:19:27, and 128780000
     /// nanoseconds".
     ///
@@ -154,9 +154,9 @@ namespace vtz {
     /// https://en.cppreference.com/w/cpp/chrono/parse.html
     ///
     /// @param fmt format specifier describes layout of a date (eg,
-    /// `"%Y-%m-%d %H-%M-%S"`)
-    /// @param time_str string describing date, eg `"2026-02-19"`
-    /// @return the number of nanoseconds since the epoch, as an int
+    /// `"%Y-%m-%d %H:%M:%S"`)
+    /// @param time_str string describing the time, eg `"2026-02-19 16:19:27.12878"`
+    /// @return the number of nanoseconds since the epoch, as a 64-bit int
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT nanos_t parse_time_ns( string_view fmt, string_view time_str );
@@ -166,7 +166,7 @@ namespace vtz {
     /// integral number of nanoseconds since the Unix Epoch.
     ///
     /// Decimal digits are permitted after the number of seconds. For example,
-    /// if the format string is `"%Y-%m-%d %H-%M-%S"` then `"2025-02-19
+    /// if the format string is `"%Y-%m-%d %H:%M:%S"` then `"2025-02-19
     /// 16:19:27.12878"` is interpreted as "2025-02-19 16:19:27, and 128780000
     /// nanoseconds".
     ///
@@ -174,9 +174,10 @@ namespace vtz {
     /// https://en.cppreference.com/w/cpp/chrono/parse.html
     ///
     /// @param fmt format specifier describes layout of a date (eg,
-    /// `"%Y-%m-%d %H-%M-%S"`)
-    /// @param time_str string describing date, eg `"2026-02-19"`
-    /// @return a `std::chrono::sys_time<nanoseconds>` value representing the time
+    /// `"%Y-%m-%d %H:%M:%S"`)
+    /// @param time_str string describing the time, eg `"2026-02-19 16:19:27.12878"`
+    /// @return a `std::chrono::sys_time<nanoseconds>` value representing the
+    /// time
     /// @throws if the given format specifier is invalid
 
     inline sys_time<nanoseconds> parse_sys_nanoseconds(
@@ -362,7 +363,7 @@ namespace vtz {
         size_t format_to_s( sysseconds_t t, char* buff, size_t count, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const noexcept;
         /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
         size_t format_to(   sys_seconds  t, char* buff, size_t count, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_to_s( t.time_since_epoch().count(), buff, count, date_sep, date_time_sep, abbrev_sep ); }
-        /// Formats as `%Y-%m-%d HH:MM:SS %Z`. Example: `2025-11-06 17:50:00 EST`
+        /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`
         string format_s(    sysseconds_t t, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const;
         /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`
         string format(      sys_seconds  t, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_s( t.time_since_epoch().count(), date_sep, date_time_sep, abbrev_sep ); }
@@ -403,7 +404,7 @@ namespace vtz {
         /// Examples:
         ///
         /// - `"%Y%m%d %H:%M:%S-%Z"` with `t=1762442685`, `nanos=029380000` and `prec=4` would produce "20251106 08:24:45.0293-MST" for America/Denver
-        /// - `"%F %T %Z"` with `t=1762442685`, `nanos=029380000` and `precision=4` would produce "2025-11-06 08:24:45.0293-MST" for America/Denver
+        /// - `"%F %T %Z"` with `t=1762442685`, `nanos=029380000` and `precision=4` would produce "2025-11-06 08:24:45.0293 MST" for America/Denver
         ///
         /// In the latter example, `%T` expands to `%H:%M:%S`.
         size_t format_precise_to_s( string_view format, sysseconds_t t, u32 nanos, int precision, char* buff, size_t count ) const;
@@ -413,7 +414,7 @@ namespace vtz {
         size_t format_precise_to( string_view format, sys_time<Dur> t, int precision, char* buff, size_t count ) const {
             auto sec = std::chrono::floor<seconds>( t.time_since_epoch() );
             auto nanos = std::chrono::floor<nanoseconds>( t.time_since_epoch() - sec );
-            return format_precise_to_s( format, sec.count(), nanos.count(), precision, buff, count );
+            return format_precise_to_s( format, sec.count(), u32( nanos.count() ), precision, buff, count );
         }
 
         /// Formats a time (expressed as seconds and nanoseconds) to the given buffer. For more information,
