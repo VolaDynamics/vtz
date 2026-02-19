@@ -45,11 +45,8 @@ namespace vtz {
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
         template<class Dur>
-        std::chrono::seconds offset( sys_time<Dur> t ) const {
-            return std::chrono::seconds(
-                offset_s( std::chrono::duration_cast<std::chrono::seconds>(
-                    t.time_since_epoch() )
-                        .count() ) );
+        seconds offset( sys_time<Dur> t ) const {
+            return seconds( offset_s( _raw_time( t ) ) );
         }
 
         /// Return the name of the zone
