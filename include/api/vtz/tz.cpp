@@ -49,9 +49,9 @@ namespace vtz {
 
     /// Construct a lookup table corresponding to a constant state (eg, a
     /// timezone with no zone transitions)
-    S32Table table1( u32 x ) {
+    s32_table table1( u32 x ) {
         auto block = _join32( x, x );
-        return S32Table{
+        return s32_table{
             63,
             _init<i64>( 0, 0 ),
             _init<u64>( block, block ),
@@ -63,9 +63,9 @@ namespace vtz {
 
     /// Construct a lookup table with two possible values and one transition
     /// time
-    S32Table table2( i64 trans, u32 initial, u32 final ) {
+    s32_table table2( i64 trans, u32 initial, u32 final ) {
         auto block = _join32( initial, final );
-        return S32Table{
+        return s32_table{
             63,
             _init<i64>( trans, trans ),
             _init<u64>( block, block ),
@@ -153,7 +153,7 @@ namespace vtz {
 
 
     template<class T, class Indexable>
-    S32Table make_table( T       off0,
+    s32_table make_table( T       off0,
         span<sysseconds_t const> tt,
         Indexable                off,
         sysseconds_t             min_t,
@@ -203,7 +203,7 @@ namespace vtz {
             }
         }
 
-        return S32Table{
+        return s32_table{
             g,
             std::move( tt_times ),
             std::move( blocks ),
@@ -218,7 +218,7 @@ namespace vtz {
     /// looking up a UTC time, or a local time, you will end up in a block
     /// containing the relevant transition time.
     template<class T>
-    S32Table make_universal_table( T off0,
+    s32_table make_universal_table( T off0,
         span<sysseconds_t const>     tt,
         span<T const>                off,
         sysseconds_t                 min_t,
@@ -276,7 +276,7 @@ namespace vtz {
             }
         }
 
-        return S32Table{
+        return s32_table{
             g,
             std::move( tt_times ),
             std::move( blocks ),
@@ -286,7 +286,7 @@ namespace vtz {
     }
 
 
-    TransTable make_trans_table( span<sysseconds_t const> tt,
+    trans_table make_trans_table( span<sysseconds_t const> tt,
 
         sec_t        cycle_time,
         sysseconds_t min_trans_time = INT64_MIN,
@@ -328,7 +328,7 @@ namespace vtz {
         auto tz0_    = -u64( min_t );
         auto tz_max_ = u64( max_t ) + tz0_;
 
-        struct GetIndex {
+        struct _get_index {
             i32 operator[]( ptrdiff_t i ) const noexcept { return i32( i + 1 ); };
         };
 
@@ -340,14 +340,14 @@ namespace vtz {
         return {
             tz0_,
             tz_max_,
-            make_table( 0, tt, GetIndex{}, min_t, max_t ),
+            make_table( 0, tt, _get_index{}, min_t, max_t ),
             cycle_time,
             std::move( times ),
         };
     }
 
 
-    OffTables make_off_tables( i32 off0,
+    off_tables make_off_tables( i32 off0,
         span<sysseconds_t const>   tt,
         span<i32 const>            off,
         sec_t                      cycle_time ) {
@@ -399,18 +399,18 @@ namespace vtz {
         };
     }
 
-    OffTables make_off_tables( ZoneStates const& s ) {
+    off_tables make_off_tables( zone_states const& s ) {
         return make_off_tables( s.walloff_initial_,
             s.walloff_trans_,
             s.walloff_,
             s.safe_cycle_time );
     }
 
-    AbbrTable make_abbr_table( AbbrBlock initial,
+    abbr_table make_abbr_table( AbbrBlock initial,
         span<sysseconds_t const>         tt,
         span<AbbrBlock const>            abbr,
         sec_t                            cycle_time,
-        span<ZoneAbbr const>             abbr_table ) {
+        span<zone_abbr const>             abbr_table ) {
         auto table = _copy_unique( abbr_table );
         // If the timezone contains no transitions, our table is valid for the
         // full range of possible inputs
@@ -458,7 +458,7 @@ namespace vtz {
         };
     }
 
-    StdoffTable make_stdoff_table( ZoneStates const& states ) {
+    stdoff_table make_stdoff_table( zone_states const& states ) {
         span tt      = states.stdoff_trans_;
         span off     = states.stdoff_;
         i32  initial = states.stdoff_initial_;
@@ -483,15 +483,15 @@ namespace vtz {
         auto Tmax = tt.back();
         return { Tmin, Tmax, make_table( initial, tt, off, Tmin, Tmax ) };
     }
-    time_zone::time_zone( string_view name, ZoneStates const& states )
-    : OffTables( make_off_tables( states ) )
-    , AbbrTable( make_abbr_table( states.abbr_initial_,
+    time_zone::time_zone( string_view name, zone_states const& states )
+    : off_tables( make_off_tables( states ) )
+    , abbr_table( make_abbr_table( states.abbr_initial_,
           states.abbr_trans_,
           states.abbr_,
           states.safe_cycle_time,
           states.abbr_table_ ) )
-    , StdoffTable( make_stdoff_table( states ) )
-    , TransTable( make_trans_table( states.tt_, states.safe_cycle_time ) )
+    , stdoff_table( make_stdoff_table( states ) )
+    , trans_table( make_trans_table( states.tt_, states.safe_cycle_time ) )
     , name_( name ) {}
 
 
@@ -500,10 +500,10 @@ namespace vtz {
 
     time_zone time_zone::utc() {
         return time_zone{ "UTC",
-            ZoneStates::make_static( ZoneState{
+            zone_states::make_static( ZoneState{
                 FromUTC( 0 ),
                 FromUTC( 0 ),
-                ZoneAbbr{ 3, "UTC" },
+                zone_abbr{ 3, "UTC" },
             } ) };
     }
 

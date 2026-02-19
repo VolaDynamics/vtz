@@ -547,7 +547,7 @@ namespace vtz {
         }
     };
 
-    struct ZoneStates {
+    struct zone_states {
         /// Return the _last_ value less than or equal to 'when'.
         /// Return -1 if no such value exists
         static ptrdiff_t _find( span<i64 const> s, i64 when ) {
@@ -556,7 +556,7 @@ namespace vtz {
         }
 
         sysseconds_t     safe_cycle_time;
-        vector<ZoneAbbr> abbr_table_;
+        vector<zone_abbr> abbr_table_;
 
         AbbrBlock abbr_initial_;
         i32       walloff_initial_;
@@ -618,7 +618,7 @@ namespace vtz {
             return local_to_string( time, state.walloff, state.abbr );
         }
 
-        static ZoneStates make_static( ZoneState state ) {
+        static zone_states make_static( ZoneState state ) {
             return {
                 0,
                 { state.abbr },
@@ -635,7 +635,7 @@ namespace vtz {
         LinkMap links;
 
         RuleEvalResult evaluate_rules( string_view rule ) const;
-        ZoneStates     get_zone_states( string_view name, i32 end_year ) const;
+        zone_states     get_zone_states( string_view name, i32 end_year ) const;
 
         bool operator==( TZDataFile const& rhs ) const noexcept {
             return rules == rhs.rules    //
@@ -717,10 +717,10 @@ namespace vtz {
         TZDataFile& file, string_view input, string_view filename = "(none)" );
 
 
-    ZoneStates load_zone_states( span<ZoneEntry const> entries,
+    zone_states load_zone_states( span<ZoneEntry const> entries,
         map<string_view, ZoneTransIter>                cache,
         i64                                            safe_cycle_time,
         i32                                            end_year = -1 );
 
-    ZoneStates load_zone_states_tzfile( std::string const& fp );
+    zone_states load_zone_states_tzfile( std::string const& fp );
 } // namespace vtz

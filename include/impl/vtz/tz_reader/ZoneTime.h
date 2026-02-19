@@ -14,11 +14,11 @@ namespace vtz {
         constexpr RuleSave save() const noexcept { return walloff.off - stdoff.off; }
 
         bool operator==( ZoneTime const& rhs ) const noexcept {
-            return B8( *this ) == B8( rhs );
+            return _b8( *this ) == _b8( rhs );
         }
 
         bool operator!=( ZoneTime const& rhs ) const noexcept {
-            return B8( *this ) != B8( rhs );
+            return _b8( *this ) != _b8( rhs );
         }
     };
 } // namespace vtz

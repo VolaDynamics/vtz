@@ -53,50 +53,50 @@ namespace vtz {
         return dest;
     }
 
-    struct B8 {
+    struct _b8 {
         uint64_t a;
 
-        B8() = default;
+        _b8() = default;
         template<class Src>
-        explicit B8( Src const& s )
-        : B8( bit_cast<B8>( s ) ) {}
+        explicit _b8( Src const& s )
+        : _b8( bit_cast<_b8>( s ) ) {}
 
-        constexpr bool operator==( B8 rhs ) const noexcept {
+        constexpr bool operator==( _b8 rhs ) const noexcept {
             return a == rhs.a;
         }
-        constexpr bool operator!=( B8 rhs ) const noexcept {
+        constexpr bool operator!=( _b8 rhs ) const noexcept {
             return a != rhs.a;
         }
     };
 
-    struct B16 {
+    struct _b16 {
         uint64_t a, b;
 
-        B16() = default;
+        _b16() = default;
         template<class Src>
-        explicit B16( Src const& s )
-        : B16( bit_cast<B16>( s ) ) {}
+        explicit _b16( Src const& s )
+        : _b16( bit_cast<_b16>( s ) ) {}
 
-        constexpr bool operator==( B16 const& rhs ) const noexcept {
+        constexpr bool operator==( _b16 const& rhs ) const noexcept {
             return a == rhs.a && b == rhs.b;
         }
-        constexpr bool operator!=( B16 const& rhs ) const noexcept {
+        constexpr bool operator!=( _b16 const& rhs ) const noexcept {
             return !( a == rhs.a && b == rhs.b );
         }
     };
 
-    struct B24 {
+    struct _b24 {
         uint64_t a, b, c;
 
-        B24() = default;
+        _b24() = default;
         template<class Src>
-        explicit B24( Src const& s )
-        : B24( bit_cast<B24>( s ) ) {}
+        explicit _b24( Src const& s )
+        : _b24( bit_cast<_b24>( s ) ) {}
 
-        constexpr bool operator==( B24 const& rhs ) const noexcept {
+        constexpr bool operator==( _b24 const& rhs ) const noexcept {
             return a == rhs.a && b == rhs.b && c == rhs.c;
         }
-        constexpr bool operator!=( B24 const& rhs ) const noexcept {
+        constexpr bool operator!=( _b24 const& rhs ) const noexcept {
             return !( a == rhs.a && b == rhs.b && c == rhs.c );
         }
     };

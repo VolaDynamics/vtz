@@ -5,7 +5,7 @@
 #include <vtz/tz_reader/RuleSave.h>
 
 namespace vtz {
-    using RuleName = FixStr<15>;
+    using RuleName = fix_str<15>;
 
     /// From "How to Read the tz Database Source Files":
     ///
@@ -72,11 +72,11 @@ namespace vtz {
         constexpr RuleSave save() const noexcept { return offset(); }
 
         bool operator==( ZoneRule const& rhs ) const noexcept {
-            return B16( *this ) == B16( rhs );
+            return _b16( *this ) == _b16( rhs );
         }
 
         bool operator!=( ZoneRule const& rhs ) const noexcept {
-            return B16( *this ) != B16( rhs );
+            return _b16( *this ) != _b16( rhs );
         }
 
       private:

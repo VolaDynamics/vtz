@@ -338,7 +338,7 @@ namespace vtz {
         /// `TimeZoneCache` was not constructed from a timezone source file,
         /// `compute_states()` will fall back to loading a zone from the
         /// `zoneinfo_dir` if set.
-        ZoneStates compute_states( string_view name ) const;
+        zone_states compute_states( string_view name ) const;
 
         /// Returns an evaluated rule, loading it if necessary. If a load
         /// occurs, the rule will be added to the rule cache.

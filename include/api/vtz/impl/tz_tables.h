@@ -15,8 +15,8 @@ namespace vtz {
     }
 
     /// Implements fast lookup of 32-bit values for quasi-evenly-spaced inputs
-    struct S32TableView {
-        struct Entry {
+    struct s32_table_view {
+        struct entry {
             i64 t;
             u64 block;
 
@@ -37,7 +37,7 @@ namespace vtz {
         constexpr i64 const* data_tt() const noexcept { return tt + start_; }
         constexpr u64 const* data_bb() const noexcept { return bb + start_; }
 
-        VTZ_INLINE constexpr void swap( S32TableView& rhs ) noexcept {
+        VTZ_INLINE constexpr void swap( s32_table_view& rhs ) noexcept {
             auto tmp = *this;
             *this    = rhs;
             rhs      = tmp;
@@ -67,13 +67,13 @@ namespace vtz {
             return u32( i64( block << 32 ) >> 32 );
         }
 
-        VTZ_INLINE constexpr Entry first_entry() const noexcept {
-            return Entry{ *data_tt(), *data_bb() };
+        VTZ_INLINE constexpr entry first_entry() const noexcept {
+            return entry{ *data_tt(), *data_bb() };
         }
 
-        VTZ_INLINE constexpr Entry get( i64 t ) const noexcept {
+        VTZ_INLINE constexpr entry get( i64 t ) const noexcept {
             i64 i = t >> g;
-            return Entry{ tt[i], bb[i] };
+            return entry{ tt[i], bb[i] };
         }
 
         /// if t >= tt[i], return the low 32 bits of bb[i], else obtain the hi
@@ -109,20 +109,20 @@ namespace vtz {
 
 
     // Represents an owning S32Table
-    class S32Table : public S32TableView {
-        using Base = S32TableView;
+    class s32_table : public s32_table_view {
+        using Base = s32_table_view;
 
       public:
 
-        constexpr S32Table() noexcept
-        : S32TableView() {}
+        constexpr s32_table() noexcept
+        : s32_table_view() {}
 
-        S32Table( int                g,
+        s32_table( int                g,
             std::unique_ptr<i64[]>&& tt,
             std::unique_ptr<u64[]>&& bb,
             i64                      start,
             size_t                   size ) noexcept
-        : S32TableView{
+        : s32_table_view{
             g,
             tt.release() - start,
             bb.release() - start,
@@ -130,8 +130,8 @@ namespace vtz {
             u32( size ),
         } {}
 
-        S32Table( S32Table&& rhs ) noexcept
-        : S32Table() {
+        s32_table( s32_table&& rhs ) noexcept
+        : s32_table() {
             swap( rhs );
         }
 
@@ -140,15 +140,15 @@ namespace vtz {
         using Base::lookup;
         using Base::lookup_u32;
 
-        VTZ_INLINE S32TableView view() const noexcept { return *this; }
+        VTZ_INLINE s32_table_view view() const noexcept { return *this; }
 
-        VTZ_INLINE void swap( S32Table& rhs ) noexcept { Base::swap( rhs ); }
+        VTZ_INLINE void swap( s32_table& rhs ) noexcept { Base::swap( rhs ); }
 
-        S32Table& operator=( S32Table rhs ) noexcept {
+        s32_table& operator=( s32_table rhs ) noexcept {
             return swap( rhs ), *this;
         }
 
-        ~S32Table() {
+        ~s32_table() {
             if( tt ) delete[]( tt + start_ );
             if( bb ) delete[]( bb + start_ );
         }
@@ -156,7 +156,7 @@ namespace vtz {
 
     enum class choose : bool { earliest = false, latest = true };
 
-    struct ZoneStates;
+    struct zone_states;
 
     using std::string_view;
 
@@ -188,10 +188,10 @@ namespace vtz {
     }
 
 
-    struct OffTables {
+    struct off_tables {
         u64      tz0_;
         u64      tz_max_;
-        S32Table TTutc;
+        s32_table TTutc;
         sec_t    cycle_time;
 
         /// For a given system time T, represented as "offsets from UTC", return
@@ -423,27 +423,27 @@ namespace vtz {
             }
         }
 
-        struct Impl;
+        struct _impl;
     };
 
-    struct TransTable {
+    struct trans_table {
         u64      tz0_;
         u64      tz_max_;
-        S32Table tt_index;
+        s32_table tt_index;
         sec_t    cycle_time;
 
         std::unique_ptr<sysseconds_t[]> when;
 
-        struct Range {
+        struct time_range {
             sysseconds_t begin;
             sysseconds_t end;
         };
 
-        VTZ_INLINE Range sys_range_s( sysseconds_t t ) const noexcept {
+        VTZ_INLINE time_range sys_range_s( sysseconds_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return sys_range_impl( t );
 
-            if( t < 0 ) { return Range{ when[0], when[1] }; }
+            if( t < 0 ) { return time_range{ when[0], when[1] }; }
 
             auto t2    = get_cyclic( t, cycle_time );
             auto r     = sys_range_impl( t2 );
@@ -456,16 +456,16 @@ namespace vtz {
 
       private:
 
-        VTZ_INLINE Range sys_range_impl( sysseconds_t t ) const noexcept {
+        VTZ_INLINE time_range sys_range_impl( sysseconds_t t ) const noexcept {
             auto i = tt_index.lookup( t );
             return { when[i], when[i + 1] };
         }
     };
 
-    struct StdoffTable {
+    struct stdoff_table {
         sysseconds_t t_min;
         sysseconds_t t_max;
-        S32Table     stdoff;
+        s32_table     stdoff;
 
         VTZ_INLINE i32 stdoff_s( sysseconds_t t ) const noexcept {
             if( t < t_min ) t = t_min;
@@ -474,14 +474,14 @@ namespace vtz {
         }
     };
 
-    struct AbbrTable {
+    struct abbr_table {
         u64 tz0_;
         u64 tz_max_;
 
-        S32Table abbr;
+        s32_table abbr;
         sec_t    cycle_time;
 
-        std::unique_ptr<ZoneAbbr[]> abbr_table;
+        std::unique_ptr<zone_abbr[]> abbrev_list;
 
         u32 abbr_block_s( sec_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
@@ -498,7 +498,7 @@ namespace vtz {
         size_t abbrev_to_s( sec_t t, char* p ) const noexcept {
             auto        block = abbr_block_s( t );
             size_t      size  = block & 0xf;
-            char const* data  = abbr_table[block >> 4].buff_;
+            char const* data  = abbrev_list[block >> 4].buff_;
             _vtz_memcpy( p, data, size );
             return size;
         }
@@ -533,13 +533,13 @@ namespace vtz {
 
         string_view abbr_from_block( u32 block ) const noexcept {
             size_t      size = block & 0xf;
-            char const* data = abbr_table[block >> 4].buff_;
+            char const* data = abbrev_list[block >> 4].buff_;
             return string_view( data, size );
         }
 
         std::string abbr_string_from_block( u32 block ) const noexcept {
             size_t      size = block & 0xf;
-            char const* data = abbr_table[block >> 4].buff_;
+            char const* data = abbrev_list[block >> 4].buff_;
             return std::string( data, size );
         }
     };

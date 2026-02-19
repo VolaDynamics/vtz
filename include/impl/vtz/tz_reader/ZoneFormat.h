@@ -134,30 +134,30 @@ namespace vtz {
         }
 
         template<size_t N>
-        constexpr void format( FixStr<N>& dest,
+        constexpr void format( fix_str<N>& dest,
             i32                           off,
             bool                          is_dst,
             string_view                   letter ) const noexcept {
             dest.size_ = u8( write_n<N>( dest.buff_, off, is_dst, letter ) );
         }
 
-        constexpr ZoneAbbr format(
+        constexpr zone_abbr format(
             i32 off, bool is_dst, string_view letter ) const noexcept {
-            ZoneAbbr result{};
+            zone_abbr result{};
             format( result, off, is_dst, letter );
             return result;
         }
 
-        constexpr ZoneAbbr format(
+        constexpr zone_abbr format(
             FromUTC off, bool is_dst, string_view letter ) const noexcept {
             return format( off.off, is_dst, letter );
         }
 
         bool operator==( ZoneFormat const& rhs ) const noexcept {
-            return B16( *this ) == B16( rhs );
+            return _b16( *this ) == _b16( rhs );
         }
         bool operator!=( ZoneFormat const& rhs ) const noexcept {
-            return B16( *this ) != B16( rhs );
+            return _b16( *this ) != _b16( rhs );
         }
     };
 } // namespace vtz

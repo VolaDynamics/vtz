@@ -10,7 +10,7 @@
 #include <fmt/chrono.h>
 #include <vtz/tz_reader.h>
 
-DECLARE_STRINGLIKE( vtz::ZoneAbbr );
+DECLARE_STRINGLIKE( vtz::zone_abbr );
 
 STRUCT_INFO( vtz::sys_info,
     FIELD( begin ),

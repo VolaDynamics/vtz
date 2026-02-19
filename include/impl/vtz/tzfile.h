@@ -331,8 +331,8 @@ namespace vtz {
             return string_view( p, abbr_end );
         }
 
-        ZoneAbbr get_abbrev( size_t desigidx ) const {
-            return ZoneAbbr::from_sv( get_abbrev_sv( desigidx ) );
+        zone_abbr get_abbrev( size_t desigidx ) const {
+            return zone_abbr::from_sv( get_abbrev_sv( desigidx ) );
         }
 
 
@@ -367,7 +367,7 @@ namespace vtz {
         ZoneState state_from_ti( size_t ti, FromUTC& stdoff ) const {
             ttinfo_bytes ty     = ttinfo()[ti];
             FromUTC      utoff  = FromUTC( ty.tt_utoff() );
-            ZoneAbbr     abbrev = get_abbrev( ty.tt_desigidx() );
+            zone_abbr     abbrev = get_abbrev( ty.tt_desigidx() );
 
             // If we're not within daylight savings time, update the standard
             // offset

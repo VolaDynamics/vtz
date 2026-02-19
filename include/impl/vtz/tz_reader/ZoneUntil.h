@@ -20,7 +20,7 @@ namespace vtz {
         }
 
         bool operator==( ZoneUntil const& rhs ) const noexcept {
-            return B8( *this ) == B8( rhs );
+            return _b8( *this ) == _b8( rhs );
         }
 
         constexpr bool has_value() const noexcept { return date != MAX_DAYS; }

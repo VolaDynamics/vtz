@@ -8,12 +8,12 @@
 namespace vtz {
 
     struct alignas( 8 ) ZoneState : ZoneTime {
-        ZoneAbbr abbr; ///< Zone abbreviation
+        zone_abbr abbr; ///< Zone abbreviation
 
         ZoneState() = default;
 
         constexpr ZoneState(
-            FromUTC stdoff, RuleSave save, ZoneAbbr const& abbr ) noexcept
+            FromUTC stdoff, RuleSave save, zone_abbr const& abbr ) noexcept
         : ZoneTime{ stdoff, stdoff.save( save ) }
         , abbr( abbr ) {}
 
@@ -38,15 +38,15 @@ namespace vtz {
         , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
 
         constexpr ZoneState(
-            FromUTC stdoff, FromUTC walloff, ZoneAbbr const& abbr )
+            FromUTC stdoff, FromUTC walloff, zone_abbr const& abbr )
         : ZoneTime{ stdoff, walloff }
         , abbr( abbr ) {}
 
         bool operator==( ZoneState const& rhs ) const noexcept {
-            return B24( *this ) == B24( rhs );
+            return _b24( *this ) == _b24( rhs );
         }
         bool operator!=( ZoneState const& rhs ) const noexcept {
-            return B24( *this ) != B24( rhs );
+            return _b24( *this ) != _b24( rhs );
         }
     };
 

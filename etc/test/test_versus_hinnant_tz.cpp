@@ -50,8 +50,8 @@ struct entry {
     RuleSave     save;
 
     template<size_t N>
-    ZoneAbbr fix_abbr() const {
-        FixStr<N> result{};
+    zone_abbr fix_abbr() const {
+        fix_str<N> result{};
         if( abbr.size() > N ) { throw std::runtime_error( "fix_abbr(): abbreviation too big!" ); }
         memcpy( result.buff_, abbr.data(), abbr.size() );
         result.size_ = abbr.size();
@@ -607,8 +607,8 @@ TEST( vtz, time_zone ) {
                 for( i64 i = 0; i < n; ++i )
                 {
                     auto local_t    = ambig_start_local + i;
-                    auto prev_block = time_zone::Impl::local_block_s( tz, local_t - 1 );
-                    auto block      = time_zone::Impl::local_block_s( tz, local_t );
+                    auto prev_block = time_zone::_impl::local_block_s( tz, local_t - 1 );
+                    auto block      = time_zone::_impl::local_block_s( tz, local_t );
 
                     ADD_CONTEXT( "Check local -> UTC, choosing earliest",
                         DT{ local_t },
@@ -619,11 +619,11 @@ TEST( vtz, time_zone ) {
                         block.hi(),
                         block.lo(),
                         local_t,
-                        time_zone::Impl::get_tt( tz ).block_size(),
-                        time_zone::Impl::get_tt( tz ).block_start_t( local_t ),
-                        time_zone::Impl::get_tt( tz ).block_end_t( local_t ),
-                        DT{ time_zone::Impl::get_tt( tz ).block_start_t( local_t ) },
-                        DT{ time_zone::Impl::get_tt( tz ).block_end_t( local_t ) } );
+                        time_zone::_impl::get_tt( tz ).block_size(),
+                        time_zone::_impl::get_tt( tz ).block_start_t( local_t ),
+                        time_zone::_impl::get_tt( tz ).block_end_t( local_t ),
+                        DT{ time_zone::_impl::get_tt( tz ).block_start_t( local_t ) },
+                        DT{ time_zone::_impl::get_tt( tz ).block_end_t( local_t ) } );
                     ASSERT_EQ_QUIET( DT{ tz.to_sys_s( local_t, E ) }, DT{ t + i + delta } );
                 }
             }
@@ -646,7 +646,7 @@ TEST( vtz, time_zone ) {
                 if( T0 >= TTabbr.value_or( ai, INT64_MAX ) ) current_abbr = zone_states.abbr_[ai++];
 
                 ASSERT_EQ_QUIET(
-                    AbbrBlock{ time_zone::Impl::get_abbr_table( tz ).abbr_block_s( T0 ) },
+                    AbbrBlock{ time_zone::_impl::get_abbr_table( tz ).abbr_block_s( T0 ) },
                     current_abbr );
                 ASSERT_EQ_QUIET( tz.offset_s( T0 ), current_off );
             }

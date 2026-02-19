@@ -172,10 +172,10 @@ namespace vtz {
         TZDate const& date() const noexcept { return *this; }
 
         bool operator==( TZRule const& rhs ) const noexcept {
-            return B8{ *this } == B8{ rhs };
+            return _b8{ *this } == _b8{ rhs };
         }
         bool operator!=( TZRule const& rhs ) const noexcept {
-            return B8{ *this } != B8{ rhs };
+            return _b8{ *this } != _b8{ rhs };
         }
     };
 
@@ -185,8 +185,8 @@ namespace vtz {
     /// See:
     /// https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html#tag_08_03
     struct TZString {
-        ZoneAbbr abbr1; /// Standard abbreviation
-        ZoneAbbr abbr2; /// Daylight abbreviation
+        zone_abbr abbr1; /// Standard abbreviation
+        zone_abbr abbr2; /// Daylight abbreviation
         FromUTC  off1;  /// Standard offset
         FromUTC  off2;  /// DST offset
         TZRule   r1;

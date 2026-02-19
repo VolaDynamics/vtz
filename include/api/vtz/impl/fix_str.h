@@ -7,7 +7,7 @@ namespace vtz {
     using std::string_view;
 
     template<size_t N>
-    struct FixStr {
+    struct fix_str {
         u8   size_{};
         char buff_[N]{};
 
@@ -21,7 +21,7 @@ namespace vtz {
         constexpr size_t      size() const noexcept { return size_; }
         constexpr char const* data() const noexcept { return buff_; }
 
-        constexpr bool operator==( FixStr const& rhs ) const noexcept {
+        constexpr bool operator==( fix_str const& rhs ) const noexcept {
             return sv() == rhs.sv();
         }
 

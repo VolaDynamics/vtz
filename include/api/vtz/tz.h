@@ -20,27 +20,27 @@ namespace vtz {
     using std::string;
 
     class VTZ_EXPORT time_zone
-    : private OffTables
-    , private AbbrTable
-    , private StdoffTable
-    , private TransTable {
+    : private off_tables
+    , private abbr_table
+    , private stdoff_table
+    , private trans_table {
       public:
 
         /// Constructs a time_zone representing UTC (stdoff of 0, walloff of 0,
         /// abbreviation is UTC, etc)
         static time_zone utc();
 
-        time_zone( string_view name, ZoneStates const& states );
+        time_zone( string_view name, zone_states const& states );
 
-        using AbbrTable::abbrev_s;
-        using AbbrTable::abbrev_string_s;
-        using AbbrTable::abbrev_to_s;
-        using OffTables::offset_s;
-        using OffTables::to_local_ns;
-        using OffTables::to_local_s;
-        using OffTables::to_sys_ns;
-        using OffTables::to_sys_s;
-        using StdoffTable::stdoff_s;
+        using abbr_table::abbrev_s;
+        using abbr_table::abbrev_string_s;
+        using abbr_table::abbrev_to_s;
+        using off_tables::offset_s;
+        using off_tables::to_local_ns;
+        using off_tables::to_local_s;
+        using off_tables::to_sys_ns;
+        using off_tables::to_sys_s;
+        using stdoff_table::stdoff_s;
 
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
@@ -305,7 +305,7 @@ namespace vtz {
         // clang-format on
 
 
-        struct Impl;
+        struct _impl;
 
       private:
 

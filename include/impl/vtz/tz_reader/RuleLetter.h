@@ -4,8 +4,8 @@
 
 
 namespace vtz {
-    struct alignas( 8 ) RuleLetter : FixStr<7> {
-        using FixStr = FixStr<7>;
+    struct alignas( 8 ) RuleLetter : fix_str<7> {
+        using FixStr = fix_str<7>;
 
         using FixStr::FixStr;
 
@@ -22,7 +22,7 @@ namespace vtz {
         constexpr operator string_view() const noexcept { return sv(); }
 
         bool operator==( RuleLetter const& rhs ) const noexcept {
-            return B8( *this ) == B8( rhs );
+            return _b8( *this ) == _b8( rhs );
         }
     };
 } // namespace vtz

@@ -22,13 +22,13 @@
 #include <vtz/util/microfmt.h>
 
 template<>
-struct ankerl::unordered_dense::hash<vtz::ZoneAbbr> {
+struct ankerl::unordered_dense::hash<vtz::zone_abbr> {
     using is_avalanching = void;
 
-    [[nodiscard]] auto operator()( vtz::ZoneAbbr const& x ) const noexcept
+    [[nodiscard]] auto operator()( vtz::zone_abbr const& x ) const noexcept
         -> uint64_t {
         static_assert(
-            std::has_unique_object_representations_v<vtz::ZoneAbbr> );
+            std::has_unique_object_representations_v<vtz::zone_abbr> );
         return detail::wyhash::hash( &x, sizeof( x ) );
     }
 };
@@ -875,10 +875,10 @@ namespace vtz {
     }
 
 
-    ZoneAbbr to_zone_abbr( string_view sv ) {
-        if( sv.size() < ZoneAbbr::max_size )
+    zone_abbr to_zone_abbr( string_view sv ) {
+        if( sv.size() < zone_abbr::max_size )
         {
-            ZoneAbbr result;
+            zone_abbr result;
             _vtz_memcpy( result.buff_, sv.data(), sv.size() );
             result.size_ = u8( sv.size() );
             return result;
@@ -891,7 +891,7 @@ namespace vtz {
         };
     }
 
-    ZoneAbbr to_zone_abbr( OptSV sv ) {
+    zone_abbr to_zone_abbr( OptSV sv ) {
         if( sv ) return to_zone_abbr( *sv );
         throw ParseError{
             "Expected zone abbreviation",
@@ -979,7 +979,7 @@ namespace vtz {
 
     static TZString _parse_tz_string( char const* p, size_t size ) {
         char const* end   = p + size;
-        ZoneAbbr    abbr1 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
+        zone_abbr    abbr1 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
         auto        off1  = FromUTC( -eat_signed_hhmmss( p, end ) );
 
         if( p == end )
@@ -994,7 +994,7 @@ namespace vtz {
             };
         }
 
-        ZoneAbbr abbr2 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
+        zone_abbr abbr2 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
         // From TZ String documentation:
         //
         // > ... If no offset follows dst, the alternative time is assumed
@@ -1313,17 +1313,17 @@ namespace vtz {
         sysseconds_t T;    ///< DateTime when current state ends
     };
 
-    struct ZTAgglomerator : ZoneStates {
+    struct ZTAgglomerator : zone_states {
       private:
 
-        ZoneAbbr current_abbr;
+        zone_abbr current_abbr;
         i32      current_off;
         i32      current_stdoff;
 
 
-        map<ZoneAbbr, size_t> abbr_lookup;
+        map<zone_abbr, size_t> abbr_lookup;
 
-        AbbrBlock add_abbr( ZoneAbbr const& abbr ) {
+        AbbrBlock add_abbr( zone_abbr const& abbr ) {
             size_t& id = abbr_lookup[abbr];
             // If it's a valid id, we just return (id - 1) to get the index
             if( id ) return AbbrBlock::make( id - 1, abbr.size_ );
@@ -1389,9 +1389,9 @@ namespace vtz {
             if( any_trans ) { tt_.push_back( trans.when ); }
         }
 
-        ZoneStates get_states( i64 safe_cycle_time ) && noexcept {
+        zone_states get_states( i64 safe_cycle_time ) && noexcept {
             this->safe_cycle_time = safe_cycle_time;
-            return static_cast<ZoneStates&&>( *this );
+            return static_cast<zone_states&&>( *this );
         }
     };
 
@@ -1466,7 +1466,7 @@ namespace vtz {
     }
 
     template<tzfile_kind KindT>
-    ZoneStates load_zone_states_tzfile( basic_tzfile<KindT> const& file ) {
+    zone_states load_zone_states_tzfile( basic_tzfile<KindT> const& file ) {
         using namespace endian;
 
         ZoneState initial = file.initial_state();
@@ -1476,7 +1476,7 @@ namespace vtz {
         /// If there are no transition times, just get the initial state of the
         /// file
 
-        if( timecnt == 0 ) return ZoneStates::make_static( initial );
+        if( timecnt == 0 ) return zone_states::make_static( initial );
 
         auto TT           = file.transition_times();
         auto type_indices = file.type_indices();
@@ -1520,7 +1520,7 @@ namespace vtz {
         }
     }
 
-    ZoneStates load_zone_states_tzfile( std::string const& fp ) {
+    zone_states load_zone_states_tzfile( std::string const& fp ) {
         auto contents = vtz::read_file_bytes( fp );
         auto bytes    = vtz::span<char const>( contents );
         auto file32   = vtz::tzfile32( bytes );
@@ -1534,7 +1534,7 @@ namespace vtz {
         return load_zone_states_tzfile( file32 );
     }
 
-    ZoneStates load_zone_states( span<ZoneEntry const> entries,
+    zone_states load_zone_states( span<ZoneEntry const> entries,
         map<string_view, ZoneTransIter>                cache,
         i64                                            safe_cycle_time,
         i32                                            end_year ) {
@@ -1547,8 +1547,8 @@ namespace vtz {
                   : safe_cycle_time + SECS_400_YEARS;
 
         if( entries.size() == 0 )
-            return ZoneStates::make_static(
-                { FromUTC( 0 ), FromUTC( 0 ), ZoneAbbr{ 3, "-00" } } );
+            return zone_states::make_static(
+                { FromUTC( 0 ), FromUTC( 0 ), zone_abbr{ 3, "-00" } } );
 
         ZTAgglomerator agg;
 
@@ -1566,14 +1566,14 @@ namespace vtz {
             {
                 // We only have one entry in the zone, and also there is no
                 // associated rule, so there are no state changes.
-                return ZoneStates::make_static( { stdoff, format, "-" } );
+                return zone_states::make_static( { stdoff, format, "-" } );
             }
 
             if( rule.is_offset() )
             {
                 // The rule only contains an offset. Again, no other entries, so
                 // no state changes, so... it's a steady-state zone
-                return ZoneStates::make_static(
+                return zone_states::make_static(
                     { stdoff, rule.save(), format, "-" } );
             }
 
@@ -1703,7 +1703,7 @@ namespace vtz {
     }
 
 
-    ZoneStates TimeZoneCache::compute_states( string_view name ) const {
+    zone_states TimeZoneCache::compute_states( string_view name ) const {
         // Represents a map of rule names to evaluated rules
         using RuleCache = map<string_view, ZoneTransIter>;
 
@@ -1772,7 +1772,7 @@ namespace vtz {
     }
 
 
-    ZoneStates TZDataFile::get_zone_states(
+    zone_states TZDataFile::get_zone_states(
         string_view name, i32 end_year ) const {
         // Represents a map of rule names to evaluated rules
         using RuleCache = map<string_view, ZoneTransIter>;
@@ -1891,7 +1891,7 @@ namespace vtz {
         return evaluate_rules( rules.data(), rules.data() + rules.size() );
     }
 
-    vector<ZoneTransition> ZoneStates::get_transitions() const {
+    vector<ZoneTransition> zone_states::get_transitions() const {
         constexpr static sysseconds_t MAX_TIME
             = std::numeric_limits<sysseconds_t>::max();
 
