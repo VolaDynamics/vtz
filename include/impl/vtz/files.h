@@ -1,9 +1,9 @@
 #pragma once
 
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <stdexcept>
 
 namespace vtz {
     using std::string_view;

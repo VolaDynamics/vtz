@@ -3,10 +3,10 @@
 #include "vtz/tz_reader/TZString.h"
 #include <algorithm>
 #include <utility>
-#include <vtz/impl/bit.h>
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
 #include <vtz/files.h>
+#include <vtz/impl/bit.h>
 #include <vtz/inplace_optional.h>
 #include <vtz/span.h>
 #include <vtz/strings.h>
@@ -105,7 +105,6 @@ namespace vtz {
             };
         }
     };
-
 
 
     /// Example rules:
@@ -555,7 +554,7 @@ namespace vtz {
             return ( it - s.begin() ) - 1;
         }
 
-        sysseconds_t     safe_cycle_time;
+        sysseconds_t      safe_cycle_time;
         vector<zone_abbr> abbr_table_;
 
         AbbrBlock abbr_initial_;
@@ -635,7 +634,7 @@ namespace vtz {
         LinkMap links;
 
         RuleEvalResult evaluate_rules( string_view rule ) const;
-        zone_states     get_zone_states( string_view name, i32 end_year ) const;
+        zone_states    get_zone_states( string_view name, i32 end_year ) const;
 
         bool operator==( TZDataFile const& rhs ) const noexcept {
             return rules == rhs.rules    //
@@ -718,9 +717,9 @@ namespace vtz {
 
 
     zone_states load_zone_states( span<ZoneEntry const> entries,
-        map<string_view, ZoneTransIter>                cache,
-        i64                                            safe_cycle_time,
-        i32                                            end_year = -1 );
+        map<string_view, ZoneTransIter>                 cache,
+        i64                                             safe_cycle_time,
+        i32                                             end_year = -1 );
 
     zone_states load_zone_states_tzfile( std::string const& fp );
 } // namespace vtz

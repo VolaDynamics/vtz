@@ -364,8 +364,8 @@ namespace vtz {
             }
             else if( num_sep == 2 )
             {
-                int p0 = sep_pos[0];
-                int p1 = sep_pos[1];
+                int  p0 = sep_pos[0];
+                int  p1 = sep_pos[1];
                 auto hh = parse1or2( buff, p0 );
                 auto mm = parse1or2( buff + p0 + 1, p1 - p0 - 1 );
                 auto ss = parse1or2( buff + p1 + 1, size - p1 - 1 );
@@ -979,7 +979,7 @@ namespace vtz {
 
     static TZString _parse_tz_string( char const* p, size_t size ) {
         char const* end   = p + size;
-        zone_abbr    abbr1 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
+        zone_abbr   abbr1 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
         auto        off1  = FromUTC( -eat_signed_hhmmss( p, end ) );
 
         if( p == end )
@@ -1317,8 +1317,8 @@ namespace vtz {
       private:
 
         zone_abbr current_abbr;
-        i32      current_off;
-        i32      current_stdoff;
+        i32       current_off;
+        i32       current_stdoff;
 
 
         map<zone_abbr, size_t> abbr_lookup;
@@ -1535,9 +1535,9 @@ namespace vtz {
     }
 
     zone_states load_zone_states( span<ZoneEntry const> entries,
-        map<string_view, ZoneTransIter>                cache,
-        i64                                            safe_cycle_time,
-        i32                                            end_year ) {
+        map<string_view, ZoneTransIter>                 cache,
+        i64                                             safe_cycle_time,
+        i32                                             end_year ) {
         sysseconds_t const STOP_TIME
             = end_year > 0
                   // If the end year is specified, use that as the stop time

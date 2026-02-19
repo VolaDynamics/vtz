@@ -38,7 +38,7 @@ namespace vtz::math {
     /// Returns the (positive) remainder after division by the given divisor
     template<auto Divisor, class T>
     VTZ_INLINE constexpr T rem( T k ) noexcept {
-        auto m    = k % Divisor;
+        auto m     = k % Divisor;
         bool m_neg = m < 0;
         return T( m + ( m_neg ? Divisor : 0 ) );
     }

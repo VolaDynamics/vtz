@@ -115,7 +115,9 @@ namespace vtz {
         T value;
 
         constexpr operator OptClass<T>() const noexcept { return { value }; }
-        constexpr operator TrivialOpt<T>() const noexcept { return { value, true }; }
+        constexpr operator TrivialOpt<T>() const noexcept {
+            return { value, true };
+        }
 
         template<T NULL_VALUE>
         constexpr operator OptV<T, NULL_VALUE>() const noexcept {

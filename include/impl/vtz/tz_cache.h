@@ -378,7 +378,8 @@ namespace vtz {
             size_t i = 0;
             for( auto const& [key, value] : data.links )
             {
-                // value goes first because the key is the alias, which resolves to a canonical name
+                // value goes first because the key is the alias, which resolves
+                // to a canonical name
                 result[i++] = Link{ value, key };
             }
 

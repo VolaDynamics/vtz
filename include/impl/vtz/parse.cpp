@@ -56,10 +56,10 @@ namespace {
                || ch == '\xc';
     }
 
-    template <class Int>
+    template<class Int>
     VTZ_INLINE bool parse_digit_to( char ch, Int& dest ) noexcept {
-        int  x      = ch - '0';
-        bool good   = size_t( x ) < 10;
+        int  x       = ch - '0';
+        bool good    = size_t( x ) < 10;
         Int  new_val = dest * 10 + x;
         if( good ) { dest = new_val; }
         return good;
@@ -382,7 +382,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                 {
                     while( p != p_end )
                     {
-                        char c       = *p;
+                        char c        = *p;
                         bool is_zchar = 'A' <= c && c <= 'Z'    //
                                         || 'a' <= c && c <= 'z' //
                                         || '0' <= c && c <= '9' //

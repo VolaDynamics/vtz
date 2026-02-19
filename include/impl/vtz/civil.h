@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-#include <vtz/impl/bit.h>
 #include <vtz/date_types.h>
+#include <vtz/impl/bit.h>
 #include <vtz/impl/math.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader/FromUTC.h>

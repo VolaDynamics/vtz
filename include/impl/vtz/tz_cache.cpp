@@ -60,7 +60,8 @@ namespace vtz {
                 throw std::runtime_error( util::join( "Could not find ",
                     escape_string( name ),
                     " (checked both canonical "
-                    "zones & legacy names; zoneinfo_dir is empty so no attempt "
+                    "zones & legacy names; zoneinfo_dir is empty so no "
+                    "attempt "
                     "was made to load from a OS tzfile)" ) );
             }
 

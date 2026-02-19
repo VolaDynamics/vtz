@@ -1,11 +1,11 @@
 #pragma once
 
 #include "vtz/date_types.h"
-#include <vtz/impl/bit.h>
 #include <vtz/civil.h>
+#include <vtz/impl/bit.h>
+#include <vtz/impl/zone_abbr.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader/FromUTC.h>
-#include <vtz/impl/zone_abbr.h>
 
 namespace vtz {
 
@@ -135,9 +135,9 @@ namespace vtz {
 
         template<size_t N>
         constexpr void format( fix_str<N>& dest,
-            i32                           off,
-            bool                          is_dst,
-            string_view                   letter ) const noexcept {
+            i32                            off,
+            bool                           is_dst,
+            string_view                    letter ) const noexcept {
             dest.size_ = u8( write_n<N>( dest.buff_, off, is_dst, letter ) );
         }
 

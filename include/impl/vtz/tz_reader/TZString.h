@@ -1,11 +1,11 @@
 #pragma once
 
-#include <vtz/impl/bit.h>
 #include <vtz/civil.h>
+#include <vtz/impl/bit.h>
 #include <vtz/strings.h>
-#include <vtz/tz_reader/ZoneTransition.h>
 #include <vtz/tz_reader/FromUTC.h>
 #include <vtz/tz_reader/ZoneState.h>
+#include <vtz/tz_reader/ZoneTransition.h>
 
 #include <stdexcept>
 
@@ -187,10 +187,10 @@ namespace vtz {
     struct TZString {
         zone_abbr abbr1; /// Standard abbreviation
         zone_abbr abbr2; /// Daylight abbreviation
-        FromUTC  off1;  /// Standard offset
-        FromUTC  off2;  /// DST offset
-        TZRule   r1;
-        TZRule   r2;
+        FromUTC   off1;  /// Standard offset
+        FromUTC   off2;  /// DST offset
+        TZRule    r1;
+        TZRule    r2;
 
 
         /// Resolve the start of dst within the year
@@ -219,7 +219,8 @@ namespace vtz {
 
 
         /// Get zone transitions appearing strictly _after_ T
-        vector<ZoneTransition> get_states( sysseconds_t T, sysseconds_t max ) const;
+        vector<ZoneTransition> get_states(
+            sysseconds_t T, sysseconds_t max ) const;
     };
 
 

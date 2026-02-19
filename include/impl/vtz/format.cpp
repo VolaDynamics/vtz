@@ -1,6 +1,6 @@
 
-#include <vtz/impl/bit.h>
 #include <vtz/civil.h>
+#include <vtz/impl/bit.h>
 #include <vtz/tz.h>
 
 #include <charconv>
@@ -454,11 +454,11 @@ namespace vtz {
     }
 
     size_t time_zone::format_precise_to_s( string_view format,
-        sysseconds_t                                  t,
-        u32                                           nanos,
-        int                                           precision,
-        char*                                         buff,
-        size_t                                        count ) const {
+        sysseconds_t                                   t,
+        u32                                            nanos,
+        int                                            precision,
+        char*                                          buff,
+        size_t                                         count ) const {
         return _do_strformat( *this,
             format.data(),
             format.size(),
@@ -477,7 +477,8 @@ namespace vtz {
             WriteToString{} );
     }
 
-    string time_zone::format_s( std::string_view format, sysseconds_t t ) const {
+    string time_zone::format_s(
+        std::string_view format, sysseconds_t t ) const {
         return _do_strformat(
             *this,
             format.data(),
@@ -548,8 +549,8 @@ namespace vtz {
             {
                 // MMDD HHMMSS
                 // 01234567890
-                (void)_write_mon( q, u8( ymd.month ) );                 // 0..2
-                (void)_write_dom_d( q + 2, u8( ymd.day ) );             // 2..4
+                (void)_write_mon( q, u8( ymd.month ) );           // 0..2
+                (void)_write_dom_d( q + 2, u8( ymd.day ) );       // 2..4
                 q[4] = date_time_sep;                             // 4..5
                 (void)_write_hhmmsscompact( q + 5, hr, mi, sec ); // 5..11
             }
@@ -557,12 +558,12 @@ namespace vtz {
             {
                 // -MM-DD HH:MM:SS
                 // 012345678901234
-                q[0] = date_sep;                           // 0..1
-                (void)_write_mon( q + 1, u8( ymd.month ) );      // 1..3
-                q[3] = date_sep;                           // 3..4
-                (void)_write_dom_d( q + 4, u8( ymd.day ) );      // 4..6
-                q[6] = date_time_sep;                      // 6..7
-                (void)_write_hhmmss( q + 7, hr, mi, sec ); // 7..14
+                q[0] = date_sep;                            // 0..1
+                (void)_write_mon( q + 1, u8( ymd.month ) ); // 1..3
+                q[3] = date_sep;                            // 3..4
+                (void)_write_dom_d( q + 4, u8( ymd.day ) ); // 4..6
+                q[6] = date_time_sep;                       // 6..7
+                (void)_write_hhmmss( q + 7, hr, mi, sec );  // 7..14
             }
 
             return action.dump(
@@ -609,10 +610,10 @@ namespace vtz {
 
     template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
     VTZ_INLINE static std::string _do_format( time_zone const& tz,
-        sysseconds_t                                          t,
-        char                                                  date_sep,
-        char                                                  date_time_sep,
-        char                                                  abbr_sep ) {
+        sysseconds_t                                           t,
+        char                                                   date_sep,
+        char                                                   date_time_sep,
+        char                                                   abbr_sep ) {
         constexpr u64 LONG_TIME = resolve_civil_time( 10000, 1, 1, 0, 0, 0 );
 
         auto off     = i32( tz.offset_s( t ) ); // offset should be 32-bit
@@ -650,11 +651,11 @@ namespace vtz {
 
     template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
     VTZ_INLINE static size_t _do_format_to( time_zone const& tz,
-        sysseconds_t                                        t,
-        char*                                               p,
-        size_t                                              count,
-        char                                                date_sep,
-        char                                                date_time_sep,
+        sysseconds_t                                         t,
+        char*                                                p,
+        size_t                                               count,
+        char                                                 date_sep,
+        char                                                 date_time_sep,
         char abbr_sep ) noexcept {
         ///
         constexpr u64 LONG_TIME = resolve_civil_time( 10000, 1, 1, 0, 0, 0 );

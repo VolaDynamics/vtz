@@ -20,7 +20,8 @@ namespace vtz {
             return local_block_s( static_cast<off_tables const&>( table ), t );
         }
 
-        static abbr_table const& get_abbr_table( time_zone const& tz ) noexcept {
+        static abbr_table const& get_abbr_table(
+            time_zone const& tz ) noexcept {
             return tz;
         }
         static decltype( auto ) get_tt( time_zone const& tz ) noexcept {

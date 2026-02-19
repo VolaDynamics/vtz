@@ -1,11 +1,11 @@
 #pragma once
 
 #include <string>
-#include <vtz/types.h>
-#include <vtz/impl/macros.h>
 #include <vtz/impl/chrono_types.h>
+#include <vtz/impl/macros.h>
 #include <vtz/impl/math.h>
 #include <vtz/impl/zone_abbr.h>
+#include <vtz/types.h>
 
 namespace vtz {
     using std::string;
@@ -117,7 +117,7 @@ namespace vtz {
         constexpr s32_table() noexcept
         : s32_table_view() {}
 
-        s32_table( int                g,
+        s32_table( int               g,
             std::unique_ptr<i64[]>&& tt,
             std::unique_ptr<u64[]>&& bb,
             i64                      start,
@@ -189,10 +189,10 @@ namespace vtz {
 
 
     struct off_tables {
-        u64      tz0_;
-        u64      tz_max_;
+        u64       tz0_;
+        u64       tz_max_;
         s32_table TTutc;
-        sec_t    cycle_time;
+        sec_t     cycle_time;
 
         /// For a given system time T, represented as "offsets from UTC", return
         /// the timezone's current offset from UTC, in seconds.
@@ -427,10 +427,10 @@ namespace vtz {
     };
 
     struct trans_table {
-        u64      tz0_;
-        u64      tz_max_;
+        u64       tz0_;
+        u64       tz_max_;
         s32_table tt_index;
-        sec_t    cycle_time;
+        sec_t     cycle_time;
 
         std::unique_ptr<sysseconds_t[]> when;
 
@@ -465,7 +465,7 @@ namespace vtz {
     struct stdoff_table {
         sysseconds_t t_min;
         sysseconds_t t_max;
-        s32_table     stdoff;
+        s32_table    stdoff;
 
         VTZ_INLINE i32 stdoff_s( sysseconds_t t ) const noexcept {
             if( t < t_min ) t = t_min;
@@ -479,7 +479,7 @@ namespace vtz {
         u64 tz_max_;
 
         s32_table abbr;
-        sec_t    cycle_time;
+        sec_t     cycle_time;
 
         std::unique_ptr<zone_abbr[]> abbrev_list;
 

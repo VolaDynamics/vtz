@@ -11,7 +11,9 @@ namespace vtz {
         FromUTC walloff; ///< Actual offset in this state
 
         /// Return the save implied by the zone
-        constexpr RuleSave save() const noexcept { return walloff.off - stdoff.off; }
+        constexpr RuleSave save() const noexcept {
+            return walloff.off - stdoff.off;
+        }
 
         bool operator==( ZoneTime const& rhs ) const noexcept {
             return _b8( *this ) == _b8( rhs );

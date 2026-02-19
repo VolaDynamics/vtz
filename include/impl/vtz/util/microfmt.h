@@ -16,7 +16,7 @@ namespace vtz::util {
         constexpr static size_t _max_space
             = 1 + std::numeric_limits<IntT>::digits10 + std::is_signed<IntT>{};
 
-            static size_t max_space( IntT ) noexcept { return _max_space; }
+        static size_t max_space( IntT ) noexcept { return _max_space; }
 
         static size_t dump( char* dest, IntT value ) {
             auto result = std::to_chars( dest, dest + _max_space, value );
@@ -51,7 +51,9 @@ namespace vtz::util {
     template<>
     struct fmt_traits<char> {
         static size_t max_space( char ) { return 1; }
-        static size_t dump( char* dest, char ch ) { return (void)( *dest = ch ), 1; }
+        static size_t dump( char* dest, char ch ) {
+            return (void)( *dest = ch ), 1;
+        }
     };
 
     // clang-format off
@@ -82,7 +84,8 @@ namespace vtz::util {
 
     template<class Range>
     struct fmt_traits<joined<Range>> {
-        using ElemT = std::decay_t<decltype( *std::begin( std::declval<Range const&>() ) )>;
+        using ElemT  = std::decay_t<decltype( *std::begin(
+            std::declval<Range const&>() ) )>;
         using Traits = fmt_traits<ElemT>;
 
         static size_t max_space( joined<Range> const& j ) {
@@ -101,8 +104,8 @@ namespace vtz::util {
             auto end = std::end( j.range );
             if( it == end ) return 0;
 
-            char* p = dest;
-            p += Traits::dump( p, *it );
+            char* p  = dest;
+            p       += Traits::dump( p, *it );
             for( ++it; it != end; ++it )
             {
                 _vtz_memcpy( p, j.sep.data(), j.sep.size() );

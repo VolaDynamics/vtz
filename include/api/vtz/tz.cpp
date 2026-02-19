@@ -1,6 +1,6 @@
-#include <vtz/impl/bit.h>
 #include <vtz/civil.h>
 #include <vtz/files.h>
+#include <vtz/impl/bit.h>
 #include <vtz/impl/math.h>
 #include <vtz/tz.h>
 #include <vtz/tz_cache.h>
@@ -39,7 +39,7 @@ namespace vtz {
     /// containing elements of the desired type
     template<class T, class... Args>
     std::unique_ptr<T[]> _init( Args&&... args ) {
-        return std::unique_ptr<T[]>{ new T[sizeof...(args)]{
+        return std::unique_ptr<T[]>{ new T[sizeof...( args )]{
             T( static_cast<Args&&>( args ) )... } };
     }
 
@@ -153,7 +153,7 @@ namespace vtz {
 
 
     template<class T, class Indexable>
-    s32_table make_table( T       off0,
+    s32_table make_table( T      off0,
         span<sysseconds_t const> tt,
         Indexable                off,
         sysseconds_t             min_t,
@@ -175,11 +175,11 @@ namespace vtz {
         i64 block_t
             = i64( u64( min_index ) << g ); // current start time of block
         i64    block_size = i64( 1 ) << g;  // Block size (in seconds)
-        size_t zi     = 0;
+        size_t zi         = 0;
         for( size_t bi = 0; bi < buff_count; bi++ )
         {
             tt_times[bi]  = when;
-            blocks[bi]   = block;
+            blocks[bi]    = block;
             block_t      += block_size;
             if( block_t >= when )
             {
@@ -196,7 +196,7 @@ namespace vtz {
                     for( ; bi < buff_count; ++bi )
                     {
                         tt_times[bi] = when;
-                        blocks[bi]  = block;
+                        blocks[bi]   = block;
                     }
                     break;
                 }
@@ -219,10 +219,10 @@ namespace vtz {
     /// containing the relevant transition time.
     template<class T>
     s32_table make_universal_table( T off0,
-        span<sysseconds_t const>     tt,
-        span<T const>                off,
-        sysseconds_t                 min_t,
-        sysseconds_t                 max_t ) {
+        span<sysseconds_t const>      tt,
+        span<T const>                 off,
+        sysseconds_t                  min_t,
+        sysseconds_t                  max_t ) {
         int g = compute_guniversal( off0, tt, off );
 
         i64 min_index = min_t >> g;
@@ -246,22 +246,22 @@ namespace vtz {
         i64 block_t
             = i64( u64( min_index ) << g ); // current start time of block
         i64    block_size = i64( 1 ) << g;  // Block size (in seconds)
-        size_t zi     = 0;
+        size_t zi         = 0;
         for( size_t bi = 0; bi < buff_count; bi++ )
         {
             tt_times[bi]  = when;
-            blocks[bi]   = block;
+            blocks[bi]    = block;
             block_t      += block_size;
             if( block_t >= block_end_t )
             {
                 zi++;
                 if( zi < tt.size() )
                 {
-                    i32 off0  = off[zi - 1];
-                    i32 off1  = off[zi];
-                    when      = tt[zi];
+                    i32 off0    = off[zi - 1];
+                    i32 off1    = off[zi];
+                    when        = tt[zi];
                     block_end_t = tt[zi] + std::max( { off0, off1, 0 } );
-                    block     = block >> 32 | ( u64( u32( off1 ) ) << 32 );
+                    block       = block >> 32 | ( u64( u32( off1 ) ) << 32 );
                 }
                 else
                 {
@@ -269,7 +269,7 @@ namespace vtz {
                     for( ; bi < buff_count; ++bi )
                     {
                         tt_times[bi] = when;
-                        blocks[bi]  = block;
+                        blocks[bi]   = block;
                     }
                     break;
                 }
@@ -329,7 +329,9 @@ namespace vtz {
         auto tz_max_ = u64( max_t ) + tz0_;
 
         struct _get_index {
-            i32 operator[]( ptrdiff_t i ) const noexcept { return i32( i + 1 ); };
+            i32 operator[]( ptrdiff_t i ) const noexcept {
+                return i32( i + 1 );
+            };
         };
 
         auto times = _new<sysseconds_t>( tt.size() + 2 );
@@ -348,9 +350,9 @@ namespace vtz {
 
 
     off_tables make_off_tables( i32 off0,
-        span<sysseconds_t const>   tt,
-        span<i32 const>            off,
-        sec_t                      cycle_time ) {
+        span<sysseconds_t const>    tt,
+        span<i32 const>             off,
+        sec_t                       cycle_time ) {
         if( tt.size() == 0 )
         {
             // The zone is contains no transitions, so all of the tables are
@@ -407,9 +409,9 @@ namespace vtz {
     }
 
     abbr_table make_abbr_table( AbbrBlock initial,
-        span<sysseconds_t const>         tt,
-        span<AbbrBlock const>            abbr,
-        sec_t                            cycle_time,
+        span<sysseconds_t const>          tt,
+        span<AbbrBlock const>             abbr,
+        sec_t                             cycle_time,
         span<zone_abbr const>             abbr_table ) {
         auto table = _copy_unique( abbr_table );
         // If the timezone contains no transitions, our table is valid for the

@@ -23,7 +23,9 @@ namespace vtz {
         RuleOn() = default;
 
         constexpr RuleOn( Kind kind, u8 day, DOW dow ) noexcept
-        : repr_( u16( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) ) {}
+        : repr_(
+              u16( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) ) {
+        }
         constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
         constexpr u16  day() const noexcept { return repr_ >> 5; }
         constexpr DOW  dow() const noexcept {

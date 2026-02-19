@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vtz/types.h>
 #include <string_view>
+#include <vtz/types.h>
 
 namespace vtz {
     using std::string_view;

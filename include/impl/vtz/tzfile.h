@@ -6,8 +6,8 @@
 #include <cstdio>
 #include <string_view>
 #include <type_traits>
-#include <vtz/impl/bit.h>
 #include <vtz/endian.h>
+#include <vtz/impl/bit.h>
 #include <vtz/span.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader/FromUTC.h>
@@ -367,7 +367,7 @@ namespace vtz {
         ZoneState state_from_ti( size_t ti, FromUTC& stdoff ) const {
             ttinfo_bytes ty     = ttinfo()[ti];
             FromUTC      utoff  = FromUTC( ty.tt_utoff() );
-            zone_abbr     abbrev = get_abbrev( ty.tt_desigidx() );
+            zone_abbr    abbrev = get_abbrev( ty.tt_desigidx() );
 
             // If we're not within daylight savings time, update the standard
             // offset

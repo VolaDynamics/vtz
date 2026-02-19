@@ -106,10 +106,10 @@ namespace vtz {
                     {
                         int  d1 = value >> 4;
                         int  d0 = value & 0xf;
-                        char h1
-                            = d1 >= 10 ? char( d1 + ( 'A' - 10 ) ) : char( d1 + '0' );
-                        char h0
-                            = d0 >= 10 ? char( d0 + ( 'A' - 10 ) ) : char( d0 + '0' );
+                        char h1 = d1 >= 10 ? char( d1 + ( 'A' - 10 ) )
+                                           : char( d1 + '0' );
+                        char h0 = d0 >= 10 ? char( d0 + ( 'A' - 10 ) )
+                                           : char( d0 + '0' );
 
                         char buff[4]{ '\\', 'x', h1, h0 };
                         s.append( buff, 4 );

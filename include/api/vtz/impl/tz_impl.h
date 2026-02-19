@@ -3,8 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <vtz/impl/macros.h>
-#include <vtz/types.h>
 #include <vtz/impl/math.h>
+#include <vtz/types.h>
 
 namespace vtz::detail {
     /// Compute the amount of precision necessary to represent some duration

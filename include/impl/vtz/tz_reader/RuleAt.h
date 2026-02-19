@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vtz/impl/bit.h>
 #include <vtz/civil.h>
+#include <vtz/impl/bit.h>
 #include <vtz/tz_reader/FromUTC.h>
 #include <vtz/tz_reader/ZoneTime.h>
 
