@@ -412,6 +412,40 @@ namespace vtz {
             WriteToString{} );
     }
 
+    struct DummyTimeZoneUTC {
+        /// UTC offset is 0
+        static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
+        static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
+        /// Writes "UTC"
+        static size_t abbrev_to_s( sec_t, char* p ) noexcept {
+            p[0] = 'U';
+            p[1] = 'T';
+            p[2] = 'C';
+            return 3;
+        }
+    };
+
+    std::string format_time_s( string_view fmt, sysseconds_t t ) {
+        return _do_strformat(
+            DummyTimeZoneUTC{},
+            fmt.data(),
+            fmt.size(),
+            t,
+            []( char* s ) noexcept -> char* { return s; },
+            WriteToString{} );
+    }
+
+    size_t format_time_to_s(
+        string_view fmt, sysseconds_t t, char* buff, size_t count ) {
+        return _do_strformat(
+            DummyTimeZoneUTC{},
+            fmt.data(),
+            fmt.size(),
+            t,
+            []( char* s ) noexcept -> char* { return s; },
+            WriteToBuff{ buff, count } );
+    }
+
     size_t format_date_to_d(
         string_view fmt, sysdays_t days, char* buff, size_t count ) {
         return _do_strformat(

@@ -72,4 +72,78 @@ namespace vtz {
         return format_date_to_d(
             fmt, days.time_since_epoch().count(), buff, count );
     }
+
+
+    /// Formats a UTC time to a string, with time given as seconds since the
+    /// Unix Epoch.
+    ///
+    /// The time is interpreted as UTC. `%Z` will produce "UTC", and `%z`
+    /// will produce "+00".
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
+    /// @param t seconds since 1970-01-01 00:00:00 UTC
+    /// @throws if the given format specifier is invalid
+
+    VTZ_EXPORT std::string format_time_s( string_view fmt, sysseconds_t t );
+
+
+    /// Formats a UTC time to a string, with time given as a
+    /// `std::chrono::sys_seconds`.
+    ///
+    /// The time is interpreted as UTC. `%Z` will produce "UTC", and `%z`
+    /// will produce "+00".
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
+    /// @param t time since 1970-01-01 00:00:00 UTC
+    /// @throws if the given format specifier is invalid
+
+    inline std::string format_time( string_view fmt, sys_seconds t ) {
+        return format_time_s( fmt, t.time_since_epoch().count() );
+    }
+
+
+    /// Formats a UTC time to the given buffer, with time given as seconds
+    /// since the Unix Epoch. Output is truncated if it would exceed `count`.
+    ///
+    /// The time is interpreted as UTC. `%Z` will produce "UTC", and `%z`
+    /// will produce "+00".
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
+    /// @param t seconds since 1970-01-01 00:00:00 UTC
+    /// @return number of characters written to the buffer.
+    /// @throws if the given format specifier is invalid
+
+    VTZ_EXPORT size_t format_time_to_s(
+        string_view fmt, sysseconds_t t, char* buff, size_t count );
+
+
+    /// Formats a UTC time to the given buffer, with time given as a
+    /// `std::chrono::sys_seconds`. Output is truncated if it would exceed
+    /// `count`.
+    ///
+    /// The time is interpreted as UTC. `%Z` will produce "UTC", and `%z`
+    /// will produce "+00".
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
+    /// @param t time since 1970-01-01 00:00:00 UTC
+    /// @return number of characters written to the buffer.
+    /// @throws if the given format specifier is invalid
+
+    inline size_t format_time_to(
+        string_view fmt, sys_seconds t, char* buff, size_t count ) {
+        return format_time_to_s(
+            fmt, t.time_since_epoch().count(), buff, count );
+    }
 } // namespace vtz
