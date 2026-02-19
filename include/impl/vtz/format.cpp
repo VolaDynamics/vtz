@@ -2,6 +2,7 @@
 #include <vtz/civil.h>
 #include <vtz/impl/bit.h>
 #include <vtz/tz.h>
+#include <vtz/format.h>
 
 #include <charconv>
 
