@@ -17,6 +17,175 @@
 
 
 namespace vtz {
+    /// Formats a date to a string, measured as days since the unix epoch.
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing date, eg "%Y-%m-%d"
+    /// @param days days since 1970-01-01 (the Unix Epoch)
+    /// @throws if the given format specifier is invalid
+
+    VTZ_EXPORT std::string format_date_d( string_view fmt, sysdays_t days );
+
+
+    /// Formats a date to a string, with date given as a
+    /// `std::chrono::sys_days`.
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing date, eg "%Y-%m-%d"
+    /// @param days days since 1970-01-01 (the Unix Epoch)
+    /// @throws if the given format specifier is invalid
+
+    inline std::string format_date( string_view fmt, sys_days days ) {
+        return format_date_d( fmt, days.time_since_epoch().count() );
+    }
+
+
+    /// Formats a date to to the provided buffer, with date given as as days
+    /// since the unix epoch. Output is truncated if it would exceed `count`.
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing date, eg "%Y-%m-%d"
+    /// @param days days since 1970-01-01 (the Unix Epoch)
+    /// @return number of characters written to the buffer.
+    /// @throws if the given format specifier is invalid
+
+    VTZ_EXPORT size_t format_date_to_d(
+        string_view format, sysdays_t days, char* buff, size_t count );
+
+
+    /// Formats a date to to the provided buffer, with date given as a
+    /// `std::chrono::sys_days`. Output is truncated if it would exceed `count`.
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing date, eg "%Y-%m-%d"
+    /// @param days days since 1970-01-01 (the Unix Epoch)
+    /// @return number of characters written to the buffer.
+    /// @throws if the given format specifier is invalid
+
+    inline size_t format_date_to(
+        string_view fmt, sys_days days, char* buff, size_t count ) {
+        return format_date_to_d(
+            fmt, days.time_since_epoch().count(), buff, count );
+    }
+
+
+    /// Parse the given input as a date, with the date returned as an integral
+    /// number of days since the Unix Epoch.
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/parse.html
+    ///
+    /// @param fmt format specifier describes layout of a date (eg,
+    /// `"%Y-%m-%d"`)
+    /// @param date_str string describing date, eg `"2026-02-19"`
+    /// @return the number of days since the epoch, as an int
+    /// @throws if the given format specifier is invalid
+
+    VTZ_EXPORT sysdays_t parse_date_d( string_view fmt, string_view date_str );
+
+
+    /// Parse the given input as a date, with the date returned as a
+    /// `std::chrono::sys_days`
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/parse.html
+    ///
+    /// @param fmt format specifier describes layout of a date (eg,
+    /// `"%Y-%m-%d"`)
+    /// @param date_str string describing date, eg `"2026-02-19"`
+    /// @return a `std::chrono::sys_days` value representing the date
+    /// @throws if the given format specifier is invalid
+
+    inline sys_days parse_sys_days( string_view fmt, string_view date_str ) {
+        return sys_days( days( parse_date_d( fmt, date_str ) ) );
+    }
+
+
+    /// Parse the given input as a datetime, with the time returned as an
+    /// integral number of seconds since the Unix Epoch.
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/parse.html
+    ///
+    /// @param fmt format specifier describes layout of a date (eg,
+    /// `"%Y-%m-%d %H-%M-%S"`)
+    /// @param time_str string describing date, eg `"2026-02-19"`
+    /// @return the number of days since the epoch, as an int
+    /// @throws if the given format specifier is invalid
+
+    VTZ_EXPORT sec_t parse_time_s( string_view fmt, string_view time_str );
+
+
+    /// Parse the given input as a datetime, with the time returned as a
+    /// `std::chrono::sys_seconds`
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/parse.html
+    ///
+    /// @param fmt format specifier describes layout of a date (eg,
+    /// `"%Y-%m-%d %H-%M-%S"`)
+    /// @param time_str string describing date, eg `"2026-02-19"`
+    /// @return a `std::chrono::sys_seconds` value representing the date
+    /// @throws if the given format specifier is invalid
+
+    inline sys_seconds parse_sys_seconds(
+        string_view fmt, string_view time_str ) {
+        return sys_seconds( seconds( parse_time_s( fmt, time_str ) ) );
+    }
+
+
+    /// Parse the given input as a datetime, with the time returned as an
+    /// integral number of nanoseconds since the Unix Epoch.
+    ///
+    /// Decimal digits are permitted after the number of seconds. For example,
+    /// if the format string is `"%Y-%m-%d %H-%M-%S"` then `"2025-02-19
+    /// 16:19:27.12878"` is interpreted as "2025-02-19 16:19:27, and 128780000
+    /// nanoseconds".
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/parse.html
+    ///
+    /// @param fmt format specifier describes layout of a date (eg,
+    /// `"%Y-%m-%d %H-%M-%S"`)
+    /// @param time_str string describing date, eg `"2026-02-19"`
+    /// @return the number of nanoseconds since the epoch, as an int
+    /// @throws if the given format specifier is invalid
+
+    VTZ_EXPORT nanos_t parse_time_ns( string_view fmt, string_view time_str );
+
+
+    /// Parse the given input as a datetime, with the time returned as an
+    /// integral number of nanoseconds since the Unix Epoch.
+    ///
+    /// Decimal digits are permitted after the number of seconds. For example,
+    /// if the format string is `"%Y-%m-%d %H-%M-%S"` then `"2025-02-19
+    /// 16:19:27.12878"` is interpreted as "2025-02-19 16:19:27, and 128780000
+    /// nanoseconds".
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/parse.html
+    ///
+    /// @param fmt format specifier describes layout of a date (eg,
+    /// `"%Y-%m-%d %H-%M-%S"`)
+    /// @param time_str string describing date, eg `"2026-02-19"`
+    /// @return a `std::chrono::sys_time<nanoseconds>` value representing the time
+    /// @throws if the given format specifier is invalid
+
+    inline sys_time<nanoseconds> parse_sys_nanoseconds(
+        string_view fmt, string_view time_str ) {
+        return sys_time<nanoseconds>(
+            nanoseconds( parse_time_ns( fmt, time_str ) ) );
+    }
+
+
     using std::string;
 
     class VTZ_EXPORT time_zone
@@ -334,42 +503,6 @@ namespace vtz {
         string name_;
     };
 
-
-    VTZ_EXPORT std::string format_date_d( string_view fmt, sysdays_t days );
-
-    size_t format_date_to_d(
-        string_view format, sysdays_t days, char* buff, size_t count );
-
-    inline std::string format_date( string_view fmt, sys_days days ) {
-        return format_date_d( fmt, days.time_since_epoch().count() );
-    }
-
-    inline size_t format_date_to(
-        string_view fmt, sys_days days, char* buff, size_t count ) {
-        return format_date_to_d(
-            fmt, days.time_since_epoch().count(), buff, count );
-    }
-
-    /// Parse a date
-    ///
-    /// format specifier describes layout of a date (eg, "%Y-%m-%d")
-    VTZ_EXPORT sysdays_t parse_date_d( string_view fmt, string_view date_str );
-
-    /// Parse a time.
-    ///
-    /// Format specifier describes layout of time (eg, "%Y-%m-%d %H:%M:%S")
-    VTZ_EXPORT sec_t parse_time_s( string_view fmt, string_view time_str );
-
-    /// Parse a time with nanosecond precision
-    ///
-    /// Format specifier describes layout of time (eg, "%Y-%m-%d %H:%M:%S")
-    /// If a '.' followed by 1-9 digits occurs in the input string after the
-    /// '%S' modifier, that's used to determine the fractional portion of the
-    /// timestamp.
-    ///
-    /// Eg, 2025-11-14 09:30:05.3948, this is interpreted as 394,800,000
-    /// nanoseconds after 2025-11-14 09:30:05
-    VTZ_EXPORT nanos_t parse_time_ns( string_view fmt, string_view time_str );
 
     VTZ_EXPORT std::string tzdb_version();
 
