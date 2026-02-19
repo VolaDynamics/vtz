@@ -4,3 +4,4 @@ install/
 
 /tzdata/
 .idea/
+.vscode/
