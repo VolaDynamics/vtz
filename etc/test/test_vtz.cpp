@@ -16,7 +16,7 @@
 #include <vtz/civil.h>
 #include <vtz/tz.h>
 
-#include <vtz/format.h>
+#include <vtz/libfmt_compat.h>
 
 #include "vtz_debug.h"
 #include "vtz_testing.h"

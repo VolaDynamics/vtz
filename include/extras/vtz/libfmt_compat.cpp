@@ -1,5 +1,5 @@
 #include <fmt/format.h>
-#include <vtz/format.h>
+#include <vtz/libfmt_compat.h>
 
 
 namespace vtz {

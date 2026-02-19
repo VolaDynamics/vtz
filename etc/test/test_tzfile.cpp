@@ -5,7 +5,7 @@
 #include <vtz/tz_reader.h>
 #include <vtz/tz_reader/FromUTC.h>
 
-#include <vtz/format.h>
+#include <vtz/libfmt_compat.h>
 
 #include "test_utils.h"
 #include "test_zones.h"
