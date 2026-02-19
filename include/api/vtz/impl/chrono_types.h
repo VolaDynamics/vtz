@@ -64,7 +64,7 @@ namespace vtz {
 
     struct local_info {
         constexpr static int unique      = 0;
-        constexpr static int nonexistant = 1;
+        constexpr static int nonexistent = 1;
         constexpr static int ambiguous   = 2;
 
         int      result;

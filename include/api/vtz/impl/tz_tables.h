@@ -322,7 +322,7 @@ namespace vtz {
 
                 result[0] = jump_time - 1;   // Time right before jump
                 result[1] = jump_time;       // Time at jump
-                return local_info::nonexistant;
+                return local_info::nonexistent;
             }
         }
 
