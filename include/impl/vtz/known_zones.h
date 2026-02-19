@@ -4,9 +4,13 @@
 #include <vtz/tz_reader/Link.h>
 
 namespace vtz {
+    // Disabled because we don't want code to be changed after generation
+    // clang-format off
+
     /// Contains a list of known timezone names. Used to construct timezone
     /// cache if the timezone source files cannot be found.
-    constexpr std::string_view KNOWN_ZONES[]{ "Africa/Abidjan",
+    constexpr std::string_view KNOWN_ZONES[] {
+        "Africa/Abidjan",
         "Africa/Algiers",
         "Africa/Bissau",
         "Africa/Cairo",
@@ -346,11 +350,13 @@ namespace vtz {
         "Pacific/Rarotonga",
         "Pacific/Tahiti",
         "Pacific/Tarawa",
-        "Pacific/Tongatapu" };
+        "Pacific/Tongatapu",
+    };
 
     /// contains a list of known links. Used to construct the timezone link
     /// cache if the timezone source files cannot be found.
-    constexpr Link KNOWN_LINKS[]{ Link{ "Etc/GMT", "GMT" },
+    constexpr Link KNOWN_LINKS[] {
+        Link{ "Etc/GMT", "GMT" },
         Link{ "Australia/Sydney", "Australia/ACT" },
         Link{ "Australia/Lord_Howe", "Australia/LHI" },
         Link{ "Australia/Sydney", "Australia/NSW" },
@@ -554,8 +560,7 @@ namespace vtz {
         Link{ "Pacific/Tarawa", "Pacific/Wake" },
         Link{ "Pacific/Tarawa", "Pacific/Wallis" },
         Link{ "Africa/Abidjan", "Africa/Timbuktu" },
-        Link{
-            "America/Argentina/Catamarca", "America/Argentina/ComodRivadavia" },
+        Link{ "America/Argentina/Catamarca", "America/Argentina/ComodRivadavia" },
         Link{ "America/Adak", "America/Atka" },
         Link{ "America/Panama", "America/Coral_Harbour" },
         Link{ "America/Tijuana", "America/Ensenada" },
@@ -607,5 +612,8 @@ namespace vtz {
         Link{ "Pacific/Honolulu", "HST" },
         Link{ "America/Los_Angeles", "PST8PDT" },
         Link{ "Pacific/Guadalcanal", "Pacific/Ponape" },
-        Link{ "Pacific/Port_Moresby", "Pacific/Truk" } };
+        Link{ "Pacific/Port_Moresby", "Pacific/Truk" },
+    };
+
+    // clang-format on
 } // namespace vtz

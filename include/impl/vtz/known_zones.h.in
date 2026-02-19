@@ -4,15 +4,20 @@
 #include <vtz/tz_reader/Link.h>
 
 namespace vtz {
+    // Disabled because we don't want code to be changed after generation
+    // clang-format off
+
     /// Contains a list of known timezone names. Used to construct timezone
     /// cache if the timezone source files cannot be found.
     constexpr std::string_view KNOWN_ZONES[] {
-        @KNOWN_ZONES@
+        @KNOWN_ZONES@,
     };
 
     /// contains a list of known links. Used to construct the timezone link
     /// cache if the timezone source files cannot be found.
     constexpr Link KNOWN_LINKS[] {
-        @KNOWN_LINKS@
+        @KNOWN_LINKS@,
     };
+
+    // clang-format on
 } // namespace vtz
