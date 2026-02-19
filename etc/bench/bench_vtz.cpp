@@ -9,6 +9,9 @@
 #include <vector>
 #include <vtz/civil.h>
 #include <vtz/impl/bit.h>
+
+#include <vtz/format.h>
+#include <vtz/parse.h>
 #include <vtz/tz.h>
 
 #define BENCH( name, state )                                                   \
