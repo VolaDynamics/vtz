@@ -250,6 +250,19 @@ if(PROJECT_IS_TOP_LEVEL)
             date::date-tz
     )
 
+
+    file(GLOB src etc/test_api/*.cpp)
+    add_executable(test_vtz_api ${src})
+    target_link_libraries(
+        test_vtz_api
+        PRIVATE
+            GTest::gtest_main
+            vtz::vtz
+            fmt::fmt
+            date::date
+            date::date-tz
+    )
+
     find_program(zic_exe zic)
     if(zic_exe)
         add_custom_command(
