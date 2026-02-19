@@ -488,7 +488,7 @@ namespace vtz {
                 return abbr.lookup_u32( t );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return abbr.initial_i32();
+            if( t < 0 ) return abbr.initial_u32();
 
             // use zone symmetry to compute state for equivalent time
             return abbr.lookup_u32( get_cyclic( t, cycle_time ) );
@@ -507,7 +507,7 @@ namespace vtz {
         /// timestamp
         string_view abbrev_s( sec_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return abbr_from_block( abbr.lookup_i32( t ) );
+                return abbr_from_block( abbr.lookup_u32( t ) );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return abbr_from_block( abbr.initial_u32() );
