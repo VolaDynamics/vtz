@@ -25,9 +25,19 @@ namespace vtz::win32 {
         auto p0  = data.find( key );
         if( p0 == npos )
         {
-            throw std::runtime_error( util::join( "Unable to find ",
+            auto msg = util::join( "Unable to find ",
                 escape_string( key ),
-                " within windowsZones.xml" ) );
+                " within windowsZones.xml" );
+
+            // windowsZones.xml may contain only a newline, or be otherwise
+            // effectively empty
+            if( data.size() <= 2 )
+            {
+                msg += " (input appears to be empty; windowsZones.xml may not "
+                       "have downloaded correctly)";
+            }
+
+            throw std::runtime_error( msg );
         }
         p0      += key.size();
         auto p1  = data.find( "type=\"", p0 );
