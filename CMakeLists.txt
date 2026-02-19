@@ -201,7 +201,13 @@ if(PROJECT_IS_TOP_LEVEL)
         DOWNLOAD
             "https://raw.githubusercontent.com/unicode-org/cldr/refs/heads/main/common/supplemental/windowsZones.xml"
             "${BUILD}/data/tzdata/windowsZones.xml"
+        STATUS windows_zones_status
     )
+    list(GET windows_zones_status 0 windows_zones_download_errc)
+    if(NOT (windows_zones_download_errc STREQUAL "0") )
+        list(GET windows_zones_status 1 windows_zones_download_msg)
+        message(WARNING "Could not download windowsZones.xml! Error: ${windows_zones_download_msg}")
+    endif()
 
     # Generate known_zones.h from tzdata.zi
     set(TZDATA_ZI_FILE "${BUILD}/data/tzdata/tzdata.zi")
