@@ -247,11 +247,11 @@ namespace vtz {
             {
                 // This case occurs if we're entering Daylight Savings Time (or
                 // otherwise moving the clocks forward). In this case, there
-                // is some chance that we have a nonexistant local time.
+                // is some chance that we have a nonexistent local time.
 
                 if( t_key >= when2 ) return t - off_post;
                 if( t_key <= when1 ) return t - off_pre;
-                // Times between 'when1' and 'when2' are nonexistant.
+                // Times between 'when1' and 'when2' are nonexistent.
                 // All of them refer to the same timestamp
                 return ent.t + ( t - t_key );
             }
@@ -302,7 +302,7 @@ namespace vtz {
             {
                 // This case occurs if we're entering Daylight Savings Time (or
                 // otherwise moving the clocks forward). In this case, there
-                // is some chance that we have a nonexistant local time.
+                // is some chance that we have a nonexistent local time.
 
                 if( t_key >= when2 )
                 { // eg, local time is 3am or after
@@ -315,7 +315,7 @@ namespace vtz {
                     return local_info::unique;
                 }
 
-                // Time was nonexistant.
+                // Time was nonexistent.
                 sysseconds_t jump_time
                     = ent.t + ( t - t_key ); // Time at which jump occurred (eg,
                                              // 3am (since 2am is nonexistent))
@@ -372,12 +372,12 @@ namespace vtz {
         ///
         /// Let's take America/New_York as an example.
         ///
-        /// The time 2025 Mar 09 02:30 AM (local time) is nonexistant -
+        /// The time 2025 Mar 09 02:30 AM (local time) is nonexistent -
         /// on that date, the clocks move forward from 1:59:59 am to 3am,
-        /// so local times in the range 2am..3am are nonexistant, because the
+        /// so local times in the range 2am..3am are nonexistent, because the
         /// clock skips forward to 3am.
         ///
-        /// What do we return for a nonexistant local time?
+        /// What do we return for a nonexistent local time?
         ///
         /// - 01:59:59am EST is 06:59:59 UTC
         /// - 02:00:00am EST _would be_ 7am UTC...
@@ -387,7 +387,7 @@ namespace vtz {
         ///
         /// There's no gap between those two times.
         ///
-        /// So, all nonexistant times refer to the same UTC timestamp.
+        /// So, all nonexistent times refer to the same UTC timestamp.
         ///
         /// This matches the definition of `to_sys` given in P0355R7,
         /// which was incorporated into the C++ standard as the standard
