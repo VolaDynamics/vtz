@@ -485,7 +485,7 @@ namespace vtz {
 
         u32 abbr_block_s( sec_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return abbr.lookup_i32( t );
+                return abbr.lookup_u32( t );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return abbr.initial_i32();
