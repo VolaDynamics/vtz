@@ -391,7 +391,8 @@ namespace vtz {
     ///
     /// Throws an exception if the given zone name could not be found within the
     /// timezone database.
-    VTZ_EXPORT time_zone const* set_current_zone_for_application( string_view name );
+    VTZ_EXPORT time_zone const* set_current_zone_for_application(
+        string_view name );
 
 
     /// VTZ operates under the assumption that the current timezone will not
