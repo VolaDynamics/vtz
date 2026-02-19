@@ -97,7 +97,7 @@ namespace vtz {
             // This is the corresponding system time (with the unit being in
             // seconds)
             sys_seconds sys_t
-                = _sys( to_sys_s( t.time_since_epoch().count(), z ) );
+                = _sys( to_sys_s( t2.time_since_epoch().count(), z ) );
 
             // if t2 is less precise than t, we chopped off some unit of time
             // (eg, some number of nanoseconds)
