@@ -512,6 +512,32 @@ namespace vtz {
             WriteToString{} );
     }
 
+    std::string format_precise_s(
+        string_view fmt, sysseconds_t t, u32 nanos, int precision ) {
+        return _do_strformat(
+            DummyTimeZoneUTC{},
+            fmt.data(),
+            fmt.size(),
+            t,
+            _write_nanos( nanos, precision ),
+            WriteToString{} );
+    }
+
+    size_t format_precise_to_s( string_view fmt,
+        sysseconds_t t,
+        u32          nanos,
+        int          precision,
+        char*        buff,
+        size_t       count ) {
+        return _do_strformat(
+            DummyTimeZoneUTC{},
+            fmt.data(),
+            fmt.size(),
+            t,
+            _write_nanos( nanos, precision ),
+            WriteToBuff{ buff, count } );
+    }
+
     string time_zone::format_s(
         std::string_view format, sysseconds_t t ) const {
         return _do_strformat(
