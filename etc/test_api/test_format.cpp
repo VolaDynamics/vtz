@@ -172,6 +172,65 @@ namespace {
         }
     }
 
+    // sanity checks for detail::get_necessary_precision
+    using namespace std::chrono;
+    static_assert( detail::get_necessary_precision<hours>() == 0 );
+    static_assert( detail::get_necessary_precision<minutes>() == 0 );
+    static_assert( detail::get_necessary_precision<seconds>() == 0 );
+    static_assert( detail::get_necessary_precision<milliseconds>() == 3 );
+    static_assert( detail::get_necessary_precision<microseconds>() == 6 );
+    static_assert( detail::get_necessary_precision<nanoseconds>() == 9 );
+    using tenths = duration<int64_t, std::ratio<1, 10>>;
+    static_assert( detail::get_necessary_precision<tenths>() == 1 );
+    using thirds = duration<int64_t, std::ratio<1, 3>>;
+    static_assert( detail::get_necessary_precision<thirds>() == 9 );
+    using sevenths = duration<int64_t, std::ratio<1, 7>>;
+    static_assert( detail::get_necessary_precision<sevenths>() == 9 );
+    using seven_thirds = duration<int64_t, std::ratio<7, 3>>;
+    static_assert( detail::get_necessary_precision<seven_thirds>() == 9 );
+
+    // Helper for testing vtz::format / vtz::format_to with an arbitrary
+    // duration type. Constructs a sys_time<Dur> by flooring a nanosecond
+    // time point, then verifies that vtz::format produces the same output
+    // as our ref_time at the auto-selected precision.
+
+    template<class Dur>
+    void check_format_generic( const char* fmt, int64_t t, u32 nanos ) {
+        using sys_ns = sys_time<nanoseconds>;
+        auto tp_ns   = sys_ns{ seconds{ t } + nanoseconds{ nanos } };
+        auto tp      = sys_time<Dur>{ std::chrono::floor<Dur>(
+            tp_ns.time_since_epoch() ) };
+
+        constexpr int prec = detail::get_necessary_precision<Dur>();
+
+        // decompose the same way vtz::format does internally
+        auto sec = std::chrono::floor<seconds>( tp.time_since_epoch() );
+        auto ns
+            = std::chrono::floor<nanoseconds>( tp.time_since_epoch() - sec );
+
+        auto expected = ref_time( fmt, sec.count(), u32( ns.count() ), prec );
+
+        ASSERT_EQ( vtz::format( fmt, tp ), expected );
+
+        // buffer variant
+        {
+            char   buf[256];
+            size_t n = vtz::format_to( fmt, tp, buf, sizeof( buf ) );
+            ASSERT_EQ( sv( buf, n ), expected );
+        }
+
+        // truncation with guard pages
+        for( size_t sz = 0; sz <= expected.size(); sz++ )
+        {
+            auto prefix = sv( expected ).substr( 0, sz );
+            auto gpb    = guard_page_buffer( sz );
+
+            size_t n = vtz::format_to( fmt, tp, gpb.data(), sz );
+            ASSERT_EQ( n, sz );
+            ASSERT_EQ( sv( gpb.data(), n ), prefix );
+        }
+    }
+
     void check_format_date(
         const char* fmt, int32_t d, const std::string& expected ) {
         auto d_sys = sys_days( days( d ) );
@@ -390,4 +449,38 @@ TEST( vtz_format, format_precise ) {
                 for( auto fmt : PRECISE_FMTS )
                     check_format_precise(
                         fmt, t, nanos, prec, ref_time( fmt, t, nanos, prec ) );
+}
+
+
+TEST( vtz_format, format_generic ) {
+    using namespace std::chrono;
+
+    // non-decimal sub-second durations (precision defaults to 9)
+    using thirds   = duration<int64_t, std::ratio<1, 3>>;
+    using sevenths = duration<int64_t, std::ratio<1, 7>>;
+
+    // longer than a second, non-integer number of seconds (precision 9)
+    using seven_thirds = duration<int64_t, std::ratio<7, 3>>;
+
+    for( auto t : PRECISE_TIME_VALUES )
+        for( auto nanos : NANOS_VALUES )
+            for( auto fmt : PRECISE_FMTS )
+            {
+                // common cases
+                check_format_generic<seconds>( fmt, t, nanos );
+                check_format_generic<milliseconds>( fmt, t, nanos );
+                check_format_generic<microseconds>( fmt, t, nanos );
+                check_format_generic<nanoseconds>( fmt, t, nanos );
+
+                // coarser than seconds
+                check_format_generic<minutes>( fmt, t, nanos );
+                check_format_generic<hours>( fmt, t, nanos );
+
+                // non-decimal sub-second
+                check_format_generic<thirds>( fmt, t, nanos );
+                check_format_generic<sevenths>( fmt, t, nanos );
+
+                // pathological: longer than a second, non-integer
+                check_format_generic<seven_thirds>( fmt, t, nanos );
+            }
 }
