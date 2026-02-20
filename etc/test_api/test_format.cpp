@@ -3,391 +3,235 @@
 #include <string_view>
 #include <vtz/format.h>
 
+#include <date/date.h>
+
 #include "guard_page_buffer.h"
 
 using namespace vtz;
+using sv = std::string_view;
+
 
 namespace {
-    struct fmt_test_data_s {
-        std::string_view fmt;
-        int64_t          t;
-        std::string_view out;
+
+    // Reference formatters using the Hinnant date library
+
+    std::string ref_time( const char* fmt, int64_t t ) {
+        auto tp = date::sys_seconds{ std::chrono::seconds{ t } };
+        return date::format( fmt, tp );
+    }
+
+    std::string ref_date( const char* fmt, int32_t d ) {
+        auto tp = date::sys_days{ date::days{ d } };
+        return date::format( fmt, tp );
+    }
+
+
+    // Helpers that test all vtz function variants + guard-page truncation
+
+    void check_format_time(
+        const char* fmt, int64_t t, const std::string& expected ) {
+        auto t_sys = sys_seconds( seconds( t ) );
+
+        ASSERT_EQ( format_time_s( fmt, t ), expected );
+        ASSERT_EQ( format_time( fmt, t_sys ), expected );
+
+        // format_time_to_s
+        {
+            char   buf[256];
+            size_t n = format_time_to_s( fmt, t, buf, sizeof( buf ) );
+            ASSERT_EQ( sv( buf, n ), expected );
+        }
+
+        // format_time_to
+        {
+            char   buf[256];
+            size_t n = format_time_to( fmt, t_sys, buf, sizeof( buf ) );
+            ASSERT_EQ( sv( buf, n ), expected );
+        }
+
+        // truncation with guard pages
+        for( size_t sz = 0; sz <= expected.size(); sz++ )
+        {
+            auto prefix = sv( expected ).substr( 0, sz );
+            auto gpb    = guard_page_buffer( sz );
+
+            size_t n1 = format_time_to_s( fmt, t, gpb.data(), sz );
+            ASSERT_EQ( n1, sz );
+            ASSERT_EQ( sv( gpb.data(), n1 ), prefix );
+
+            size_t n2 = format_time_to( fmt, t_sys, gpb.data(), sz );
+            ASSERT_EQ( n2, sz );
+            ASSERT_EQ( sv( gpb.data(), n2 ), prefix );
+        }
+    }
+
+    void check_format_date(
+        const char* fmt, int32_t d, const std::string& expected ) {
+        auto d_sys = sys_days( days( d ) );
+
+        ASSERT_EQ( format_date_d( fmt, d ), expected );
+        ASSERT_EQ( format_date( fmt, d_sys ), expected );
+
+        // format_date_to_d
+        {
+            char   buf[256];
+            size_t n = format_date_to_d( fmt, d, buf, sizeof( buf ) );
+            ASSERT_EQ( sv( buf, n ), expected );
+        }
+
+        // format_date_to
+        {
+            char   buf[256];
+            size_t n = format_date_to( fmt, d_sys, buf, sizeof( buf ) );
+            ASSERT_EQ( sv( buf, n ), expected );
+        }
+
+        // truncation with guard pages
+        for( size_t sz = 0; sz <= expected.size(); sz++ )
+        {
+            auto prefix = sv( expected ).substr( 0, sz );
+            auto gpb    = guard_page_buffer( sz );
+
+            size_t n1 = format_date_to_d( fmt, d, gpb.data(), sz );
+            ASSERT_EQ( n1, sz );
+            ASSERT_EQ( sv( gpb.data(), n1 ), prefix );
+
+            size_t n2 = format_date_to( fmt, d_sys, gpb.data(), sz );
+            ASSERT_EQ( n2, sz );
+            ASSERT_EQ( sv( gpb.data(), n2 ), prefix );
+        }
+    }
+
+
+    // Input values
+
+    int64_t TIME_VALUES[] = {
+        0,
+        86399,        // 1970-01-01 23:59:59
+        946684800,    // 2000-01-01
+        1234567890,   // 2009-02-13 23:31:30
+        1709294400,   // 2024-03-01 12:00:00 (leap year)
+        1735689599,   // 2024-12-31 23:59:59 (leap year)
+        1740000000,   // 2025-02-19 21:20:00
+        1762442685,   // 2025-11-06 15:24:45
+        2147483647,   // 2038-01-19 03:14:07 (i32 max)
+        2147483648,   // 2038-01-19 03:14:08 (i32 max + 1)
+        4102444800,   // 2100-01-01 (not a leap year)
+        32503680000,  // 3000-01-01
+        -62135596800, // 0001-01-01 (year 1)
+        -62167219200, // 0000-01-01 (year 0)
     };
 
-    struct fmt_test_data_d {
-        std::string_view fmt;
-        int32_t          days;
-        std::string_view out;
-    };
-
-
-    // Reference data obtained from etc/scripts/seconds_to_datetime.py:
-    //
-    //   -62184499200 = -0001-06-15 00:00:00 (dow=2, Tue)
-    //   -62167219200 = 0000-01-01 00:00:00 (dow=6, Sat)
-    //   -62135596800 = 0001-01-01 00:00:00 (dow=1, Mon)
-    //   0            = 1970-01-01 00:00:00 (dow=4, Thu)
-    //   86399        = 1970-01-01 23:59:59 (dow=4, Thu)
-    //   946684800    = 2000-01-01 00:00:00 (dow=6, Sat)
-    //   1234567890   = 2009-02-13 23:31:30 (dow=5, Fri)
-    //   1709294400   = 2024-03-01 12:00:00 (dow=5, Fri) [leap year]
-    //   1735689599   = 2024-12-31 23:59:59 (dow=2, Tue) [leap year]
-    //   1740000000   = 2025-02-19 21:20:00 (dow=3, Wed)
-    //   1762442685   = 2025-11-06 15:24:45 (dow=4, Thu)
-    //   2147483647   = 2038-01-19 03:14:07 (dow=2, Tue) [i32 max]
-    //   2147483648   = 2038-01-19 03:14:08 (dow=2, Tue) [i32 max + 1]
-    //   4102444800   = 2100-01-01 00:00:00 (dow=5, Fri) [not a leap year]
-    //   32503680000  = 3000-01-01 00:00:00 (dow=3, Wed)
-    //   253402300800 = 10000-01-01 00:00:00 (dow=6, Sat) [5-digit year]
-
-    fmt_test_data_s TEST_CASES_SECONDS[]{
-        // Canonical datetime format
-        { "%Y-%m-%d %H:%M:%S", 0, "1970-01-01 00:00:00" },
-        { "%Y-%m-%d %H:%M:%S", 86399, "1970-01-01 23:59:59" },
-        { "%Y-%m-%d %H:%M:%S", 946684800, "2000-01-01 00:00:00" },
-        { "%Y-%m-%d %H:%M:%S", 1234567890, "2009-02-13 23:31:30" },
-        { "%Y-%m-%d %H:%M:%S", 1709294400, "2024-03-01 12:00:00" },
-        { "%Y-%m-%d %H:%M:%S", 1735689599, "2024-12-31 23:59:59" },
-        { "%Y-%m-%d %H:%M:%S", 1740000000, "2025-02-19 21:20:00" },
-        { "%Y-%m-%d %H:%M:%S", 1762442685, "2025-11-06 15:24:45" },
-
-        // ISO 8601 equivalents (%F = %Y-%m-%d, %T = %H:%M:%S)
-        { "%F %T", 0, "1970-01-01 00:00:00" },
-        { "%F %T", 1234567890, "2009-02-13 23:31:30" },
-        { "%F %T", 1740000000, "2025-02-19 21:20:00" },
-
-        // Year
-        { "%Y", 0, "1970" },
-        { "%Y", 946684800, "2000" },
-        { "%Y", 1740000000, "2025" },
-        { "%y", 0, "70" },
-        { "%y", 946684800, "00" },
-        { "%y", 1740000000, "25" },
-
-        // Month
-        { "%m", 0, "01" },          // January
-        { "%m", 1234567890, "02" }, // February
-        { "%m", 1709294400, "03" }, // March
-        { "%m", 1762442685, "11" }, // November
-        { "%m", 1735689599, "12" }, // December
-
-        // Day of month (%d zero-padded, %e space-padded)
-        { "%d", 0, "01" },
-        { "%d", 1234567890, "13" },
-        { "%d", 1735689599, "31" },
-        { "%e", 0, " 1" },
-        { "%e", 1234567890, "13" },
-        { "%e", 1735689599, "31" },
-
-        // Hour (24-hour)
-        { "%H", 0, "00" },
-        { "%H", 1709294400, "12" },
-        { "%H", 1762442685, "15" },
-        { "%H", 86399, "23" },
-
-        // Hour (12-hour)
-        { "%I", 0, "12" },          // midnight = 12 AM
-        { "%I", 1709294400, "12" }, // noon = 12 PM
-        { "%I", 1762442685, "03" }, // 15:00 = 3 PM
-        { "%I", 86399, "11" },      // 23:59 = 11 PM
-        { "%I", 1740000000, "09" }, // 21:00 = 9 PM
-
-        // Minute, second
-        { "%M", 0, "00" },
-        { "%M", 1740000000, "20" },
-        { "%M", 1234567890, "31" },
-        { "%M", 86399, "59" },
-        { "%S", 0, "00" },
-        { "%S", 1234567890, "30" },
-        { "%S", 1762442685, "45" },
-        { "%S", 86399, "59" },
-
-        // %R = %H:%M
-        { "%R", 0, "00:00" },
-        { "%R", 1740000000, "21:20" },
-        { "%R", 86399, "23:59" },
-
-        // Day of year (%j)
-        { "%j", 0, "001" },          // Jan 1
-        { "%j", 1740000000, "050" }, // Feb 19 = day 50
-        { "%j", 1762442685, "310" }, // Nov 6 = day 310
-        { "%j", 1735689599, "366" }, // Dec 31 in leap year 2024
-        { "%j", 1709294400, "061" }, // Mar 1 in leap year 2024
-        { "%j", 1234567890, "044" }, // Feb 13 = day 44
-
-        // Weekday (%w Sun=0, %u Mon=1 ISO)
-        { "%w", 0, "4" },          // Thu
-        { "%w", 946684800, "6" },  // Sat
-        { "%w", 1234567890, "5" }, // Fri
-        { "%w", 1740000000, "3" }, // Wed
-        { "%w", 1735689599, "2" }, // Tue
-        { "%u", 0, "4" },          // Thu
-        { "%u", 946684800, "6" },  // Sat
-        { "%u", 1234567890, "5" }, // Fri
-        { "%u", 1740000000, "3" }, // Wed
-        { "%u", 1735689599, "2" }, // Tue
-
-        // Timezone specifiers (UTC context)
-        { "%z", 0, "+00" },
-        { "%z", 1740000000, "+00" },
-        { "%Z", 0, "UTC" },
-        { "%Z", 1740000000, "UTC" },
-        { "%F %T %Z", 1740000000, "2025-02-19 21:20:00 UTC" },
-        { "%F %T%z", 1740000000, "2025-02-19 21:20:00+00" },
-
-        // Escape and literal specifiers
-        { "%%", 0, "%" },
-        { "%n", 0, "\n" },
-        { "%t", 0, "\t" },
-        { "hello", 0, "hello" },
-        { "%%Y", 0, "%Y" },
-
-        // Combined formats
-        { "%Y%m%d", 1740000000, "20250219" },
-        { "%Y%m%d %H%M%S", 1762442685, "20251106 152445" },
-        { "%d/%m/%Y", 1234567890, "13/02/2009" },
-        { "%H:%M on %F", 1740000000, "21:20 on 2025-02-19" },
-
-        // Trailing literal after specifier
-        { "%Yx", 1740000000, "2025x" },
-        { "%Y-%m-%d end", 0, "1970-01-01 end" },
-
-        // Y2038 boundary (i32 max seconds)
-        { "%F %T", 2147483647, "2038-01-19 03:14:07" },
-        { "%F %T", 2147483648, "2038-01-19 03:14:08" },
-
-        // End of century (2100 is NOT a leap year)
-        { "%F %T", 4102444800, "2100-01-01 00:00:00" },
-
-        // Far future
-        { "%F %T", 32503680000, "3000-01-01 00:00:00" },
-
-        // Far past: year 1
-        { "%F %T", -62135596800, "0001-01-01 00:00:00" },
-
-        // Year 0 (1 BCE)
-        { "%F %T", -62167219200, "0000-01-01 00:00:00" },
-        { "%Y", -62167219200, "0000" },
-
-        // Negative year (-1 = 2 BCE, June 15)
-        { "%Y-%m-%d", -62184499200, "-1-06-15" },
-        { "%Y", -62184499200, "-1" },
-
-        // 5-digit year
-        { "%F %T", 253402300800, "10000-01-01 00:00:00" },
-        { "%Y", 253402300800, "10000" },
+    int32_t DATE_VALUES[] = {
+        0,       // 1970-01-01
+        -1,      // 1969-12-31
+        -365,    // 1969-01-01
+        365,     // 1971-01-01
+        10000,   // 1997-05-19
+        18262,   // 2020-01-01
+        19723,   // 2024-01-01
+        20454,   // 2026-01-01
+        -719162, // 0001-01-01 (year 1)
+        -719528, // 0000-01-01 (year 0)
+        -100000, // 1696-03-17
+        100000,  // 2243-10-17
+        730000,  // 3968-09-03
     };
 
 
-    // Reference data obtained from etc/scripts/seconds_to_datetime.py:
-    //
-    //   -719893 = -0001-01-01 (dow=5, Fri)
-    //   -719528 = 0000-01-01 (dow=6, Sat)
-    //   -719163 = 0000-12-31 (dow=0, Sun)
-    //   -719162 = 0001-01-01 (dow=1, Mon)
-    //   -100000 = 1696-03-17 (dow=6, Sat)
-    //   -365    = 1969-01-01 (dow=3, Wed)
-    //   -1      = 1969-12-31 (dow=3, Wed)
-    //   0       = 1970-01-01 (dow=4, Thu)
-    //   365     = 1971-01-01 (dow=5, Fri)
-    //   10000   = 1997-05-19 (dow=1, Mon)
-    //   18262   = 2020-01-01 (dow=3, Wed)
-    //   19723   = 2024-01-01 (dow=1, Mon)
-    //   20454   = 2026-01-01 (dow=4, Thu)
-    //   100000  = 2243-10-17 (dow=2, Tue)
-    //   730000  = 3968-09-03 (dow=2, Tue)
-    //   2932897 = 10000-01-01 (dow=6, Sat)
-    //   35804721 = 99999-12-31
+    // Format specifiers
+    // %z is excluded: vtz intentionally differs from Hinnant date by shortening
+    // instances such as "+0500" to "+05"
 
-    fmt_test_data_d TEST_CASES_DATES[]{
-        // Canonical date format
-        { "%Y-%m-%d", 0, "1970-01-01" },
-        { "%Y-%m-%d", -1, "1969-12-31" },
-        { "%Y-%m-%d", -365, "1969-01-01" },
-        { "%Y-%m-%d", 365, "1971-01-01" },
-        { "%Y-%m-%d", 10000, "1997-05-19" },
-        { "%Y-%m-%d", 18262, "2020-01-01" },
-        { "%Y-%m-%d", 19723, "2024-01-01" },
-        { "%Y-%m-%d", 20454, "2026-01-01" },
+    const char* TIME_FMTS[] = {
+        "%Z", // timezone abbreviation, eg 'UTC'
+        "%Y", // full year, e.g. "2025"
+        "%y", // last 2 digits of year, e.g. "25"
+        "%m", // month [01,12]
+        "%d", // day of month, zero-padded [01,31]
+        "%e", // day of month, space-padded [ 1,31]
+        "%j", // day of year [001,366]
+        "%w", // weekday, Sunday=0 [0,6]
+        "%u", // weekday, Monday=1 ISO [1,7]
+        "%F", // ISO date, equivalent to %Y-%m-%d
+        "%H", // hour, 24-hour clock [00,23]
+        "%I", // hour, 12-hour clock [01,12]
+        "%M", // minute [00,59]
+        "%S", // second [00,60]
+        "%R", // equivalent to %H:%M
+        "%T", // equivalent to %H:%M:%S
+        "%Y-%m-%d %H:%M:%S",
+        "%F %T",
+        "%H:%M on %F",
+        "%Y%m%d",
+        "%d/%m/%Y",
+        "%%",    // literal '%'
+        "%n",    // newline
+        "%t",    // tab
+        "%%Y",   // literal '%' followed by 'Y'
+        "hello", // no specifiers
+    };
 
-        // %F (equivalent to %Y-%m-%d)
-        { "%F", 0, "1970-01-01" },
-        { "%F", 10000, "1997-05-19" },
-        { "%F", 20454, "2026-01-01" },
-
-        // Year
-        { "%Y", 0, "1970" },
-        { "%Y", -365, "1969" },
-        { "%Y", 10000, "1997" },
-        { "%Y", 20454, "2026" },
-        { "%y", 0, "70" },
-        { "%y", -365, "69" },
-        { "%y", 10000, "97" },
-        { "%y", 20454, "26" },
-
-        // Month
-        { "%m", 0, "01" },
-        { "%m", -1, "12" },
-        { "%m", 10000, "05" },
-
-        // Day (%d and %e)
-        { "%d", 0, "01" },
-        { "%d", -1, "31" },
-        { "%d", 10000, "19" },
-        { "%e", 0, " 1" },
-        { "%e", -1, "31" },
-        { "%e", 10000, "19" },
-
-        // Day of year (%j)
-        { "%j", 0, "001" },
-        { "%j", 365, "001" },
-        { "%j", -365, "001" },
-        { "%j", 20454, "001" },
-        { "%j", -1, "365" },    // Dec 31 of non-leap year 1969
-        { "%j", 10000, "139" }, // 1997-05-19: 31+28+31+30+19 = 139
-
-        // Weekday (%w Sun=0, %u Mon=1 ISO)
-        { "%w", 0, "4" },     // Thu
-        { "%w", -1, "3" },    // Wed
-        { "%w", 10000, "1" }, // Mon
-        { "%w", 19723, "1" }, // Mon
-        { "%w", 365, "5" },   // Fri
-        { "%u", 0, "4" },     // Thu
-        { "%u", -1, "3" },    // Wed
-        { "%u", 10000, "1" }, // Mon
-        { "%u", 19723, "1" }, // Mon
-        { "%u", 365, "5" },   // Fri
-
-        // Escape specifiers
-        { "%%", 0, "%" },
-        { "%%F", 0, "%F" },
-
-        // Combined formats
-        { "%Y%m%d", 10000, "19970519" },
-        { "%d/%m/%Y", 10000, "19/05/1997" },
-
-        // Far past: year 1
-        { "%F", -719162, "0001-01-01" },
-
-        // Year 0 (1 BCE)
-        { "%F", -719528, "0000-01-01" },
-        { "%F", -719163, "0000-12-31" },
-        { "%Y", -719528, "0000" },
-
-        // Negative year (-1 = 2 BCE)
-        { "%F", -719893, "-1-01-01" },
-        { "%Y", -719893, "-1" },
-
-        // Far past
-        { "%F", -100000, "1696-03-17" },
-
-        // Far future
-        { "%F", 100000, "2243-10-17" },
-        { "%F", 730000, "3968-09-03" },
-
-        // 5-digit year
-        { "%F", 2932897, "10000-01-01" },
-        { "%Y", 2932897, "10000" },
-        { "%F", 35804721, "99999-12-31" },
+    const char* DATE_FMTS[] = {
+        "%Y", // full year, e.g. "2025"
+        "%y", // last 2 digits of year, e.g. "25"
+        "%m", // month [01,12]
+        "%d", // day of month, zero-padded [01,31]
+        "%e", // day of month, space-padded [ 1,31]
+        "%j", // day of year [001,366]
+        "%w", // weekday, Sunday=0 [0,6]
+        "%u", // weekday, Monday=1 ISO [1,7]
+        "%F", // ISO date, equivalent to %Y-%m-%d
+        "%Y-%m-%d",
+        "%d/%m/%Y",
+        "%Y%m%d",
+        "%%",    // literal '%'
+        "%n",    // newline
+        "%t",    // tab
+        "%%Y",   // literal '%' followed by 'Y'
+        "hello", // no specifiers
     };
 } // namespace
 
 
-// Alias for std::string_view, to make test code more compact
-using sv = std::string_view;
-
-
 TEST( vtz_format, format_time ) {
-    for( auto const& tc : TEST_CASES_SECONDS )
-    {
-        auto t_sys = sys_seconds( seconds( tc.t ) );
+    // cross-product: every value x every format, verified against Hinnant date
+    for( auto t : TIME_VALUES )
+        for( auto fmt : TIME_FMTS )
+            check_format_time( fmt, t, ref_time( fmt, t ) );
 
-        // format_time_s
-        ASSERT_EQ( format_time_s( tc.fmt, tc.t ), tc.out );
+    // %z: vtz produces "+00", Hinnant produces "+0000"
+    check_format_time( "%z", 0, "+00" );
+    check_format_time( "%z", 1740000000, "+00" );
+    check_format_time( "%F %T%z", 1740000000, "2025-02-19 21:20:00+00" );
 
-        // format_time (chrono wrapper)
-        ASSERT_EQ( format_time( tc.fmt, t_sys ), tc.out );
+    // %Z
+    check_format_time( "%Z", 0, "UTC" );
+    check_format_time( "%Z", 1740000000, "UTC" );
+    check_format_time( "%F %T %Z", 1740000000, "2025-02-19 21:20:00 UTC" );
 
+    // negative year: vtz produces "-1", Hinnant produces "-0001"
+    check_format_time( "%Y-%m-%d", -62184499200, "-1-06-15" );
+    check_format_time( "%Y", -62184499200, "-1" );
 
-        // format_time_to_s (buffer + truncation)
-
-        {
-            char   buf[128];
-            size_t n = format_time_to_s( tc.fmt, tc.t, buf, sizeof( buf ) );
-            ASSERT_EQ( sv( buf, n ), tc.out );
-        }
-
-        // Check with guard page buffer
-        for( size_t sz = 0; sz <= tc.out.size(); sz++ )
-        {
-            auto   buf     = guard_page_buffer( sz );
-            size_t written = format_time_to_s( tc.fmt, tc.t, buf.data(), sz );
-            ASSERT_EQ( written, sz );
-            ASSERT_EQ( sv( buf.data(), written ), tc.out.substr( 0, sz ) );
-        }
-
-
-        // format_time_to (chrono buffer wrapper + truncation)
-
-        {
-            char   buf[128];
-            size_t n = format_time_to( tc.fmt, t_sys, buf, sizeof( buf ) );
-            ASSERT_EQ( sv( buf, n ), tc.out );
-        }
-
-        for( size_t sz = 0; sz <= tc.out.size(); sz++ )
-        {
-            auto   buf     = guard_page_buffer( sz );
-            size_t written = format_time_to( tc.fmt, t_sys, buf.data(), sz );
-            ASSERT_EQ( written, sz );
-            ASSERT_EQ( sv( buf.data(), written ), tc.out.substr( 0, sz ) );
-        }
-    }
+    // 5-digit year
+    check_format_time( "%F %T", 253402300800, "10000-01-01 00:00:00" );
+    check_format_time( "%Y", 253402300800, "10000" );
 }
 
 
 TEST( vtz_format, format_date ) {
-    for( auto const& tc : TEST_CASES_DATES )
-    {
-        auto d_sys = sys_days( days( tc.days ) );
+    // cross-product: every value x every format, verified against Hinnant date
+    for( auto d : DATE_VALUES )
+        for( auto fmt : DATE_FMTS )
+            check_format_date( fmt, d, ref_date( fmt, d ) );
 
-        // format_date_d
-        ASSERT_EQ( format_date_d( tc.fmt, tc.days ), tc.out );
+    // negative year: vtz produces "-1", Hinnant produces "-0001"
+    check_format_date( "%F", -719893, "-1-01-01" );
+    check_format_date( "%Y", -719893, "-1" );
 
-        // format_date (chrono wrapper)
-        ASSERT_EQ( format_date( tc.fmt, d_sys ), tc.out );
-
-        // format_date_to_d (buffer + truncation)
-
-        {
-            char   buf[128];
-            size_t n = format_date_to_d( tc.fmt, tc.days, buf, sizeof( buf ) );
-            ASSERT_EQ( sv( buf, n ), tc.out );
-        }
-
-        for( size_t sz = 0; sz <= tc.out.size(); sz++ )
-        {
-            auto   buf = guard_page_buffer( sz );
-            size_t written
-                = format_date_to_d( tc.fmt, tc.days, buf.data(), sz );
-            ASSERT_EQ( written, sz );
-            ASSERT_EQ( sv( buf.data(), written ), tc.out.substr( 0, sz ) );
-        }
-
-        // format_date_to (chrono buffer wrapper + truncation)
-
-        {
-            char   buf[128];
-            size_t n = format_date_to( tc.fmt, d_sys, buf, sizeof( buf ) );
-            ASSERT_EQ( sv( buf, n ), tc.out );
-        }
-
-        for( size_t sz = 0; sz <= tc.out.size(); sz++ )
-        {
-            auto   buf     = guard_page_buffer( sz );
-            size_t written = format_date_to( tc.fmt, d_sys, buf.data(), sz );
-            ASSERT_EQ( written, sz );
-            ASSERT_EQ( sv( buf.data(), written ), tc.out.substr( 0, sz ) );
-        }
-    }
+    // 5-digit year
+    check_format_date( "%F", 2932897, "10000-01-01" );
+    check_format_date( "%Y", 2932897, "10000" );
+    check_format_date( "%F", 35804721, "99999-12-31" );
 }
