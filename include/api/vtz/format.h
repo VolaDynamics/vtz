@@ -253,4 +253,79 @@ namespace vtz {
         return format_precise_to_s(
             fmt, sec.count(), u32( nanos.count() ), precision, buff, count );
     }
+
+
+    /// Formats a UTC time to a string, automatically selecting the
+    /// appropriate precision for the given duration type. If the duration
+    /// is coarser than or equal to seconds, no fractional component is
+    /// written. Otherwise, the minimum number of fractional digits needed
+    /// to represent the duration is used (up to 9 for nanoseconds).
+    ///
+    /// The time is interpreted as UTC. `%Z` will produce "UTC", and `%z`
+    /// will produce "+00".
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
+    /// @param t time since 1970-01-01 00:00:00 UTC
+    /// @throws if the given format specifier is invalid
+
+    template<class Dur>
+    std::string format( string_view fmt, sys_time<Dur> t ) {
+        constexpr int prec = detail::get_necessary_precision<Dur>();
+
+        if constexpr( prec == 0 )
+        {
+            return format_time_s(
+                fmt, seconds( t.time_since_epoch() ).count() );
+        }
+        else
+        {
+            auto sec   = std::chrono::floor<seconds>( t.time_since_epoch() );
+            auto nanos = std::chrono::floor<nanoseconds>(
+                t.time_since_epoch() - sec );
+            return format_precise_s(
+                fmt, sec.count(), u32( nanos.count() ), prec );
+        }
+    }
+
+
+    /// Formats a UTC time to the given buffer, automatically selecting the
+    /// appropriate precision for the given duration type. If the duration
+    /// is coarser than or equal to seconds, no fractional component is
+    /// written. Otherwise, the minimum number of fractional digits needed
+    /// to represent the duration is used (up to 9 for nanoseconds).
+    /// Output is truncated if it would exceed `count`.
+    ///
+    /// The time is interpreted as UTC. `%Z` will produce "UTC", and `%z`
+    /// will produce "+00".
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+    ///
+    /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
+    /// @param t time since 1970-01-01 00:00:00 UTC
+    /// @return number of characters written to the buffer.
+    /// @throws if the given format specifier is invalid
+
+    template<class Dur>
+    size_t format_to( string_view fmt, sys_time<Dur> t, char* buff,
+        size_t count ) {
+        constexpr int prec = detail::get_necessary_precision<Dur>();
+
+        if constexpr( prec == 0 )
+        {
+            return format_time_to_s(
+                fmt, seconds( t.time_since_epoch() ).count(), buff, count );
+        }
+        else
+        {
+            auto sec   = std::chrono::floor<seconds>( t.time_since_epoch() );
+            auto nanos = std::chrono::floor<nanoseconds>(
+                t.time_since_epoch() - sec );
+            return format_precise_to_s( fmt, sec.count(),
+                u32( nanos.count() ), prec, buff, count );
+        }
+    }
 } // namespace vtz
