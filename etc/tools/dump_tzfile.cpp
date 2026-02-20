@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include <vtz/files.h>
 #include <vtz/strings.h>
+#include <vtz/format.h>
 #include <vtz/tz.h>
 #include <vtz/tz_reader/FromUTC.h>
 #include <vtz/tz_reader/LeapTable.h>
@@ -101,8 +102,6 @@ void print_file(
     using vtz::endian::span_be;
     using vtz::endian::span_bytes;
 
-    auto utc = vtz::time_zone::utc();
-
     size_t timecnt      = ff.tzh_timecnt;
     auto   TT           = ff.transition_times();
     auto   type_indices = ff.type_indices();
@@ -130,9 +129,9 @@ void print_file(
         if( !leaps.empty() )
         {
             println( "raw={} utc={} local={} off={} dst={} abbr={} ti={}",
-                styled( utc.format_s( "%F %T", Traw ), bold_magenta ),
-                styled( utc.format_s( "%F %T", T ), bold_magenta ),
-                styled( utc.format_s( "%F %T", T + utoff ), bold_blue ),
+                styled( vtz::format_time_s( "%F %T", Traw ), bold_magenta ),
+                styled( vtz::format_time_s( "%F %T", T ), bold_magenta ),
+                styled( vtz::format_time_s( "%F %T", T + utoff ), bold_blue ),
                 styled( vtz::FromUTC( utoff ), bold_green ),
                 styled( int( isdst ), bold_white ),
                 styled( abbr, bold_red ),
@@ -141,8 +140,8 @@ void print_file(
         else
         {
             println( "utc={} local={} off={} dst={} abbr={} ti={}",
-                styled( utc.format_s( "%F %T", T ), bold_magenta ),
-                styled( utc.format_s( "%F %T", T + utoff ), bold_blue ),
+                styled( vtz::format_time_s( "%F %T", T ), bold_magenta ),
+                styled( vtz::format_time_s( "%F %T", T + utoff ), bold_blue ),
                 styled( vtz::FromUTC( utoff ), bold_green ),
                 styled( int( isdst ), bold_white ),
                 styled( abbr, bold_red ),
@@ -158,7 +157,7 @@ void print_file(
             fmt::println( "  [{:>2}] count={:>2} when={}",
                 i,
                 leaps.counts( i ),
-                utc.format_s( "%F %T", leaps.when( i ) ) );
+                vtz::format_time_s( "%F %T", leaps.when( i ) ) );
         }
     }
 

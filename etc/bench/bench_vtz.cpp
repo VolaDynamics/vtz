@@ -665,12 +665,10 @@ BENCH( vtz_parse_date, state ) {
 
 
 BENCH( vtz_parse_time, state ) {
-    static auto const& utc = vtz::time_zone::utc();
-
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
+        []( vtz::sec_t t ) { return vtz::format_time_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
     for( auto _ : state )
@@ -700,12 +698,10 @@ BENCH( hinnant_parse_date, state ) {
 }
 
 BENCH( hinnant_parse_time, state ) {
-    static auto const& utc = vtz::time_zone::utc();
-
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
+        []( vtz::sec_t t ) { return vtz::format_time_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
     for( auto _ : state )
@@ -720,12 +716,10 @@ BENCH( hinnant_parse_time, state ) {
 }
 
 BENCH( vtz_parse_date_compact, state ) {
-    static auto const& utc = vtz::time_zone::utc();
-
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
+        []( vtz::sec_t t ) { return vtz::format_time_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
     for( auto _ : state )
@@ -737,12 +731,10 @@ BENCH( vtz_parse_date_compact, state ) {
 }
 
 BENCH( vtz_parse_time_compact, state ) {
-    static auto const& utc = vtz::time_zone::utc();
-
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return utc.format_s( "%F %T %Z", t ); } );
+        []( vtz::sec_t t ) { return vtz::format_time_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
     for( auto _ : state )

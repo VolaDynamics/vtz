@@ -500,14 +500,4 @@ namespace vtz {
     using TZHolder = AtomicEnt<time_zone>;
 
 
-    time_zone time_zone::utc() {
-        return time_zone{ "UTC",
-            zone_states::make_static( ZoneState{
-                FromUTC( 0 ),
-                FromUTC( 0 ),
-                zone_abbr{ 3, "UTC" },
-            } ) };
-    }
-
-
 } // namespace vtz

@@ -26,10 +26,6 @@ namespace vtz {
     , private trans_table {
       public:
 
-        /// Constructs a time_zone representing UTC (stdoff of 0, walloff of 0,
-        /// abbreviation is UTC, etc)
-        static time_zone utc();
-
         time_zone( string_view name, zone_states const& states );
 
         using abbr_table::abbrev_s;
