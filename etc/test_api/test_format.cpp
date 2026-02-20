@@ -3,6 +3,8 @@
 #include <string_view>
 #include <vtz/format.h>
 
+#include "guard_page_buffer.h"
+
 using namespace vtz;
 
 namespace {
@@ -21,14 +23,22 @@ namespace {
 
     // Reference data obtained from etc/scripts/seconds_to_datetime.py:
     //
-    //   0          = 1970-01-01 00:00:00 (dow=4, Thu)
-    //   86399      = 1970-01-01 23:59:59 (dow=4, Thu)
-    //   946684800  = 2000-01-01 00:00:00 (dow=6, Sat)
-    //   1234567890 = 2009-02-13 23:31:30 (dow=5, Fri)
-    //   1709294400 = 2024-03-01 12:00:00 (dow=5, Fri) [leap year]
-    //   1735689599 = 2024-12-31 23:59:59 (dow=2, Tue) [leap year]
-    //   1740000000 = 2025-02-19 21:20:00 (dow=3, Wed)
-    //   1762442685 = 2025-11-06 15:24:45 (dow=4, Thu)
+    //   -62184499200 = -0001-06-15 00:00:00 (dow=2, Tue)
+    //   -62167219200 = 0000-01-01 00:00:00 (dow=6, Sat)
+    //   -62135596800 = 0001-01-01 00:00:00 (dow=1, Mon)
+    //   0            = 1970-01-01 00:00:00 (dow=4, Thu)
+    //   86399        = 1970-01-01 23:59:59 (dow=4, Thu)
+    //   946684800    = 2000-01-01 00:00:00 (dow=6, Sat)
+    //   1234567890   = 2009-02-13 23:31:30 (dow=5, Fri)
+    //   1709294400   = 2024-03-01 12:00:00 (dow=5, Fri) [leap year]
+    //   1735689599   = 2024-12-31 23:59:59 (dow=2, Tue) [leap year]
+    //   1740000000   = 2025-02-19 21:20:00 (dow=3, Wed)
+    //   1762442685   = 2025-11-06 15:24:45 (dow=4, Thu)
+    //   2147483647   = 2038-01-19 03:14:07 (dow=2, Tue) [i32 max]
+    //   2147483648   = 2038-01-19 03:14:08 (dow=2, Tue) [i32 max + 1]
+    //   4102444800   = 2100-01-01 00:00:00 (dow=5, Fri) [not a leap year]
+    //   32503680000  = 3000-01-01 00:00:00 (dow=3, Wed)
+    //   253402300800 = 10000-01-01 00:00:00 (dow=6, Sat) [5-digit year]
 
     fmt_test_data_s TEST_CASES_SECONDS[]{
         // Canonical datetime format
@@ -141,19 +151,53 @@ namespace {
         // Trailing literal after specifier
         { "%Yx", 1740000000, "2025x" },
         { "%Y-%m-%d end", 0, "1970-01-01 end" },
+
+        // Y2038 boundary (i32 max seconds)
+        { "%F %T", 2147483647, "2038-01-19 03:14:07" },
+        { "%F %T", 2147483648, "2038-01-19 03:14:08" },
+
+        // End of century (2100 is NOT a leap year)
+        { "%F %T", 4102444800, "2100-01-01 00:00:00" },
+
+        // Far future
+        { "%F %T", 32503680000, "3000-01-01 00:00:00" },
+
+        // Far past: year 1
+        { "%F %T", -62135596800, "0001-01-01 00:00:00" },
+
+        // Year 0 (1 BCE)
+        { "%F %T", -62167219200, "0000-01-01 00:00:00" },
+        { "%Y", -62167219200, "0000" },
+
+        // Negative year (-1 = 2 BCE, June 15)
+        { "%Y-%m-%d", -62184499200, "-1-06-15" },
+        { "%Y", -62184499200, "-1" },
+
+        // 5-digit year
+        { "%F %T", 253402300800, "10000-01-01 00:00:00" },
+        { "%Y", 253402300800, "10000" },
     };
 
 
     // Reference data obtained from etc/scripts/seconds_to_datetime.py:
     //
-    //   0     = 1970-01-01 (dow=4, Thu)
-    //   -1    = 1969-12-31 (dow=3, Wed)
-    //   -365  = 1969-01-01 (dow=3, Wed)
-    //   365   = 1971-01-01 (dow=5, Fri)
-    //   10000 = 1997-05-19 (dow=1, Mon)
-    //   18262 = 2020-01-01 (dow=3, Wed)
-    //   19723 = 2024-01-01 (dow=1, Mon)
-    //   20454 = 2026-01-01 (dow=4, Thu)
+    //   -719893 = -0001-01-01 (dow=5, Fri)
+    //   -719528 = 0000-01-01 (dow=6, Sat)
+    //   -719163 = 0000-12-31 (dow=0, Sun)
+    //   -719162 = 0001-01-01 (dow=1, Mon)
+    //   -100000 = 1696-03-17 (dow=6, Sat)
+    //   -365    = 1969-01-01 (dow=3, Wed)
+    //   -1      = 1969-12-31 (dow=3, Wed)
+    //   0       = 1970-01-01 (dow=4, Thu)
+    //   365     = 1971-01-01 (dow=5, Fri)
+    //   10000   = 1997-05-19 (dow=1, Mon)
+    //   18262   = 2020-01-01 (dow=3, Wed)
+    //   19723   = 2024-01-01 (dow=1, Mon)
+    //   20454   = 2026-01-01 (dow=4, Thu)
+    //   100000  = 2243-10-17 (dow=2, Tue)
+    //   730000  = 3968-09-03 (dow=2, Tue)
+    //   2932897 = 10000-01-01 (dow=6, Sat)
+    //   35804721 = 99999-12-31
 
     fmt_test_data_d TEST_CASES_DATES[]{
         // Canonical date format
@@ -221,6 +265,30 @@ namespace {
         // Combined formats
         { "%Y%m%d", 10000, "19970519" },
         { "%d/%m/%Y", 10000, "19/05/1997" },
+
+        // Far past: year 1
+        { "%F", -719162, "0001-01-01" },
+
+        // Year 0 (1 BCE)
+        { "%F", -719528, "0000-01-01" },
+        { "%F", -719163, "0000-12-31" },
+        { "%Y", -719528, "0000" },
+
+        // Negative year (-1 = 2 BCE)
+        { "%F", -719893, "-1-01-01" },
+        { "%Y", -719893, "-1" },
+
+        // Far past
+        { "%F", -100000, "1696-03-17" },
+
+        // Far future
+        { "%F", 100000, "2243-10-17" },
+        { "%F", 730000, "3968-09-03" },
+
+        // 5-digit year
+        { "%F", 2932897, "10000-01-01" },
+        { "%Y", 2932897, "10000" },
+        { "%F", 35804721, "99999-12-31" },
     };
 } // namespace
 
@@ -240,32 +308,39 @@ TEST( vtz_format, format_time ) {
         // format_time (chrono wrapper)
         ASSERT_EQ( format_time( tc.fmt, t_sys ), tc.out );
 
+
         // format_time_to_s (buffer + truncation)
+
         {
             char   buf[128];
             size_t n = format_time_to_s( tc.fmt, tc.t, buf, sizeof( buf ) );
             ASSERT_EQ( sv( buf, n ), tc.out );
-
-            for( size_t sz = 0; sz < tc.out.size(); sz++ )
-            {
-                size_t written = format_time_to_s( tc.fmt, tc.t, buf, sz );
-                ASSERT_EQ( written, sz );
-                ASSERT_EQ( sv( buf, written ), tc.out.substr( 0, sz ) );
-            }
         }
 
+        // Check with guard page buffer
+        for( size_t sz = 0; sz <= tc.out.size(); sz++ )
+        {
+            auto   buf     = guard_page_buffer( sz );
+            size_t written = format_time_to_s( tc.fmt, tc.t, buf.data(), sz );
+            ASSERT_EQ( written, sz );
+            ASSERT_EQ( sv( buf.data(), written ), tc.out.substr( 0, sz ) );
+        }
+
+
         // format_time_to (chrono buffer wrapper + truncation)
+
         {
             char   buf[128];
             size_t n = format_time_to( tc.fmt, t_sys, buf, sizeof( buf ) );
             ASSERT_EQ( sv( buf, n ), tc.out );
+        }
 
-            for( size_t sz = 0; sz < tc.out.size(); sz++ )
-            {
-                size_t written = format_time_to( tc.fmt, t_sys, buf, sz );
-                ASSERT_EQ( written, sz );
-                ASSERT_EQ( sv( buf, written ), tc.out.substr( 0, sz ) );
-            }
+        for( size_t sz = 0; sz <= tc.out.size(); sz++ )
+        {
+            auto   buf     = guard_page_buffer( sz );
+            size_t written = format_time_to( tc.fmt, t_sys, buf.data(), sz );
+            ASSERT_EQ( written, sz );
+            ASSERT_EQ( sv( buf.data(), written ), tc.out.substr( 0, sz ) );
         }
     }
 }
@@ -274,7 +349,7 @@ TEST( vtz_format, format_time ) {
 TEST( vtz_format, format_date ) {
     for( auto const& tc : TEST_CASES_DATES )
     {
-        auto d_sys  = sys_days( days( tc.days ) );
+        auto d_sys = sys_days( days( tc.days ) );
 
         // format_date_d
         ASSERT_EQ( format_date_d( tc.fmt, tc.days ), tc.out );
@@ -283,31 +358,36 @@ TEST( vtz_format, format_date ) {
         ASSERT_EQ( format_date( tc.fmt, d_sys ), tc.out );
 
         // format_date_to_d (buffer + truncation)
+
         {
             char   buf[128];
             size_t n = format_date_to_d( tc.fmt, tc.days, buf, sizeof( buf ) );
             ASSERT_EQ( sv( buf, n ), tc.out );
+        }
 
-            for( size_t sz = 0; sz < tc.out.size(); sz++ )
-            {
-                size_t written = format_date_to_d( tc.fmt, tc.days, buf, sz );
-                ASSERT_EQ( written, sz );
-                ASSERT_EQ( sv( buf, written ), tc.out.substr( 0, sz ) );
-            }
+        for( size_t sz = 0; sz <= tc.out.size(); sz++ )
+        {
+            auto   buf = guard_page_buffer( sz );
+            size_t written
+                = format_date_to_d( tc.fmt, tc.days, buf.data(), sz );
+            ASSERT_EQ( written, sz );
+            ASSERT_EQ( sv( buf.data(), written ), tc.out.substr( 0, sz ) );
         }
 
         // format_date_to (chrono buffer wrapper + truncation)
+
         {
             char   buf[128];
             size_t n = format_date_to( tc.fmt, d_sys, buf, sizeof( buf ) );
             ASSERT_EQ( sv( buf, n ), tc.out );
+        }
 
-            for( size_t sz = 0; sz < tc.out.size(); sz++ )
-            {
-                size_t written = format_date_to( tc.fmt, d_sys, buf, sz );
-                ASSERT_EQ( written, sz );
-                ASSERT_EQ( sv( buf, written ), tc.out.substr( 0, sz ) );
-            }
+        for( size_t sz = 0; sz <= tc.out.size(); sz++ )
+        {
+            auto   buf     = guard_page_buffer( sz );
+            size_t written = format_date_to( tc.fmt, d_sys, buf.data(), sz );
+            ASSERT_EQ( written, sz );
+            ASSERT_EQ( sv( buf.data(), written ), tc.out.substr( 0, sz ) );
         }
     }
 }
