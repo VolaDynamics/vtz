@@ -493,12 +493,12 @@ namespace vtz {
             };
         }
 
-        FromUTC parse_zone_off( opt_token tok ) {
+        from_utc parse_zone_off( opt_token tok ) {
             size_t      size = tok.size();
             char const* p    = tok.data();
 
             auto result = parse_signed_hhmmss_offset( p, size );
-            if( result != OFFSET_NPOS ) return FromUTC{ result };
+            if( result != OFFSET_NPOS ) return from_utc{ result };
 
             // throw failure
             throw ParseError{
@@ -984,7 +984,7 @@ namespace vtz {
     static TZString _parse_tz_string( char const* p, size_t size ) {
         char const* end   = p + size;
         zone_abbr   abbr1 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
-        auto        off1  = FromUTC( -eat_signed_hhmmss( p, end ) );
+        auto        off1  = from_utc( -eat_signed_hhmmss( p, end ) );
 
         if( p == end )
         {
@@ -1013,7 +1013,7 @@ namespace vtz {
         if( *p != ',' )
         {
             // Expect that we have an offset of some kind...
-            off2 = FromUTC( -eat_signed_hhmmss( p, end ) );
+            off2 = from_utc( -eat_signed_hhmmss( p, end ) );
         }
 
         auto result = TZString{
@@ -1344,8 +1344,8 @@ namespace vtz {
 
         ZoneState current() const noexcept {
             return {
-                FromUTC( current_stdoff ),
-                FromUTC( current_off ),
+                from_utc( current_stdoff ),
+                from_utc( current_off ),
                 current_abbr,
             };
         }
@@ -1488,7 +1488,7 @@ namespace vtz {
 
         // We are going to keep track of the current stdoff. This will be
         // updated as we compute Zone States
-        FromUTC stdoff = initial.stdoff;
+        from_utc stdoff = initial.stdoff;
 
         ZTAgglomerator agg;
 
@@ -1552,7 +1552,7 @@ namespace vtz {
 
         if( entries.size() == 0 )
             return zone_states::make_static(
-                { FromUTC( 0 ), FromUTC( 0 ), zone_abbr{ 3, "-00" } } );
+                { from_utc( 0 ), from_utc( 0 ), zone_abbr{ 3, "-00" } } );
 
         ZTAgglomerator agg;
 
@@ -1562,7 +1562,7 @@ namespace vtz {
         {
             auto const& ent    = entries.front();
             auto const& rule   = ent.rules;
-            FromUTC     stdoff = ent.stdoff;
+            from_utc    stdoff = ent.stdoff;
             ZoneFormat  format = ent.format;
             // If there is no associated rule, there are no state transitions -
             // this zone is steady-state
@@ -1936,8 +1936,8 @@ namespace vtz {
             result.push_back( ZoneTransition{
                 T,
                 ZoneState{
-                    FromUTC( s_current ),
-                    FromUTC( w_current ),
+                    from_utc( s_current ),
+                    from_utc( w_current ),
                     abbr_table_[r_current.index()],
                 },
             } );

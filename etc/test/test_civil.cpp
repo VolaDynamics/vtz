@@ -277,16 +277,16 @@ TEST( vtz, resolve_rule ) {
     };
 
     ASSERT_EQ(
-        utc_to_string( US_DST_Start.resolve_at( 2025, FromUTC( "-5:00" ), FromUTC( "-5:00" ) ) ),
+        utc_to_string( US_DST_Start.resolve_at( 2025, from_utc( "-5:00" ), from_utc( "-5:00" ) ) ),
         "2025-03-09 07:00:00Z" );
     // Only WallOff should be used, STDOFF is ignored
-    ASSERT_EQ( utc_to_string( US_DST_Start.resolve_at( 2025, FromUTC(), FromUTC( "-5:00" ) ) ),
+    ASSERT_EQ( utc_to_string( US_DST_Start.resolve_at( 2025, from_utc(), from_utc( "-5:00" ) ) ),
         "2025-03-09 07:00:00Z" );
     ASSERT_EQ(
-        utc_to_string( US_DST_End.resolve_at( 2025, FromUTC( "-5:00" ), FromUTC( "-4:00" ) ) ),
+        utc_to_string( US_DST_End.resolve_at( 2025, from_utc( "-5:00" ), from_utc( "-4:00" ) ) ),
         "2025-11-02 06:00:00Z" );
     ASSERT_EQ(
-        utc_to_string( US_Peace_Time.resolve_at( 1945, FromUTC( "-5:00" ), FromUTC( "-4:00" ) ) ),
+        utc_to_string( US_Peace_Time.resolve_at( 1945, from_utc( "-5:00" ), from_utc( "-4:00" ) ) ),
         "1945-08-14 23:00:00Z" );
 }
 

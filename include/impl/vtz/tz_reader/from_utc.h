@@ -26,9 +26,9 @@ namespace vtz {
     /// Similarly, to get to UTC time, from local time, you _subtract_ `-5:00`
     /// (This is `utc - off`)
 
-    struct FromUTC {
+    struct from_utc {
         i32 off{};
-        FromUTC() = default;
+        from_utc() = default;
 
         /// Add offset to get from utc time to local time
         constexpr i64 to_local( i64 utc ) const noexcept { return utc + off; }
@@ -38,30 +38,30 @@ namespace vtz {
 
         /// Consider America/New_York. When we 'save' 1 hour, our offset from
         /// UTC goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
-        constexpr FromUTC save( zone_save save ) const noexcept {
+        constexpr from_utc save( zone_save save ) const noexcept {
             return { off + save.save };
         }
 
         /// Consider America/New_York. When we 'save' 1 hour, our offset from
         /// UTC
         /// goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
-        constexpr FromUTC save( i32 save_seconds ) const noexcept {
+        constexpr from_utc save( i32 save_seconds ) const noexcept {
             return { off + save_seconds };
         }
 
         /// Remove the save (eg, to get the stdoff from the walloff)
-        constexpr FromUTC unsave( zone_save save ) const noexcept {
+        constexpr from_utc unsave( zone_save save ) const noexcept {
             return { off - save.save };
         }
 
 
-        /// Construct FromUTC in terms of HH, MM, and SS.
+        /// Construct from_utc in terms of HH, MM, and SS.
         ///
         /// - `hhmmss( 9, 30 )` -> +0930
         /// - `hhmmss( -9, 30 )` -> -0930
         ///
         /// etc
-        constexpr static FromUTC hhmmss( i32 hh, i32 mm = 0, i32 ss = 0 ) {
+        constexpr static from_utc hhmmss( i32 hh, i32 mm = 0, i32 ss = 0 ) {
             if( hh < 0 )
             {
                 // We treat eg -9:30:05 as meaning all components are negative
@@ -71,21 +71,21 @@ namespace vtz {
                 return hh * 3600 + mm * 60 + ss;
         }
 
-        constexpr FromUTC( i32 off ) noexcept
+        constexpr from_utc( i32 off ) noexcept
         : off( off ) {}
 
-        explicit FromUTC( string_view sv )
+        explicit from_utc( string_view sv )
         : off( parse_signed_hhmmss_offset( sv ) ) {}
 
         template<size_t N>
-        FromUTC( char const ( &arr )[N] )
-        : FromUTC( string_view( arr ) ) {}
+        from_utc( char const ( &arr )[N] )
+        : from_utc( string_view( arr ) ) {}
 
 
-        constexpr bool operator==( FromUTC const& rhs ) const noexcept {
+        constexpr bool operator==( from_utc const& rhs ) const noexcept {
             return off == rhs.off;
         }
-        constexpr bool operator!=( FromUTC const& rhs ) const noexcept {
+        constexpr bool operator!=( from_utc const& rhs ) const noexcept {
             return off != rhs.off;
         }
     };

@@ -64,7 +64,7 @@ namespace vtz {
         /// Returns the timestamp (in seconds from UTC) when the 'AT' time is
         /// referring to, on the given date
         constexpr sysseconds_t resolve_at(
-            sysdays_t date, FromUTC stdoff, FromUTC walloff ) const noexcept {
+            sysdays_t date, from_utc stdoff, from_utc walloff ) const noexcept {
             // Time when the date starts (midnight on that date)
             i64 T = days_to_seconds( date );
 

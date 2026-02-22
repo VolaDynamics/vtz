@@ -88,7 +88,7 @@ static std::string describe(
     return fmt::format( "isdst={}  abbr={:>4}  utoff={:>9}",
         type.tt_isdst() ? 1 : 0,
         designations.data() + type.tt_desigidx(),
-        vtz::FromUTC( type.tt_utoff() )
+        vtz::from_utc( type.tt_utoff() )
         //
     );
 }
@@ -132,7 +132,7 @@ void print_file(
                 styled( vtz::format_time_s( "%F %T", Traw ), bold_magenta ),
                 styled( vtz::format_time_s( "%F %T", T ), bold_magenta ),
                 styled( vtz::format_time_s( "%F %T", T + utoff ), bold_blue ),
-                styled( vtz::FromUTC( utoff ), bold_green ),
+                styled( vtz::from_utc( utoff ), bold_green ),
                 styled( int( isdst ), bold_white ),
                 styled( abbr, bold_red ),
                 styled( ti, bold_white ) );
@@ -142,7 +142,7 @@ void print_file(
             println( "utc={} local={} off={} dst={} abbr={} ti={}",
                 styled( vtz::format_time_s( "%F %T", T ), bold_magenta ),
                 styled( vtz::format_time_s( "%F %T", T + utoff ), bold_blue ),
-                styled( vtz::FromUTC( utoff ), bold_green ),
+                styled( vtz::from_utc( utoff ), bold_green ),
                 styled( int( isdst ), bold_white ),
                 styled( abbr, bold_red ),
                 styled( ti, bold_white ) );

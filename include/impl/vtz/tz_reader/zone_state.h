@@ -13,32 +13,32 @@ namespace vtz {
         ZoneState() = default;
 
         constexpr ZoneState(
-            FromUTC stdoff, zone_save save, zone_abbr const& abbr ) noexcept
+            from_utc stdoff, zone_save save, zone_abbr const& abbr ) noexcept
         : ZoneTime{ stdoff, stdoff.save( save ) }
         , abbr( abbr ) {}
 
         /// Create a ZoneState where stdoff==walloff.
         constexpr ZoneState(
-            FromUTC stdoff, ZoneFormat const& fmt, RuleLetter letter ) noexcept
+            from_utc stdoff, ZoneFormat const& fmt, RuleLetter letter ) noexcept
         : ZoneTime{ stdoff, stdoff }
         , abbr( fmt.format( walloff, false, letter ) ) {}
 
-        constexpr ZoneState( FromUTC stdoff,
-            FromUTC                  walloff,
-            ZoneFormat const&        fmt,
-            RuleLetter               letter ) noexcept
+        constexpr ZoneState( from_utc stdoff,
+            from_utc                  walloff,
+            ZoneFormat const&         fmt,
+            RuleLetter                letter ) noexcept
         : ZoneTime{ stdoff, walloff }
         , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
 
-        constexpr ZoneState( FromUTC stdoff,
-            zone_save                save,
-            ZoneFormat const&        fmt,
-            RuleLetter               letter ) noexcept
+        constexpr ZoneState( from_utc stdoff,
+            zone_save                 save,
+            ZoneFormat const&         fmt,
+            RuleLetter                letter ) noexcept
         : ZoneTime{ stdoff, stdoff.save( save ) }
         , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
 
         constexpr ZoneState(
-            FromUTC stdoff, FromUTC walloff, zone_abbr const& abbr )
+            from_utc stdoff, from_utc walloff, zone_abbr const& abbr )
         : ZoneTime{ stdoff, walloff }
         , abbr( abbr ) {}
 

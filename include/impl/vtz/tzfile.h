@@ -343,7 +343,7 @@ namespace vtz {
         ZoneState state_from_ti( size_t ti ) const {
             ttinfo_bytes ty = ttinfo()[ti];
 
-            auto utoff  = FromUTC( ty.tt_utoff() );
+            auto utoff  = from_utc( ty.tt_utoff() );
             auto abbrev = get_abbrev( ty.tt_desigidx() );
 
             // if we're in daylight savings time, remove the save quantity
@@ -364,9 +364,9 @@ namespace vtz {
         /// stdoff given as input. Otherwise, if it is NOT dst, update the input
         /// stdoff
 
-        ZoneState state_from_ti( size_t ti, FromUTC& stdoff ) const {
+        ZoneState state_from_ti( size_t ti, from_utc& stdoff ) const {
             ttinfo_bytes ty     = ttinfo()[ti];
-            FromUTC      utoff  = FromUTC( ty.tt_utoff() );
+            from_utc     utoff  = from_utc( ty.tt_utoff() );
             zone_abbr    abbrev = get_abbrev( ty.tt_desigidx() );
 
             // If we're not within daylight savings time, update the standard

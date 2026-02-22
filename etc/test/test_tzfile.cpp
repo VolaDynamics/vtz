@@ -21,7 +21,7 @@ TEST( vtz, tz_string ) {
         auto tz = parse_tz_string( "KST-9" );
 
         ASSERT_EQ( tz.abbr1.sv(), "KST" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( 9 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( 9 ) );
         ASSERT_FALSE( tz.has_daylight_rules() );
     }
 
@@ -29,7 +29,7 @@ TEST( vtz, tz_string ) {
         ADD_CONTEXT( "Testing America/Panama" );
         auto tz = parse_tz_string( "EST5" );
         ASSERT_EQ( tz.abbr1.sv(), "EST" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -5 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( -5 ) );
         ASSERT_FALSE( tz.has_daylight_rules() );
     }
 
@@ -37,7 +37,7 @@ TEST( vtz, tz_string ) {
         ADD_CONTEXT( "Testing America/Belem" );
         auto tz = parse_tz_string( "<-03>3" );
         ASSERT_EQ( tz.abbr1.sv(), "-03" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -3 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( -3 ) );
         ASSERT_FALSE( tz.has_daylight_rules() );
     }
 
@@ -46,8 +46,8 @@ TEST( vtz, tz_string ) {
         auto tz = parse_tz_string( "EST5EDT,M3.2.0,M11.1.0" );
         ASSERT_EQ( tz.abbr1.sv(), "EST" );
         ASSERT_EQ( tz.abbr2.sv(), "EDT" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -5 ) );
-        ASSERT_EQ( tz.off2, FromUTC::hhmmss( -4 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( -5 ) );
+        ASSERT_EQ( tz.off2, from_utc::hhmmss( -4 ) );
         ASSERT_EQ( tz.r1.time, 3600 * 2 );
         ASSERT_EQ( tz.r2.time, 3600 * 2 );
 
@@ -65,8 +65,8 @@ TEST( vtz, tz_string ) {
         auto tz = parse_tz_string( "<-02>2<-01>,M3.5.0/-1,M10.5.0/0" );
         ASSERT_EQ( tz.abbr1.sv(), "-02" );
         ASSERT_EQ( tz.abbr2.sv(), "-01" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -2 ) );
-        ASSERT_EQ( tz.off2, FromUTC::hhmmss( -1 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( -2 ) );
+        ASSERT_EQ( tz.off2, from_utc::hhmmss( -1 ) );
         ASSERT_EQ( tz.r1.time, -3600 );
         ASSERT_EQ( tz.r2.time, 0 );
 
@@ -84,8 +84,8 @@ TEST( vtz, tz_string ) {
         auto tz = parse_tz_string( "EET-2EEST,M3.4.4/50,M10.4.4/50" );
         ASSERT_EQ( tz.abbr1.sv(), "EET" );
         ASSERT_EQ( tz.abbr2.sv(), "EEST" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( 2 ) );
-        ASSERT_EQ( tz.off2, FromUTC::hhmmss( 3 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( 2 ) );
+        ASSERT_EQ( tz.off2, from_utc::hhmmss( 3 ) );
         ASSERT_EQ( tz.r1.time, 50 * 3600 );
         ASSERT_EQ( tz.r2.time, 50 * 3600 );
 
@@ -103,8 +103,8 @@ TEST( vtz, tz_string ) {
         auto tz = parse_tz_string( "<-03>3<-02>,M3.2.0,M11.1.0" );
         ASSERT_EQ( tz.abbr1.sv(), "-03" );
         ASSERT_EQ( tz.abbr2.sv(), "-02" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( -3 ) );
-        ASSERT_EQ( tz.off2, FromUTC::hhmmss( -2 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( -3 ) );
+        ASSERT_EQ( tz.off2, from_utc::hhmmss( -2 ) );
         ASSERT_EQ( tz.r1.time, 3600 * 2 );
         ASSERT_EQ( tz.r2.time, 3600 * 2 );
 
@@ -121,8 +121,8 @@ TEST( vtz, tz_string ) {
         auto tz = parse_tz_string( "<+1030>-10:30<+11>-11,M10.1.0,M4.1.0" );
         ASSERT_EQ( tz.abbr1.sv(), "+1030" );
         ASSERT_EQ( tz.abbr2.sv(), "+11" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( 10, 30 ) );
-        ASSERT_EQ( tz.off2, FromUTC::hhmmss( 11 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( 10, 30 ) );
+        ASSERT_EQ( tz.off2, from_utc::hhmmss( 11 ) );
         ASSERT_EQ( tz.r1.time, 3600 * 2 );
         ASSERT_EQ( tz.r2.time, 3600 * 2 );
 
@@ -139,8 +139,8 @@ TEST( vtz, tz_string ) {
         auto tz = parse_tz_string( "XXX-2<+01>-1,0/0,J365/23" );
         ASSERT_EQ( tz.abbr1.sv(), "XXX" );
         ASSERT_EQ( tz.abbr2.sv(), "+01" );
-        ASSERT_EQ( tz.off1, FromUTC::hhmmss( +2 ) );
-        ASSERT_EQ( tz.off2, FromUTC::hhmmss( +1 ) );
+        ASSERT_EQ( tz.off1, from_utc::hhmmss( +2 ) );
+        ASSERT_EQ( tz.off2, from_utc::hhmmss( +1 ) );
         ASSERT_EQ( tz.r1.time, 0 );
         ASSERT_EQ( tz.r2.time, 23 * 3600 );
 
@@ -173,11 +173,11 @@ TEST( vtz, tz_string_get_states ) {
         // Verify the 2024 transitions
         ASSERT_EQ( format_time_s( "%F %T %Z", states[0].when ), "2024-03-10 07:00:00 UTC" ); // Spring forward
         ASSERT_EQ( states[0].state.abbr.sv(), "EDT" );
-        ASSERT_EQ( states[0].state.walloff, FromUTC::hhmmss( -4 ) );
+        ASSERT_EQ( states[0].state.walloff, from_utc::hhmmss( -4 ) );
 
         ASSERT_EQ( format_time_s( "%F %T %Z", states[1].when ), "2024-11-03 06:00:00 UTC" ); // Fall back
         ASSERT_EQ( states[1].state.abbr.sv(), "EST" );
-        ASSERT_EQ( states[1].state.walloff, FromUTC::hhmmss( -5 ) );
+        ASSERT_EQ( states[1].state.walloff, from_utc::hhmmss( -5 ) );
 
         // Verify the 2025 transitions
         ASSERT_EQ( format_time_s( "%F %T %Z", states[2].when ), "2025-03-09 07:00:00 UTC" ); // Spring forward
@@ -189,10 +189,10 @@ TEST( vtz, tz_string_get_states ) {
         for( size_t i = 0; i < states.size(); ++i )
         {
             // stdoff is always -05
-            ASSERT_EQ( states[i].state.stdoff, FromUTC::hhmmss( -5 ) );
+            ASSERT_EQ( states[i].state.stdoff, from_utc::hhmmss( -5 ) );
             bool inside_standard_time = bool( i % 2 );
             ASSERT_EQ( states[i].state.walloff,
-                inside_standard_time ? FromUTC::hhmmss( -5 ) : FromUTC::hhmmss( -4 ) );
+                inside_standard_time ? from_utc::hhmmss( -5 ) : from_utc::hhmmss( -4 ) );
         }
     }
 
@@ -238,15 +238,15 @@ TEST( vtz, tz_string_get_states ) {
         ASSERT_EQ( format_time_s( "%F %T %Z", states[2].when ), "2025-04-05 15:00:00 UTC" );
 
         // All of them should have the same stdoff
-        ASSERT_EQ( states[0].state.stdoff, FromUTC::hhmmss( 10, 30 ) );
-        ASSERT_EQ( states[1].state.stdoff, FromUTC::hhmmss( 10, 30 ) );
-        ASSERT_EQ( states[2].state.stdoff, FromUTC::hhmmss( 10, 30 ) );
+        ASSERT_EQ( states[0].state.stdoff, from_utc::hhmmss( 10, 30 ) );
+        ASSERT_EQ( states[1].state.stdoff, from_utc::hhmmss( 10, 30 ) );
+        ASSERT_EQ( states[2].state.stdoff, from_utc::hhmmss( 10, 30 ) );
 
         // When we enter dst in october, the walloff should be +11, and then we go back to +1030
         // when we enter standard time in the spring
-        ASSERT_EQ( states[0].state.walloff, FromUTC::hhmmss( 10, 30 ) );
-        ASSERT_EQ( states[1].state.walloff, FromUTC::hhmmss( 11 ) );
-        ASSERT_EQ( states[2].state.walloff, FromUTC::hhmmss( 10, 30 ) );
+        ASSERT_EQ( states[0].state.walloff, from_utc::hhmmss( 10, 30 ) );
+        ASSERT_EQ( states[1].state.walloff, from_utc::hhmmss( 11 ) );
+        ASSERT_EQ( states[2].state.walloff, from_utc::hhmmss( 10, 30 ) );
 
         // Check first transition is to standard time (April in Southern Hemisphere)
         ASSERT_EQ( states[0].state.abbr.sv(), "+1030" );

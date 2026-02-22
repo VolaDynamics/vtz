@@ -42,7 +42,7 @@ namespace vtz {
     }
 
 
-    std::string format_as( FromUTC off ) { return to_hhmmss( off.off ); }
+    std::string format_as( from_utc off ) { return to_hhmmss( off.off ); }
 
 
     std::string format_as( RuleAt r ) {

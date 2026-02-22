@@ -165,7 +165,7 @@ namespace vtz {
         using TZDate::week;
         using TZDate::operator bool;
 
-        sysseconds_t resolve( i32 year, FromUTC when ) const noexcept {
+        sysseconds_t resolve( i32 year, from_utc when ) const noexcept {
             return when.to_utc( resolve_date( year ) * 86400ll + time );
         }
 
@@ -187,8 +187,8 @@ namespace vtz {
     struct TZString {
         zone_abbr abbr1; /// Standard abbreviation
         zone_abbr abbr2; /// Daylight abbreviation
-        FromUTC   off1;  /// Standard offset
-        FromUTC   off2;  /// DST offset
+        from_utc  off1;  /// Standard offset
+        from_utc  off2;  /// DST offset
         TZRule    r1;
         TZRule    r2;
 

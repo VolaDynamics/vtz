@@ -17,6 +17,6 @@ namespace vtz {
     string format_as( RuleAt r );
     string format_as( ZoneUntil );
     string format_as( zone_save );
-    string format_as( FromUTC off );
+    string format_as( from_utc off );
     string format_as( AbbrBlock b );
 } // namespace vtz

@@ -642,7 +642,7 @@ namespace vtz {
 
     template<size_t N>
     inline std::string local_to_string(
-        sysseconds_t sec, FromUTC off, fix_str<N> const& abbr ) {
+        sysseconds_t sec, from_utc off, fix_str<N> const& abbr ) {
         char buff[20 + N];
         _write_timestamp( off.to_local( sec ), buff, '-', ' ' );
         buff[19] = ' ';

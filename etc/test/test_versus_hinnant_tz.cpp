@@ -46,7 +46,7 @@ struct entry {
     string       abbr;
     sysseconds_t begin;
     sysseconds_t end;
-    FromUTC      offset;
+    from_utc     offset;
     zone_save    save;
 
     template<size_t N>
@@ -58,7 +58,7 @@ struct entry {
         return { result };
     }
 
-    FromUTC get_stdoff() const { return offset.off - save.save; }
+    from_utc get_stdoff() const { return offset.off - save.save; }
 
     ZoneState state() const { return ZoneState{ get_stdoff(), save, fix_abbr<15>() }; }
 };
@@ -75,7 +75,7 @@ std::vector<entry> get_entries( string_view name, sys_seconds start, sys_seconds
             info.abbrev,
             info.begin.time_since_epoch().count(),
             info.end.time_since_epoch().count(),
-            FromUTC( i32( info.offset.count() ) ),
+            from_utc( i32( info.offset.count() ) ),
             zone_save( i32( info.save.count() * 60 ) ),
         } );
         T = info.end;

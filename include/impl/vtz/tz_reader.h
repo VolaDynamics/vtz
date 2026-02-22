@@ -128,7 +128,7 @@ namespace vtz {
 
         /// Resolve the DateTime (in sysseconds_t)
         constexpr sysseconds_t resolve_at(
-            i32 year, FromUTC stdoff, FromUTC walloff ) const noexcept {
+            i32 year, from_utc stdoff, from_utc walloff ) const noexcept {
             return at.resolve_at(
                 on.resolve_date( year, in ), stdoff, walloff );
         }
@@ -187,17 +187,17 @@ namespace vtz {
     //             -8:00	US	P%sT
 
     struct ZoneEntry {
-        FromUTC    stdoff;
+        from_utc   stdoff;
         ZoneUntil  until;
         ZoneRule   rules;
         ZoneFormat format;
 
         ZoneEntry() = default;
 
-        constexpr ZoneEntry( FromUTC stdoff,
-            ZoneRule                 rules,
-            ZoneFormat               format,
-            ZoneUntil                until ) noexcept
+        constexpr ZoneEntry( from_utc stdoff,
+            ZoneRule                  rules,
+            ZoneFormat                format,
+            ZoneUntil                 until ) noexcept
         : stdoff( stdoff )
         , until( until )
         , rules( rules )
@@ -448,7 +448,7 @@ namespace vtz {
         /// Return the current state - the one prescribed by the rule at the
         /// given input time
         [[nodiscard]] ZoneState advance_to( sysseconds_t when,
-            FromUTC                                      stdoff,
+            from_utc                                     stdoff,
             ZoneFormat const&                            format,
             ZoneTime                                     old_time ) {
             // We are going to advance until the next state is strictly after
@@ -491,12 +491,12 @@ namespace vtz {
         /// Return the next ZoneTransition, if one exists prior to the
         /// until_time
         std::optional<ZoneTransition> next( sysseconds_t until_time,
-            FromUTC                                      stdoff,
+            from_utc                                     stdoff,
             ZoneFormat const&                            format ) {
             // Record the current walloff. This is needed because the time
             // when the next transition will occur will be in terms of the
             // current walloff.
-            FromUTC walloff = stdoff.save( current_save_ );
+            from_utc walloff = stdoff.save( current_save_ );
 
             // If the next time would be after the until_time, we don't have a
             // value. Do not update the iterator
@@ -576,8 +576,8 @@ namespace vtz {
 
         ZoneState initial() const noexcept {
             return {
-                FromUTC( stdoff_initial_ ),
-                FromUTC( walloff_initial_ ),
+                from_utc( stdoff_initial_ ),
+                from_utc( walloff_initial_ ),
                 abbr_table_[abbr_initial_.index()],
             };
         }
@@ -606,8 +606,8 @@ namespace vtz {
 
         ZoneState get_state( sysseconds_t t ) const {
             return {
-                FromUTC( stdoff( t ) ),
-                FromUTC( walloff( t ) ),
+                from_utc( stdoff( t ) ),
+                from_utc( walloff( t ) ),
                 abbr_table_[abbr( t ).index()],
             };
         }

@@ -149,7 +149,7 @@ namespace vtz {
         }
 
         constexpr zone_abbr format(
-            FromUTC off, bool is_dst, string_view letter ) const noexcept {
+            from_utc off, bool is_dst, string_view letter ) const noexcept {
             return format( off.off, is_dst, letter );
         }
 

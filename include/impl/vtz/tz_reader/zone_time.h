@@ -7,8 +7,8 @@
 namespace vtz {
     /// Holds the stdoff and walloff for a zone at a particular point in time
     struct alignas( 8 ) ZoneTime {
-        FromUTC stdoff;  ///< Zone stdoff (non-DST offset)
-        FromUTC walloff; ///< Actual offset in this state
+        from_utc stdoff;  ///< Zone stdoff (non-DST offset)
+        from_utc walloff; ///< Actual offset in this state
 
         /// Return the save implied by the zone
         constexpr zone_save save() const noexcept {
