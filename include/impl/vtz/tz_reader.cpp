@@ -272,7 +272,7 @@ namespace vtz {
         };
     }
 
-    RuleOn parse_rule_on( opt_token tok ) {
+    rule_on parse_rule_on( opt_token tok ) {
         using namespace _impl;
 
         size_t      size = tok.size();
@@ -281,7 +281,7 @@ namespace vtz {
         if( size <= 2 )
         {
             // For size<=2, it can only be a day
-            return RuleOn::on( parse_day_of_month( p, size ) );
+            return rule_on::on( parse_day_of_month( p, size ) );
         }
         else if( size >= 4 )
         {
@@ -289,7 +289,7 @@ namespace vtz {
             if( _load4( p ) == _last )
             {
                 if( OptDOW dow = _parse_dow( p + 4, size - 4 ) )
-                    return RuleOn::last( *dow );
+                    return rule_on::last( *dow );
             }
             else
             {
@@ -314,8 +314,8 @@ namespace vtz {
                     {
                         switch( ge_or_le )
                         {
-                        case '<': return RuleOn::le( *dow, day );
-                        case '>': return RuleOn::ge( *dow, day );
+                        case '<': return rule_on::le( *dow, day );
+                        case '>': return rule_on::ge( *dow, day );
                         }
                     }
                 }

@@ -5,10 +5,10 @@
 #include <vtz/impl/bit.h>
 
 namespace vtz {
-    class RuleOn {
+    class rule_on {
         u16 repr_;
 
-        constexpr explicit RuleOn( u16 repr ) noexcept
+        constexpr explicit rule_on( u16 repr ) noexcept
         : repr_( repr ) {}
 
       public:
@@ -20,9 +20,9 @@ namespace vtz {
             DOW_LE,   ///< 'on' is 'Fri<=1', for example
         };
 
-        RuleOn() = default;
+        rule_on() = default;
 
-        constexpr RuleOn( Kind kind, u8 day, DOW dow ) noexcept
+        constexpr rule_on( Kind kind, u8 day, DOW dow ) noexcept
         : repr_(
               u16( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) ) {
         }
@@ -33,25 +33,25 @@ namespace vtz {
         }
 
 
-        constexpr static RuleOn on( u8 day ) noexcept {
+        constexpr static rule_on on( u8 day ) noexcept {
             return { DAY, day, {} };
         }
-        constexpr static RuleOn last( DOW dow ) noexcept {
+        constexpr static rule_on last( DOW dow ) noexcept {
             return { DOW_LAST, {}, dow };
         }
-        constexpr static RuleOn ge( DOW dow, u8 day ) noexcept {
+        constexpr static rule_on ge( DOW dow, u8 day ) noexcept {
             return { DOW_GE, day, dow };
         }
-        constexpr static RuleOn le( DOW dow, u8 day ) noexcept {
+        constexpr static rule_on le( DOW dow, u8 day ) noexcept {
             return { DOW_LE, day, dow };
         }
 
-        constexpr bool operator==( RuleOn const& rhs ) const noexcept {
+        constexpr bool operator==( rule_on const& rhs ) const noexcept {
             return repr_ == rhs.repr_;
         }
 
-        constexpr static RuleOn from_repr( u16 repr ) noexcept {
-            return RuleOn( repr );
+        constexpr static rule_on from_repr( u16 repr ) noexcept {
+            return rule_on( repr );
         }
 
         constexpr sysdays_t resolve_date( i32 year, Mon mon ) const noexcept {
@@ -93,11 +93,11 @@ namespace vtz {
 
 
     template<>
-    struct opt_traits<RuleOn> {
+    struct opt_traits<rule_on> {
         /// Corresponds to kind() == DAY, dow() == Sun, day() == 0, which is not
         /// a valid day of the month
-        constexpr static RuleOn NULL_VALUE = RuleOn::from_repr( 0 );
+        constexpr static rule_on NULL_VALUE = rule_on::from_repr( 0 );
     };
 
-    using OptRuleOn = opt_class<RuleOn>;
+    using OptRuleOn = opt_class<rule_on>;
 } // namespace vtz

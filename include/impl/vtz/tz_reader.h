@@ -121,7 +121,7 @@ namespace vtz {
         rule_year_t from;
         rule_year_t to;
         Mon         in;
-        RuleOn      on;
+        rule_on     on;
         RuleAt      at;
         zone_save   save;
         rule_letter letter;
@@ -668,7 +668,7 @@ namespace vtz {
     rule_year_t parse_year_to( opt_token tok );
     Mon         parse_month( opt_token tok );
     u8          parse_day_of_month( opt_token tok );
-    RuleOn      parse_rule_on( opt_token tok );
+    rule_on     parse_rule_on( opt_token tok );
 
     /// Parse a POSIX TZ String that may appear at the end of a tzfile
     tz_string parse_tz_string( string_view sv );

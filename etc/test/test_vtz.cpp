@@ -261,8 +261,8 @@ TEST( vtz_parser, parse_tzdata ) {
     using ze = ZoneEntry;
     using M  = Mon;
 
-    constexpr auto lastSun = RuleOn::last( DOW::Sun );
-    constexpr auto on      = []( u8 day ) { return RuleOn::on( day ); };
+    constexpr auto lastSun = rule_on::last( DOW::Sun );
+    constexpr auto on      = []( u8 day ) { return rule_on::on( day ); };
 
     ASSERT_EQ( parse_tzdata(
                    R"(#
@@ -805,9 +805,9 @@ TEST( vtz_tz, US_rules ) {
     ASSERT_EQ( US.historical[n - 1], RT::from_civil( 2006, 10, 29, "2:00", "0", "S" ) );
 
     ASSERT_EQ( US.active.at( 0 ),
-        ( RE{ 2007, Y_MAX, Mon::Mar, RuleOn::ge( DOW::Sun, 8 ), "2:00", "1:00", "D" } ) );
+        ( RE{ 2007, Y_MAX, Mon::Mar, rule_on::ge( DOW::Sun, 8 ), "2:00", "1:00", "D" } ) );
     ASSERT_EQ( US.active.at( 1 ),
-        ( RE{ 2007, Y_MAX, Mon::Nov, RuleOn::ge( DOW::Sun, 1 ), "2:00", "0", "S" } ) );
+        ( RE{ 2007, Y_MAX, Mon::Nov, rule_on::ge( DOW::Sun, 1 ), "2:00", "0", "S" } ) );
 }
 
 

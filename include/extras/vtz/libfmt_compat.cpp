@@ -108,15 +108,15 @@ namespace vtz {
     }
 
 
-    string format_as( RuleOn r ) {
+    string format_as( rule_on r ) {
         switch( r.kind() )
         {
-        case RuleOn::DAY: return fmt::format( "{}", r.day() );
-        case RuleOn::DOW_LE: return fmt::format( "{}<={}", r.dow(), r.day() );
-        case RuleOn::DOW_GE: return fmt::format( "{}>={}", r.dow(), r.day() );
-        case RuleOn::DOW_LAST: return fmt::format( "last{}", r.dow() );
+        case rule_on::DAY: return fmt::format( "{}", r.day() );
+        case rule_on::DOW_LE: return fmt::format( "{}<={}", r.dow(), r.day() );
+        case rule_on::DOW_GE: return fmt::format( "{}>={}", r.dow(), r.day() );
+        case rule_on::DOW_LAST: return fmt::format( "last{}", r.dow() );
         }
 
-        throw std::runtime_error( "RuleOn::str(): bad kind()" );
+        throw std::runtime_error( "rule_on::str(): bad kind()" );
     }
 } // namespace vtz
