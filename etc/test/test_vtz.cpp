@@ -258,7 +258,7 @@ TEST( vtz_parser, strip_comments ) {
 
 using namespace vtz;
 TEST( vtz_parser, parse_tzdata ) {
-    using ze = ZoneEntry;
+    using ze = zone_entry;
     using M  = Mon;
 
     constexpr auto lastSun = rule_on::last( DOW::Sun );

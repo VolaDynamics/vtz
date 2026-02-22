@@ -688,8 +688,8 @@ namespace vtz {
         return link;
     }
 
-    ZoneEntry parse_zone_entry( token_iter tok_iter ) {
-        ZoneEntry e;
+    zone_entry parse_zone_entry( token_iter tok_iter ) {
+        zone_entry e;
         e.stdoff = parse_zone_off( tok_iter.next() );
         e.rules  = parse_zone_rule( tok_iter.next() );
         e.format = parse_zone_format( tok_iter.next() );
@@ -1202,10 +1202,10 @@ namespace vtz {
     : rule_at( parse_rule_at( text ) ) {}
 
 
-    ZoneEntry::ZoneEntry( string_view stdoff,
-        string_view                   rules,
-        string_view                   format,
-        string_view                   until )
+    zone_entry::zone_entry( string_view stdoff,
+        string_view                     rules,
+        string_view                     format,
+        string_view                     until )
 
     : stdoff( stdoff )
     , rules( parse_zone_rule( rules ) )
@@ -1404,7 +1404,7 @@ namespace vtz {
 
 
     static i64 get_safe_cycle_time(
-        span<ZoneEntry const> zone_entries, i32 last_rule_end_year ) {
+        span<zone_entry const> zone_entries, i32 last_rule_end_year ) {
         // No entries, doesn't matter
         size_t n = zone_entries.size();
         if( n == 0 ) return 0;
@@ -1541,10 +1541,10 @@ namespace vtz {
         return load_zone_states_tzfile( file32 );
     }
 
-    zone_states load_zone_states( span<ZoneEntry const> entries,
-        map<string_view, ZoneTransIter>                 cache,
-        i64                                             safe_cycle_time,
-        i32                                             end_year ) {
+    zone_states load_zone_states( span<zone_entry const> entries,
+        map<string_view, ZoneTransIter>                  cache,
+        i64                                              safe_cycle_time,
+        i32                                              end_year ) {
         sysseconds_t const STOP_TIME
             = end_year > 0
                   // If the end year is specified, use that as the stop time

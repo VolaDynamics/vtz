@@ -38,11 +38,7 @@ STRUCT_INFO( vtz::rule_entry,
     FIELD( save ),
     FIELD( letter ) );
 
-STRUCT_INFO( vtz::ZoneEntry,
-    FIELD( stdoff ),
-    FIELD( rules ),
-    FIELD( format ),
-    FIELD( until ) );
+STRUCT_INFO( vtz::zone_entry, FIELD( stdoff ), FIELD( rules ), FIELD( format ), FIELD( until ) );
 
 STRUCT_INFO( vtz::zone, FIELD( name ), FIELD( ents ) );
 

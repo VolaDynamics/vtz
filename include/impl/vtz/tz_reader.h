@@ -186,29 +186,29 @@ namespace vtz {
     //             -8:00	CA	P%sT	1967
     //             -8:00	US	P%sT
 
-    struct ZoneEntry {
+    struct zone_entry {
         from_utc   stdoff;
         zone_until  until;
         zone_rule   rules;
         zone_format format;
 
-        ZoneEntry() = default;
+        zone_entry() = default;
 
-        constexpr ZoneEntry( from_utc stdoff,
-            zone_rule                 rules,
-            zone_format               format,
-            zone_until                until ) noexcept
+        constexpr zone_entry( from_utc stdoff,
+            zone_rule                  rules,
+            zone_format                format,
+            zone_until                 until ) noexcept
         : stdoff( stdoff )
         , until( until )
         , rules( rules )
         , format( format ) {}
 
-        ZoneEntry( string_view stdoff,
-            string_view        rules,
-            string_view        format,
-            string_view        until = {} );
+        zone_entry( string_view stdoff,
+            string_view         rules,
+            string_view         format,
+            string_view         until = {} );
 
-        bool operator==( ZoneEntry const& rhs ) const noexcept {
+        bool operator==( zone_entry const& rhs ) const noexcept {
             return stdoff == rhs.stdoff    //
                    && rules == rhs.rules   //
                    && format == rhs.format //
@@ -218,7 +218,7 @@ namespace vtz {
 
     struct zone {
         string_view       name;
-        vector<ZoneEntry> ents;
+        vector<zone_entry> ents;
 
         bool operator==( zone const& rhs ) const noexcept {
             return name == rhs.name && ents == rhs.ents;
@@ -226,7 +226,7 @@ namespace vtz {
     };
 
     using rule_map = map<string_view, vector<rule_entry>>;
-    using zone_map = map<string_view, vector<ZoneEntry>>;
+    using zone_map = map<string_view, vector<zone_entry>>;
     using link_map = map<string_view, string_view>;
 
 
@@ -685,7 +685,7 @@ namespace vtz {
     zone_format parse_zone_format( opt_token tok );
 
     /// Parse a zone entry
-    ZoneEntry parse_zone_entry( token_iter tok_iter );
+    zone_entry parse_zone_entry( token_iter tok_iter );
 
     /// Parses either a rule, zone, or link
     void parse_entry( TZDataFile& file, string_view line, line_iter& lines );
@@ -716,10 +716,10 @@ namespace vtz {
         TZDataFile& file, string_view input, string_view filename = "(none)" );
 
 
-    zone_states load_zone_states( span<ZoneEntry const> entries,
-        map<string_view, ZoneTransIter>                 cache,
-        i64                                             safe_cycle_time,
-        i32                                             end_year = -1 );
+    zone_states load_zone_states( span<zone_entry const> entries,
+        map<string_view, ZoneTransIter>                  cache,
+        i64                                              safe_cycle_time,
+        i32                                              end_year = -1 );
 
     zone_states load_zone_states_tzfile( std::string const& fp );
 } // namespace vtz
