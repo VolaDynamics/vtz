@@ -19,7 +19,7 @@ namespace vtz {
     ///   and we need to check the rule the name of which is the given
     ///   alphabetic string.
 
-    struct alignas( u64 ) ZoneRule {
+    struct alignas( u64 ) zone_rule {
         struct hyphen_t {};
         constexpr static hyphen_t hyphen{};
 
@@ -31,15 +31,15 @@ namespace vtz {
                     ///< standard time
         };
 
-        ZoneRule() = default;
+        zone_rule() = default;
 
-        constexpr explicit ZoneRule( i32 offset ) noexcept
+        constexpr explicit zone_rule( i32 offset ) noexcept
         : data_( from_offset_bytes( u32( offset ) ) ) {}
 
-        constexpr ZoneRule( hyphen_t ) noexcept
+        constexpr zone_rule( hyphen_t ) noexcept
         : data_{ 17, { '-' } } {}
 
-        constexpr ZoneRule( RuleName str ) noexcept
+        constexpr zone_rule( RuleName str ) noexcept
         : data_( str ) {}
 
         constexpr Kind kind() const noexcept {
@@ -71,11 +71,11 @@ namespace vtz {
         /// Return the offset as a zone_save
         constexpr zone_save save() const noexcept { return offset(); }
 
-        bool operator==( ZoneRule const& rhs ) const noexcept {
+        bool operator==( zone_rule const& rhs ) const noexcept {
             return _b16( *this ) == _b16( rhs );
         }
 
-        bool operator!=( ZoneRule const& rhs ) const noexcept {
+        bool operator!=( zone_rule const& rhs ) const noexcept {
             return _b16( *this ) != _b16( rhs );
         }
 
@@ -100,19 +100,20 @@ namespace vtz {
     };
 
 
-    static_assert( ZoneRule().kind() == ZoneRule::NAMED );
-    static_assert( ZoneRule().name() == string_view() );
-    static_assert( ZoneRule( RuleName{ 2, "US" } ).kind() == ZoneRule::NAMED );
-    static_assert( ZoneRule( RuleName{ 2, "US" } ).name() == "US" );
+    static_assert( zone_rule().kind() == zone_rule::NAMED );
+    static_assert( zone_rule().name() == string_view() );
     static_assert(
-        ZoneRule( RuleName{ 12, "Indianapolis" } ).kind() == ZoneRule::NAMED );
+        zone_rule( RuleName{ 2, "US" } ).kind() == zone_rule::NAMED );
+    static_assert( zone_rule( RuleName{ 2, "US" } ).name() == "US" );
+    static_assert( zone_rule( RuleName{ 12, "Indianapolis" } ).kind()
+                   == zone_rule::NAMED );
     static_assert(
-        ZoneRule( RuleName{ 12, "Indianapolis" } ).name() == "Indianapolis" );
+        zone_rule( RuleName{ 12, "Indianapolis" } ).name() == "Indianapolis" );
 
-    static_assert( ZoneRule( ZoneRule::hyphen ).name() == "-" );
-    static_assert( ZoneRule( ZoneRule::hyphen ).kind() == ZoneRule::HYPHEN );
+    static_assert( zone_rule( zone_rule::hyphen ).name() == "-" );
+    static_assert( zone_rule( zone_rule::hyphen ).kind() == zone_rule::HYPHEN );
 
-    static_assert( ZoneRule( 0 ).kind() == ZoneRule::OFFSET );
-    static_assert( ZoneRule( 3600 ).offset() == 3600 );
-    static_assert( ZoneRule( -3600 ).offset() == -3600 );
+    static_assert( zone_rule( 0 ).kind() == zone_rule::OFFSET );
+    static_assert( zone_rule( 3600 ).offset() == 3600 );
+    static_assert( zone_rule( -3600 ).offset() == -3600 );
 } // namespace vtz

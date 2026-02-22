@@ -189,13 +189,13 @@ namespace vtz {
     struct ZoneEntry {
         from_utc   stdoff;
         zone_until  until;
-        ZoneRule   rules;
+        zone_rule   rules;
         zone_format format;
 
         ZoneEntry() = default;
 
         constexpr ZoneEntry( from_utc stdoff,
-            ZoneRule                  rules,
+            zone_rule                 rules,
             zone_format               format,
             zone_until                until ) noexcept
         : stdoff( stdoff )
@@ -679,7 +679,7 @@ namespace vtz {
     /// - A '-', indicating that there is no associated rule
     /// - A named rule, such as 'US' or 'Indianapolis'
     /// - A offset, such as 1:00
-    ZoneRule parse_zone_rule( opt_token tok );
+    zone_rule parse_zone_rule( opt_token tok );
 
     /// Parse a zone format
     zone_format parse_zone_format( opt_token tok );

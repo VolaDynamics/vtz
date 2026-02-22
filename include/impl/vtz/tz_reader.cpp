@@ -558,14 +558,14 @@ namespace vtz {
     } // namespace
 
 
-    ZoneRule parse_zone_rule( char const* p, size_t size ) {
+    zone_rule parse_zone_rule( char const* p, size_t size ) {
         if( !size )
             throw ParseError{
-                "Expected ZoneRule", no_token, opt_token( p, 0 )
+                "Expected zone_rule", no_token, opt_token( p, 0 )
             };
 
         if( size > 15 )
-            throw ParseError{ "Expected ZoneRule",
+            throw ParseError{ "Expected zone_rule",
                 "is too long to be a zone rule (expected a name 15 characters "
                 "or less)",
                 opt_token( p, size ) };
@@ -576,7 +576,7 @@ namespace vtz {
             /// From "How to Read the tz Database Source Files":
             /// > A hyphen, a kind of null value, means that we have not set our
             /// > clocks ahead of standard time.
-            return ZoneRule( ZoneRule::hyphen );
+            return zone_rule( zone_rule::hyphen );
         }
         else if( is_alpha( p[0] ) )
         {
@@ -594,20 +594,20 @@ namespace vtz {
             RuleName name{};
             _vtz_memcpy( name.buff_, p, size );
             name.size_ = u8( size );
-            return ZoneRule( name );
+            return zone_rule( name );
         }
         else
         {
             auto offset = parse_signed_hhmmss_offset( p, size );
-            if( offset != OFFSET_NPOS ) return ZoneRule( offset );
+            if( offset != OFFSET_NPOS ) return zone_rule( offset );
         }
 
         throw ParseError{
-            "Expected ZoneRule", bad_zone_rule, opt_token( p, size )
+            "Expected zone_rule", bad_zone_rule, opt_token( p, size )
         };
     }
 
-    ZoneRule parse_zone_rule( opt_token tok ) {
+    zone_rule parse_zone_rule( opt_token tok ) {
         return parse_zone_rule( tok.data(), tok.size() );
     }
     zone_format parse_zone_format( char const* p, size_t size ) {

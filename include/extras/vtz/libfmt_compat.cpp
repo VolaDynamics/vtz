@@ -69,16 +69,16 @@ namespace vtz {
     }
 
 
-    string format_as( ZoneRule const& rule ) {
+    string format_as( zone_rule const& rule ) {
         switch( rule.kind() )
         {
-        case ZoneRule::HYPHEN: return "-";
-        case ZoneRule::NAMED: return string( rule.name() );
-        case ZoneRule::OFFSET: return to_hhmmss( rule.offset() );
+        case zone_rule::HYPHEN: return "-";
+        case zone_rule::NAMED: return string( rule.name() );
+        case zone_rule::OFFSET: return to_hhmmss( rule.offset() );
         }
 
         throw std::runtime_error(
-            "format_as(ZoneRule): kind() is invalid/corrupt" );
+            "format_as(zone_rule): kind() is invalid/corrupt" );
     }
 
 

@@ -110,7 +110,7 @@ static_assert( rule_letter( "x" ).sv() == "x" );
 
 DECLARE_STRINGLIKE( rule_letter );
 
-FMT_ENUM_PLAIN( vtz::ZoneRule::Kind );
+FMT_ENUM_PLAIN( vtz::zone_rule::Kind );
 
 namespace {
     template<size_t... N>
@@ -912,7 +912,7 @@ TEST( vtz_parser, basics ) {
     auto off2         = parse_zone_rule( "+1:23" );
     auto off3         = parse_zone_rule( "-1:23" );
 
-    ASSERT_EQ( NT_YK.kind(), ZoneRule::NAMED );
+    ASSERT_EQ( NT_YK.kind(), zone_rule::NAMED );
     ASSERT_EQ( NT_YK.name(), "NT_YK" );
 
     ASSERT_EQ( Indianapolis.name(), "Indianapolis" );
@@ -920,27 +920,27 @@ TEST( vtz_parser, basics ) {
     ASSERT_EQ( E_EurAsia.is_named(), true );
     ASSERT_EQ( E_EurAsia.is_hyphen(), false );
     ASSERT_EQ( E_EurAsia.is_offset(), false );
-    ASSERT_EQ( E_EurAsia.kind(), ZoneRule::NAMED );
+    ASSERT_EQ( E_EurAsia.kind(), zone_rule::NAMED );
     ASSERT_EQ( E_EurAsia.name(), "E-EurAsia" );
 
     ASSERT_EQ( hyphen.is_named(), false );
     ASSERT_EQ( hyphen.is_hyphen(), true );
     ASSERT_EQ( hyphen.is_offset(), false );
-    ASSERT_EQ( hyphen.kind(), ZoneRule::HYPHEN );
+    ASSERT_EQ( hyphen.kind(), zone_rule::HYPHEN );
     ASSERT_EQ( hyphen.name(), "-" );
 
     ASSERT_EQ( off1.is_named(), false );
     ASSERT_EQ( off1.is_hyphen(), false );
     ASSERT_EQ( off1.is_offset(), true );
-    ASSERT_EQ( off1.kind(), ZoneRule::OFFSET );
+    ASSERT_EQ( off1.kind(), zone_rule::OFFSET );
     ASSERT_EQ( off1.offset(), 4980 );
     ASSERT_EQ( format_as( off1 ), "01:23" );
 
-    ASSERT_EQ( off2.kind(), ZoneRule::OFFSET );
+    ASSERT_EQ( off2.kind(), zone_rule::OFFSET );
     ASSERT_EQ( off2.offset(), 4980 );
     ASSERT_EQ( format_as( off2 ), "01:23" );
 
-    ASSERT_EQ( off3.kind(), ZoneRule::OFFSET );
+    ASSERT_EQ( off3.kind(), zone_rule::OFFSET );
     ASSERT_EQ( off3.offset(), -4980 );
     ASSERT_EQ( format_as( off3 ), "-01:23" );
 }
