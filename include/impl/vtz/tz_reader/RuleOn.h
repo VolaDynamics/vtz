@@ -93,7 +93,7 @@ namespace vtz {
 
 
     template<>
-    struct OptTraits<RuleOn> {
+    struct opt_traits<RuleOn> {
         /// Corresponds to kind() == DAY, dow() == Sun, day() == 0, which is not
         /// a valid day of the month
         constexpr static RuleOn NULL_VALUE = RuleOn::from_repr( 0 );

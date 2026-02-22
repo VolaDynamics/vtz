@@ -100,7 +100,7 @@ namespace vtz {
     };
 
     template<>
-    struct OptTraits<RuleAt> {
+    struct opt_traits<RuleAt> {
         constexpr static RuleAt NULL_VALUE = RuleAt::from_repr( INT32_MIN );
     };
 

@@ -39,11 +39,11 @@ namespace vtz {
     };
 
     template<class T>
-    struct OptTraits;
+    struct opt_traits;
 
     template<class T>
     struct OptClass {
-        constexpr static T NULL_VALUE = OptTraits<T>::NULL_VALUE;
+        constexpr static T NULL_VALUE = opt_traits<T>::NULL_VALUE;
 
         T data = NULL_VALUE;
 
@@ -95,7 +95,7 @@ namespace vtz {
     struct NoneType {
         template<class T>
         constexpr operator OptClass<T>() const noexcept {
-            return { OptTraits<T>::NULL_VALUE };
+            return { opt_traits<T>::NULL_VALUE };
         }
         template<class T>
         constexpr operator TrivialOpt<T>() const noexcept {
