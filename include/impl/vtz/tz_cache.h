@@ -179,13 +179,13 @@ namespace vtz {
             string_hash,
             std::equal_to<>>;
 
-        struct State {
+        struct state {
             std::mutex m{};
             zone_map   zones;
         };
         // It's fine to have mutability here, because we put the whole thing
         // behind a lock. So `locate_zone` is still thread-safe.
-        mutable std::unique_ptr<State> st = std::make_unique<State>();
+        mutable std::unique_ptr<state> st = std::make_unique<state>();
 
       public:
 
