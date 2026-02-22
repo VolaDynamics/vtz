@@ -84,18 +84,18 @@ namespace vtz::util {
 
     template<class Range>
     struct fmt_traits<joined<Range>> {
-        using ElemT  = std::decay_t<decltype( *std::begin(
+        using _elem_t      = std::decay_t<decltype( *std::begin(
             std::declval<Range const&>() ) )>;
-        using Traits = fmt_traits<ElemT>;
+        using _elem_traits = fmt_traits<_elem_t>;
 
         static size_t max_space( joined<Range> const& j ) {
             auto it  = std::begin( j.range );
             auto end = std::end( j.range );
             if( it == end ) return 0;
 
-            size_t total = Traits::max_space( *it );
+            size_t total = _elem_traits::max_space( *it );
             for( ++it; it != end; ++it )
-                total += j.sep.size() + Traits::max_space( *it );
+                total += j.sep.size() + _elem_traits::max_space( *it );
             return total;
         }
 
@@ -105,12 +105,12 @@ namespace vtz::util {
             if( it == end ) return 0;
 
             char* p  = dest;
-            p       += Traits::dump( p, *it );
+            p        += _elem_traits::dump( p, *it );
             for( ++it; it != end; ++it )
             {
                 _vtz_memcpy( p, j.sep.data(), j.sep.size() );
                 p += j.sep.size();
-                p += Traits::dump( p, *it );
+                p += _elem_traits::dump( p, *it );
             }
             return size_t( p - dest );
         }

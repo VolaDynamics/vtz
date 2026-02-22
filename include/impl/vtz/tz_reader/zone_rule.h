@@ -5,7 +5,7 @@
 #include <vtz/tz_reader/zone_save.h>
 
 namespace vtz {
-    using RuleName = fix_str<15>;
+    using rule_name = fix_str<15>;
 
     /// From "How to Read the tz Database Source Files":
     ///
@@ -39,7 +39,7 @@ namespace vtz {
         constexpr zone_rule( hyphen_t ) noexcept
         : data_{ 17, { '-' } } {}
 
-        constexpr zone_rule( RuleName str ) noexcept
+        constexpr zone_rule( rule_name str ) noexcept
         : data_( str ) {}
 
         constexpr Kind kind() const noexcept {
@@ -64,7 +64,7 @@ namespace vtz {
         /// Return the offset. This is the 'save' of the zone at the current
         /// moment.
         constexpr i32 offset() const noexcept {
-            static_assert( offsetof( RuleName, buff_ ) == 1 );
+            static_assert( offsetof( rule_name, buff_ ) == 1 );
             return i32( _impl::_load4( data_.buff_ + 3 ) );
         }
 
@@ -81,10 +81,10 @@ namespace vtz {
 
       private:
 
-        RuleName data_;
+        rule_name data_;
 
-        constexpr static RuleName from_offset_bytes( u32 bb ) noexcept {
-            return RuleName{
+        constexpr static rule_name from_offset_bytes( u32 bb ) noexcept {
+            return rule_name{
                 16,
                 {
                     0,
@@ -103,12 +103,12 @@ namespace vtz {
     static_assert( zone_rule().kind() == zone_rule::NAMED );
     static_assert( zone_rule().name() == string_view() );
     static_assert(
-        zone_rule( RuleName{ 2, "US" } ).kind() == zone_rule::NAMED );
-    static_assert( zone_rule( RuleName{ 2, "US" } ).name() == "US" );
-    static_assert( zone_rule( RuleName{ 12, "Indianapolis" } ).kind()
+        zone_rule( rule_name{ 2, "US" } ).kind() == zone_rule::NAMED );
+    static_assert( zone_rule( rule_name{ 2, "US" } ).name() == "US" );
+    static_assert( zone_rule( rule_name{ 12, "Indianapolis" } ).kind()
                    == zone_rule::NAMED );
     static_assert(
-        zone_rule( RuleName{ 12, "Indianapolis" } ).name() == "Indianapolis" );
+        zone_rule( rule_name{ 12, "Indianapolis" } ).name() == "Indianapolis" );
 
     static_assert( zone_rule( zone_rule::hyphen ).name() == "-" );
     static_assert( zone_rule( zone_rule::hyphen ).kind() == zone_rule::HYPHEN );

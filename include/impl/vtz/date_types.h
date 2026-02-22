@@ -38,8 +38,8 @@ namespace vtz {
         return ( l - r ) + ( l < r ? 7 : 0 );
     }
 
-    using OptMon = opt_val<Mon, Mon{}>;
-    using OptDOW = opt_val<DOW, DOW{ 7 }>;
+    using opt_mon = opt_val<Mon, Mon{}>;
+    using opt_dow = opt_val<DOW, DOW{ 7 }>;
 
 } // namespace vtz
 
@@ -52,7 +52,7 @@ namespace vtz::_impl {
 
 
 
-    constexpr OptMon _parse_mon( char const* src, size_t len ) noexcept {
+    constexpr opt_mon _parse_mon( char const* src, size_t len ) noexcept {
         if( len == 3 )
         {
             switch( _load3( src ) )
@@ -111,7 +111,7 @@ namespace vtz::_impl {
         return none;
     }
 
-    constexpr OptDOW _parse_dow( char const* src, size_t len ) noexcept {
+    constexpr opt_dow _parse_dow( char const* src, size_t len ) noexcept {
         if( len == 3 )
         {
             switch( _load3( src ) )

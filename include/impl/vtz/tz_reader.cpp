@@ -288,7 +288,7 @@ namespace vtz {
             constexpr auto _last = _load4( "last" );
             if( _load4( p ) == _last )
             {
-                if( OptDOW dow = _parse_dow( p + 4, size - 4 ) )
+                if( opt_dow dow = _parse_dow( p + 4, size - 4 ) )
                     return rule_on::last( *dow );
             }
             else
@@ -306,7 +306,7 @@ namespace vtz {
                     // We know it must be of form
                     // \w{dow_len}[<>]=\d+
                     char   ge_or_le = p[dow_len];
-                    OptDOW dow      = _parse_dow( p, dow_len );
+                    opt_dow dow      = _parse_dow( p, dow_len );
                     auto   day      = parse_day_of_month(
                         p + ( dow_len + 2 ), size - ( dow_len + 2 ) );
 
@@ -591,7 +591,7 @@ namespace vtz {
             // For now, we will allow anything that is not recognized as a
             // offset or hyphen to be used as a rule name.
 
-            RuleName name{};
+            rule_name name{};
             _vtz_memcpy( name.buff_, p, size );
             name.size_ = u8( size );
             return zone_rule( name );

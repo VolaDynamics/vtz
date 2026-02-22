@@ -110,7 +110,7 @@ namespace vtz {
 
     // Represents an owning S32Table
     class s32_table : public s32_table_view {
-        using Base = s32_table_view;
+        using base = s32_table_view;
 
       public:
 
@@ -135,14 +135,14 @@ namespace vtz {
             swap( rhs );
         }
 
-        using Base::get;
-        using Base::initial;
-        using Base::lookup;
-        using Base::lookup_u32;
+        using base::get;
+        using base::initial;
+        using base::lookup;
+        using base::lookup_u32;
 
         VTZ_INLINE s32_table_view view() const noexcept { return *this; }
 
-        VTZ_INLINE void swap( s32_table& rhs ) noexcept { Base::swap( rhs ); }
+        VTZ_INLINE void swap( s32_table& rhs ) noexcept { base::swap( rhs ); }
 
         s32_table& operator=( s32_table rhs ) noexcept {
             return swap( rhs ), *this;

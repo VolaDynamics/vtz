@@ -225,7 +225,7 @@ namespace vtz {
 
 
     class tz_string_iter {
-        using ZT = zone_transition;
+        using zt = zone_transition;
 
         sysseconds_t peek_next_time() const noexcept {
             return dst_next_ ? s.resolve_dst( year_dst )
@@ -246,9 +246,9 @@ namespace vtz {
         }
 
         /// peek at the next transition, without advancing
-        ZT peek() const noexcept {
-            return dst_next_ ? ZT{ s.resolve_dst( year_dst ), s.dst() }
-                             : ZT{ s.resolve_std( year_std ), s.std() };
+        zt peek() const noexcept {
+            return dst_next_ ? zt{ s.resolve_dst( year_dst ), s.dst() }
+                             : zt{ s.resolve_std( year_std ), s.std() };
         }
 
         /// Get the next zone transition
