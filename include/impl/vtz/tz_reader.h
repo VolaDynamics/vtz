@@ -311,7 +311,7 @@ namespace vtz {
     }
 
     /// Implements a State Machine such that we can pull rule transitions
-    struct RuleTransIter {
+    struct rule_trans_iter {
         /// Index (if iterating through historical transitions, holds index into
         /// historical buffer. If iterating through active transitions, holds
         /// index into active buffer.)
@@ -339,11 +339,11 @@ namespace vtz {
         /// Evaluated transitions from active entries buffer
         std::unique_ptr<rule_trans[]> active_buff;
 
-        RuleTransIter( rule_trans const* hist,
-            size_t                       hist_size,
-            rule_entry const*            active,
-            size_t                       active_size,
-            int                          first_active_year ) noexcept
+        rule_trans_iter( rule_trans const* hist,
+            size_t                         hist_size,
+            rule_entry const*              active,
+            size_t                         active_size,
+            int                            first_active_year ) noexcept
         : i( 0 )
         , in_historical( true )
         , year( first_active_year )
@@ -353,8 +353,8 @@ namespace vtz {
         , active_size_( active_size )
         , first_active_year_( first_active_year ) {}
 
-        RuleTransIter( rule_eval_result const& r ) noexcept
-        : RuleTransIter{
+        rule_trans_iter( rule_eval_result const& r ) noexcept
+        : rule_trans_iter{
             r.historical.data(),
             r.historical.size(),
             r.active.data(),
@@ -417,7 +417,7 @@ namespace vtz {
 
 
     class ZoneTransIter {
-        RuleTransIter rule_iter_;
+        rule_trans_iter rule_iter_;
         rule_trans    next_;
         rule_letter   current_letter_;
         zone_save     current_save_;
