@@ -40,7 +40,7 @@ namespace vtz {
 
     constexpr i32 OFFSET_NPOS = INT32_MIN;
 
-    struct ParseError {
+    struct parse_error {
         char const* expected; ///< What was expected
         char const* but;      ///< Reason why input was bad
         opt_token   token;    ///< token where failure occurred

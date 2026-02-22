@@ -144,13 +144,13 @@ namespace vtz {
                 p = result.ptr;
                 return x;
             }
-            throw ParseError{ "Expected unsigned int",
+            throw parse_error{ "Expected unsigned int",
                 "error occurred when parsing",
                 opt_token( p, end - p ) };
         }
     } // namespace
 
-    std::string ParseError::getErrorMessage(
+    std::string parse_error::getErrorMessage(
         string_view input, string_view filename ) const {
         auto loc = location::where_ptr( input, token.data() );
 
@@ -196,7 +196,7 @@ namespace vtz {
             if( result.ec == std::errc{} && result.ptr == end && year > 0 )
                 return rule_year_t( year );
         }
-        throw ParseError{
+        throw parse_error{
             "Expected year of form 'YYYY'",
             tok.has_value() ? "is not a valid year" : "year is missing",
             tok,
@@ -223,7 +223,7 @@ namespace vtz {
                 return rule_year_t( year );
         }
 
-        throw ParseError{
+        throw parse_error{
             "Expected year of form 'YYYY' or literal strings 'max' or "
             "'only'",
             tok.has_value() ? "is not a valid year" : "year is missing",
@@ -239,7 +239,7 @@ namespace vtz {
 
         if( auto m = _parse_mon( tok.data(), tok.size() ) ) return *m;
 
-        throw ParseError{
+        throw parse_error{
             "Expected month",
             tok.has_value() ? "is not a valid month name" : "month is missing",
             tok,
@@ -264,7 +264,7 @@ namespace vtz {
             }
         }
 
-        throw ParseError{
+        throw parse_error{
             "Expected day of the month",
             size ? "is not a valid day of the month (day must be 1-31)"
                  : no_token,
@@ -322,7 +322,7 @@ namespace vtz {
             }
         }
 
-        throw ParseError{
+        throw parse_error{
             exp_rule_on, tok.has_value() ? bad_rule_on : no_token, tok
         };
     }
@@ -390,7 +390,7 @@ namespace vtz {
 
     i32 eat_signed_hhmmss( char const*& p, char const* end ) {
         constexpr char const* expected = "Expected offset - [sign]HH[:MM][:SS]";
-        if( p == end ) throw ParseError{ expected, empty_input };
+        if( p == end ) throw parse_error{ expected, empty_input };
 
         int  sign = 1;
         char ch   = p[0];
@@ -409,7 +409,7 @@ namespace vtz {
 
         i32 offset = parse_hhmmss_offset( p, i, sign );
         if( offset == OFFSET_NPOS )
-            throw ParseError{
+            throw parse_error{
                 expected, "was not an offset", opt_token( p, end - p )
             };
         p += i;
@@ -426,7 +426,7 @@ namespace vtz {
             if( result != OFFSET_NPOS ) return zone_save{ result };
 
             // throw failure
-            throw ParseError{
+            throw parse_error{
                 "Expected SAVE offset", tok ? bad_save : no_token, tok
             };
         }
@@ -462,7 +462,7 @@ namespace vtz {
                 }
             }
 
-            throw ParseError{
+            throw parse_error{
                 "Expected AT token", tok ? bad_at : no_token, tok
             };
         }
@@ -489,7 +489,7 @@ namespace vtz {
                 }
             }
 
-            throw ParseError{
+            throw parse_error{
                 "Expected Letter Token or '-'", tok ? bad_letter : no_token, tok
             };
         }
@@ -502,7 +502,7 @@ namespace vtz {
             if( result != OFFSET_NPOS ) return from_utc{ result };
 
             // throw failure
-            throw ParseError{
+            throw parse_error{
                 "Expected STDOFF offset", tok ? bad_stdoff : no_token, tok
             };
         }
@@ -530,7 +530,7 @@ namespace vtz {
                             // Make sure there are no more tokens
                             if( auto extra_token = iter.next_non_comment() )
                             {
-                                throw ParseError{
+                                throw parse_error{
                                     "Expected no more tokens "
                                     "after 'until' field",
                                     "another token appeared",
@@ -560,12 +560,12 @@ namespace vtz {
 
     zone_rule parse_zone_rule( char const* p, size_t size ) {
         if( !size )
-            throw ParseError{
+            throw parse_error{
                 "Expected zone_rule", no_token, opt_token( p, 0 )
             };
 
         if( size > 15 )
-            throw ParseError{ "Expected zone_rule",
+            throw parse_error{ "Expected zone_rule",
                 "is too long to be a zone rule (expected a name 15 characters "
                 "or less)",
                 opt_token( p, size ) };
@@ -602,7 +602,7 @@ namespace vtz {
             if( offset != OFFSET_NPOS ) return zone_rule( offset );
         }
 
-        throw ParseError{
+        throw parse_error{
             "Expected zone_rule", bad_zone_rule, opt_token( p, size )
         };
     }
@@ -612,12 +612,12 @@ namespace vtz {
     }
     zone_format parse_zone_format( char const* p, size_t size ) {
         if( !size )
-            throw ParseError{
+            throw parse_error{
                 "Expected zone_format", no_token, opt_token( p, 0 )
             };
 
         if( size > 14 )
-            throw ParseError{
+            throw parse_error{
                 "Expected zone_format",
                 "is too long to be a zone format (expected 14 characters or "
                 "less)",
@@ -647,7 +647,7 @@ namespace vtz {
             size_t i2 = i + 1;
             if( i2 == size )
             {
-                throw ParseError{
+                throw parse_error{
                     "Expected zone_format",
                     "ended with a '%' (expected either a '%z' or a '%s', a "
                     "isolated '%' is invalid)",
@@ -656,7 +656,7 @@ namespace vtz {
             }
             char fmt_char = p[i2];
             if( !( fmt_char == 's' || fmt_char == 'z' ) )
-                throw ParseError{
+                throw parse_error{
                     "Expected zone_format",
                     "is not a recognized specifier (expected either '%s' "
                     "or '%z' if a '%' is present)",
@@ -722,8 +722,8 @@ namespace vtz {
             if( line.empty() || line[0] == '#' ) continue;
             return line;
         }
-        throw ParseError{ "Expected more entries in "
-                          "Zone specification",
+        throw parse_error{ "Expected more entries in "
+                           "Zone specification",
             "End of input was reached",
             lines.rest() };
     }
@@ -775,7 +775,7 @@ namespace vtz {
                     }
                     else
                     {
-                        throw ParseError{
+                        throw parse_error{
                             "Expected rule name", "name was missing", name
                         };
                     }
@@ -795,7 +795,7 @@ namespace vtz {
                     continue;
                 }
 
-                throw ParseError{
+                throw parse_error{
                     "Expected Zone, Rule, or Link",
                     "Did not match any of those.",
                     { line },
@@ -821,7 +821,7 @@ namespace vtz {
                 }
             }
         }
-        catch( ParseError err )
+        catch( parse_error err )
         { //
             auto loc = location::where_ptr( input, err.token.data() );
             if( err.token.has_value() )
@@ -866,7 +866,7 @@ namespace vtz {
                     return string_view( s0, sz );
                 }
             }
-            throw ParseError{
+            throw parse_error{
                 "Expected '>' delimiting end of zone abbreviation",
                 "Found end of string"
             };
@@ -890,7 +890,7 @@ namespace vtz {
             return result;
         }
 
-        throw ParseError{
+        throw parse_error{
             "Expected zone abbreviation",
             "is too long",
             sv,
@@ -899,7 +899,7 @@ namespace vtz {
 
     zone_abbr to_zone_abbr( opt_sv sv ) {
         if( sv ) return to_zone_abbr( *sv );
-        throw ParseError{
+        throw parse_error{
             "Expected zone abbreviation",
             "no zone abbreviation was given",
         };
@@ -907,26 +907,26 @@ namespace vtz {
 
     tz_date eat_tzdate( char const*& p, char const* end ) {
         char const* s0 = p;
-        if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
+        if( p == end ) throw parse_error{ TZ_expected_rule, end_of_string };
         if( *p != ',' )
-            throw ParseError{
+            throw parse_error{
                 TZ_expected_rule, "isn't a valid rule", opt_token( p, end - p )
             };
         ++p;
-        if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
+        if( p == end ) throw parse_error{ TZ_expected_rule, end_of_string };
         if( *p == 'M' )
         {
             // Parse Mm.n.d
             ++p;
             auto m = eat_u32_or_throw( p, end );
             if( p == end || *p != '.' )
-                throw ParseError{ "expected week (range [1-5]) following '.'",
+                throw parse_error{ "expected week (range [1-5]) following '.'",
                     "didn't match \".[1-5]\"",
                     opt_token( p, end - p ) };
             ++p;
             auto n = eat_u32_or_throw( p, end );
             if( p == end || *p != '.' )
-                throw ParseError{
+                throw parse_error{
                     "expected day of week (range [0-6]) following '.'",
                     "didn't match \".[0-6]\"",
                     opt_token( p, end - p )
@@ -934,15 +934,15 @@ namespace vtz {
             ++p;
             auto d = eat_u32_or_throw( p, end );
             if( m < 1 || m > 12 )
-                throw ParseError{ "Expected Mm.n.d",
+                throw parse_error{ "Expected Mm.n.d",
                     "had an out-of-bounds month (expected range [1-12])",
                     opt_token( s0, end - s0 ) };
             if( n < 1 || n > 5 )
-                throw ParseError{ "Expected Mm.n.d",
+                throw parse_error{ "Expected Mm.n.d",
                     "had an out-of-bounds week of month (expected range [1-5])",
                     opt_token( s0, end - s0 ) };
             if( d > 6 )
-                throw ParseError{ "Expected Mm.n.d",
+                throw parse_error{ "Expected Mm.n.d",
                     "had an out-of-bounds day of the week (expected range "
                     "[0-6])",
                     opt_token( s0, end - s0 ) };
@@ -954,7 +954,7 @@ namespace vtz {
             ++p;
             auto n = eat_u32_or_throw( p, end );
             if( n < 1 || n > 365 )
-                throw ParseError{
+                throw parse_error{
                     "Expected Rule Date of form Jn where 1 <= n <= 365",
                     "contained an out-of-bounds value for n",
                     opt_token( s0, end - s0 )
@@ -965,7 +965,7 @@ namespace vtz {
         {
             auto n = eat_u32_or_throw( p, end );
             if( n > 365 )
-                throw ParseError{ "Expected Rule Date n where 0 <= n <= 365",
+                throw parse_error{ "Expected Rule Date n where 0 <= n <= 365",
                     "contained an out-of-bounds value for n",
                     opt_token( s0, end - s0 ) };
             return tz_date::make_doy( n );
@@ -1010,7 +1010,7 @@ namespace vtz {
         // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html#tag_08_03
         auto off2 = off1.save( 3600 );
 
-        if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
+        if( p == end ) throw parse_error{ TZ_expected_rule, end_of_string };
 
         if( *p != ',' )
         {
@@ -1027,7 +1027,7 @@ namespace vtz {
             eat_tzrule( p, end ),
         };
         if( p != end )
-            throw ParseError{
+            throw parse_error{
                 "Expected end of TZ string",
                 "came after what should have been the end",
                 opt_token( p, end - p ),
@@ -1042,7 +1042,7 @@ namespace vtz {
             // Parse the tz string (throws a ParseError if parse failure occurs)
             return _parse_tz_string( sv.data(), sv.size() );
         }
-        catch( vtz::ParseError const& err )
+        catch( vtz::parse_error const& err )
         {
             throw std::runtime_error(
                 err.getErrorMessage( sv, "(TZ string)" ) );
