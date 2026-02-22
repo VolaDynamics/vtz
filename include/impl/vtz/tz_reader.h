@@ -54,7 +54,7 @@ namespace vtz {
         sysdays_t  date;
         RuleAt     at;
         zone_save  save;
-        RuleLetter letter;
+        rule_letter letter;
 
         /// Resolve the time when the rule would take effect, based on the
         /// current state of the zone
@@ -85,7 +85,7 @@ namespace vtz {
             u32                          day,
             RuleAt                       at,
             zone_save                    save,
-            RuleLetter                   letter ) {
+            rule_letter                  letter ) {
             return RuleTrans{
                 resolve_civil( year, mon, day ), at, save, letter
             };
@@ -124,7 +124,7 @@ namespace vtz {
         RuleOn      on;
         RuleAt      at;
         zone_save   save;
-        RuleLetter  letter;
+        rule_letter letter;
 
         /// Resolve the DateTime (in sysseconds_t)
         constexpr sysseconds_t resolve_at(
@@ -236,7 +236,7 @@ namespace vtz {
     /// > If switching to a named rule before any transition has happened,
     /// > assume standard time (SAVE zero), and use the LETTER data from
     /// > the earliest transition with a SAVE of zero.
-    [[nodiscard]] inline std::optional<RuleLetter> get_initial_letter(
+    [[nodiscard]] inline std::optional<rule_letter> get_initial_letter(
         RuleTrans const* trans, size_t trans_size ) {
         for( size_t i = 0; i < trans_size; ++i )
         {
@@ -371,8 +371,8 @@ namespace vtz {
         /// This obtains the initial letter, corresponding to the first entry
         /// with a SAVE of 0.
         ///
-        /// Returns `RuleLetter("-")` if there are no entries with a save of 0
-        RuleLetter initial_letter() const noexcept {
+        /// Returns `rule_letter("-")` if there are no entries with a save of 0
+        rule_letter initial_letter() const noexcept {
             for( size_t j = 0; j < hist_size_; ++j )
             {
                 if( hist_[j].save.save == 0 ) { return hist_[j].letter; }
@@ -384,7 +384,7 @@ namespace vtz {
                     active_, active_size_, first_active_year_ ) )
                 return result->letter;
 
-            return RuleLetter( "-" );
+            return rule_letter( "-" );
         }
 
 
@@ -419,7 +419,7 @@ namespace vtz {
     class ZoneTransIter {
         RuleTransIter rule_iter_;
         RuleTrans     next_;
-        RuleLetter    current_letter_;
+        rule_letter   current_letter_;
         zone_save     current_save_;
         bool          is_done;
 
@@ -486,7 +486,7 @@ namespace vtz {
         }
 
         zone_save  current_save() const noexcept { return current_save_; }
-        RuleLetter current_letter() const noexcept { return current_letter_; }
+        rule_letter current_letter() const noexcept { return current_letter_; }
 
         /// Return the next ZoneTransition, if one exists prior to the
         /// until_time

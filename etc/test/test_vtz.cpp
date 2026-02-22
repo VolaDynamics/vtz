@@ -104,11 +104,11 @@ static_assert( OptDOW{ DOW::Thu }.has_value() );
 static_assert( OptDOW{ DOW::Fri }.has_value() );
 static_assert( OptDOW{ DOW::Sat }.has_value() );
 
-static_assert( RuleLetter().sv() == "" );
-static_assert( RuleLetter().size_ == 0 );
-static_assert( RuleLetter( "x" ).sv() == "x" );
+static_assert( rule_letter().sv() == "" );
+static_assert( rule_letter().size_ == 0 );
+static_assert( rule_letter( "x" ).sv() == "x" );
 
-DECLARE_STRINGLIKE( RuleLetter );
+DECLARE_STRINGLIKE( rule_letter );
 
 FMT_ENUM_PLAIN( vtz::ZoneRule::Kind );
 

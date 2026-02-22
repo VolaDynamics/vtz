@@ -466,8 +466,8 @@ namespace vtz {
             };
         }
 
-        RuleLetter parse_rule_letter( opt_token tok ) {
-            constexpr RuleLetter hyphen = RuleLetter( "-" );
+        rule_letter parse_rule_letter( opt_token tok ) {
+            constexpr rule_letter hyphen = rule_letter( "-" );
 
             size_t      size = tok.size();
             char const* p    = tok.data();
@@ -475,7 +475,7 @@ namespace vtz {
             {
                 if( size < 8 )
                 {
-                    RuleLetter r{};
+                    rule_letter r{};
                     memcpy( r.buff_, p, size );
                     r.size_ = u8( size );
                     // Special case - if the rule letter is "-", then
@@ -483,7 +483,7 @@ namespace vtz {
                     //
                     // This is because the file format requires a token here,
                     // and "-" was chosen to represent a LETTER that is empty.
-                    if( r == hyphen ) { r = RuleLetter{}; }
+                    if( r == hyphen ) { r = rule_letter{}; }
                     return r;
                 }
             }

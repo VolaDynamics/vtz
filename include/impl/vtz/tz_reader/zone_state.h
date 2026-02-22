@@ -18,22 +18,23 @@ namespace vtz {
         , abbr( abbr ) {}
 
         /// Create a ZoneState where stdoff==walloff.
-        constexpr ZoneState(
-            from_utc stdoff, ZoneFormat const& fmt, RuleLetter letter ) noexcept
+        constexpr ZoneState( from_utc stdoff,
+            ZoneFormat const&         fmt,
+            rule_letter               letter ) noexcept
         : ZoneTime{ stdoff, stdoff }
         , abbr( fmt.format( walloff, false, letter ) ) {}
 
         constexpr ZoneState( from_utc stdoff,
             from_utc                  walloff,
             ZoneFormat const&         fmt,
-            RuleLetter                letter ) noexcept
+            rule_letter               letter ) noexcept
         : ZoneTime{ stdoff, walloff }
         , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
 
         constexpr ZoneState( from_utc stdoff,
             zone_save                 save,
             ZoneFormat const&         fmt,
-            RuleLetter                letter ) noexcept
+            rule_letter               letter ) noexcept
         : ZoneTime{ stdoff, stdoff.save( save ) }
         , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
 
