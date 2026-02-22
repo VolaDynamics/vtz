@@ -949,8 +949,8 @@ TEST( vtz_parser, basics ) {
 TEST( vtz_parser, zone_format ) {
     COUNT_ASSERTIONS();
 
-    // Test ZoneFormat
-    using ZF = ZoneFormat;
+    // Test zone_format
+    using ZF = zone_format;
 
     // === LITERAL format tests ===
     static_assert( ZF{ "GMT" }.with( ZF::LITERAL, 3, 0 ).format( 0, false, "S" ).sv() == "GMT" );

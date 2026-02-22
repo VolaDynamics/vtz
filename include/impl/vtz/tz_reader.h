@@ -68,7 +68,7 @@ namespace vtz {
         /// The rule will take effect based on the zone's _CURRENT_ stdoff or
         /// walloff, so we need to pass in the full ZoneTime object.
         constexpr ZoneTransition resolve_trans(
-            ZoneTime time, ZoneFormat format ) const noexcept {
+            ZoneTime time, zone_format format ) const noexcept {
             return ZoneTransition{
                 resolve( time ),
                 ZoneState{
@@ -190,13 +190,13 @@ namespace vtz {
         from_utc   stdoff;
         ZoneUntil  until;
         ZoneRule   rules;
-        ZoneFormat format;
+        zone_format format;
 
         ZoneEntry() = default;
 
         constexpr ZoneEntry( from_utc stdoff,
             ZoneRule                  rules,
-            ZoneFormat                format,
+            zone_format               format,
             ZoneUntil                 until ) noexcept
         : stdoff( stdoff )
         , until( until )
@@ -449,7 +449,7 @@ namespace vtz {
         /// given input time
         [[nodiscard]] ZoneState advance_to( sysseconds_t when,
             from_utc                                     stdoff,
-            ZoneFormat const&                            format,
+            zone_format const&                           format,
             ZoneTime                                     old_time ) {
             // We are going to advance until the next state is strictly after
             // 'when'
@@ -492,7 +492,7 @@ namespace vtz {
         /// until_time
         std::optional<ZoneTransition> next( sysseconds_t until_time,
             from_utc                                     stdoff,
-            ZoneFormat const&                            format ) {
+            zone_format const&                           format ) {
             // Record the current walloff. This is needed because the time
             // when the next transition will occur will be in terms of the
             // current walloff.
@@ -682,7 +682,7 @@ namespace vtz {
     ZoneRule parse_zone_rule( opt_token tok );
 
     /// Parse a zone format
-    ZoneFormat parse_zone_format( opt_token tok );
+    zone_format parse_zone_format( opt_token tok );
 
     /// Parse a zone entry
     ZoneEntry parse_zone_entry( token_iter tok_iter );

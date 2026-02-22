@@ -609,21 +609,21 @@ namespace vtz {
     ZoneRule parse_zone_rule( opt_token tok ) {
         return parse_zone_rule( tok.data(), tok.size() );
     }
-    ZoneFormat parse_zone_format( char const* p, size_t size ) {
+    zone_format parse_zone_format( char const* p, size_t size ) {
         if( !size )
             throw ParseError{
-                "Expected ZoneFormat", no_token, opt_token( p, 0 )
+                "Expected zone_format", no_token, opt_token( p, 0 )
             };
 
         if( size > 14 )
             throw ParseError{
-                "Expected ZoneFormat",
+                "Expected zone_format",
                 "is too long to be a zone format (expected 14 characters or "
                 "less)",
                 opt_token( p, size ),
             };
 
-        ZoneFormat result{};
+        zone_format result{};
 
         for( size_t i = 0; i < size; i++ )
         {
@@ -640,14 +640,14 @@ namespace vtz {
             {
                 size_t sz1 = size - ( i + 1 );
                 std::copy( p + i + 1, p + size, result.buff + i );
-                result.set_fmt( ZoneFormat::SLASH, i, sz1 );
+                result.set_fmt( zone_format::SLASH, i, sz1 );
                 return result;
             }
             size_t i2 = i + 1;
             if( i2 == size )
             {
                 throw ParseError{
-                    "Expected ZoneFormat",
+                    "Expected zone_format",
                     "ended with a '%' (expected either a '%z' or a '%s', a "
                     "isolated '%' is invalid)",
                     opt_token( p, size ),
@@ -656,13 +656,14 @@ namespace vtz {
             char fmt_char = p[i2];
             if( !( fmt_char == 's' || fmt_char == 'z' ) )
                 throw ParseError{
-                    "Expected ZoneFormat",
+                    "Expected zone_format",
                     "is not a recognized specifier (expected either '%s' "
                     "or '%z' if a '%' is present)",
                     opt_token( p + i, 2 ),
                 };
 
-            auto fmt = fmt_char == 's' ? ZoneFormat::FMT_S : ZoneFormat::FMT_Z;
+            auto fmt
+                = fmt_char == 's' ? zone_format::FMT_S : zone_format::FMT_Z;
 
             size_t sz1 = size - ( i + 2 );
             std::copy( p + i + 2, p + size, result.buff + i );
@@ -671,10 +672,10 @@ namespace vtz {
             return result;
         }
 
-        result.set_fmt( ZoneFormat::LITERAL, size, 0 );
+        result.set_fmt( zone_format::LITERAL, size, 0 );
         return result;
     }
-    ZoneFormat parse_zone_format( opt_token tok ) {
+    zone_format parse_zone_format( opt_token tok ) {
         return parse_zone_format( tok.data(), tok.size() );
     }
 
@@ -1563,7 +1564,7 @@ namespace vtz {
             auto const& ent    = entries.front();
             auto const& rule   = ent.rules;
             from_utc    stdoff = ent.stdoff;
-            ZoneFormat  format = ent.format;
+            zone_format format = ent.format;
             // If there is no associated rule, there are no state transitions -
             // this zone is steady-state
             if( rule.is_hyphen() )

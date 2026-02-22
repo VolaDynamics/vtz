@@ -82,7 +82,7 @@ namespace vtz {
     }
 
 
-    string format_as( ZoneFormat const& f ) {
+    string format_as( zone_format const& f ) {
         size_t      sz0 = ( f.fmt_ >> 2 ) & 0xf;
         size_t      sz1 = ( f.fmt_ >> 6 ) & 0xf;
         string_view h0( f.buff, sz0 );
@@ -90,10 +90,10 @@ namespace vtz {
         string_view mid;
         switch( f.tag() )
         {
-        case ZoneFormat::LITERAL: mid = {}; break;
-        case ZoneFormat::SLASH: mid = "/"; break;
-        case ZoneFormat::FMT_S: mid = "%s"; break;
-        case ZoneFormat::FMT_Z: mid = "%z"; break;
+        case zone_format::LITERAL: mid = {}; break;
+        case zone_format::SLASH: mid = "/"; break;
+        case zone_format::FMT_S: mid = "%s"; break;
+        case zone_format::FMT_Z: mid = "%z"; break;
         }
         return fmt::format( "{}{}{}", h0, mid, h1 );
     }

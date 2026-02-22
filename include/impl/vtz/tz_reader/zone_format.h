@@ -10,13 +10,13 @@
 namespace vtz {
 
 
-    /// ZoneFormat holds timezone format strings with efficient representation
+    /// zone_format holds timezone format strings with efficient representation
     /// Supports four format types:
     /// - LITERAL: Simple string (e.g., "GMT", "PST", "-00")
     /// - PERCENT_S: Contains %s substitution (e.g., "E%sT" -> "EST" or "EDT")
     /// - SLASH: Two alternatives separated by / (e.g., "GMT/BST")
     /// - PERCENT_Z: Use numeric offset (e.g., "%z" -> "-03" or "-04")
-    struct alignas( 8 ) ZoneFormat {
+    struct alignas( 8 ) zone_format {
         enum Tag {
             LITERAL = 0, // Interpret string literally
             SLASH   = 1, // Slash-separated alternatives
@@ -31,7 +31,7 @@ namespace vtz {
         /// bits 6-10: size after split (or 0 if literal)
         u16 fmt_;
 
-        ZoneFormat() = default;
+        zone_format() = default;
 
         constexpr Tag tag() const noexcept { return Tag( fmt_ & 0x3 ); }
 
@@ -39,7 +39,7 @@ namespace vtz {
             fmt_ = u16( ( sz0 << 2 ) | ( sz1 << 6 ) | tag );
         }
 
-        [[nodiscard]] constexpr ZoneFormat with(
+        [[nodiscard]] constexpr zone_format with(
             Tag tag, size_t sz0 = 0, size_t sz1 = 0 ) const noexcept {
             auto result = *this;
             result.set_fmt( tag, sz0, sz1 );
@@ -153,10 +153,10 @@ namespace vtz {
             return format( off.off, is_dst, letter );
         }
 
-        bool operator==( ZoneFormat const& rhs ) const noexcept {
+        bool operator==( zone_format const& rhs ) const noexcept {
             return _b16( *this ) == _b16( rhs );
         }
-        bool operator!=( ZoneFormat const& rhs ) const noexcept {
+        bool operator!=( zone_format const& rhs ) const noexcept {
             return _b16( *this ) != _b16( rhs );
         }
     };
