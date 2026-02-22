@@ -137,10 +137,10 @@ namespace vtz {
         }
     };
 
-    struct TimeZoneCache;
+    struct time_zone_cache;
 
     /// Provides fallback cache which will be used for discovery of zones not
-    /// known on construction of the `TimeZoneCache`.
+    /// known on construction of the `time_zone_cache`.
     ///
     /// There are two scenarios where fallback occurs:
     ///
@@ -148,7 +148,7 @@ namespace vtz {
     ///    to look up a zone not contained within the timezone source files
     /// 2. The timezone source files were not provided, and the user attempts
     ///    to look up a zone that does not appear in the set of known zones
-    ///    passed to the `TimeZoneCache`.
+    ///    passed to the `time_zone_cache`.
     ///
     /// In both cases, we need to fall back to this cache.
     ///
@@ -244,17 +244,17 @@ namespace vtz {
     /// Provides a cache for lookup of time_zone objects.
     ///
     /// If timezone source files were provided to the cache (in the form of a
-    /// `TZData` object), then the TimeZoneCache will construct zones from the
+    /// `TZData` object), then the time_zone_cache will construct zones from the
     /// source files.
     ///
     /// If a zone cannot be found within the provided source files, but
-    /// `zoneinfo_dir` is set, the TimeZoneCache will attempt to load
+    /// `zoneinfo_dir` is set, the time_zone_cache will attempt to load
     /// the tzfile from the zoneinfo fallback directory.
     ///
-    /// If a zone cannot be found, then the `TimeZoneCache` will throw a
+    /// If a zone cannot be found, then the `time_zone_cache` will throw a
     /// descriptive error message.
 
-    struct TimeZoneCache {
+    struct time_zone_cache {
         /// These are the zones that have been successfully loaded. When
         /// attempting to locate a zone, `locate_zone()` will check here first.
         map<string_view, atomic_entry<time_zone>> zone_cache;
@@ -273,7 +273,7 @@ namespace vtz {
         /// On MacOS and Linux this path is typically `/usr/share/zoneinfo`, but
         /// it may differ on older systems.
         ///
-        /// If this path is not set, then the TimeZoneCache will not attempt to
+        /// If this path is not set, then the time_zone_cache will not attempt to
         /// load os tzfiles.
         std::string zoneinfo_dir;
 
@@ -284,14 +284,14 @@ namespace vtz {
         /// of when this occurs.
         zone_fallback_cache fallback_cache;
 
-        /// Initialize the TimeZoneCache. By default, no `zoneinfo_dir` is set,
+        /// Initialize the time_zone_cache. By default, no `zoneinfo_dir` is set,
         /// but one may be provided to the constructor.
         ///
-        /// In the case that a `zoneinfo_dir` is provided, the `TimeZoneCache`
+        /// In the case that a `zoneinfo_dir` is provided, the `time_zone_cache`
         /// will check there for `tzfile` objects if a timezone cannot be found
         /// within the given zone sourcefiles.
 
-        explicit TimeZoneCache(
+        explicit time_zone_cache(
             tz_data&& data, std::string zoneinfo_dir = std::string() )
         : zone_cache( init_empty_map<time_zone>( data.zones ) )
         , rule_cache( init_empty_map<rule_eval_result>( data.rules ) )
@@ -299,7 +299,7 @@ namespace vtz {
         , zoneinfo_dir( std::move( zoneinfo_dir ) ) {}
 
 
-        /// Construct a `TimeZoneCache` with no source information. Zones will
+        /// Construct a `time_zone_cache` with no source information. Zones will
         /// be loaded from the `zoneinfo_dir`.
         ///
         /// By default, the zone cache will be initialized with slots for zones
@@ -310,9 +310,9 @@ namespace vtz {
         /// present within `zoneinfo_dir` as a tzfile), but doing so will
         /// require taking a lock. (This is the purpose of `fallback_cache`)
 
-        explicit TimeZoneCache( std::string zoneinfo_dir,
-            span<std::string_view const>    known_zones = KNOWN_ZONES,
-            span<zone_link const>           known_links = KNOWN_LINKS )
+        explicit time_zone_cache( std::string zoneinfo_dir,
+            span<std::string_view const>      known_zones = KNOWN_ZONES,
+            span<zone_link const>             known_links = KNOWN_LINKS )
         : zone_cache( init_empty_map<time_zone>( known_zones ) )
         , rule_cache()
         , data()
@@ -329,13 +329,13 @@ namespace vtz {
 
         /// Computes `ZoneStates` for the given timezone.
         ///
-        /// If the TimeZoneCache was constructed from a `TZData` object
+        /// If the time_zone_cache was constructed from a `TZData` object
         /// representing a timezone source file (or set of timezone database
         /// source files), `compute_states()` will attempt to construct the
         /// timezone from that.
         ///
         /// If the timezone source files did not contain the given zone, or the
-        /// `TimeZoneCache` was not constructed from a timezone source file,
+        /// `time_zone_cache` was not constructed from a timezone source file,
         /// `compute_states()` will fall back to loading a zone from the
         /// `zoneinfo_dir` if set.
         zone_states compute_states( string_view name ) const;
@@ -386,12 +386,12 @@ namespace vtz {
             return result;
         }
 
-        /// Returns true if the TimeZoneCache has a zoneinfo directory
+        /// Returns true if the time_zone_cache has a zoneinfo directory
         /// containing OS tzfiles, which can be used if the
         bool has_zoneinfo_dir() const noexcept { return !zoneinfo_dir.empty(); }
     };
 
     tz_data load_zone_info_from_dir( string dir );
 
-    TimeZoneCache const& tzdb_cache();
+    time_zone_cache const& tzdb_cache();
 } // namespace vtz

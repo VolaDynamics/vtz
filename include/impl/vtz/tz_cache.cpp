@@ -9,7 +9,7 @@
 
 namespace vtz {
 
-    rule_eval_result const& TimeZoneCache::locate_rule(
+    rule_eval_result const& time_zone_cache::locate_rule(
         string_view name ) const {
         try
         {
@@ -29,13 +29,14 @@ namespace vtz {
     }
 
 
-    std::unique_ptr<time_zone> TimeZoneCache::load_zone(
+    std::unique_ptr<time_zone> time_zone_cache::load_zone(
         string_view name ) const {
         return std::make_unique<time_zone>( name, compute_states( name ) );
     }
 
 
-    time_zone const* TimeZoneCache::try_locate_zone( string_view name ) const {
+    time_zone const* time_zone_cache::try_locate_zone(
+        string_view name ) const {
         auto it = zone_cache.find( name );
 
         if( it == zone_cache.end() ) return nullptr;
@@ -47,7 +48,7 @@ namespace vtz {
     }
 
 
-    time_zone const& TimeZoneCache::locate_zone( string_view name ) const {
+    time_zone const& time_zone_cache::locate_zone( string_view name ) const {
         // If we successfully found the zone, dereference + return
         if( auto ptr = try_locate_zone( name ) ) return *ptr;
 
@@ -157,7 +158,7 @@ namespace vtz {
         return install_path( true );
     }
 
-    static TimeZoneCache do_load_cache() {
+    static time_zone_cache do_load_cache() {
         std::scoped_lock _lock( INSTALL_PATH_MUTEX );
 
         auto const& path = install_path( true );
@@ -172,7 +173,7 @@ namespace vtz {
 #else
             // TODO: do we want to support checking any other directories for
             // zoneinfo?
-            auto result = TimeZoneCache(
+            auto result = time_zone_cache(
                 "/usr/share/zoneinfo", KNOWN_ZONES, KNOWN_LINKS );
 
             TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
@@ -181,7 +182,7 @@ namespace vtz {
 #endif
         }
 
-        auto result = TimeZoneCache( load_zone_info_from_dir( path ) );
+        auto result = time_zone_cache( load_zone_info_from_dir( path ) );
 
         // if result loaded successfully, mark this as true
         TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
@@ -189,8 +190,8 @@ namespace vtz {
         return result;
     }
 
-    TimeZoneCache const& tzdb_cache() {
-        static const TimeZoneCache cache( do_load_cache() );
+    time_zone_cache const& tzdb_cache() {
+        static const time_zone_cache cache( do_load_cache() );
         return cache;
     }
 

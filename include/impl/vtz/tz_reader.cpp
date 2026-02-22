@@ -1710,7 +1710,7 @@ namespace vtz {
     }
 
 
-    zone_states TimeZoneCache::compute_states( string_view name ) const {
+    zone_states time_zone_cache::compute_states( string_view name ) const {
         // Represents a map of rule names to evaluated rules
         using RuleCache = map<string_view, zone_trans_iter>;
 
@@ -1722,7 +1722,7 @@ namespace vtz {
             if( !has_zoneinfo_dir() )
             {
                 throw std::runtime_error(
-                    util::join( "TimeZoneCache::compute_states(): zone ",
+                    util::join( "time_zone_cache::compute_states(): zone ",
                         escape_string( name ),
                         " does not exist "
                         "(no ZoneEntries found; zoneinfo_dir is not set)" ) );
@@ -1740,7 +1740,7 @@ namespace vtz {
             catch( std::exception const& e )
             {
                 throw std::runtime_error( util::join(
-                    "TimeZoneCache::compute_states(): unable to load ",
+                    "time_zone_cache::compute_states(): unable to load ",
                     escape_string( name ),
                     ". No ZoneEntries found; load from tzfile @ ",
                     escape_string( tzfile_path ),

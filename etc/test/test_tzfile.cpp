@@ -420,10 +420,11 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
     COUNT_ASSERTIONS();
 
 
-    auto tzcache = TimeZoneCache( load_zone_info_from_dir( "build/data/tzdata" ) );
+    auto tzcache = time_zone_cache( load_zone_info_from_dir( "build/data/tzdata" ) );
     auto zones   = tzcache.zones();
 
-    auto tzcache_tzfile = TimeZoneCache( "build/data/zoneinfo", tzcache.zones(), tzcache.links() );
+    auto tzcache_tzfile
+        = time_zone_cache( "build/data/zoneinfo", tzcache.zones(), tzcache.links() );
 
     // For the tzcache loaded from source, we should NOT have a null set of zones, or a null set of
     // rules
@@ -451,7 +452,7 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
         std::string tzfile_path = join_path( "build/data/zoneinfo", zone_name );
         fmt::println( "Testing {} (os version loaded from {})", zone_name, tzfile_path );
 
-        /// Timezone loaded from the TimeZoneCache - used as reference implementation
+        /// Timezone loaded from the time_zone_cache - used as reference implementation
         auto const& tz_ref = tzcache.locate_zone( zone_name );
 
         /// Timezone loaded from the OS tzfiles
