@@ -305,9 +305,9 @@ namespace vtz {
                 {
                     // We know it must be of form
                     // \w{dow_len}[<>]=\d+
-                    char   ge_or_le = p[dow_len];
+                    char    ge_or_le = p[dow_len];
                     opt_dow dow      = _parse_dow( p, dow_len );
-                    auto   day      = parse_day_of_month(
+                    auto    day      = parse_day_of_month(
                         p + ( dow_len + 2 ), size - ( dow_len + 2 ) );
 
                     if( dow )
@@ -1039,7 +1039,8 @@ namespace vtz {
     tz_string parse_tz_string( string_view sv ) {
         try
         {
-            // Parse the tz string (throws a parse_error if parse failure occurs)
+            // Parse the tz string (throws a parse_error if parse failure
+            // occurs)
             return _parse_tz_string( sv.data(), sv.size() );
         }
         catch( vtz::parse_error const& err )
@@ -1059,7 +1060,7 @@ namespace vtz {
         // If the content does not contain the version prefix
         if( !starts_with( content, VERSION_PREFIX ) ) { return opt_sv(); }
 
-        auto     remainder = content.substr( VERSION_PREFIX.size() );
+        auto      remainder = content.substr( VERSION_PREFIX.size() );
         line_iter it( remainder );
 
         return it.next();
@@ -1315,12 +1316,12 @@ namespace vtz {
         return ch == '+' || ch == '-' || is_d10( ch - '0' );
     }
 
-    struct UntilDate {
+    struct until_date {
         sysdays_t    date; ///< Date, as days since epoch
         sysseconds_t T;    ///< DateTime when current state ends
     };
 
-    struct ZTAgglomerator : zone_states {
+    struct zt_agglomerator : zone_states {
       private:
 
         zone_abbr current_abbr;
@@ -1490,10 +1491,10 @@ namespace vtz {
         auto leap         = leap_table( file.leap() );
 
         // We are going to keep track of the current stdoff. This will be
-        // updated as we compute Zone States
+        // updated as we compute zone_states
         from_utc stdoff = initial.stdoff;
 
-        ZTAgglomerator agg;
+        zt_agglomerator agg;
 
         agg.set_initial( initial );
 
@@ -1557,7 +1558,7 @@ namespace vtz {
             return zone_states::make_static(
                 { from_utc( 0 ), from_utc( 0 ), zone_abbr{ 3, "-00" } } );
 
-        ZTAgglomerator agg;
+        zt_agglomerator agg;
 
         // There is no 'until'. Therefore, just evaluate whatever rule is
         // present until the end year is reached
@@ -1712,7 +1713,7 @@ namespace vtz {
 
     zone_states time_zone_cache::compute_states( string_view name ) const {
         // Represents a map of rule names to evaluated rules
-        using RuleCache = map<string_view, zone_trans_iter>;
+        using rule_cache = map<string_view, zone_trans_iter>;
 
         auto zone_it = data.zones.find( name );
 
@@ -1757,7 +1758,7 @@ namespace vtz {
                 escape_string( name ),
                 " contained no entries" ) );
 
-        auto cache = RuleCache( 16 );
+        auto cache = rule_cache( 16 );
 
         int last_rule_end_year = 1970;
         for( auto const& ent : entries )
@@ -1782,7 +1783,7 @@ namespace vtz {
     zone_states tz_data_file::get_zone_states(
         string_view name, i32 end_year ) const {
         // Represents a map of rule names to evaluated rules
-        using RuleCache = map<string_view, zone_trans_iter>;
+        using rule_cache = map<string_view, zone_trans_iter>;
 
 
         auto const& entries = zones.at( name );
@@ -1808,7 +1809,7 @@ namespace vtz {
             }
         }
 
-        auto cache = RuleCache( 16 );
+        auto cache = rule_cache( 16 );
         for( auto const& [k, rule] : rules ) { cache.emplace( k, rule ); }
 
         return load_zone_states( entries,
@@ -1831,10 +1832,10 @@ namespace vtz {
         auto active = vector<rule_entry>(); ///< Current set of active rules
         auto tt     = vector<rule_trans>(); ///< Computed Transition Table
 
-        size_t year0 = begin->from;        ///< First year with a rule
+        size_t year0 = begin->from;         ///< First year with a rule
 
-        size_t year   = year0;             ///< Cursor holding the current year
-        auto   cursor = begin;             ///< Cursor holding the next rule
+        size_t year   = year0;              ///< Cursor holding the current year
+        auto   cursor = begin;              ///< Cursor holding the next rule
 
         // Get the initial set of active rules
         cursor = pull_newly_active( active, year, cursor, end );
@@ -1914,9 +1915,9 @@ namespace vtz {
         size_t wi = 0;
         size_t ri = 0;
 
-        auto                   s_current = stdoff_initial_;
-        auto                   w_current = walloff_initial_;
-        auto                   r_current = abbr_initial_;
+        auto                    s_current = stdoff_initial_;
+        auto                    w_current = walloff_initial_;
+        auto                    r_current = abbr_initial_;
         vector<zone_transition> result;
         for( ;; )
         {

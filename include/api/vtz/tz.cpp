@@ -43,9 +43,6 @@ namespace vtz {
             T( static_cast<Args&&>( args ) )... } };
     }
 
-    template<class T>
-    using UP = std::unique_ptr<T>;
-
 
     /// Construct a lookup table corresponding to a constant state (eg, a
     /// timezone with no zone transitions)
@@ -497,7 +494,7 @@ namespace vtz {
     , name_( name ) {}
 
 
-    using TZHolder = atomic_entry<time_zone>;
+    using tz_holder = atomic_entry<time_zone>;
 
 
 } // namespace vtz

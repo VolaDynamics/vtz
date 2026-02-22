@@ -40,7 +40,7 @@ namespace {
     using namespace vtz;
 
     namespace {
-        struct ParseFail {
+        struct parse_fail {
             char const* p;
             char const* msg;
         };
@@ -71,7 +71,7 @@ namespace {
         if( p != end && parse_digit_to( *p, result ) )
             ++p;
         else
-            throw ParseFail{ p, "Expected digit" };
+            throw parse_fail{ p, "Expected digit" };
         if( p != end && parse_digit_to( *p, result ) ) ++p;
         if( p != end && parse_digit_to( *p, result ) ) ++p;
         if( p != end && parse_digit_to( *p, result ) ) ++p;
@@ -85,7 +85,7 @@ namespace {
         if( p != end && parse_digit_to( *p, result ) )
             ++p;
         else
-            throw ParseFail{ p, "Expected digit" };
+            throw parse_fail{ p, "Expected digit" };
         if( p != end && parse_digit_to( *p, result ) ) ++p;
         return result;
     }
@@ -96,7 +96,7 @@ namespace {
         if( p != end && parse_digit_to( *p, result ) )
             ++p;
         else
-            throw ParseFail{ p, "Expected digit" };
+            throw parse_fail{ p, "Expected digit" };
         if( p != end && parse_digit_to( *p, result ) ) ++p;
         if( p != end && parse_digit_to( *p, result ) ) ++p;
         return result;
@@ -220,7 +220,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             {
                 if( c == *p++ ) continue;
                 // Mismatched character
-                throw ParseFail{ p - 1,
+                throw parse_fail{ p - 1,
                     "Character doesn't match input format string" };
             }
 
@@ -234,7 +234,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // Expect literal '%'
             case '%':
                 if( '%' == *p++ ) continue;
-                throw ParseFail{ p - 1, "Expected literal '%'" };
+                throw parse_fail{ p - 1, "Expected literal '%'" };
             // Matches any whitespace
             case 'n':
             case 't':
@@ -308,7 +308,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                         int weekday = *p++ - '0';
                         if( 0 <= weekday && weekday < 7 ) continue;
                     }
-                    throw ParseFail{ p - 1, "Expected weekday (range [0-6])" };
+                    throw parse_fail{ p - 1, "Expected weekday (range [0-6])" };
                 }
             // weekday 1-7, monday is 1
             case 'u':
@@ -318,7 +318,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                         int weekday = *p++ - '1';
                         if( 0 <= weekday && weekday < 7 ) continue;
                     }
-                    throw ParseFail{ p - 1, "Expected weekday (range [1-7])" };
+                    throw parse_fail{ p - 1, "Expected weekday (range [1-7])" };
                 }
 
             // HOUR, MINUTE, SECOND
@@ -340,7 +340,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                 {
                     hr = parse_d2( p, p_end );
                     if( p == p_end || *p != ':' )
-                        throw ParseFail{ p, "Expected ':'" };
+                        throw parse_fail{ p, "Expected ':'" };
                     ++p;
                     mi = parse_d2( p, p_end );
                     continue;
@@ -350,11 +350,11 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                 {
                     year = ::parse_year( p, p_end );
                     if( p == p_end || *p != '-' )
-                        throw ParseFail{ p, "Expected '-'" };
+                        throw parse_fail{ p, "Expected '-'" };
                     ++p;
                     month = parse_d2( p, p_end );
                     if( p == p_end || *p != '-' )
-                        throw ParseFail{ p, "Expected '-'" };
+                        throw parse_fail{ p, "Expected '-'" };
                     ++p;
                     dom = parse_d2( p, p_end );
                     continue;
@@ -364,11 +364,11 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                 {
                     hr = parse_d2( p, p_end );
                     if( p == p_end || *p != ':' )
-                        throw ParseFail{ p, "Expected ':'" };
+                        throw parse_fail{ p, "Expected ':'" };
                     ++p;
                     mi = parse_d2( p, p_end );
                     if( p == p_end || *p != ':' )
-                        throw ParseFail{ p, "Expected ':'" };
+                        throw parse_fail{ p, "Expected ':'" };
                     ++p;
                     se    = parse_d2( p, p_end );
                     nanos = parse_frac_as_nanos( p, p_end );
@@ -429,11 +429,11 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // We reached the end of the input before the full format string
             // was consumed
             if( f < f_back )
-                throw ParseFail{ p,
+                throw parse_fail{ p,
                     "End of input reached before format string was consumed" };
             // check last literal character
             if( *f != *p )
-                throw ParseFail{ p,
+                throw parse_fail{ p,
                     "Character doesn't match input format string" };
             ++p;
         }
@@ -448,7 +448,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
 
         return func( date, time_of_day, nanos );
     }
-    catch( ParseFail const& p )
+    catch( parse_fail const& p )
     {
         auto pos = p.p - input.data();
         if( size_t( pos ) < input.size() )

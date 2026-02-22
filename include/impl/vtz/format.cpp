@@ -1,26 +1,26 @@
 
 #include <vtz/civil.h>
+#include <vtz/format.h>
 #include <vtz/impl/bit.h>
 #include <vtz/tz.h>
-#include <vtz/format.h>
 
 #include <charconv>
 
 namespace vtz {
 
-    class FormatError : public std::exception {
+    class format_error : public std::exception {
         char const* what_;
 
       public:
 
-        FormatError( char const* what ) noexcept
+        format_error( char const* what ) noexcept
         : what_( what ) {}
 
         char const* what() const noexcept override { return what_; }
     };
 
-    FormatError buffer_too_small() noexcept {
-        return FormatError( "format error: destination buffer is too small" );
+    format_error buffer_too_small() noexcept {
+        return format_error( "format error: destination buffer is too small" );
     }
 
     // Write a year, assuming the year is positive and fits in 4 digits, and
@@ -159,17 +159,17 @@ namespace vtz {
     }
 
     namespace {
-        struct WriteNOOP {
+        struct write_noop {
             VTZ_INLINE static size_t dump( char const*, size_t size ) {
                 return size;
             }
         };
-        struct WriteToString {
+        struct write_to_string {
             VTZ_INLINE static std::string dump( char const* s, size_t size ) {
                 return std::string( s, size );
             }
         };
-        struct WriteToBuff {
+        struct write_to_buff {
             char*  buff;
             size_t count;
 
@@ -209,7 +209,7 @@ namespace vtz {
         static_assert( BUFF_SIZE >= REQUIRED_BUFF_SIZE );
 
         if( format_size >= MAX_SIZE )
-            throw FormatError(
+            throw format_error(
                 "format_time(): input format string is too long" );
 
         if( format_size == 0 ) return func.dump( "", 0 );
@@ -390,11 +390,11 @@ namespace vtz {
             t,
             // There is no fractional component, so write_frac is a noop
             []( char* s ) noexcept -> char* { return s; },
-            WriteToBuff{ buff, count } );
+            write_to_buff{ buff, count } );
     }
 
 
-    struct DummyTimeZone {
+    struct dummy_time_zone {
         /// NOOP - offset is 0
         static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
         static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
@@ -404,16 +404,16 @@ namespace vtz {
 
     std::string format_date_d( string_view fmt, sysdays_t days ) {
         return _do_strformat(
-            DummyTimeZone{},
+            dummy_time_zone{},
             fmt.data(),
             fmt.size(),
             days_to_seconds( days ),
             // There is no fractional component, so write_frac is a noop
             []( char* s ) noexcept -> char* { return s; },
-            WriteToString{} );
+            write_to_string{} );
     }
 
-    struct DummyTimeZoneUTC {
+    struct dummy_time_zone_utc {
         /// UTC offset is 0
         static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
         static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
@@ -428,35 +428,35 @@ namespace vtz {
 
     std::string format_time_s( string_view fmt, sysseconds_t t ) {
         return _do_strformat(
-            DummyTimeZoneUTC{},
+            dummy_time_zone_utc{},
             fmt.data(),
             fmt.size(),
             t,
             []( char* s ) noexcept -> char* { return s; },
-            WriteToString{} );
+            write_to_string{} );
     }
 
     size_t format_time_to_s(
         string_view fmt, sysseconds_t t, char* buff, size_t count ) {
         return _do_strformat(
-            DummyTimeZoneUTC{},
+            dummy_time_zone_utc{},
             fmt.data(),
             fmt.size(),
             t,
             []( char* s ) noexcept -> char* { return s; },
-            WriteToBuff{ buff, count } );
+            write_to_buff{ buff, count } );
     }
 
     size_t format_date_to_d(
         string_view fmt, sysdays_t days, char* buff, size_t count ) {
         return _do_strformat(
-            DummyTimeZone{},
+            dummy_time_zone{},
             fmt.data(),
             fmt.size(),
             days_to_seconds( days ),
             // There is no fractional component, so write_frac is a noop
             []( char* s ) noexcept -> char* { return s; },
-            WriteToBuff{ buff, count } );
+            write_to_buff{ buff, count } );
     }
 
     auto _write_nanos( u32 nanos, int precision ) noexcept {
@@ -499,7 +499,7 @@ namespace vtz {
             format.size(),
             t,
             _write_nanos( nanos, precision ),
-            WriteToBuff{ buff, count } );
+            write_to_buff{ buff, count } );
     }
 
     std::string time_zone::format_precise_s(
@@ -509,33 +509,31 @@ namespace vtz {
             format.size(),
             t,
             _write_nanos( nanos, precision ),
-            WriteToString{} );
+            write_to_string{} );
     }
 
     std::string format_precise_s(
         string_view fmt, sysseconds_t t, u32 nanos, int precision ) {
-        return _do_strformat(
-            DummyTimeZoneUTC{},
+        return _do_strformat( dummy_time_zone_utc{},
             fmt.data(),
             fmt.size(),
             t,
             _write_nanos( nanos, precision ),
-            WriteToString{} );
+            write_to_string{} );
     }
 
     size_t format_precise_to_s( string_view fmt,
-        sysseconds_t t,
-        u32          nanos,
-        int          precision,
-        char*        buff,
-        size_t       count ) {
-        return _do_strformat(
-            DummyTimeZoneUTC{},
+        sysseconds_t                        t,
+        u32                                 nanos,
+        int                                 precision,
+        char*                               buff,
+        size_t                              count ) {
+        return _do_strformat( dummy_time_zone_utc{},
             fmt.data(),
             fmt.size(),
             t,
             _write_nanos( nanos, precision ),
-            WriteToBuff{ buff, count } );
+            write_to_buff{ buff, count } );
     }
 
     string time_zone::format_s(
@@ -547,7 +545,7 @@ namespace vtz {
             t,
             // There is no fractional component, so write_frac is a noop
             []( char* s ) noexcept -> char* { return s; },
-            WriteToString{} );
+            write_to_string{} );
     }
 
     template<bool is_sane, bool is_compact, class FWriteAbbrev, class FAction>
@@ -690,7 +688,7 @@ namespace vtz {
                 date_time_sep,
                 _write_abbrev<include_abbr_sep, use_stdoff>(
                     tz, t, off, abbr_sep ),
-                WriteToString{} );
+                write_to_string{} );
         }
         else
         {
@@ -700,7 +698,7 @@ namespace vtz {
                 date_time_sep,
                 _write_abbrev<include_abbr_sep, use_stdoff>(
                     tz, t, off, abbr_sep ),
-                WriteToString{} );
+                write_to_string{} );
         }
     }
 
@@ -742,7 +740,7 @@ namespace vtz {
                     date_time_sep,
                     _write_abbrev<include_abbr_sep, use_stdoff>(
                         tz, t, gmtoff, abbr_sep ),
-                    WriteNOOP{} );
+                    write_noop{} );
             }
             else
             {
@@ -754,7 +752,7 @@ namespace vtz {
                     date_time_sep,
                     _write_abbrev<include_abbr_sep, use_stdoff>(
                         tz, t, gmtoff, abbr_sep ),
-                    WriteToBuff{ p, count } );
+                    write_to_buff{ p, count } );
             }
         }
         else
@@ -777,7 +775,7 @@ namespace vtz {
                     date_time_sep,
                     _write_abbrev<include_abbr_sep, use_stdoff>(
                         tz, t, gmtoff, abbr_sep ),
-                    WriteNOOP{} );
+                    write_noop{} );
             }
             else
             {
@@ -789,7 +787,7 @@ namespace vtz {
                     date_time_sep,
                     _write_abbrev<include_abbr_sep, use_stdoff>(
                         tz, t, gmtoff, abbr_sep ),
-                    WriteToBuff{ p, count } );
+                    write_to_buff{ p, count } );
             }
         }
     }
