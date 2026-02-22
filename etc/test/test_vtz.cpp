@@ -110,7 +110,7 @@ static_assert( rule_letter( "x" ).sv() == "x" );
 
 DECLARE_STRINGLIKE( rule_letter );
 
-FMT_ENUM_PLAIN( vtz::zone_rule::Kind );
+FMT_ENUM_PLAIN( vtz::zone_rule::kind_t );
 
 namespace {
     template<size_t... N>

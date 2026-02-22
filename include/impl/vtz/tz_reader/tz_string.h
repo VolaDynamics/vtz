@@ -27,7 +27,7 @@ namespace vtz {
         tz_date() = default;
 
 
-        enum Kind {
+        enum kind_t {
             /// No tz_date
             None,
 
@@ -135,7 +135,7 @@ namespace vtz {
             VTZ_UNREACHABLE();
         }
 
-        constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
+        constexpr kind_t kind() const noexcept { return kind_t( repr_ & 0x3 ); }
 
         /// Day of the year (for kind() != DayOfMonth)
         constexpr int dayOfYear() const noexcept { return repr_ >> 2; }

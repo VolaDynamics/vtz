@@ -23,7 +23,7 @@ namespace vtz {
         struct hyphen_t {};
         constexpr static hyphen_t hyphen{};
 
-        enum Kind {
+        enum kind_t {
             NAMED,  ///< Zone Rule is a named rule (eg, 'US')
             OFFSET, ///< We have set our clocks ahead of STDOFF by the given
                     ///< amount
@@ -42,7 +42,7 @@ namespace vtz {
         constexpr zone_rule( rule_name str ) noexcept
         : data_( str ) {}
 
-        constexpr Kind kind() const noexcept {
+        constexpr kind_t kind() const noexcept {
             return is_named() ? NAMED : is_offset() ? OFFSET : HYPHEN;
         }
 

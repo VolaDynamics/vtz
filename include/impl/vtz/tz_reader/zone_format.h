@@ -17,7 +17,7 @@ namespace vtz {
     /// - SLASH: Two alternatives separated by / (e.g., "GMT/BST")
     /// - PERCENT_Z: Use numeric offset (e.g., "%z" -> "-03" or "-04")
     struct alignas( 8 ) zone_format {
-        enum Tag {
+        enum tag_t {
             LITERAL = 0, // Interpret string literally
             SLASH   = 1, // Slash-separated alternatives
             FMT_S   = 2, // Use %s substitution
@@ -33,14 +33,14 @@ namespace vtz {
 
         zone_format() = default;
 
-        constexpr Tag tag() const noexcept { return Tag( fmt_ & 0x3 ); }
+        constexpr tag_t tag() const noexcept { return tag_t( fmt_ & 0x3 ); }
 
-        constexpr void set_fmt( Tag tag, size_t sz0, size_t sz1 ) noexcept {
+        constexpr void set_fmt( tag_t tag, size_t sz0, size_t sz1 ) noexcept {
             fmt_ = u16( ( sz0 << 2 ) | ( sz1 << 6 ) | tag );
         }
 
         [[nodiscard]] constexpr zone_format with(
-            Tag tag, size_t sz0 = 0, size_t sz1 = 0 ) const noexcept {
+            tag_t tag, size_t sz0 = 0, size_t sz1 = 0 ) const noexcept {
             auto result = *this;
             result.set_fmt( tag, sz0, sz1 );
             return result;

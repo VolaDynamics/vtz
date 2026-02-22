@@ -13,7 +13,7 @@ namespace vtz {
 
       public:
 
-        enum Kind {
+        enum kind_t {
             DAY,      ///< 'on' is a specific day of the month, eg '13'
             DOW_LAST, ///< 'on' is, eg 'lastSun' or 'lastMon'
             DOW_GE,   ///< 'on' is 'Sun>=13', for example
@@ -22,13 +22,13 @@ namespace vtz {
 
         rule_on() = default;
 
-        constexpr rule_on( Kind kind, u8 day, dow_t dow ) noexcept
+        constexpr rule_on( kind_t kind, u8 day, dow_t dow ) noexcept
         : repr_(
               u16( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) ) {
         }
-        constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
-        constexpr u16  day() const noexcept { return repr_ >> 5; }
-        constexpr dow_t dow() const noexcept {
+        constexpr kind_t kind() const noexcept { return kind_t( repr_ & 0x3 ); }
+        constexpr u16    day() const noexcept { return repr_ >> 5; }
+        constexpr dow_t  dow() const noexcept {
             return dow_t( ( repr_ >> 2 ) & 0x7 );
         }
 

@@ -22,7 +22,7 @@ namespace vtz {
 
       public:
 
-        enum Kind : u8 {
+        enum kind_t : u8 {
             /// 'AT' field corresponds to local WALL time (this is the default)
             /// suffix _may_ be 'w', but also may not be present
             LOCAL_WALL,
@@ -34,18 +34,18 @@ namespace vtz {
         };
 
         constexpr static rule_at hhmmss(
-            Kind kind, int hh, int mm = 0, int ss = 0 ) {
+            kind_t kind, int hh, int mm = 0, int ss = 0 ) {
             int sign  = hh < 0 ? -1 : 1;
             hh       *= sign;
             return rule_at( sign * ( hh * 3600 + mm * 60 + ss ), kind );
         }
 
-        constexpr i32  offset() const noexcept { return repr_ >> 2; }
-        constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
+        constexpr i32    offset() const noexcept { return repr_ >> 2; }
+        constexpr kind_t kind() const noexcept { return kind_t( repr_ & 0x3 ); }
 
         rule_at() = default;
 
-        constexpr rule_at( i32 time_, Kind kind ) noexcept
+        constexpr rule_at( i32 time_, kind_t kind ) noexcept
         : repr_( i32( u32( time_ ) << 2 ) | i32( kind ) ) {}
 
         template<size_t N>
