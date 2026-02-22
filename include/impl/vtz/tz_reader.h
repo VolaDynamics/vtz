@@ -120,7 +120,7 @@ namespace vtz {
     struct rule_entry {
         rule_year_t from;
         rule_year_t to;
-        Mon         in;
+        month_t     in;
         rule_on     on;
         rule_at     at;
         zone_save   save;
@@ -666,7 +666,7 @@ namespace vtz {
 
     rule_year_t parse_year( opt_token tok );
     rule_year_t parse_year_to( opt_token tok );
-    Mon         parse_month( opt_token tok );
+    month_t     parse_month( opt_token tok );
     u8          parse_day_of_month( opt_token tok );
     rule_on     parse_rule_on( opt_token tok );
 

@@ -162,14 +162,15 @@ TEST( vtz, resolve_last_dow ) {
     COUNT_ASSERTIONS();
 
     // I checked these on a calendar :')
-    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 3, DOW::Sun ) ), ymd( 2025, 3, 30 ) );
-    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 9, DOW::Sun ) ), ymd( 2025, 9, 28 ) );
-    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 10, DOW::Sun ) ), ymd( 2025, 10, 26 ) );
-    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 3, DOW::Sat ) ), ymd( 2025, 3, 29 ) );
-    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 9, DOW::Sat ) ), ymd( 2025, 9, 27 ) );
-    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 10, DOW::Sat ) ), ymd( 2025, 10, 25 ) );
+    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 3, dow_t::Sun ) ), ymd( 2025, 3, 30 ) );
+    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 9, dow_t::Sun ) ), ymd( 2025, 9, 28 ) );
+    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 10, dow_t::Sun ) ), ymd( 2025, 10, 26 ) );
+    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 3, dow_t::Sat ) ), ymd( 2025, 3, 29 ) );
+    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 9, dow_t::Sat ) ), ymd( 2025, 9, 27 ) );
+    ASSERT_EQ( to_civil( resolve_last_dow( 2025, 10, dow_t::Sat ) ), ymd( 2025, 10, 25 ) );
 
-    for( auto dow : { DOW::Sun, DOW::Mon, DOW::Tue, DOW::Wed, DOW::Thu, DOW::Fri, DOW::Sat } )
+    for( auto dow :
+        { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
     {
         for( int y = 1900; y <= 2100; y++ )
         {
@@ -191,11 +192,12 @@ TEST( vtz, resolve_last_dow ) {
 TEST( vtz, resolve_dow_ge ) {
     COUNT_ASSERTIONS();
 
-    ASSERT_EQ( to_civil( resolve_dow_ge( 2025, 9, 30, DOW::Sun ) ), ymd( 2025, 10, 5 ) );
-    ASSERT_EQ( to_civil( resolve_dow_ge( 2025, 9, 30, DOW::Mon ) ), ymd( 2025, 10, 6 ) );
-    ASSERT_EQ( to_civil( resolve_dow_ge( 2025, 9, 30, DOW::Tue ) ), ymd( 2025, 9, 30 ) );
+    ASSERT_EQ( to_civil( resolve_dow_ge( 2025, 9, 30, dow_t::Sun ) ), ymd( 2025, 10, 5 ) );
+    ASSERT_EQ( to_civil( resolve_dow_ge( 2025, 9, 30, dow_t::Mon ) ), ymd( 2025, 10, 6 ) );
+    ASSERT_EQ( to_civil( resolve_dow_ge( 2025, 9, 30, dow_t::Tue ) ), ymd( 2025, 9, 30 ) );
 
-    for( auto dow : { DOW::Sun, DOW::Mon, DOW::Tue, DOW::Wed, DOW::Thu, DOW::Fri, DOW::Sat } )
+    for( auto dow :
+        { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
     {
         for( int y = 1900; y <= 2100; y++ )
         {
@@ -220,11 +222,12 @@ TEST( vtz, resolve_dow_ge ) {
 TEST( vtz, resolve_dow_le ) {
     COUNT_ASSERTIONS();
 
-    ASSERT_EQ( to_civil( resolve_dow_le( 2025, 4, 1, DOW::Sun ) ), ymd( 2025, 3, 30 ) );
-    ASSERT_EQ( to_civil( resolve_dow_le( 2025, 4, 1, DOW::Mon ) ), ymd( 2025, 3, 31 ) );
-    ASSERT_EQ( to_civil( resolve_dow_le( 2025, 4, 1, DOW::Tue ) ), ymd( 2025, 4, 1 ) );
+    ASSERT_EQ( to_civil( resolve_dow_le( 2025, 4, 1, dow_t::Sun ) ), ymd( 2025, 3, 30 ) );
+    ASSERT_EQ( to_civil( resolve_dow_le( 2025, 4, 1, dow_t::Mon ) ), ymd( 2025, 3, 31 ) );
+    ASSERT_EQ( to_civil( resolve_dow_le( 2025, 4, 1, dow_t::Tue ) ), ymd( 2025, 4, 1 ) );
 
-    for( auto dow : { DOW::Sun, DOW::Mon, DOW::Tue, DOW::Wed, DOW::Thu, DOW::Fri, DOW::Sat } )
+    for( auto dow :
+        { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
     {
         for( int y = 1900; y <= 2100; y++ )
         {
@@ -251,8 +254,8 @@ TEST( vtz, resolve_rule ) {
     auto US_DST_Start = rule_entry{
         2007,
         Y_MAX,
-        Mon::Mar,
-        rule_on::ge( DOW::Sun, 8 ), // Sun>=8
+        month_t::Mar,
+        rule_on::ge( dow_t::Sun, 8 ), // Sun>=8
         rule_at( "2:00" ),
         "1:00",
         "D",
@@ -260,8 +263,8 @@ TEST( vtz, resolve_rule ) {
     auto US_DST_End = rule_entry{
         2007,
         Y_MAX,
-        Mon::Nov,
-        rule_on::ge( DOW::Sun, 1 ), // Sun>=1
+        month_t::Nov,
+        rule_on::ge( dow_t::Sun, 1 ), // Sun>=1
         rule_at( "2:00" ),
         "0",
         "S",
@@ -269,7 +272,7 @@ TEST( vtz, resolve_rule ) {
     auto US_Peace_Time = rule_entry{
         1945,
         1945,
-        Mon::Aug,
+        month_t::Aug,
         rule_on::on( 14 ),
         rule_at( "23:00u" ),
         "1:00",
@@ -297,7 +300,7 @@ TEST( vtz, civil_big_test ) {
     unsigned  dow_counter = 6; // -400-01-01 was a Saturday
 
     // Sanity Check - 2025-11-13 is a Thursday
-    ASSERT_EQ_QUIET( dow_from_days( resolve_civil( 2025, 11, 13 ) ), DOW::Thu );
+    ASSERT_EQ_QUIET( dow_from_days( resolve_civil( 2025, 11, 13 ) ), dow_t::Thu );
 
     // Test these functions over a huge span of time
     for( int year = -400; year < 3000; ++year )
@@ -324,7 +327,7 @@ TEST( vtz, civil_big_test ) {
                 auto const dse         = day_counter++;
                 int const  doy         = doy_counter++;
                 auto const day_of_week = dow_counter++;
-                auto const dow         = DOW( day_of_week );
+                auto const dow         = dow_t( day_of_week );
                 if( dow_counter == 7 ) dow_counter = 0;
 
 
@@ -376,7 +379,7 @@ TEST( vtz, civil_arithmetic ) {
     sysdays_t day_counter = 0;
 
     // Sanity Check - 2025-11-13 is a Thursday
-    ASSERT_EQ_QUIET( dow_from_days( resolve_civil( 2025, 11, 13 ) ), DOW::Thu );
+    ASSERT_EQ_QUIET( dow_from_days( resolve_civil( 2025, 11, 13 ) ), dow_t::Thu );
 
     // Test these functions over a huge span of time
     for( int year = 1970; year < 2060; ++year )

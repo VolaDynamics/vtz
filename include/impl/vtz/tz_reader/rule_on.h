@@ -22,27 +22,27 @@ namespace vtz {
 
         rule_on() = default;
 
-        constexpr rule_on( Kind kind, u8 day, DOW dow ) noexcept
+        constexpr rule_on( Kind kind, u8 day, dow_t dow ) noexcept
         : repr_(
               u16( u32( kind ) | ( u32( dow ) << 2 ) | ( u32( day ) << 5 ) ) ) {
         }
         constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
         constexpr u16  day() const noexcept { return repr_ >> 5; }
-        constexpr DOW  dow() const noexcept {
-            return DOW( ( repr_ >> 2 ) & 0x7 );
+        constexpr dow_t dow() const noexcept {
+            return dow_t( ( repr_ >> 2 ) & 0x7 );
         }
 
 
         constexpr static rule_on on( u8 day ) noexcept {
             return { DAY, day, {} };
         }
-        constexpr static rule_on last( DOW dow ) noexcept {
+        constexpr static rule_on last( dow_t dow ) noexcept {
             return { DOW_LAST, {}, dow };
         }
-        constexpr static rule_on ge( DOW dow, u8 day ) noexcept {
+        constexpr static rule_on ge( dow_t dow, u8 day ) noexcept {
             return { DOW_GE, day, dow };
         }
-        constexpr static rule_on le( DOW dow, u8 day ) noexcept {
+        constexpr static rule_on le( dow_t dow, u8 day ) noexcept {
             return { DOW_LE, day, dow };
         }
 
@@ -54,7 +54,8 @@ namespace vtz {
             return rule_on( repr );
         }
 
-        constexpr sysdays_t resolve_date( i32 year, Mon mon ) const noexcept {
+        constexpr sysdays_t resolve_date(
+            i32 year, month_t mon ) const noexcept {
             return resolve_date( year, u32( mon ) );
         }
 
@@ -73,7 +74,7 @@ namespace vtz {
 
         /// Evaluate the rule for a given year/month in order to obtain an
         /// actual date
-        constexpr civil_ymd eval( i32 year, Mon mon ) const noexcept {
+        constexpr civil_ymd eval( i32 year, month_t mon ) const noexcept {
             switch( kind() )
             {
             case DAY: return civil_ymd( year, mon, day() );

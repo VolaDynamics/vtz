@@ -81,7 +81,8 @@ namespace vtz {
         ///
         /// if n==5, this means "last instance of the given day of the week,
         /// in the month"
-        constexpr static tz_date make_dom( Mon m, u32 w, DOW d ) noexcept {
+        constexpr static tz_date make_dom(
+            month_t m, u32 w, dow_t d ) noexcept {
             return tz_date( ( u32( m ) & 0xf ) << 2 //
                             | u32( w & 0x7 ) << 6   //
                             | u32( d ) << 9         //
@@ -140,15 +141,15 @@ namespace vtz {
         constexpr int dayOfYear() const noexcept { return repr_ >> 2; }
 
         /// month range [1-12] (when kind() == DayOfMonth)
-        constexpr Mon month() const noexcept {
-            return Mon( ( repr_ >> 2 ) & 0xf );
+        constexpr month_t month() const noexcept {
+            return month_t( ( repr_ >> 2 ) & 0xf );
         }
 
         /// week range [1-5] (when kind() == DayOfMonth)
         constexpr u32 week() const noexcept { return ( repr_ >> 6 ) & 0x7; }
 
         /// dow range [0-6] (when kind() == DayOfMonth)
-        constexpr DOW dow() const noexcept { return DOW( repr_ >> 9 ); }
+        constexpr dow_t dow() const noexcept { return dow_t( repr_ >> 9 ); }
 
         bool operator==( tz_date r ) const noexcept { return repr_ == r.repr_; }
         bool operator!=( tz_date r ) const noexcept { return repr_ != r.repr_; }

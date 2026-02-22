@@ -231,7 +231,7 @@ namespace vtz {
         };
     }
 
-    Mon parse_month( opt_token tok ) {
+    month_t parse_month( opt_token tok ) {
         using _impl::_load1;
         using _impl::_load2;
         using _impl::_load3;
@@ -946,7 +946,7 @@ namespace vtz {
                     "had an out-of-bounds day of the week (expected range "
                     "[0-6])",
                     opt_token( s0, end - s0 ) };
-            return tz_date::make_dom( Mon( m ), n, DOW( d ) );
+            return tz_date::make_dom( month_t( m ), n, dow_t( d ) );
         }
         else if( *p == 'J' )
         {

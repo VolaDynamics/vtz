@@ -180,12 +180,12 @@ namespace vtz {
         , month( mon )
         , day( day ) {}
 
-        constexpr civil_ymd( i32 year, Mon mon, u16 day ) noexcept
+        constexpr civil_ymd( i32 year, month_t mon, u16 day ) noexcept
         : year( year )
         , month( u16( mon ) )
         , day( day ) {}
 
-        constexpr Mon mon() const noexcept { return Mon( month ); }
+        constexpr month_t mon() const noexcept { return month_t( month ); }
 
         constexpr bool operator==( civil_ymd const& rhs ) const noexcept {
             return year == rhs.year && month == rhs.month && day == rhs.day;
@@ -325,7 +325,7 @@ namespace vtz {
     /// @param y year
     /// @param m month
     /// @param d day
-    constexpr sysdays_t resolve_civil( i32 y, Mon m, u32 d ) noexcept {
+    constexpr sysdays_t resolve_civil( i32 y, month_t m, u32 d ) noexcept {
         return resolve_civil( y, u32( m ), d );
     }
 
@@ -441,14 +441,14 @@ namespace vtz {
 
     /// Returns the weekday for the given date, expressed as a number of days
     /// since the epoch, where 0=Sun, 1=Mon, etc
-    constexpr DOW dow_from_days( sysdays_t days_from_epoch ) noexcept {
-        return DOW( ( i64( days_from_epoch ) + 0x80000002ull ) % 7 );
+    constexpr dow_t dow_from_days( sysdays_t days_from_epoch ) noexcept {
+        return dow_t( ( i64( days_from_epoch ) + 0x80000002ull ) % 7 );
     }
 
     /// Given a date (eg, 2025 Oct 11, or 2025-10-11), get the weekday as a
     /// number 0-6 where 0=Sun
 
-    constexpr DOW dow_from_civil( i32 year, u32 month, u32 dom ) noexcept {
+    constexpr dow_t dow_from_civil( i32 year, u32 month, u32 dom ) noexcept {
         return dow_from_days( resolve_civil( year, month, dom ) );
     }
 
@@ -461,7 +461,7 @@ namespace vtz {
     ///
     /// (because Sun=0)
     constexpr u32 get_last_dowin_month(
-        i32 year, u32 month, DOW dow ) noexcept {
+        i32 year, u32 month, dow_t dow ) noexcept {
         u32  last     = last_day_of_month( year, month );
         auto dow_last = dow_from_civil( year, month, last );
         u32  day      = last - u32( dow_last - dow );
@@ -472,7 +472,7 @@ namespace vtz {
     /// Resolve a date such as '1966 Oct Sun>=10' - returns the first Sunday on
     /// or after October 10, 1966
     constexpr sysdays_t resolve_dow_ge(
-        i32 year, u32 month, u32 dom, DOW dow ) noexcept {
+        i32 year, u32 month, u32 dom, dow_t dow ) noexcept {
         sysdays_t d = resolve_civil( year, month, dom );
         // Add as many days as needed to get to the desired weekday
         d += sysdays_t( dow - dow_from_days( d ) );
@@ -482,7 +482,7 @@ namespace vtz {
     /// Resolve a date such as '2012 Apr Fri<=1' - returns the first Friday on
     /// or before April 1st, 2012
     constexpr sysdays_t resolve_dow_le(
-        i32 year, u32 month, u32 dom, DOW dow ) noexcept {
+        i32 year, u32 month, u32 dom, dow_t dow ) noexcept {
         sysdays_t d = resolve_civil( year, month, dom );
         // Subtract as many days as needed to get from the desired weekday
         d -= sysdays_t( dow_from_days( d ) - dow );
@@ -491,13 +491,13 @@ namespace vtz {
 
 
     constexpr sysdays_t resolve_last_dow(
-        i32 year, u32 month, DOW dow ) noexcept {
+        i32 year, u32 month, dow_t dow ) noexcept {
         // Last day of the month
         u32 last_dom = last_day_of_month( year, month );
         // sysdays_t of that date
         sysdays_t d = resolve_civil( year, month, last_dom );
         // Weekday of the last day of the month
-        DOW dow_eom = dow_from_days( d );
+        dow_t dow_eom = dow_from_days( d );
 
         // Suppose the last day of the month is a Tuesday, but we want the last
         // _Sunday_ of the month. (Tuesday - Sunday) is 2, because it takes 2
@@ -511,7 +511,7 @@ namespace vtz {
 
 
     constexpr civil_ymd get_ymd_dow_ge(
-        i32 year, u32 month, u32 dom, DOW dow ) noexcept {
+        i32 year, u32 month, u32 dom, dow_t dow ) noexcept {
         u32 last_dom = last_day_of_month( year, month );
 
         // Add as many days as needed to get to the desired weekday
@@ -532,7 +532,7 @@ namespace vtz {
     }
 
     constexpr civil_ymd get_ymd_dow_le(
-        i32 year, u32 month, u32 dom, DOW dow ) noexcept {
+        i32 year, u32 month, u32 dom, dow_t dow ) noexcept {
         // Add as many days as needed to get to the desired weekday
         auto dom2
             = i32( dom ) - i32( dow_from_civil( year, month, dom ) - dow );
@@ -556,37 +556,37 @@ namespace vtz {
     }
 
     static_assert(
-        get_ymd_dow_le( 2025, 10, 3, DOW::Sun ) == civil_ymd{ 2025, 9, 28 } );
+        get_ymd_dow_le( 2025, 10, 3, dow_t::Sun ) == civil_ymd{ 2025, 9, 28 } );
 
     static_assert(
-        get_ymd_dow_le( 2025, 1, 1, DOW::Sun ) == civil_ymd{ 2024, 12, 29 } );
+        get_ymd_dow_le( 2025, 1, 1, dow_t::Sun ) == civil_ymd{ 2024, 12, 29 } );
     static_assert(
-        get_ymd_dow_le( 2025, 4, 1, DOW::Sat ) == civil_ymd{ 2025, 3, 29 } );
+        get_ymd_dow_le( 2025, 4, 1, dow_t::Sat ) == civil_ymd{ 2025, 3, 29 } );
     static_assert(
-        get_ymd_dow_le( 2025, 4, 1, DOW::Sun ) == civil_ymd{ 2025, 3, 30 } );
+        get_ymd_dow_le( 2025, 4, 1, dow_t::Sun ) == civil_ymd{ 2025, 3, 30 } );
     static_assert(
-        get_ymd_dow_le( 2025, 4, 1, DOW::Mon ) == civil_ymd{ 2025, 3, 31 } );
+        get_ymd_dow_le( 2025, 4, 1, dow_t::Mon ) == civil_ymd{ 2025, 3, 31 } );
 
 
     // 2025 Oct Sat>=11 == 2025 Oct 11
-    static_assert(
-        get_ymd_dow_ge( 2025, 10, 11, DOW::Sat ) == civil_ymd{ 2025, 10, 11 } );
+    static_assert( get_ymd_dow_ge( 2025, 10, 11, dow_t::Sat )
+                   == civil_ymd{ 2025, 10, 11 } );
     // 2025 Oct Sun>=11 == 2025 Oct 12
-    static_assert(
-        get_ymd_dow_ge( 2025, 10, 11, DOW::Sun ) == civil_ymd{ 2025, 10, 12 } );
+    static_assert( get_ymd_dow_ge( 2025, 10, 11, dow_t::Sun )
+                   == civil_ymd{ 2025, 10, 12 } );
     // 2025 Oct Mon>=11 == 2025 Oct 13
-    static_assert(
-        get_ymd_dow_ge( 2025, 10, 11, DOW::Mon ) == civil_ymd{ 2025, 10, 13 } );
+    static_assert( get_ymd_dow_ge( 2025, 10, 11, dow_t::Mon )
+                   == civil_ymd{ 2025, 10, 13 } );
 
 
-    static_assert( dow_from_civil( 2025, 10, 11 ) == DOW::Sat );
-    static_assert( get_last_dowin_month( 2025, 10, DOW::Sun ) == 26 );
-    static_assert( get_last_dowin_month( 2025, 10, DOW::Mon ) == 27 );
-    static_assert( get_last_dowin_month( 2025, 10, DOW::Tue ) == 28 );
-    static_assert( get_last_dowin_month( 2025, 10, DOW::Wed ) == 29 );
-    static_assert( get_last_dowin_month( 2025, 10, DOW::Thu ) == 30 );
-    static_assert( get_last_dowin_month( 2025, 10, DOW::Fri ) == 31 );
-    static_assert( get_last_dowin_month( 2025, 10, DOW::Sat ) == 25 );
+    static_assert( dow_from_civil( 2025, 10, 11 ) == dow_t::Sat );
+    static_assert( get_last_dowin_month( 2025, 10, dow_t::Sun ) == 26 );
+    static_assert( get_last_dowin_month( 2025, 10, dow_t::Mon ) == 27 );
+    static_assert( get_last_dowin_month( 2025, 10, dow_t::Tue ) == 28 );
+    static_assert( get_last_dowin_month( 2025, 10, dow_t::Wed ) == 29 );
+    static_assert( get_last_dowin_month( 2025, 10, dow_t::Thu ) == 30 );
+    static_assert( get_last_dowin_month( 2025, 10, dow_t::Fri ) == 31 );
+    static_assert( get_last_dowin_month( 2025, 10, dow_t::Sat ) == 25 );
 
     /// Writes a timestamp as `YYYY-MM-DD HH:MM:SS`.
     ///

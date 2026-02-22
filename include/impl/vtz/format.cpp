@@ -282,7 +282,7 @@ namespace vtz {
             // [0-6])
             case 'w':
                 {
-                    static_assert( int( DOW::Sun ) == 0 );
+                    static_assert( int( dow_t::Sun ) == 0 );
                     auto dow = int( dow_from_days( date ) );
                     *p++     = char( '0' + dow );
                     continue;
@@ -364,7 +364,7 @@ namespace vtz {
             // tm_year stores years since 1900
             ymd.year - 1900,
             // days since sunday - 0-6
-            int( dow_from_days( date ) - DOW::Sun ),
+            int( dow_from_days( date ) - dow_t::Sun ),
             // days since January 1 – [​0​, 365]
             int( date - resolve_civil( ymd.year, 1, 1 ) ),
             // true if daylight savings time is in effect

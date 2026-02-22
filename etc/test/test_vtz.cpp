@@ -24,85 +24,85 @@
 using namespace vtz;
 using _test_vtz::TEST_LOG;
 
-static_assert( format_as( Mon::Jan ) == "Jan" );
-static_assert( format_as( Mon::Feb ) == "Feb" );
-static_assert( format_as( Mon::Mar ) == "Mar" );
-static_assert( format_as( Mon::Apr ) == "Apr" );
-static_assert( format_as( Mon::May ) == "May" );
-static_assert( format_as( Mon::Jun ) == "Jun" );
-static_assert( format_as( Mon::Jul ) == "Jul" );
-static_assert( format_as( Mon::Aug ) == "Aug" );
-static_assert( format_as( Mon::Sep ) == "Sep" );
-static_assert( format_as( Mon::Oct ) == "Oct" );
-static_assert( format_as( Mon::Nov ) == "Nov" );
-static_assert( format_as( Mon::Dec ) == "Dec" );
+static_assert( format_as( month_t::Jan ) == "Jan" );
+static_assert( format_as( month_t::Feb ) == "Feb" );
+static_assert( format_as( month_t::Mar ) == "Mar" );
+static_assert( format_as( month_t::Apr ) == "Apr" );
+static_assert( format_as( month_t::May ) == "May" );
+static_assert( format_as( month_t::Jun ) == "Jun" );
+static_assert( format_as( month_t::Jul ) == "Jul" );
+static_assert( format_as( month_t::Aug ) == "Aug" );
+static_assert( format_as( month_t::Sep ) == "Sep" );
+static_assert( format_as( month_t::Oct ) == "Oct" );
+static_assert( format_as( month_t::Nov ) == "Nov" );
+static_assert( format_as( month_t::Dec ) == "Dec" );
 
-static_assert( format_as( DOW::Sun ) == "Sun" );
-static_assert( format_as( DOW::Mon ) == "Mon" );
-static_assert( format_as( DOW::Tue ) == "Tue" );
-static_assert( format_as( DOW::Wed ) == "Wed" );
-static_assert( format_as( DOW::Thu ) == "Thu" );
-static_assert( format_as( DOW::Fri ) == "Fri" );
-static_assert( format_as( DOW::Sat ) == "Sat" );
+static_assert( format_as( dow_t::Sun ) == "Sun" );
+static_assert( format_as( dow_t::Mon ) == "Mon" );
+static_assert( format_as( dow_t::Tue ) == "Tue" );
+static_assert( format_as( dow_t::Wed ) == "Wed" );
+static_assert( format_as( dow_t::Thu ) == "Thu" );
+static_assert( format_as( dow_t::Fri ) == "Fri" );
+static_assert( format_as( dow_t::Sat ) == "Sat" );
 
 static_assert( _impl::_parse_mon( "blarg", 3 ) == none );
-static_assert( _impl::_parse_mon( "Jan", 3 ).value() == Mon::Jan );
-static_assert( _impl::_parse_mon( "Feb", 3 ).value() == Mon::Feb );
-static_assert( _impl::_parse_mon( "Mar", 3 ).value() == Mon::Mar );
-static_assert( _impl::_parse_mon( "Apr", 3 ).value() == Mon::Apr );
-static_assert( _impl::_parse_mon( "May", 3 ).value() == Mon::May );
-static_assert( _impl::_parse_mon( "Jun", 3 ).value() == Mon::Jun );
-static_assert( _impl::_parse_mon( "Jul", 3 ).value() == Mon::Jul );
-static_assert( _impl::_parse_mon( "Aug", 3 ).value() == Mon::Aug );
-static_assert( _impl::_parse_mon( "Sep", 3 ).value() == Mon::Sep );
-static_assert( _impl::_parse_mon( "Oct", 3 ).value() == Mon::Oct );
-static_assert( _impl::_parse_mon( "Nov", 3 ).value() == Mon::Nov );
-static_assert( _impl::_parse_mon( "Dec", 3 ).value() == Mon::Dec );
+static_assert( _impl::_parse_mon( "Jan", 3 ).value() == month_t::Jan );
+static_assert( _impl::_parse_mon( "Feb", 3 ).value() == month_t::Feb );
+static_assert( _impl::_parse_mon( "Mar", 3 ).value() == month_t::Mar );
+static_assert( _impl::_parse_mon( "Apr", 3 ).value() == month_t::Apr );
+static_assert( _impl::_parse_mon( "May", 3 ).value() == month_t::May );
+static_assert( _impl::_parse_mon( "Jun", 3 ).value() == month_t::Jun );
+static_assert( _impl::_parse_mon( "Jul", 3 ).value() == month_t::Jul );
+static_assert( _impl::_parse_mon( "Aug", 3 ).value() == month_t::Aug );
+static_assert( _impl::_parse_mon( "Sep", 3 ).value() == month_t::Sep );
+static_assert( _impl::_parse_mon( "Oct", 3 ).value() == month_t::Oct );
+static_assert( _impl::_parse_mon( "Nov", 3 ).value() == month_t::Nov );
+static_assert( _impl::_parse_mon( "Dec", 3 ).value() == month_t::Dec );
 
 static_assert( _impl::_parse_dow( "blarg", 3 ) == none );
-static_assert( _impl::_parse_dow( "Sun", 3 ).value() == DOW::Sun );
-static_assert( _impl::_parse_dow( "Mon", 3 ).value() == DOW::Mon );
-static_assert( _impl::_parse_dow( "Tue", 3 ).value() == DOW::Tue );
-static_assert( _impl::_parse_dow( "Wed", 3 ).value() == DOW::Wed );
-static_assert( _impl::_parse_dow( "Thu", 3 ).value() == DOW::Thu );
-static_assert( _impl::_parse_dow( "Fri", 3 ).value() == DOW::Fri );
-static_assert( _impl::_parse_dow( "Sat", 3 ).value() == DOW::Sat );
-static_assert( _impl::_parse_dow( "Su", 2 ).value() == DOW::Sun );
-static_assert( _impl::_parse_dow( "Mo", 2 ).value() == DOW::Mon );
-static_assert( _impl::_parse_dow( "Tu", 2 ).value() == DOW::Tue );
-static_assert( _impl::_parse_dow( "We", 2 ).value() == DOW::Wed );
-static_assert( _impl::_parse_dow( "Th", 2 ).value() == DOW::Thu );
-static_assert( _impl::_parse_dow( "Fr", 2 ).value() == DOW::Fri );
-static_assert( _impl::_parse_dow( "Sa", 2 ).value() == DOW::Sat );
-static_assert( _impl::_parse_dow( "M", 1 ).value() == DOW::Mon );
-static_assert( _impl::_parse_dow( "W", 1 ).value() == DOW::Wed );
-static_assert( _impl::_parse_dow( "F", 1 ).value() == DOW::Fri );
+static_assert( _impl::_parse_dow( "Sun", 3 ).value() == dow_t::Sun );
+static_assert( _impl::_parse_dow( "Mon", 3 ).value() == dow_t::Mon );
+static_assert( _impl::_parse_dow( "Tue", 3 ).value() == dow_t::Tue );
+static_assert( _impl::_parse_dow( "Wed", 3 ).value() == dow_t::Wed );
+static_assert( _impl::_parse_dow( "Thu", 3 ).value() == dow_t::Thu );
+static_assert( _impl::_parse_dow( "Fri", 3 ).value() == dow_t::Fri );
+static_assert( _impl::_parse_dow( "Sat", 3 ).value() == dow_t::Sat );
+static_assert( _impl::_parse_dow( "Su", 2 ).value() == dow_t::Sun );
+static_assert( _impl::_parse_dow( "Mo", 2 ).value() == dow_t::Mon );
+static_assert( _impl::_parse_dow( "Tu", 2 ).value() == dow_t::Tue );
+static_assert( _impl::_parse_dow( "We", 2 ).value() == dow_t::Wed );
+static_assert( _impl::_parse_dow( "Th", 2 ).value() == dow_t::Thu );
+static_assert( _impl::_parse_dow( "Fr", 2 ).value() == dow_t::Fri );
+static_assert( _impl::_parse_dow( "Sa", 2 ).value() == dow_t::Sat );
+static_assert( _impl::_parse_dow( "M", 1 ).value() == dow_t::Mon );
+static_assert( _impl::_parse_dow( "W", 1 ).value() == dow_t::Wed );
+static_assert( _impl::_parse_dow( "F", 1 ).value() == dow_t::Fri );
 
 
 static_assert( !opt_mon{}.has_value() );
 static_assert( !opt_mon( none ).has_value() );
-static_assert( opt_mon{ Mon::Jan }.has_value() );
-static_assert( opt_mon{ Mon::Feb }.has_value() );
-static_assert( opt_mon{ Mon::Mar }.has_value() );
-static_assert( opt_mon{ Mon::Apr }.has_value() );
-static_assert( opt_mon{ Mon::May }.has_value() );
-static_assert( opt_mon{ Mon::Jun }.has_value() );
-static_assert( opt_mon{ Mon::Jul }.has_value() );
-static_assert( opt_mon{ Mon::Aug }.has_value() );
-static_assert( opt_mon{ Mon::Sep }.has_value() );
-static_assert( opt_mon{ Mon::Oct }.has_value() );
-static_assert( opt_mon{ Mon::Nov }.has_value() );
-static_assert( opt_mon{ Mon::Dec }.has_value() );
+static_assert( opt_mon{ month_t::Jan }.has_value() );
+static_assert( opt_mon{ month_t::Feb }.has_value() );
+static_assert( opt_mon{ month_t::Mar }.has_value() );
+static_assert( opt_mon{ month_t::Apr }.has_value() );
+static_assert( opt_mon{ month_t::May }.has_value() );
+static_assert( opt_mon{ month_t::Jun }.has_value() );
+static_assert( opt_mon{ month_t::Jul }.has_value() );
+static_assert( opt_mon{ month_t::Aug }.has_value() );
+static_assert( opt_mon{ month_t::Sep }.has_value() );
+static_assert( opt_mon{ month_t::Oct }.has_value() );
+static_assert( opt_mon{ month_t::Nov }.has_value() );
+static_assert( opt_mon{ month_t::Dec }.has_value() );
 
 static_assert( !opt_dow{}.has_value() );
 static_assert( !opt_dow( none ).has_value() );
-static_assert( opt_dow{ DOW::Sun }.has_value() );
-static_assert( opt_dow{ DOW::Mon }.has_value() );
-static_assert( opt_dow{ DOW::Tue }.has_value() );
-static_assert( opt_dow{ DOW::Wed }.has_value() );
-static_assert( opt_dow{ DOW::Thu }.has_value() );
-static_assert( opt_dow{ DOW::Fri }.has_value() );
-static_assert( opt_dow{ DOW::Sat }.has_value() );
+static_assert( opt_dow{ dow_t::Sun }.has_value() );
+static_assert( opt_dow{ dow_t::Mon }.has_value() );
+static_assert( opt_dow{ dow_t::Tue }.has_value() );
+static_assert( opt_dow{ dow_t::Wed }.has_value() );
+static_assert( opt_dow{ dow_t::Thu }.has_value() );
+static_assert( opt_dow{ dow_t::Fri }.has_value() );
+static_assert( opt_dow{ dow_t::Sat }.has_value() );
 
 static_assert( rule_letter().sv() == "" );
 static_assert( rule_letter().size_ == 0 );
@@ -259,9 +259,9 @@ TEST( vtz_parser, strip_comments ) {
 using namespace vtz;
 TEST( vtz_parser, parse_tzdata ) {
     using ze = zone_entry;
-    using M  = Mon;
+    using M  = month_t;
 
-    constexpr auto lastSun = rule_on::last( DOW::Sun );
+    constexpr auto lastSun = rule_on::last( dow_t::Sun );
     constexpr auto on      = []( u8 day ) { return rule_on::on( day ); };
 
     ASSERT_EQ( parse_tzdata(
@@ -805,9 +805,9 @@ TEST( vtz_tz, US_rules ) {
     ASSERT_EQ( US.historical[n - 1], RT::from_civil( 2006, 10, 29, "2:00", "0", "S" ) );
 
     ASSERT_EQ( US.active.at( 0 ),
-        ( RE{ 2007, Y_MAX, Mon::Mar, rule_on::ge( DOW::Sun, 8 ), "2:00", "1:00", "D" } ) );
+        ( RE{ 2007, Y_MAX, month_t::Mar, rule_on::ge( dow_t::Sun, 8 ), "2:00", "1:00", "D" } ) );
     ASSERT_EQ( US.active.at( 1 ),
-        ( RE{ 2007, Y_MAX, Mon::Nov, rule_on::ge( DOW::Sun, 1 ), "2:00", "0", "S" } ) );
+        ( RE{ 2007, Y_MAX, month_t::Nov, rule_on::ge( dow_t::Sun, 1 ), "2:00", "0", "S" } ) );
 }
 
 
