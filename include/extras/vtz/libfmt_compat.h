@@ -14,7 +14,7 @@ namespace vtz {
     string format_as( RuleTrans const& rule );
     string format_as( rule_on r );
     string format_as( zone_format const& f );
-    string format_as( RuleAt r );
+    string format_as( rule_at r );
     string format_as( ZoneUntil );
     string format_as( zone_save );
     string format_as( from_utc off );

@@ -52,7 +52,7 @@ namespace vtz {
 
     struct RuleTrans {
         sysdays_t  date;
-        RuleAt     at;
+        rule_at     at;
         zone_save  save;
         rule_letter letter;
 
@@ -83,7 +83,7 @@ namespace vtz {
         static RuleTrans from_civil( int year,
             u32                          mon,
             u32                          day,
-            RuleAt                       at,
+            rule_at                      at,
             zone_save                    save,
             rule_letter                  letter ) {
             return RuleTrans{
@@ -122,7 +122,7 @@ namespace vtz {
         rule_year_t to;
         Mon         in;
         rule_on     on;
-        RuleAt      at;
+        rule_at     at;
         zone_save   save;
         rule_letter letter;
 

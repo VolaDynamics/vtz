@@ -14,10 +14,10 @@ namespace vtz {
     using std::string;
     using std::string_view;
 
-    class RuleAt {
+    class rule_at {
         i32 repr_{};
 
-        constexpr explicit RuleAt( i32 repr ) noexcept
+        constexpr explicit rule_at( i32 repr ) noexcept
         : repr_( repr ) {}
 
       public:
@@ -33,31 +33,31 @@ namespace vtz {
             UTC,
         };
 
-        constexpr static RuleAt hhmmss(
+        constexpr static rule_at hhmmss(
             Kind kind, int hh, int mm = 0, int ss = 0 ) {
             int sign  = hh < 0 ? -1 : 1;
             hh       *= sign;
-            return RuleAt( sign * ( hh * 3600 + mm * 60 + ss ), kind );
+            return rule_at( sign * ( hh * 3600 + mm * 60 + ss ), kind );
         }
 
         constexpr i32  offset() const noexcept { return repr_ >> 2; }
         constexpr Kind kind() const noexcept { return Kind( repr_ & 0x3 ); }
 
-        RuleAt() = default;
+        rule_at() = default;
 
-        constexpr RuleAt( i32 time_, Kind kind ) noexcept
+        constexpr rule_at( i32 time_, Kind kind ) noexcept
         : repr_( i32( u32( time_ ) << 2 ) | i32( kind ) ) {}
 
         template<size_t N>
-        RuleAt( char const ( &arr )[N] )
-        : RuleAt( string_view( arr ) ) {}
+        rule_at( char const ( &arr )[N] )
+        : rule_at( string_view( arr ) ) {}
 
-        RuleAt( string_view text );
+        rule_at( string_view text );
 
-        constexpr bool operator==( RuleAt const& rhs ) const noexcept {
+        constexpr bool operator==( rule_at const& rhs ) const noexcept {
             return repr_ == rhs.repr_;
         }
-        constexpr bool operator!=( RuleAt const& rhs ) const noexcept {
+        constexpr bool operator!=( rule_at const& rhs ) const noexcept {
             return repr_ != rhs.repr_;
         }
 
@@ -94,16 +94,16 @@ namespace vtz {
             return resolve_at( date, time.stdoff, time.walloff );
         }
 
-        constexpr static RuleAt from_repr( i32 repr ) noexcept {
-            return RuleAt( repr );
+        constexpr static rule_at from_repr( i32 repr ) noexcept {
+            return rule_at( repr );
         }
     };
 
     template<>
-    struct opt_traits<RuleAt> {
-        constexpr static RuleAt NULL_VALUE = RuleAt::from_repr( INT32_MIN );
+    struct opt_traits<rule_at> {
+        constexpr static rule_at NULL_VALUE = rule_at::from_repr( INT32_MIN );
     };
 
-    using OptRuleAt = opt_class<RuleAt>;
+    using OptRuleAt = opt_class<rule_at>;
 
 } // namespace vtz

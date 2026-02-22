@@ -45,13 +45,13 @@ namespace vtz {
     std::string format_as( from_utc off ) { return to_hhmmss( off.off ); }
 
 
-    std::string format_as( RuleAt r ) {
+    std::string format_as( rule_at r ) {
         auto time = to_hhmmss( r.offset() );
         switch( r.kind() )
         {
-        case RuleAt::LOCAL_WALL: return time;
-        case RuleAt::LOCAL_STANDARD: return time + 's';
-        case RuleAt::UTC: return time + 'u';
+        case rule_at::LOCAL_WALL: return time;
+        case rule_at::LOCAL_STANDARD: return time + 's';
+        case rule_at::UTC: return time + 'u';
         default: return time + "<bad kind>";
         }
     }

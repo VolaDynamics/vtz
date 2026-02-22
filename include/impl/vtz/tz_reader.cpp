@@ -431,7 +431,7 @@ namespace vtz {
             };
         }
 
-        RuleAt parse_rule_at( opt_token tok ) {
+        rule_at parse_rule_at( opt_token tok ) {
             size_t      size = tok.size();
             char const* p    = tok.data();
             if( size > 0 )
@@ -442,7 +442,7 @@ namespace vtz {
                 {
                     auto off = parse_signed_hhmmss_offset( p, size );
                     if( off != OFFSET_NPOS )
-                        return RuleAt{ off, RuleAt::LOCAL_WALL };
+                        return rule_at{ off, rule_at::LOCAL_WALL };
                 }
                 else
                 {
@@ -451,11 +451,12 @@ namespace vtz {
                     {
                         switch( suffix )
                         {
-                        case 'w': return RuleAt{ off, RuleAt::LOCAL_WALL };
-                        case 's': return RuleAt{ off, RuleAt::LOCAL_STANDARD };
+                        case 'w': return rule_at{ off, rule_at::LOCAL_WALL };
+                        case 's':
+                            return rule_at{ off, rule_at::LOCAL_STANDARD };
                         case 'g':
                         case 'u':
-                        case 'z': return RuleAt{ off, RuleAt::UTC };
+                        case 'z': return rule_at{ off, rule_at::UTC };
                         }
                     }
                 }
@@ -507,7 +508,7 @@ namespace vtz {
         }
 
         ZoneUntil parse_zone_until( string_view sv ) {
-            constexpr RuleAt midnight = RuleAt( 0, RuleAt::LOCAL_WALL );
+            constexpr rule_at midnight = rule_at( 0, rule_at::LOCAL_WALL );
 
             token_iter iter( sv );
 
@@ -1197,8 +1198,8 @@ namespace vtz {
     zone_save::zone_save( string_view text ) {
         save = parse_rule_save( opt_token( text ) ).save;
     }
-    RuleAt::RuleAt( string_view text )
-    : RuleAt( parse_rule_at( text ) ) {}
+    rule_at::rule_at( string_view text )
+    : rule_at( parse_rule_at( text ) ) {}
 
 
     ZoneEntry::ZoneEntry( string_view stdoff,

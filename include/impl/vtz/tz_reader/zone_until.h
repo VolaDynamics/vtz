@@ -8,7 +8,7 @@
 namespace vtz {
     struct ZoneUntil {
         sysdays_t date;
-        RuleAt    at; ///< Time of day when it ends
+        rule_at   at; ///< Time of day when it ends
 
 
         /// Return the date referred to by this ZoneUntil
