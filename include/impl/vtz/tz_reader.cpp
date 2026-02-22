@@ -1216,13 +1216,13 @@ namespace vtz {
     size_t dump_active( RuleEntry const* active,
         size_t                           active_count,
         size_t                           year,
-        RuleTrans*                       p ) {
+        rule_trans*                      p ) {
         // Compute transitions for all active rules for the given year
         for( size_t i = 0; i < active_count; i++ )
             p[i] = active[i].resolve_trans( i32( year ) );
 
         // Ensure the added transitions are sorted by date
-        std::sort( p, p + active_count, RuleTrans::compare_date() );
+        std::sort( p, p + active_count, rule_trans::compare_date() );
         return active_count;
     }
 
@@ -1263,10 +1263,10 @@ namespace vtz {
         }
 
         [[nodiscard]] size_t fill_transition_table( RuleEntry const* active,
-            size_t             active_count,
-            size_t             year,
-            size_t             year_end,
-            vector<RuleTrans>& dest ) {
+            size_t              active_count,
+            size_t              year,
+            size_t              year_end,
+            vector<rule_trans>& dest ) {
             // Number of new transitions we're adding
             size_t trans_count = active_count * ( year_end - year );
 
@@ -1276,7 +1276,7 @@ namespace vtz {
             dest.resize( dest.size() + trans_count );
 
             // This is where we're putting all the new rules
-            RuleTrans* p = dest.data() + old_dest_size;
+            rule_trans* p = dest.data() + old_dest_size;
 
             for( ; year < year_end; ++year )
             {
@@ -1299,7 +1299,7 @@ namespace vtz {
             vector<RuleEntry> const& active,
             size_t                   year,
             size_t                   year_end,
-            vector<RuleTrans>&       dest ) {
+            vector<rule_trans>&      dest ) {
             return fill_transition_table(
                 active.data(), active.size(), year, year_end, dest );
         }
@@ -1828,7 +1828,7 @@ namespace vtz {
                 "Expected Rule to be sorted by 'FROM' year" );
 
         auto active = vector<RuleEntry>(); ///< Current set of active rules
-        auto tt     = vector<RuleTrans>(); ///< Computed Transition Table
+        auto tt     = vector<rule_trans>(); ///< Computed Transition Table
 
         size_t year0 = begin->from;        ///< First year with a rule
 

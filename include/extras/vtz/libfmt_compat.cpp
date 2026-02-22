@@ -99,7 +99,7 @@ namespace vtz {
     }
 
 
-    string format_as( RuleTrans const& r ) {
+    string format_as( rule_trans const& r ) {
         return fmt::format( "{} @ {} SAVE={} LETTER='{}'",
             to_civil( r.date ),
             r.at,

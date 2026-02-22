@@ -770,7 +770,7 @@ TEST( vtz_tz, US_rules ) {
     auto US = zones.evaluate_rules( "US" );
 
     using RE = RuleEntry;
-    using RT = RuleTrans;
+    using RT = rule_trans;
 
     // https://www.timeanddate.com/calendar/?year=1919&country=1
     ASSERT_EQ( US.year_start, 1918 );

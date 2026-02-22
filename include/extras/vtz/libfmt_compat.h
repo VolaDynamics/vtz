@@ -11,7 +11,7 @@ namespace vtz {
     using std::string;
 
     string format_as( zone_rule const& rule );
-    string format_as( RuleTrans const& rule );
+    string format_as( rule_trans const& rule );
     string format_as( rule_on r );
     string format_as( zone_format const& f );
     string format_as( rule_at r );

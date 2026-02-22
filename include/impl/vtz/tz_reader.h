@@ -50,7 +50,7 @@ namespace vtz {
     };
 
 
-    struct RuleTrans {
+    struct rule_trans {
         sysdays_t  date;
         rule_at     at;
         zone_save  save;
@@ -80,18 +80,18 @@ namespace vtz {
             };
         }
 
-        static RuleTrans from_civil( int year,
-            u32                          mon,
-            u32                          day,
-            rule_at                      at,
-            zone_save                    save,
-            rule_letter                  letter ) {
-            return RuleTrans{
+        static rule_trans from_civil( int year,
+            u32                           mon,
+            u32                           day,
+            rule_at                       at,
+            zone_save                     save,
+            rule_letter                   letter ) {
+            return rule_trans{
                 resolve_civil( year, mon, day ), at, save, letter
             };
         }
 
-        constexpr bool operator==( RuleTrans const& rhs ) const noexcept {
+        constexpr bool operator==( rule_trans const& rhs ) const noexcept {
             return date == rhs.date    //
                    && at == rhs.at     //
                    && save == rhs.save //
@@ -100,7 +100,7 @@ namespace vtz {
 
 
         constexpr static auto compare_date() noexcept {
-            return []( RuleTrans const& lhs, RuleTrans const& rhs ) {
+            return []( rule_trans const& lhs, rule_trans const& rhs ) {
                 return lhs.date < rhs.date;
             };
         }
@@ -138,7 +138,7 @@ namespace vtz {
         }
 
         // Resolve a transition for the given year
-        constexpr RuleTrans resolve_trans( i32 year ) const noexcept {
+        constexpr rule_trans resolve_trans( i32 year ) const noexcept {
             return { resolve_date( year ), at, save, letter };
         }
 
@@ -237,7 +237,7 @@ namespace vtz {
     /// > assume standard time (SAVE zero), and use the LETTER data from
     /// > the earliest transition with a SAVE of zero.
     [[nodiscard]] inline std::optional<rule_letter> get_initial_letter(
-        RuleTrans const* trans, size_t trans_size ) {
+        rule_trans const* trans, size_t trans_size ) {
         for( size_t i = 0; i < trans_size; ++i )
         {
             if( trans[i].save == 0 ) { return trans[i].letter; }
@@ -271,7 +271,7 @@ namespace vtz {
     struct RuleEvalResult {
         /// Known transitions: contains all transitions up until the current
         /// active rule set
-        vector<RuleTrans> historical;
+        vector<rule_trans> historical;
         // Rule Entries that are still active after evaluation (these are
         // entries which have 'max' as the TO fields)
         vector<RuleEntry> active;
@@ -286,7 +286,7 @@ namespace vtz {
     size_t dump_active( RuleEntry const* active,
         size_t                           active_count,
         size_t                           year,
-        RuleTrans*                       p );
+        rule_trans*                      p );
 
     /// Return the earliest active rule with a save of 0. Returns nullptr
     /// if no active rule with a save of 0 is found
@@ -325,7 +325,7 @@ namespace vtz {
         i32 year;
 
         /// Historical entries buffer
-        RuleTrans const* hist_;
+        rule_trans const* hist_;
         size_t           hist_size_;
 
         /// Rules which are active going forward into perpetuity
@@ -337,13 +337,13 @@ namespace vtz {
         i32 first_active_year_;
 
         /// Evaluated transitions from active entries buffer
-        std::unique_ptr<RuleTrans[]> active_buff;
+        std::unique_ptr<rule_trans[]> active_buff;
 
-        RuleTransIter( RuleTrans const* hist,
-            size_t                      hist_size,
-            RuleEntry const*            active,
-            size_t                      active_size,
-            int                         first_active_year ) noexcept
+        RuleTransIter( rule_trans const* hist,
+            size_t                       hist_size,
+            RuleEntry const*             active,
+            size_t                       active_size,
+            int                          first_active_year ) noexcept
         : i( 0 )
         , in_historical( true )
         , year( first_active_year )
@@ -388,14 +388,14 @@ namespace vtz {
         }
 
 
-        std::optional<RuleTrans> next() {
+        std::optional<rule_trans> next() {
             if( in_historical )
             {
                 // If we have historical rules, then we can just pull from that
                 if( i < hist_size_ ) return hist_[i++];
                 i             = active_size_;
                 in_historical = false;
-                active_buff.reset( new RuleTrans[active_size_] );
+                active_buff.reset( new rule_trans[active_size_] );
             }
             // If index == active_size_, we need to refill the 'active' buffer
             // so that we have more values to pull from
@@ -418,7 +418,7 @@ namespace vtz {
 
     class ZoneTransIter {
         RuleTransIter rule_iter_;
-        RuleTrans     next_;
+        rule_trans    next_;
         rule_letter   current_letter_;
         zone_save     current_save_;
         bool          is_done;
