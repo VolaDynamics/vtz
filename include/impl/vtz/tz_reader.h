@@ -268,7 +268,7 @@ namespace vtz {
     /// Rule US 2007 max  - Nov Sun>=1  2:00 0    S
     /// ```
 
-    struct RuleEvalResult {
+    struct rule_eval_result {
         /// Known transitions: contains all transitions up until the current
         /// active rule set
         vector<rule_trans> historical;
@@ -353,7 +353,7 @@ namespace vtz {
         , active_size_( active_size )
         , first_active_year_( first_active_year ) {}
 
-        RuleTransIter( RuleEvalResult const& r ) noexcept
+        RuleTransIter( rule_eval_result const& r ) noexcept
         : RuleTransIter{
             r.historical.data(),
             r.historical.size(),
@@ -425,7 +425,7 @@ namespace vtz {
 
       public:
 
-        ZoneTransIter( RuleEvalResult const& r )
+        ZoneTransIter( rule_eval_result const& r )
         : rule_iter_( r )
         , current_letter_( rule_iter_.initial_letter() )
         , current_save_( 0 )
@@ -527,7 +527,7 @@ namespace vtz {
     };
 
 
-    RuleEvalResult evaluate_rules( vector<rule_entry> const& entries );
+    rule_eval_result evaluate_rules( vector<rule_entry> const& entries );
 
     struct AbbrBlock {
         u32 data_;
@@ -633,7 +633,7 @@ namespace vtz {
         zone_map zones;
         link_map links;
 
-        RuleEvalResult evaluate_rules( string_view rule ) const;
+        rule_eval_result evaluate_rules( string_view rule ) const;
         zone_states    get_zone_states( string_view name, i32 end_year ) const;
 
         bool operator==( TZDataFile const& rhs ) const noexcept {

@@ -262,7 +262,7 @@ namespace vtz {
 
         /// These are the rules that have been successfully loaded. This cache
         /// is used when loading a zone that has not yet been loaded.
-        map<string_view, atomic_entry<RuleEvalResult>> rule_cache;
+        map<string_view, atomic_entry<rule_eval_result>> rule_cache;
 
 
         TZData data;
@@ -294,7 +294,7 @@ namespace vtz {
         explicit TimeZoneCache(
             TZData&& data, std::string zoneinfo_dir = std::string() )
         : zone_cache( init_empty_map<time_zone>( data.zones ) )
-        , rule_cache( init_empty_map<RuleEvalResult>( data.rules ) )
+        , rule_cache( init_empty_map<rule_eval_result>( data.rules ) )
         , data( std::move( data ) )
         , zoneinfo_dir( std::move( zoneinfo_dir ) ) {}
 
@@ -321,8 +321,8 @@ namespace vtz {
         }
 
 
-        std::unique_ptr<RuleEvalResult> load_rule( string_view name ) const {
-            return std::make_unique<RuleEvalResult>(
+        std::unique_ptr<rule_eval_result> load_rule( string_view name ) const {
+            return std::make_unique<rule_eval_result>(
                 data.evaluate_rules( name ) );
         }
 
@@ -342,7 +342,7 @@ namespace vtz {
 
         /// Returns an evaluated rule, loading it if necessary. If a load
         /// occurs, the rule will be added to the rule cache.
-        RuleEvalResult const& locate_rule( string_view name ) const;
+        rule_eval_result const& locate_rule( string_view name ) const;
 
         /// Attempts to load a zone by the canonical name.
         ///

@@ -9,7 +9,8 @@
 
 namespace vtz {
 
-    RuleEvalResult const& TimeZoneCache::locate_rule( string_view name ) const {
+    rule_eval_result const& TimeZoneCache::locate_rule(
+        string_view name ) const {
         try
         {
             auto& entry = rule_cache.at( name );

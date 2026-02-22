@@ -1792,7 +1792,7 @@ namespace vtz {
                 " contained no entries" ) );
 
 
-        auto rules = map<string_view, RuleEvalResult>( 16 );
+        auto rules = map<string_view, rule_eval_result>( 16 );
 
         int last_rule_end_year = 1970;
 
@@ -1818,7 +1818,7 @@ namespace vtz {
     }
 
 
-    RuleEvalResult evaluate_rules(
+    rule_eval_result evaluate_rules(
         rule_entry const* begin, rule_entry const* end ) {
         if( begin == end )
             throw std::runtime_error(
@@ -1894,7 +1894,7 @@ namespace vtz {
         };
     }
 
-    RuleEvalResult evaluate_rules( vector<rule_entry> const& rules ) {
+    rule_eval_result evaluate_rules( vector<rule_entry> const& rules ) {
         return evaluate_rules( rules.data(), rules.data() + rules.size() );
     }
 
@@ -1949,7 +1949,7 @@ namespace vtz {
         return result;
     }
 
-    RuleEvalResult TZDataFile::evaluate_rules( string_view rule ) const {
+    rule_eval_result TZDataFile::evaluate_rules( string_view rule ) const {
         auto it = rules.find( rule );
         if( it == rules.end() )
         {
