@@ -64,7 +64,7 @@ namespace vtz {
     /// data() == nullptr
     ///
     /// `has_value()` implies `data() != nullptr`. This makes it appropriate for
-    /// returning from a LineIterator, since non-empty lines are still valid.
+    /// returning from a line_iter, since non-empty lines are still valid.
     struct opt_sv : string_view {
         using string_view::string_view;
 

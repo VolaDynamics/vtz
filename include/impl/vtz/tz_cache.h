@@ -244,7 +244,7 @@ namespace vtz {
     /// Provides a cache for lookup of time_zone objects.
     ///
     /// If timezone source files were provided to the cache (in the form of a
-    /// `TZData` object), then the time_zone_cache will construct zones from the
+    /// `tz_data` object), then the time_zone_cache will construct zones from the
     /// source files.
     ///
     /// If a zone cannot be found within the provided source files, but
@@ -280,7 +280,7 @@ namespace vtz {
         /// Provides a fallback cache, which will be used in the event that a
         /// zone can't be found in the primary zone cache. This is very rare.
         ///
-        /// See the documentation for `ZoneFallbackCache` for a full description
+        /// See the documentation for `zone_fallback_cache` for a full description
         /// of when this occurs.
         zone_fallback_cache fallback_cache;
 
@@ -327,9 +327,9 @@ namespace vtz {
         }
 
 
-        /// Computes `ZoneStates` for the given timezone.
+        /// Computes `zone_states` for the given timezone.
         ///
-        /// If the time_zone_cache was constructed from a `TZData` object
+        /// If the time_zone_cache was constructed from a `tz_data` object
         /// representing a timezone source file (or set of timezone database
         /// source files), `compute_states()` will attempt to construct the
         /// timezone from that.

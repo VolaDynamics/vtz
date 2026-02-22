@@ -1039,7 +1039,7 @@ namespace vtz {
     tz_string parse_tz_string( string_view sv ) {
         try
         {
-            // Parse the tz string (throws a ParseError if parse failure occurs)
+            // Parse the tz string (throws a parse_error if parse failure occurs)
             return _parse_tz_string( sv.data(), sv.size() );
         }
         catch( vtz::parse_error const& err )

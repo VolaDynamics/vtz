@@ -23,7 +23,7 @@ namespace vtz {
 
     /// ENum representing the day of the week. Values start counting up from 0.
     ///
-    /// `Sun=0` (and dates start from 0) because being able to compute DOW
+    /// `Sun=0` (and dates start from 0) because being able to compute dow_t
     /// by taking the number of days
     enum class dow_t : u8 { Sun, Mon, Tue, Wed, Thu, Fri, Sat };
     // clang-format on
@@ -142,13 +142,13 @@ namespace vtz::_impl {
         {
             switch( _load1( src ) )
             {
-            // case 'S': return { DOW::Sun };
+            // case 'S': return { dow_t::Sun };
             case 'M': return { dow_t::Mon };
-            // case 'T': return { DOW::Tue };
+            // case 'T': return { dow_t::Tue };
             case 'W': return { dow_t::Wed };
-            // case 'T': return { DOW::Thu };
+            // case 'T': return { dow_t::Thu };
             case 'F': return { dow_t::Fri };
-            // case 'S': return { DOW::Sat };
+            // case 'S': return { dow_t::Sat };
             }
         }
 
@@ -161,12 +161,12 @@ namespace vtz {
     constexpr string_view format_as( month_t m ) {
         size_t i = size_t( m ) - 1;
         return i < 12 ? string_view( _impl::MONTH_NAMES[i], 3 )
-                      : string_view( "Mon(<unknown>)" );
+                      : string_view( "month_t(<unknown>)" );
     }
 
 
     constexpr string_view format_as( dow_t d ) {
         return u32( d ) < 7 ? string_view( _impl::DOW_NAMES[u32( d )], 3 )
-                            : string_view( "DOW(<unknown>)" );
+                            : string_view( "dow_t(<unknown>)" );
     }
 } // namespace vtz
