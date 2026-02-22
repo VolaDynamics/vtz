@@ -171,7 +171,7 @@ namespace vtz {
     /// and as long as timezone source files are kept up to date, this
     /// cache should never be hit.
 
-    class ZoneFallbackCache {
+    class zone_fallback_cache {
         /// Uses ankerl::unordered_dense::map's [heterogenous overload
         /// capability](https://github.com/martinus/unordered_dense?tab=readme-ov-file#324-heterogeneous-overloads-using-is_transparent)
         using zone_map = map<std::string,
@@ -282,7 +282,7 @@ namespace vtz {
         ///
         /// See the documentation for `ZoneFallbackCache` for a full description
         /// of when this occurs.
-        ZoneFallbackCache fallback_cache;
+        zone_fallback_cache fallback_cache;
 
         /// Initialize the TimeZoneCache. By default, no `zoneinfo_dir` is set,
         /// but one may be provided to the constructor.
