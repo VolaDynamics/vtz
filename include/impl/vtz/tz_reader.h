@@ -216,11 +216,11 @@ namespace vtz {
         }
     };
 
-    struct Zone {
+    struct zone {
         string_view       name;
         vector<ZoneEntry> ents;
 
-        bool operator==( Zone const& rhs ) const noexcept {
+        bool operator==( zone const& rhs ) const noexcept {
             return name == rhs.name && ents == rhs.ents;
         }
     };

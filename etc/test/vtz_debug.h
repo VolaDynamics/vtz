@@ -44,7 +44,7 @@ STRUCT_INFO( vtz::ZoneEntry,
     FIELD( format ),
     FIELD( until ) );
 
-STRUCT_INFO( vtz::Zone, FIELD( name ), FIELD( ents ) );
+STRUCT_INFO( vtz::zone, FIELD( name ), FIELD( ents ) );
 
 STRUCT_INFO( vtz::zone_link, FIELD( canonical ), FIELD( alias ) );
 

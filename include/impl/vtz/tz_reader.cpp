@@ -728,8 +728,8 @@ namespace vtz {
             lines.rest() };
     }
 
-    Zone parse_zone( token_iter tok_iter, line_iter& lines ) {
-        Zone z;
+    zone parse_zone( token_iter tok_iter, line_iter& lines ) {
+        zone z;
         z.name = tok_iter.next();
         z.ents.reserve( 32 );
         for( ;; )
@@ -789,7 +789,7 @@ namespace vtz {
 
                 if( what == "Z" || what == "Zone" )
                 {
-                    Zone zone = parse_zone( tok_iter, lines );
+                    zone zone = parse_zone( tok_iter, lines );
 
                     file.zones[zone.name] = std::move( zone.ents );
                     continue;
