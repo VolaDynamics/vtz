@@ -24,20 +24,20 @@ namespace vtz {
 
 
     /// (linenumber, column) pair
-    struct Location {
+    struct location {
         size_t line{};
         size_t col{};
 
-        Location() = default;
+        location() = default;
 
-        constexpr Location( size_t line, size_t col ) noexcept
+        constexpr location( size_t line, size_t col ) noexcept
         : line( line )
         , col( col ) {}
 
         bool     has_value() const noexcept { return line != 0; }
         explicit operator bool() const noexcept { return line != 0; }
 
-        bool operator==( Location rhs ) const noexcept {
+        bool operator==( location rhs ) const noexcept {
             return line == rhs.line && col == rhs.col;
         }
 
@@ -46,17 +46,17 @@ namespace vtz {
         /// Find the line and column number where a given cursor appears within
         /// some body of text. Return an empty Loc if the input is outside the
         /// body.
-        static Location where_ptr(
+        static location where_ptr(
             string_view body, char const* cursor ) noexcept;
 
         /// Find the line and column number where a given cursor appears within
         /// some body of text. Return an empty Loc if the input is outside the
         /// body.
-        static Location where( string_view body, size_t cursor ) noexcept;
+        static location where( string_view body, size_t cursor ) noexcept;
 
         /// Find the line and column number where the substring ends.
         /// Always returns a valid location.
-        static Location where( string_view substr ) noexcept;
+        static location where( string_view substr ) noexcept;
     };
 
 

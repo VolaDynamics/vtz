@@ -9,18 +9,18 @@ namespace vtz {
         }
     } // namespace
 
-    Location Location::where_ptr( string_view body, char const* pos ) noexcept {
-        return Location::where( body, size_t( pos - body.data() ) );
+    location location::where_ptr( string_view body, char const* pos ) noexcept {
+        return location::where( body, size_t( pos - body.data() ) );
     }
 
-    Location Location::where( string_view body, size_t pos ) noexcept {
+    location location::where( string_view body, size_t pos ) noexcept {
         // Return empty location if the position is outside the body
         if( pos > body.size() ) return {};
 
-        return Location::where( string_view( body.data(), pos ) );
+        return location::where( string_view( body.data(), pos ) );
     }
 
-    Location Location::where( string_view substr ) noexcept {
+    location location::where( string_view substr ) noexcept {
         // start counting from the character after the newline
         // if no newline is found, rfind() will return npos, which
         // is size_t(-1). This will result in line_start being 0,
@@ -34,7 +34,7 @@ namespace vtz {
         // column index
         size_t ci = substr.size() - line_start;
 
-        return Location{ li + 1, ci + 1 };
+        return location{ li + 1, ci + 1 };
     }
 
     vector<string_view> tokenize( string_view line ) {
@@ -73,7 +73,7 @@ namespace vtz {
     }
 
 
-    std::string Location::str() const {
+    std::string location::str() const {
         char buffer[64];
 
         auto r1 = std::to_chars( buffer, buffer + 30, line );

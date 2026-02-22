@@ -473,32 +473,32 @@ Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
 
 
 TEST( vtz_parser, location ) {
-    ASSERT_EQ( Location( 1, 1 ), Location::where( "" ) );
-    ASSERT_EQ( Location( 2, 1 ), Location::where( "\n" ) );
-    ASSERT_EQ( Location( 3, 1 ), Location::where( "\n\n" ) );
+    ASSERT_EQ( location( 1, 1 ), location::where( "" ) );
+    ASSERT_EQ( location( 2, 1 ), location::where( "\n" ) );
+    ASSERT_EQ( location( 3, 1 ), location::where( "\n\n" ) );
 
-    ASSERT_EQ( Location( 1, 6 ), Location::where( "hello" ) );
-    ASSERT_EQ( Location( 2, 6 ), Location::where( "\nhello" ) );
-    ASSERT_EQ( Location( 3, 6 ), Location::where( "\n\nhello" ) );
-    ASSERT_EQ( Location( 4, 1 ), Location::where( "\n\nhello\n" ) );
+    ASSERT_EQ( location( 1, 6 ), location::where( "hello" ) );
+    ASSERT_EQ( location( 2, 6 ), location::where( "\nhello" ) );
+    ASSERT_EQ( location( 3, 6 ), location::where( "\n\nhello" ) );
+    ASSERT_EQ( location( 4, 1 ), location::where( "\n\nhello\n" ) );
 
-    ASSERT_EQ( "1:1", Location::where( "" ).str() );
-    ASSERT_EQ( "2:1", Location::where( "\n" ).str() );
-    ASSERT_EQ( "3:1", Location::where( "\n\n" ).str() );
-    ASSERT_EQ( "1:6", Location::where( "hello" ).str() );
-    ASSERT_EQ( "2:6", Location::where( "\nhello" ).str() );
-    ASSERT_EQ( "3:6", Location::where( "\n\nhello" ).str() );
-    ASSERT_EQ( "4:1", Location::where( "\n\nhello\n" ).str() );
+    ASSERT_EQ( "1:1", location::where( "" ).str() );
+    ASSERT_EQ( "2:1", location::where( "\n" ).str() );
+    ASSERT_EQ( "3:1", location::where( "\n\n" ).str() );
+    ASSERT_EQ( "1:6", location::where( "hello" ).str() );
+    ASSERT_EQ( "2:6", location::where( "\nhello" ).str() );
+    ASSERT_EQ( "3:6", location::where( "\n\nhello" ).str() );
+    ASSERT_EQ( "4:1", location::where( "\n\nhello\n" ).str() );
 
     string_view body = "line1\n"
                        "line2\n"
                        "line3\n"
                        "line4\n";
 
-    ASSERT_EQ( Location( 1, 1 ), Location::where( body, 0 ) );
-    ASSERT_EQ( Location( 1, 6 ), Location::where( body, body.find( '\n' ) ) );
-    ASSERT_EQ( Location( 4, 5 ), Location::where( body, body.find( '4' ) ) );
-    ASSERT_EQ( Location( 5, 1 ), Location::where( body, body.size() ) );
+    ASSERT_EQ( location( 1, 1 ), location::where( body, 0 ) );
+    ASSERT_EQ( location( 1, 6 ), location::where( body, body.find( '\n' ) ) );
+    ASSERT_EQ( location( 4, 5 ), location::where( body, body.find( '4' ) ) );
+    ASSERT_EQ( location( 5, 1 ), location::where( body, body.size() ) );
 
     string_view body2 = R"(Link	Africa/Abidjan	Africa/Accra
 Link	Africa/Abidjan	Africa/Bamako
@@ -507,10 +507,10 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 			-10:30	1:00	HDT	1933 May 21 12:00
 			-10:30	US	H%sT	1947 Jun  8  2:00
 			-10:00	-	HST)";
-    ASSERT_EQ( "3:6", Location::where( body2, body2.find( "Pacific/Honolulu" ) ).str() );
+    ASSERT_EQ( "3:6", location::where( body2, body2.find( "Pacific/Honolulu" ) ).str() );
 
     ASSERT_EQ( "18446744073709551615:18446744073709551615",
-        Location( 18446744073709551615ul, 18446744073709551615ul ).str() );
+        location( 18446744073709551615ul, 18446744073709551615ul ).str() );
 }
 
 

@@ -152,7 +152,7 @@ namespace vtz {
 
     std::string ParseError::getErrorMessage(
         string_view input, string_view filename ) const {
-        auto loc = Location::where_ptr( input, token.data() );
+        auto loc = location::where_ptr( input, token.data() );
 
         if( token.has_value() )
         {
@@ -817,7 +817,7 @@ namespace vtz {
         }
         catch( ParseError err )
         { //
-            auto loc = Location::where_ptr( input, err.token.data() );
+            auto loc = location::where_ptr( input, err.token.data() );
             if( err.token.has_value() )
             {
                 throw std::runtime_error( util::join( "Error @ ",

@@ -30,7 +30,7 @@ STRUCT_INFO( vtz::ZoneState,
     FIELD( abbr ) );
 
 
-STRUCT_INFO( vtz::Location, FIELD( line ), FIELD( col ) );
+STRUCT_INFO( vtz::location, FIELD( line ), FIELD( col ) );
 
 STRUCT_INFO( vtz::RuleEntry,
     FIELD( from ),
