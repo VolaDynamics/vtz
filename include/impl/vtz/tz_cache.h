@@ -90,15 +90,15 @@ namespace vtz {
     auto init_empty_map( map<K, V> const& m ) -> map<K, AtomicEnt<T>> {
         using result_t   = map<string_view, AtomicEnt<T>>;
         using value_type = typename result_t::value_type;
-        struct Ent {
+        struct _ent {
             K key;
 
             operator value_type() const { return { key, nullptr }; }
         };
 
-        vector<Ent> values( m.size() );
+        vector<_ent> values( m.size() );
         size_t      i = 0;
-        for( auto const& [k, _] : m ) { values[i++] = Ent{ k }; }
+        for( auto const& [k, _] : m ) { values[i++] = _ent{ k }; }
 
         return result_t(
             values.data(), values.data() + values.size(), m.size() * 2 );
@@ -108,15 +108,15 @@ namespace vtz {
     auto init_empty_map( span<K const> keys ) -> map<K, AtomicEnt<T>> {
         using result_t   = map<string_view, AtomicEnt<T>>;
         using value_type = typename result_t::value_type;
-        struct Ent {
+        struct _ent {
             K key;
-            Ent( K const& key )
+            _ent( K const& key )
             : key( key ) {}
 
             operator value_type() const { return { key, nullptr }; }
         };
 
-        vector<Ent> values( keys.begin(), keys.end() );
+        vector<_ent> values( keys.begin(), keys.end() );
 
         return result_t(
             values.data(), values.data() + values.size(), keys.size() * 2 );
