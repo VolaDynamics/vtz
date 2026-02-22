@@ -460,7 +460,7 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
 
         for( auto T = T0; T < TMax; T += interval )
         {
-            ADD_CONTEXT( "Testing time", DT{ T } );
+            ADD_CONTEXT( "Testing time", _dt{ T } );
             ASSERT_EQ_QUIET( tz_ref.to_local_s( T ), tz_os.to_local_s( T ) );
             ASSERT_EQ_QUIET( tz_ref.to_sys_s( T, C::earliest ), tz_os.to_sys_s( T, C::earliest ) );
             ASSERT_EQ_QUIET( tz_ref.to_sys_s( T, C::latest ), tz_os.to_sys_s( T, C::latest ) );

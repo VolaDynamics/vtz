@@ -650,7 +650,7 @@ namespace vtz {
         return std::string( buff, 20 + abbr.size() );
     }
 
-    struct DT {
+    struct _dt {
         int64_t sec;
 
         string str() const {
@@ -658,15 +658,15 @@ namespace vtz {
             return string( write_timestamp_to_sv( sec, dest ) );
         }
 
-        constexpr static DT civil(
+        constexpr static _dt civil(
             i32 y, u32 m, u32 d, int h, int min, int sec ) noexcept {
             return { resolve_civil_time( y, m, d, h, min, sec ) };
         }
 
-        bool operator==( DT const& rhs ) const noexcept {
+        bool operator==( _dt const& rhs ) const noexcept {
             return sec == rhs.sec;
         }
     };
 
-    inline string format_as( DT T ) { return T.str(); }
+    inline string format_as( _dt T ) { return T.str(); }
 } // namespace vtz

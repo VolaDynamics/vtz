@@ -177,21 +177,21 @@ TEST( vtz, America_NewYork ) {
     ASSERT_EQ( tz.abbrev_s( _ct( 2025, 11,  2,  5, 59, 59 ) ), "EDT" );
     ASSERT_EQ( tz.abbrev_s( _ct( 2025, 11,  2,  6,  0,  0 ) ), "EST" );
 
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 10, 29, 12, 0, 0 ), L ) }, DT::civil( 2025, 10, 29, 16, 0, 0 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 10, 29, 12, 0, 0 ), L ) }, _dt::civil( 2025, 10, 29, 16, 0, 0 ) );
 
     // prior to daylight savings time transition, early and latest times match
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  0, 59, 59 ), E ) }, DT::civil( 2025, 11,  2,  4, 59, 59 ) );
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  0, 59, 59 ), L ) }, DT::civil( 2025, 11,  2,  4, 59, 59 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 11,  2,  0, 59, 59 ), E ) }, _dt::civil( 2025, 11,  2,  4, 59, 59 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 11,  2,  0, 59, 59 ), L ) }, _dt::civil( 2025, 11,  2,  4, 59, 59 ) );
 
     // at 2AM the clocks move back an hour. The offset becomes UTC-05, so 2AM uniquely refers to 7am UTC time
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  2,  0,  0 ), E ) }, DT::civil( 2025, 11,  2,  7,  0,  0 ) );
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  2,  0,  0 ), L ) }, DT::civil( 2025, 11,  2,  7,  0,  0 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 11,  2,  2,  0,  0 ), E ) }, _dt::civil( 2025, 11,  2,  7,  0,  0 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 11,  2,  2,  0,  0 ), L ) }, _dt::civil( 2025, 11,  2,  7,  0,  0 ) );
 
     // times from 1 AM to 1:59AM are ambiguous - they could refer to either 5AM UTC or 6AM UTC
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  1,  0,  0 ), E ) }, DT::civil( 2025, 11,  2,  5,  0,  0 ) );
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  1,  0,  0 ), L ) }, DT::civil( 2025, 11,  2,  6,  0,  0 ) );
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  1, 59, 59 ), E ) }, DT::civil( 2025, 11,  2,  5, 59, 59 ) );
-    ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025, 11,  2,  1, 59, 59 ), L ) }, DT::civil( 2025, 11,  2,  6, 59, 59 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 11,  2,  1,  0,  0 ), E ) }, _dt::civil( 2025, 11,  2,  5,  0,  0 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 11,  2,  1,  0,  0 ), L ) }, _dt::civil( 2025, 11,  2,  6,  0,  0 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 11,  2,  1, 59, 59 ), E ) }, _dt::civil( 2025, 11,  2,  5, 59, 59 ) );
+    ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025, 11,  2,  1, 59, 59 ), L ) }, _dt::civil( 2025, 11,  2,  6, 59, 59 ) );
 
     // clang-format on
 
@@ -251,14 +251,14 @@ TEST( vtz, America_NewYork ) {
     for( auto choose : { choose::earliest, choose::latest } )
     {
         // clang-format off
-        ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025,  3,  9,  1, 59, 59 ), choose ) }, DT::civil( 2025,  3,  9,  6, 59, 59 ) );
-        ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025,  3,  9,  3,  0,  0 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  0 ) );
-        ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025,  3,  9,  3,  0,  1 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  1 ) );
+        ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025,  3,  9,  1, 59, 59 ), choose ) }, _dt::civil( 2025,  3,  9,  6, 59, 59 ) );
+        ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025,  3,  9,  3,  0,  0 ), choose ) }, _dt::civil( 2025,  3,  9,  7,  0,  0 ) );
+        ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025,  3,  9,  3,  0,  1 ), choose ) }, _dt::civil( 2025,  3,  9,  7,  0,  1 ) );
 
         // On 2025-03-09  2AM..3AM are all non-existant, and they should all map to 7am
-        ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025,  3,  9,  2,  0,  0 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  0 ) );
-        ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025,  3,  9,  2, 30,  0 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  0 ) );
-        ASSERT_EQ( DT{ tz.to_sys_s( _ct( 2025,  3,  9,  2, 59, 59 ), choose ) }, DT::civil( 2025,  3,  9,  7,  0,  0 ) );
+        ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025,  3,  9,  2,  0,  0 ), choose ) }, _dt::civil( 2025,  3,  9,  7,  0,  0 ) );
+        ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025,  3,  9,  2, 30,  0 ), choose ) }, _dt::civil( 2025,  3,  9,  7,  0,  0 ) );
+        ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025,  3,  9,  2, 59, 59 ), choose ) }, _dt::civil( 2025,  3,  9,  7,  0,  0 ) );
         // clang-format on
     }
 }
@@ -314,22 +314,22 @@ TEST( vtz, FirstTransition ) {
     ASSERT_EQ( NY.offset_s( _ct( 1883, 11, 18, 16, 59, 59 ) ), -17762 );
     ASSERT_EQ( NY.offset_s( _ct( 1883, 11, 18, 17,  0,  0 ) ), -18000 );
 
-    ASSERT_EQ( DT{ NY.to_local_s( _ct( 1883, 11, 18, 16, 59, 59 ) ) }, DT::civil( 1883, 11, 18, 12,  3, 57 ) );
-    ASSERT_EQ( DT{ NY.to_local_s( _ct( 1883, 11, 18, 17,  0,  0 ) ) }, DT::civil( 1883, 11, 18, 12,  0,  0 ) );
+    ASSERT_EQ( _dt{ NY.to_local_s( _ct( 1883, 11, 18, 16, 59, 59 ) ) }, _dt::civil( 1883, 11, 18, 12,  3, 57 ) );
+    ASSERT_EQ( _dt{ NY.to_local_s( _ct( 1883, 11, 18, 17,  0,  0 ) ) }, _dt::civil( 1883, 11, 18, 12,  0,  0 ) );
 
     // 11:59:59 AM is the last local time before America/New_York switched to standard railway time, in 1883
-    ASSERT_EQ( DT{ NY.to_sys_s( _ct( 1883, 11, 18, 11, 59, 59 ), E ) }, DT::civil( 1883, 11, 18, 16, 56,  1 ) );
-    ASSERT_EQ( DT{ NY.to_sys_s( _ct( 1883, 11, 18, 11, 59, 59 ), L ) }, DT::civil( 1883, 11, 18, 16, 56,  1 ) );
+    ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 11, 59, 59 ), E ) }, _dt::civil( 1883, 11, 18, 16, 56,  1 ) );
+    ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 11, 59, 59 ), L ) }, _dt::civil( 1883, 11, 18, 16, 56,  1 ) );
 
     // local times from 12pm to 12:03:57 are ambiguous
-    ASSERT_EQ( DT{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), E ) }, DT::civil( 1883, 11, 18, 16, 56,  2 ) );
-    ASSERT_EQ( DT{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), L ) }, DT::civil( 1883, 11, 18, 17,  0,  0 ) );
-    ASSERT_EQ( DT{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 57 ), E ) }, DT::civil( 1883, 11, 18, 16, 59, 59 ) );
-    ASSERT_EQ( DT{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 57 ), L ) }, DT::civil( 1883, 11, 18, 17,  3, 57 ) );
+    ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), E ) }, _dt::civil( 1883, 11, 18, 16, 56,  2 ) );
+    ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), L ) }, _dt::civil( 1883, 11, 18, 17,  0,  0 ) );
+    ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 57 ), E ) }, _dt::civil( 1883, 11, 18, 16, 59, 59 ) );
+    ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 57 ), L ) }, _dt::civil( 1883, 11, 18, 17,  3, 57 ) );
 
     // from 12:03:58 local time is unambiguous again
-    ASSERT_EQ( DT{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 58 ), E ) }, DT::civil( 1883, 11, 18, 17,  3, 58 ) );
-    ASSERT_EQ( DT{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 58 ), L ) }, DT::civil( 1883, 11, 18, 17,  3, 58 ) );
+    ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 58 ), E ) }, _dt::civil( 1883, 11, 18, 17,  3, 58 ) );
+    ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 58 ), L ) }, _dt::civil( 1883, 11, 18, 17,  3, 58 ) );
     // clang-format on
 
     // clang-format off
@@ -359,20 +359,20 @@ TEST( vtz, FirstTransition ) {
     ASSERT_EQ( PH.abbrev_s( _ct( 1883, 11, 18, 18, 59, 59 ) ), "LMT" );
     ASSERT_EQ( PH.abbrev_s( _ct( 1883, 11, 18, 19,  0,  0 ) ), "MST" );
 
-    ASSERT_EQ( DT{ PH.to_local_s( _ct( 1883, 11, 18, 18, 59, 59 ) ) }, DT::civil( 1883, 11, 18, 11, 31, 41 ) );
-    ASSERT_EQ( DT{ PH.to_local_s( _ct( 1883, 11, 18, 19,  0,  0 ) ) }, DT::civil( 1883, 11, 18, 12,  0,  0 ) );
+    ASSERT_EQ( _dt{ PH.to_local_s( _ct( 1883, 11, 18, 18, 59, 59 ) ) }, _dt::civil( 1883, 11, 18, 11, 31, 41 ) );
+    ASSERT_EQ( _dt{ PH.to_local_s( _ct( 1883, 11, 18, 19,  0,  0 ) ) }, _dt::civil( 1883, 11, 18, 12,  0,  0 ) );
 
-    ASSERT_EQ( DT{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 31, 41 ), E ) }, DT::civil( 1883, 11, 18, 18, 59, 59 ) );
-    ASSERT_EQ( DT{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 31, 41 ), L ) }, DT::civil( 1883, 11, 18, 18, 59, 59 ) );
+    ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 31, 41 ), E ) }, _dt::civil( 1883, 11, 18, 18, 59, 59 ) );
+    ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 31, 41 ), L ) }, _dt::civil( 1883, 11, 18, 18, 59, 59 ) );
 
     // All of these times are non-existent local times, and all of them map to 7pm UTC
-    ASSERT_EQ( DT{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 31, 42 ), E ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
-    ASSERT_EQ( DT{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 31, 42 ), L ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
-    ASSERT_EQ( DT{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 59, 59 ), E ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
-    ASSERT_EQ( DT{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 59, 59 ), L ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 31, 42 ), E ) }, _dt::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 31, 42 ), L ) }, _dt::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 59, 59 ), E ) }, _dt::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 11, 59, 59 ), L ) }, _dt::civil( 1883, 11, 18, 19,  0,  0 ) );
 
-    ASSERT_EQ( DT{ PH.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), E ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
-    ASSERT_EQ( DT{ PH.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), L ) }, DT::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), E ) }, _dt::civil( 1883, 11, 18, 19,  0,  0 ) );
+    ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), L ) }, _dt::civil( 1883, 11, 18, 19,  0,  0 ) );
     // clang-format on
 }
 
@@ -493,7 +493,7 @@ TEST( vtz, time_zone ) {
                 auto T    = TTabbr[zi];
                 auto abbr = zone_states.abbr_[zi];
                 ADD_CONTEXT(
-                    "Checking times", DT{ T }, DT{ T - 1 }, DT{ zone_states.safe_cycle_time } );
+                    "Checking times", _dt{ T }, _dt{ T - 1 }, _dt{ zone_states.safe_cycle_time } );
                 ASSERT_EQ_QUIET( tz.abbrev_s( T - 1 ), zone_states.abbr_to_sv( abbr_prev ) );
                 ASSERT_EQ_QUIET( tz.abbrev_s( T ), zone_states.abbr_to_sv( abbr ) );
                 abbr_prev = abbr;
@@ -513,10 +513,10 @@ TEST( vtz, time_zone ) {
             auto delta = off - off0;
 
             ADD_CONTEXT( "Checking transition",
-                DT{ t - 1 },
-                DT{ t },
-                DT{ local_time_pre },
-                DT{ local_time_post },
+                _dt{ t - 1 },
+                _dt{ t },
+                _dt{ local_time_pre },
+                _dt{ local_time_post },
                 off0,
                 off,
                 delta,
@@ -526,8 +526,8 @@ TEST( vtz, time_zone ) {
             ASSERT_EQ_QUIET( tz.offset_s( t - 1 ), off0 );
             ASSERT_EQ_QUIET( tz.offset_s( t ), off );
 
-            ASSERT_EQ_QUIET( DT{ tz.to_local_s( t - 1 ) }, DT{ local_time_pre } );
-            ASSERT_EQ_QUIET( DT{ tz.to_local_s( t ) }, DT{ local_time_post } );
+            ASSERT_EQ_QUIET( _dt{ tz.to_local_s( t - 1 ) }, _dt{ local_time_pre } );
+            ASSERT_EQ_QUIET( _dt{ tz.to_local_s( t ) }, _dt{ local_time_post } );
 
             // these should not be equal (if they are, we didn't filter transitions correctly)
             ASSERT_NE( local_time_pre, local_time_post );
@@ -536,17 +536,17 @@ TEST( vtz, time_zone ) {
                 // We move the clocks forward, resulting in a set of nonexistent
                 // local times between local_time_pre and local_time_post
 
-                ASSERT_EQ_QUIET( DT{ tz.to_sys_s( local_time_post, E ) }, DT{ t } );
-                ASSERT_EQ_QUIET( DT{ tz.to_sys_s( local_time_post, L ) }, DT{ t } );
+                ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( local_time_post, E ) }, _dt{ t } );
+                ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( local_time_post, L ) }, _dt{ t } );
 
-                // ASSERT_EQ_QUIET( DT{ tz.to_utc( local_time_pre, E ) }, DT{ t - 1 } );
-                ASSERT_EQ_QUIET( DT{ tz.to_sys_s( local_time_pre, L ) }, DT{ t - 1 } );
+                // ASSERT_EQ_QUIET( _dt{ tz.to_utc( local_time_pre, E ) }, _dt{ t - 1 } );
+                ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( local_time_pre, L ) }, _dt{ t - 1 } );
 
                 for( auto i = local_time_pre + 1; i < local_time_post; ++i )
                 {
                     // All of these times are nonexistent, and they should map to the same UTC time
-                    ASSERT_EQ_QUIET( DT{ tz.to_sys_s( i, E ) }, DT{ t } );
-                    ASSERT_EQ_QUIET( DT{ tz.to_sys_s( i, L ) }, DT{ t } );
+                    ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( i, E ) }, _dt{ t } );
+                    ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( i, L ) }, _dt{ t } );
                 }
             }
             else
@@ -577,22 +577,22 @@ TEST( vtz, time_zone ) {
 
 
                 ADD_CONTEXT( "Checking ambiguous local times resulting from moving the clock back",
-                    DT{ ambig_start_local },
-                    DT{ ambig_end_local },
-                    DT{ ambig_start_utc },
-                    DT{ ambig_end_utc } );
+                    _dt{ ambig_start_local },
+                    _dt{ ambig_end_local },
+                    _dt{ ambig_start_utc },
+                    _dt{ ambig_end_utc } );
 
                 // We moved the clocks back, resulting in an ambiguous time
 
                 // These times right before and after should not be ambiguous
                 ASSERT_EQ_QUIET(
-                    DT{ tz.to_sys_s( prev_unambiguous_time, E ) }, DT{ ambig_start_utc - 1 } );
+                    _dt{ tz.to_sys_s( prev_unambiguous_time, E ) }, _dt{ ambig_start_utc - 1 } );
                 ASSERT_EQ_QUIET(
-                    DT{ tz.to_sys_s( prev_unambiguous_time, L ) }, DT{ ambig_start_utc - 1 } );
+                    _dt{ tz.to_sys_s( prev_unambiguous_time, L ) }, _dt{ ambig_start_utc - 1 } );
                 ASSERT_EQ_QUIET(
-                    DT{ tz.to_sys_s( next_unambiguous_time, E ) }, DT{ ambig_end_utc } );
+                    _dt{ tz.to_sys_s( next_unambiguous_time, E ) }, _dt{ ambig_end_utc } );
                 ASSERT_EQ_QUIET(
-                    DT{ tz.to_sys_s( next_unambiguous_time, L ) }, DT{ ambig_end_utc } );
+                    _dt{ tz.to_sys_s( next_unambiguous_time, L ) }, _dt{ ambig_end_utc } );
 
                 // Recall that we have established that local_time_post < local_time_pre -
                 // right now we're testing the scenario where we move the clocks back
@@ -602,7 +602,7 @@ TEST( vtz, time_zone ) {
                 for( i64 i = 0; i < n; ++i )
                 {
                     // Check local times, choosing latest
-                    ASSERT_EQ_QUIET( DT{ tz.to_sys_s( ambig_start_local + i, L ) }, DT{ t + i } );
+                    ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( ambig_start_local + i, L ) }, _dt{ t + i } );
                 }
                 for( i64 i = 0; i < n; ++i )
                 {
@@ -611,20 +611,20 @@ TEST( vtz, time_zone ) {
                     auto block      = time_zone::_impl::local_block_s( tz, local_t );
 
                     ADD_CONTEXT( "Check local -> UTC, choosing earliest",
-                        DT{ local_t },
+                        _dt{ local_t },
                         block.t,
-                        DT{ block.t },
+                        _dt{ block.t },
                         prev_block.t,
-                        DT{ prev_block.t },
+                        _dt{ prev_block.t },
                         block.hi(),
                         block.lo(),
                         local_t,
                         time_zone::_impl::get_tt( tz ).block_size(),
                         time_zone::_impl::get_tt( tz ).block_start_t( local_t ),
                         time_zone::_impl::get_tt( tz ).block_end_t( local_t ),
-                        DT{ time_zone::_impl::get_tt( tz ).block_start_t( local_t ) },
-                        DT{ time_zone::_impl::get_tt( tz ).block_end_t( local_t ) } );
-                    ASSERT_EQ_QUIET( DT{ tz.to_sys_s( local_t, E ) }, DT{ t + i + delta } );
+                        _dt{ time_zone::_impl::get_tt( tz ).block_start_t( local_t ) },
+                        _dt{ time_zone::_impl::get_tt( tz ).block_end_t( local_t ) } );
+                    ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( local_t, E ) }, _dt{ t + i + delta } );
                 }
             }
             off0 = off;

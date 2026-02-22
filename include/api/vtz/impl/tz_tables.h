@@ -191,7 +191,7 @@ namespace vtz {
     struct off_tables {
         u64       tz0_;
         u64       tz_max_;
-        s32_table TTutc;
+        s32_table tt_utc;
         sec_t     cycle_time;
 
         /// For a given system time T, represented as "offsets from UTC", return
@@ -199,13 +199,13 @@ namespace vtz {
         VTZ_INLINE sec_t offset_s( sec_t t ) const noexcept {
             // If the time is in-bounds, use the lookup table
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return TTutc.lookup( t );
+                return tt_utc.lookup( t );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return TTutc.initial();
+            if( t < 0 ) return tt_utc.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return TTutc.lookup( get_cyclic( t, cycle_time ) );
+            return tt_utc.lookup( get_cyclic( t, cycle_time ) );
         }
 
         /// For a given system time T, represented as "offsets from UTC", return
@@ -213,13 +213,13 @@ namespace vtz {
         VTZ_INLINE sec_t to_local_s( sec_t t ) const noexcept {
             // If the time is in-bounds we can use the lookup table
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return t + TTutc.lookup( t );
+                return t + tt_utc.lookup( t );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return t + TTutc.initial();
+            if( t < 0 ) return t + tt_utc.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return t + TTutc.lookup( get_cyclic( t, cycle_time ) );
+            return t + tt_utc.lookup( get_cyclic( t, cycle_time ) );
         }
 
         VTZ_INLINE nanos_t to_local_ns( nanos_t ns ) const noexcept {
@@ -229,7 +229,7 @@ namespace vtz {
 
         template<bool choose_latest>
         VTZ_INLINE sec_t _lookup_utc( sec_t t_key, sec_t t ) const noexcept {
-            auto ent = TTutc.get( t_key );
+            auto ent = tt_utc.get( t_key );
             /// offset from UTC before transition time
             i64 off_pre = ent.lo();
             /// offset from UTC on or after transition time
@@ -259,7 +259,7 @@ namespace vtz {
 
         int _lookup_local(
             sec_t t_key, sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
-            auto ent = TTutc.get( t_key );
+            auto ent = tt_utc.get( t_key );
             /// offset from UTC before transition time
             i64 off_pre = ent.lo();
             /// offset from UTC on or after transition time
@@ -336,7 +336,7 @@ namespace vtz {
             // transitions.
             if( t < 0 )
             {
-                sysseconds_t utc_time = t - TTutc.initial();
+                sysseconds_t utc_time = t - tt_utc.initial();
                 result[0] = result[1] = utc_time;
                 return local_info::unique;
             }
@@ -353,7 +353,7 @@ namespace vtz {
                 return _lookup_utc<choose_latest>( t, t );
 
             // t is _early_: use initial zone state
-            if( t < 0 ) return t - TTutc.initial();
+            if( t < 0 ) return t - tt_utc.initial();
 
             // use zone symmetry to compute state for equivalent time
             return _lookup_utc<choose_latest>( get_cyclic( t, cycle_time ), t );
