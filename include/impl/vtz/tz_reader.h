@@ -416,7 +416,7 @@ namespace vtz {
     };
 
 
-    class ZoneTransIter {
+    class zone_trans_iter {
         rule_trans_iter rule_iter_;
         rule_trans    next_;
         rule_letter   current_letter_;
@@ -425,7 +425,7 @@ namespace vtz {
 
       public:
 
-        ZoneTransIter( rule_eval_result const& r )
+        zone_trans_iter( rule_eval_result const& r )
         : rule_iter_( r )
         , current_letter_( rule_iter_.initial_letter() )
         , current_save_( 0 )
@@ -717,7 +717,7 @@ namespace vtz {
 
 
     zone_states load_zone_states( span<zone_entry const> entries,
-        map<string_view, ZoneTransIter>                  cache,
+        map<string_view, zone_trans_iter>                cache,
         i64                                              safe_cycle_time,
         i32                                              end_year = -1 );
 

@@ -1542,7 +1542,7 @@ namespace vtz {
     }
 
     zone_states load_zone_states( span<zone_entry const> entries,
-        map<string_view, ZoneTransIter>                  cache,
+        map<string_view, zone_trans_iter>                cache,
         i64                                              safe_cycle_time,
         i32                                              end_year ) {
         sysseconds_t const STOP_TIME
@@ -1712,7 +1712,7 @@ namespace vtz {
 
     zone_states TimeZoneCache::compute_states( string_view name ) const {
         // Represents a map of rule names to evaluated rules
-        using RuleCache = map<string_view, ZoneTransIter>;
+        using RuleCache = map<string_view, zone_trans_iter>;
 
         auto zone_it = data.zones.find( name );
 
@@ -1768,7 +1768,7 @@ namespace vtz {
                 auto  rule_name    = rule.name();
                 auto& rule_entry   = locate_rule( rule_name );
                 last_rule_end_year = rule_entry.year_end;
-                cache.emplace( rule_name, ZoneTransIter( rule_entry ) );
+                cache.emplace( rule_name, zone_trans_iter( rule_entry ) );
             }
         }
 
@@ -1782,7 +1782,7 @@ namespace vtz {
     zone_states TZDataFile::get_zone_states(
         string_view name, i32 end_year ) const {
         // Represents a map of rule names to evaluated rules
-        using RuleCache = map<string_view, ZoneTransIter>;
+        using RuleCache = map<string_view, zone_trans_iter>;
 
 
         auto const& entries = zones.at( name );
