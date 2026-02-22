@@ -685,7 +685,7 @@ namespace vtz {
     ZoneFormat parse_zone_format( opt_token tok );
 
     /// Parse a zone entry
-    ZoneEntry parse_zone_entry( TokenIter tok_iter );
+    ZoneEntry parse_zone_entry( token_iter tok_iter );
 
     /// Parses either a rule, zone, or link
     void parse_entry( TZDataFile& file, string_view line, LineIter& lines );

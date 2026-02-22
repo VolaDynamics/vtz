@@ -509,7 +509,7 @@ namespace vtz {
         ZoneUntil parse_zone_until( string_view sv ) {
             constexpr RuleAt midnight = RuleAt( 0, RuleAt::LOCAL_WALL );
 
-            TokenIter iter( sv );
+            token_iter iter( sv );
 
             if( auto year = iter.next_non_comment() )
             {
@@ -679,14 +679,14 @@ namespace vtz {
     }
 
 
-    Link parse_link( TokenIter tok_iter ) {
+    Link parse_link( token_iter tok_iter ) {
         Link link;
         link.canonical = tok_iter.next();
         link.alias     = tok_iter.next();
         return link;
     }
 
-    ZoneEntry parse_zone_entry( TokenIter tok_iter ) {
+    ZoneEntry parse_zone_entry( token_iter tok_iter ) {
         ZoneEntry e;
         e.stdoff = parse_zone_off( tok_iter.next() );
         e.rules  = parse_zone_rule( tok_iter.next() );
@@ -695,7 +695,7 @@ namespace vtz {
         return e;
     }
 
-    RuleEntry parse_rule_entry( TokenIter tok_iter ) {
+    RuleEntry parse_rule_entry( token_iter tok_iter ) {
         rule_year_t from = parse_year( tok_iter.next() );
         return RuleEntry{
             from,
@@ -726,7 +726,7 @@ namespace vtz {
             lines.rest() };
     }
 
-    Zone parse_zone( TokenIter tok_iter, LineIter& lines ) {
+    Zone parse_zone( token_iter tok_iter, LineIter& lines ) {
         Zone z;
         z.name = tok_iter.next();
         z.ents.reserve( 32 );
@@ -738,7 +738,7 @@ namespace vtz {
             // We found the last entry in the zone
             if( !ent.until.has_value() ) break;
 
-            tok_iter = TokenIter( next_zone_line( lines ) );
+            tok_iter = token_iter( next_zone_line( lines ) );
         }
 
         return z;
@@ -758,7 +758,7 @@ namespace vtz {
                 if( line.empty() ) continue;
                 if( line[0] == '#' ) continue;
 
-                auto tok_iter = TokenIter( line );
+                auto tok_iter = token_iter( line );
                 // Either 'Zone' or 'Rule'
                 auto what = tok_iter.next();
                 if( !what.has_value() ) continue;

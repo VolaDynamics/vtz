@@ -131,7 +131,7 @@ namespace vtz {
 
     constexpr bool is_delim( char ch ) { return ch <= (unsigned char)( ' ' ); }
 
-    struct TokenIter {
+    struct token_iter {
       private:
 
         char const* b_ = nullptr;
@@ -177,9 +177,9 @@ namespace vtz {
 
       public:
 
-        constexpr TokenIter() = default;
+        constexpr token_iter() = default;
 
-        constexpr TokenIter( string_view line ) noexcept
+        constexpr token_iter( string_view line ) noexcept
         : b_( line.data() )
         , e_( line.data() + line.size() ) {}
 
@@ -232,7 +232,7 @@ namespace vtz {
             return result;
         }
 
-        TokenIter& drop() {
+        token_iter& drop() {
             (void)next();
             return *this;
         }

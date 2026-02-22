@@ -44,7 +44,7 @@ namespace vtz {
 
         // Fill vector with tokens
         size_t    i = 0;
-        TokenIter tokens( line );
+        token_iter tokens( line );
         while( auto tok = tokens.next() ) { result[i++] = tok; }
 
         result.resize( i );

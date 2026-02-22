@@ -135,7 +135,7 @@ namespace {
     }
 
     void check_tokens( string_view input, std::vector<string_view> tokens ) {
-        auto reader = TokenIter( input );
+        auto reader = token_iter( input );
         for( auto expected : tokens )
         {
             auto tok = reader.next();
