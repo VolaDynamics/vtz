@@ -904,7 +904,7 @@ namespace vtz {
         };
     }
 
-    TZDate eat_tzdate( char const*& p, char const* end ) {
+    tz_date eat_tzdate( char const*& p, char const* end ) {
         char const* s0 = p;
         if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
         if( *p != ',' )
@@ -945,7 +945,7 @@ namespace vtz {
                     "had an out-of-bounds day of the week (expected range "
                     "[0-6])",
                     opt_token( s0, end - s0 ) };
-            return TZDate::make_dom( Mon( m ), n, DOW( d ) );
+            return tz_date::make_dom( Mon( m ), n, DOW( d ) );
         }
         else if( *p == 'J' )
         {
@@ -958,7 +958,7 @@ namespace vtz {
                     "contained an out-of-bounds value for n",
                     opt_token( s0, end - s0 )
                 };
-            return TZDate::make_julian( n );
+            return tz_date::make_julian( n );
         }
         else
         {
@@ -967,7 +967,7 @@ namespace vtz {
                 throw ParseError{ "Expected Rule Date n where 0 <= n <= 365",
                     "contained an out-of-bounds value for n",
                     opt_token( s0, end - s0 ) };
-            return TZDate::make_doy( n );
+            return tz_date::make_doy( n );
         }
     }
 

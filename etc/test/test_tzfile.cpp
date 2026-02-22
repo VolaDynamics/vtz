@@ -51,8 +51,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( tz.r1.time, 3600 * 2 );
         ASSERT_EQ( tz.r2.time, 3600 * 2 );
 
-        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
-        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-09 07:00:00 UTC" );
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-11-02 06:00:00 UTC" );
@@ -70,8 +70,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( tz.r1.time, -3600 );
         ASSERT_EQ( tz.r2.time, 0 );
 
-        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
-        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-30 01:00:00 UTC" );
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-10-26 01:00:00 UTC" );
@@ -89,8 +89,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( tz.r1.time, 50 * 3600 );
         ASSERT_EQ( tz.r2.time, 50 * 3600 );
 
-        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
-        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2100 ) ), "2100-03-27 00:00:00 UTC" );
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2100 ) ), "2100-10-29 23:00:00 UTC" );
@@ -108,8 +108,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( tz.r1.time, 3600 * 2 );
         ASSERT_EQ( tz.r2.time, 3600 * 2 );
 
-        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
-        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-09 05:00:00 UTC" );
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-11-02 04:00:00 UTC" );
@@ -126,8 +126,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( tz.r1.time, 3600 * 2 );
         ASSERT_EQ( tz.r2.time, 3600 * 2 );
 
-        ASSERT_EQ( int( tz.r1.kind() ), int( TZDate::DayOfMonth ) );
-        ASSERT_EQ( int( tz.r2.kind() ), int( TZDate::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
+        ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-10-04 15:30:00 UTC" );
         ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-04-05 15:00:00 UTC" );
