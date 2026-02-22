@@ -340,7 +340,7 @@ namespace vtz {
         /// If the corresponding type info indicates that it is currently DST,
         /// then the stdoff is assumed to be one hour behind the walloff
 
-        ZoneState state_from_ti( size_t ti ) const {
+        zone_state state_from_ti( size_t ti ) const {
             ttinfo_bytes ty = ttinfo()[ti];
 
             auto utoff  = from_utc( ty.tt_utoff() );
@@ -364,7 +364,7 @@ namespace vtz {
         /// stdoff given as input. Otherwise, if it is NOT dst, update the input
         /// stdoff
 
-        ZoneState state_from_ti( size_t ti, from_utc& stdoff ) const {
+        zone_state state_from_ti( size_t ti, from_utc& stdoff ) const {
             ttinfo_bytes ty     = ttinfo()[ti];
             from_utc     utoff  = from_utc( ty.tt_utoff() );
             zone_abbr    abbrev = get_abbrev( ty.tt_desigidx() );
@@ -391,10 +391,10 @@ namespace vtz {
                     stdoff = utoff.unsave( zone_save{ 3600 } );
             }
 
-            return ZoneState{ stdoff, utoff, abbrev };
+            return zone_state{ stdoff, utoff, abbrev };
         }
 
-        ZoneState initial_state() const {
+        zone_state initial_state() const {
             // The first type entry corresponds to the initial state
             return state_from_ti( 0 );
         }

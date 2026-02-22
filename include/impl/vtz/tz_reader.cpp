@@ -1343,7 +1343,7 @@ namespace vtz {
 
       public:
 
-        ZoneState current() const noexcept {
+        zone_state current() const noexcept {
             return {
                 from_utc( current_stdoff ),
                 from_utc( current_off ),
@@ -1351,7 +1351,7 @@ namespace vtz {
             };
         }
 
-        void set_initial( ZoneState state ) noexcept {
+        void set_initial( zone_state state ) noexcept {
             abbr_initial_    = add_abbr( state.abbr );
             walloff_initial_ = state.walloff.off;
             stdoff_initial_  = state.stdoff.off;
@@ -1474,7 +1474,7 @@ namespace vtz {
     zone_states load_zone_states_tzfile( basic_tzfile<KindT> const& file ) {
         using namespace endian;
 
-        ZoneState initial = file.initial_state();
+        zone_state initial = file.initial_state();
 
         size_t timecnt = file.tzh_timecnt;
 
@@ -1585,7 +1585,7 @@ namespace vtz {
             auto& iter = cache.at( rule.name() );
 
             agg.set_initial(
-                ZoneState{ stdoff, format, iter.current_letter() } );
+                zone_state{ stdoff, format, iter.current_letter() } );
 
             while( auto const& maybe_trans
                    = iter.next( STOP_TIME, stdoff, format ) )
@@ -1643,13 +1643,13 @@ namespace vtz {
 
             if( rule.is_hyphen() )
             {
-                auto state = ZoneState{ stdoff, format, "-" };
+                auto state = zone_state{ stdoff, format, "-" };
                 agg.add( { until_t, state } );
                 until_t = until.resolve( state );
             }
             else if( rule.is_offset() )
             {
-                auto state = ZoneState{ stdoff, rule.save(), format, "-" };
+                auto state = zone_state{ stdoff, rule.save(), format, "-" };
                 agg.add( { until_t, state } );
                 until_t = until.resolve( state );
             }
@@ -1680,12 +1680,12 @@ namespace vtz {
 
             if( rule.is_hyphen() )
             {
-                auto state = ZoneState{ stdoff, format, "-" };
+                auto state = zone_state{ stdoff, format, "-" };
                 agg.add( { until_t, state } );
             }
             else if( rule.is_offset() )
             {
-                auto state = ZoneState{ stdoff, rule.save(), format, "-" };
+                auto state = zone_state{ stdoff, rule.save(), format, "-" };
                 agg.add( { until_t, state } );
             }
             else
@@ -1936,7 +1936,7 @@ namespace vtz {
 
             result.push_back( ZoneTransition{
                 T,
-                ZoneState{
+                zone_state{
                     from_utc( s_current ),
                     from_utc( w_current ),
                     abbr_table_[r_current.index()],

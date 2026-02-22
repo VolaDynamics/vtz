@@ -71,7 +71,7 @@ namespace vtz {
             zone_time time, zone_format format ) const noexcept {
             return ZoneTransition{
                 resolve( time ),
-                ZoneState{
+                zone_state{
                     time.stdoff,
                     time.stdoff.save( save ),
                     format,
@@ -447,10 +447,10 @@ namespace vtz {
         ///
         /// Return the current state - the one prescribed by the rule at the
         /// given input time
-        [[nodiscard]] ZoneState advance_to( sysseconds_t when,
-            from_utc                                     stdoff,
-            zone_format const&                           format,
-            zone_time                                    old_time ) {
+        [[nodiscard]] zone_state advance_to( sysseconds_t when,
+            from_utc                                      stdoff,
+            zone_format const&                            format,
+            zone_time                                     old_time ) {
             // We are going to advance until the next state is strictly after
             // 'when'
             for( ;; )
@@ -482,7 +482,7 @@ namespace vtz {
                 }
             }
             // Return the current state
-            return ZoneState( stdoff, current_save_, format, current_letter_ );
+            return zone_state( stdoff, current_save_, format, current_letter_ );
         }
 
         zone_save  current_save() const noexcept { return current_save_; }
@@ -574,7 +574,7 @@ namespace vtz {
 
         vector<ZoneTransition> get_transitions() const;
 
-        ZoneState initial() const noexcept {
+        zone_state initial() const noexcept {
             return {
                 from_utc( stdoff_initial_ ),
                 from_utc( walloff_initial_ ),
@@ -604,7 +604,7 @@ namespace vtz {
         }
 
 
-        ZoneState get_state( sysseconds_t t ) const {
+        zone_state get_state( sysseconds_t t ) const {
             return {
                 from_utc( stdoff( t ) ),
                 from_utc( walloff( t ) ),
@@ -617,7 +617,7 @@ namespace vtz {
             return local_to_string( time, state.walloff, state.abbr );
         }
 
-        static zone_states make_static( ZoneState state ) {
+        static zone_states make_static( zone_state state ) {
             return {
                 0,
                 { state.abbr },

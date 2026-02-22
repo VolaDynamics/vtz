@@ -205,13 +205,13 @@ namespace vtz {
         }
 
         /// Zone State during standard time
-        ZoneState std() const noexcept {
-            return ZoneState{ off1, off1, abbr1 };
+        zone_state std() const noexcept {
+            return zone_state{ off1, off1, abbr1 };
         }
 
         /// Zone State during daylight savings time
-        ZoneState dst() const noexcept {
-            return ZoneState{ off1, off2, abbr2 };
+        zone_state dst() const noexcept {
+            return zone_state{ off1, off2, abbr2 };
         }
 
 

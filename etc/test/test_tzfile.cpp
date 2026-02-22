@@ -399,7 +399,7 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
 
         for( size_t i = 0; i < count; ++i )
         {
-            ADD_CONTEXT( "Checking that ZoneState matches",
+            ADD_CONTEXT( "Checking that zone_state matches",
                 i,
                 format_time_s( "%F %T %Z", tt1[i].when ),
                 format_time_s( "%F %T %Z", tt2[i].when ),

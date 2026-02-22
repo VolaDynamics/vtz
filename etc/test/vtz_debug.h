@@ -24,10 +24,7 @@ STRUCT_INFO( vtz::local_info,
     FIELD( first ),
     FIELD( second ) );
 
-STRUCT_INFO( vtz::ZoneState,
-    FIELD( stdoff ),
-    FIELD( walloff ),
-    FIELD( abbr ) );
+STRUCT_INFO( vtz::zone_state, FIELD( stdoff ), FIELD( walloff ), FIELD( abbr ) );
 
 
 STRUCT_INFO( vtz::location, FIELD( line ), FIELD( col ) );

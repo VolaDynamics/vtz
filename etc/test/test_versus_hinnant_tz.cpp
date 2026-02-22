@@ -60,7 +60,7 @@ struct entry {
 
     from_utc get_stdoff() const { return offset.off - save.save; }
 
-    ZoneState state() const { return ZoneState{ get_stdoff(), save, fix_abbr<15>() }; }
+    zone_state state() const { return zone_state{ get_stdoff(), save, fix_abbr<15>() }; }
 };
 
 std::vector<entry> get_entries( string_view name, sys_seconds start, sys_seconds end ) {

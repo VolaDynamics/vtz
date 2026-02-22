@@ -6,10 +6,10 @@ namespace vtz {
 
     struct ZoneTransition {
         sysseconds_t when; // UTC time of change
-        ZoneState    state;
+        zone_state   state;
 
         ZoneTransition() = default;
-        constexpr ZoneTransition( i64 when, ZoneState state ) noexcept
+        constexpr ZoneTransition( i64 when, zone_state state ) noexcept
         : when( when )
         , state( state ) {}
 
