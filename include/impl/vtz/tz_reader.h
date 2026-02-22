@@ -651,7 +651,7 @@ namespace vtz {
         }
     };
 
-    struct TZData : tz_data_file {
+    struct tz_data : tz_data_file {
         vector<std::pair<string, file_bytes>> data;
 
         std::string version;
@@ -703,10 +703,10 @@ namespace vtz {
     // `rg -o_ni '^L [^ ]+' build/data/tzdata/tzdata.zi | sort -u | wc -l`
     constexpr size_t LINK_BUCKETS = 111 * 2;
 
-    TZData load_zone_info_from_file( string file );
+    tz_data load_zone_info_from_file( string file );
 
     /// Load zone info from a directory, eg build/data/tzdata
-    TZData load_zone_info_from_dir( string fp );
+    tz_data load_zone_info_from_dir( string fp );
 
     tz_data_file parse_tzdata(
         string_view input, string_view filename = "(none)" );

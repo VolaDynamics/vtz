@@ -265,7 +265,7 @@ namespace vtz {
         map<string_view, atomic_entry<rule_eval_result>> rule_cache;
 
 
-        TZData data;
+        tz_data data;
 
         /// Holds a path to the system zoneinfo directory where tzfiles may be
         /// found.
@@ -292,7 +292,7 @@ namespace vtz {
         /// within the given zone sourcefiles.
 
         explicit TimeZoneCache(
-            TZData&& data, std::string zoneinfo_dir = std::string() )
+            tz_data&& data, std::string zoneinfo_dir = std::string() )
         : zone_cache( init_empty_map<time_zone>( data.zones ) )
         , rule_cache( init_empty_map<rule_eval_result>( data.rules ) )
         , data( std::move( data ) )
@@ -391,7 +391,7 @@ namespace vtz {
         bool has_zoneinfo_dir() const noexcept { return !zoneinfo_dir.empty(); }
     };
 
-    TZData load_zone_info_from_dir( string dir );
+    tz_data load_zone_info_from_dir( string dir );
 
     TimeZoneCache const& tzdb_cache();
 } // namespace vtz

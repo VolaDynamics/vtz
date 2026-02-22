@@ -1065,10 +1065,10 @@ namespace vtz {
         return it.next();
     }
 
-    TZData load_zone_info_from_file( string fp ) {
+    tz_data load_zone_info_from_file( string fp ) {
         auto content = read_file_bytes( fp.c_str() );
 
-        TZData result{
+        tz_data result{
             rule_map( RULE_BUCKETS ),
             zone_map( ZONE_BUCKETS ),
             link_map( LINK_BUCKETS ),
@@ -1083,8 +1083,8 @@ namespace vtz {
     }
 
 
-    TZData load_zone_info_from_dir( string dir ) {
-        TZData result{
+    tz_data load_zone_info_from_dir( string dir ) {
+        tz_data result{
             rule_map( RULE_BUCKETS ),
             zone_map( ZONE_BUCKETS ),
             link_map( LINK_BUCKETS ),
