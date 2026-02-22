@@ -58,7 +58,7 @@ namespace vtz {
 
         /// Resolve the time when the rule would take effect, based on the
         /// current state of the zone
-        constexpr sysseconds_t resolve( ZoneTime time ) const noexcept {
+        constexpr sysseconds_t resolve( zone_time time ) const noexcept {
             return at.resolve_at( date, time );
         }
 
@@ -66,9 +66,9 @@ namespace vtz {
         /// on the current state of the zone.
         ///
         /// The rule will take effect based on the zone's _CURRENT_ stdoff or
-        /// walloff, so we need to pass in the full ZoneTime object.
+        /// walloff, so we need to pass in the full zone_time object.
         constexpr ZoneTransition resolve_trans(
-            ZoneTime time, zone_format format ) const noexcept {
+            zone_time time, zone_format format ) const noexcept {
             return ZoneTransition{
                 resolve( time ),
                 ZoneState{
@@ -450,7 +450,7 @@ namespace vtz {
         [[nodiscard]] ZoneState advance_to( sysseconds_t when,
             from_utc                                     stdoff,
             zone_format const&                           format,
-            ZoneTime                                     old_time ) {
+            zone_time                                    old_time ) {
             // We are going to advance until the next state is strictly after
             // 'when'
             for( ;; )

@@ -90,7 +90,7 @@ namespace vtz {
         /// Returns the timestamp (in seconds from UTC) when the 'AT' time is
         /// referring to, on the given date
         constexpr sysseconds_t resolve_at(
-            sysdays_t date, ZoneTime time ) const noexcept {
+            sysdays_t date, zone_time time ) const noexcept {
             return resolve_at( date, time.stdoff, time.walloff );
         }
 

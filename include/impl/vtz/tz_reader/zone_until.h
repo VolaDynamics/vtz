@@ -15,7 +15,7 @@ namespace vtz {
         constexpr sysdays_t resolve_date() const noexcept { return date; }
 
         /// Return the time this 'until' refers to
-        constexpr sysseconds_t resolve( ZoneTime time ) const noexcept {
+        constexpr sysseconds_t resolve( zone_time time ) const noexcept {
             return at.resolve_at( date, time );
         }
 

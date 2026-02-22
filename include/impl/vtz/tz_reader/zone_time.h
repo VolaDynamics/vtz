@@ -6,7 +6,7 @@
 
 namespace vtz {
     /// Holds the stdoff and walloff for a zone at a particular point in time
-    struct alignas( 8 ) ZoneTime {
+    struct alignas( 8 ) zone_time {
         from_utc stdoff;  ///< Zone stdoff (non-DST offset)
         from_utc walloff; ///< Actual offset in this state
 
@@ -15,11 +15,11 @@ namespace vtz {
             return walloff.off - stdoff.off;
         }
 
-        bool operator==( ZoneTime const& rhs ) const noexcept {
+        bool operator==( zone_time const& rhs ) const noexcept {
             return _b8( *this ) == _b8( rhs );
         }
 
-        bool operator!=( ZoneTime const& rhs ) const noexcept {
+        bool operator!=( zone_time const& rhs ) const noexcept {
             return _b8( *this ) != _b8( rhs );
         }
     };
