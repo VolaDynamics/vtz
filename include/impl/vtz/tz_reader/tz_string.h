@@ -184,7 +184,7 @@ namespace vtz {
     ///
     /// See:
     /// https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html#tag_08_03
-    struct TZString {
+    struct tz_string {
         zone_abbr abbr1; /// Standard abbreviation
         zone_abbr abbr2; /// Daylight abbreviation
         from_utc  off1;  /// Standard offset
@@ -260,7 +260,7 @@ namespace vtz {
 
         /// Construct a TZStringIter from the given string spec, starting at the
         /// given year. Assumes that the given string has daylight rules.
-        TZStringIter( TZString const& s, i32 y )
+        TZStringIter( tz_string const& s, i32 y )
         : s( s )
         , year_dst( y )
         , year_std( y )
@@ -273,7 +273,7 @@ namespace vtz {
             }
         }
 
-        static TZStringIter start_after( TZString const& s, sysseconds_t T ) {
+        static TZStringIter start_after( tz_string const& s, sysseconds_t T ) {
             auto date = sysdays_t( vtz::math::div_floor<86400>( T ) );
             auto it   = TZStringIter( s, civil_year( date ) );
             it.advance_past( T );
@@ -282,7 +282,7 @@ namespace vtz {
 
       private:
 
-        TZString s;
+        tz_string s;
         i32      year_dst;
         i32      year_std;
         bool     dst_next_;

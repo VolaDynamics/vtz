@@ -982,14 +982,14 @@ namespace vtz {
         return TZRule{ date, 7200 };
     }
 
-    static TZString _parse_tz_string( char const* p, size_t size ) {
+    static tz_string _parse_tz_string( char const* p, size_t size ) {
         char const* end   = p + size;
         zone_abbr   abbr1 = to_zone_abbr( eat_tz_string_zone_abbr( p, end ) );
         auto        off1  = from_utc( -eat_signed_hhmmss( p, end ) );
 
         if( p == end )
         {
-            return TZString{
+            return tz_string{
                 abbr1,
                 abbr1,
                 off1,
@@ -1017,7 +1017,7 @@ namespace vtz {
             off2 = from_utc( -eat_signed_hhmmss( p, end ) );
         }
 
-        auto result = TZString{
+        auto result = tz_string{
             abbr1,
             abbr2,
             off1,
@@ -1035,7 +1035,7 @@ namespace vtz {
         return result;
     }
 
-    TZString parse_tz_string( string_view sv ) {
+    tz_string parse_tz_string( string_view sv ) {
         try
         {
             // Parse the tz string (throws a ParseError if parse failure occurs)
@@ -1440,7 +1440,7 @@ namespace vtz {
     }
 
 
-    vector<zone_transition> TZString::get_states(
+    vector<zone_transition> tz_string::get_states(
         sysseconds_t T, sysseconds_t maxT ) const {
         // If there are no daylight rules, there are no transitions
         if( !has_daylight_rules() ) return {};
@@ -1513,7 +1513,7 @@ namespace vtz {
             if constexpr( basic_tzfile<KindT>::is_64_bit )
             {
                 /// Load the posix tz string.
-                TZString posix_tz = parse_tz_string( file.tz_string() );
+                tz_string posix_tz = parse_tz_string( file.tz_string() );
 
                 auto states = posix_tz.get_states(
                     T, safe_cycle_time + SECS_400_YEARS );

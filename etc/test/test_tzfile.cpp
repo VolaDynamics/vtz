@@ -154,14 +154,14 @@ TEST( vtz, tz_string ) {
 TEST( vtz, tz_string_get_states ) {
 
     {
-        ADD_CONTEXT( "Testing TZString::get_states with no daylight rules" );
+        ADD_CONTEXT( "Testing tz_string::get_states with no daylight rules" );
         auto tz     = parse_tz_string( "KST-9" );
         auto states = tz.get_states( _ct( 2020, 1, 1, 0, 0, 0 ), _ct( 2025, 1, 1, 0, 0, 0 ) );
         ASSERT_EQ( states.size(), 0 ); // No transitions for zones without DST
     }
 
     {
-        ADD_CONTEXT( "Testing TZString::get_states for America/New_York" );
+        ADD_CONTEXT( "Testing tz_string::get_states for America/New_York" );
         auto tz = parse_tz_string( "EST5EDT,M3.2.0,M11.1.0" );
 
         // Get transitions from 2024-01-01 to 2026-01-01
@@ -197,7 +197,7 @@ TEST( vtz, tz_string_get_states ) {
     }
 
     {
-        ADD_CONTEXT( "Testing TZString::get_states with limited range" );
+        ADD_CONTEXT( "Testing tz_string::get_states with limited range" );
         auto tz = parse_tz_string( "EST5EDT,M3.2.0,M11.1.0" );
 
         // Get transitions from mid-2024 to end of 2024 (should only get fall transition)
@@ -209,7 +209,8 @@ TEST( vtz, tz_string_get_states ) {
     }
 
     {
-        ADD_CONTEXT( "Testing TZString::get_states for always-DST zone (Africa/Casablanca style)" );
+        ADD_CONTEXT(
+            "Testing tz_string::get_states for always-DST zone (Africa/Casablanca style)" );
         // This represents a zone that's "always in DST" - transitions happen at the same time
         auto tz = parse_tz_string( "XXX-2<+01>-1,0/0,J365/23" );
 
@@ -219,7 +220,8 @@ TEST( vtz, tz_string_get_states ) {
     }
 
     {
-        ADD_CONTEXT( "Testing TZString::get_states for Southern Hemisphere (Australia/Lord_Howe)" );
+        ADD_CONTEXT(
+            "Testing tz_string::get_states for Southern Hemisphere (Australia/Lord_Howe)" );
         auto tz = parse_tz_string( "<+1030>-10:30<+11>-11,M10.1.0,M4.1.0" );
 
         // Get transitions for 2024-2025

@@ -671,7 +671,7 @@ namespace vtz {
     RuleOn      parse_rule_on( opt_token tok );
 
     /// Parse a POSIX TZ String that may appear at the end of a tzfile
-    TZString parse_tz_string( string_view sv );
+    tz_string parse_tz_string( string_view sv );
 
     /// Parse a Zone Rule entry
     ///
