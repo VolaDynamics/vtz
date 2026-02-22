@@ -244,7 +244,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // PARSE YEAR
 
             // Expect Year
-            case 'Y': year = parse_year( p, p_end ); continue;
+            case 'Y': year = ::parse_year( p, p_end ); continue;
             case 'y':
                 {
                     has_small_y = true;
@@ -348,7 +348,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // '%F' is equivalent to %Y-%m-%d
             case 'F':
                 {
-                    year = parse_year( p, p_end );
+                    year = ::parse_year( p, p_end );
                     if( p == p_end || *p != '-' )
                         throw ParseFail{ p, "Expected '-'" };
                     ++p;
