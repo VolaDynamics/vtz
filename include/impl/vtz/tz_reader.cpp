@@ -150,7 +150,7 @@ namespace vtz {
         }
     } // namespace
 
-    std::string parse_error::getErrorMessage(
+    std::string parse_error::get_error_message(
         string_view input, string_view filename ) const {
         auto loc = location::where_ptr( input, token.data() );
 
@@ -1046,7 +1046,7 @@ namespace vtz {
         catch( vtz::parse_error const& err )
         {
             throw std::runtime_error(
-                err.getErrorMessage( sv, "(TZ string)" ) );
+                err.get_error_message( sv, "(TZ string)" ) );
         }
     }
 

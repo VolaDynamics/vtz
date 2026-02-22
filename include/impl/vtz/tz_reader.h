@@ -45,15 +45,15 @@ namespace vtz {
         char const* but;      ///< Reason why input was bad
         opt_token   token;    ///< token where failure occurred
 
-        std::string getErrorMessage(
+        std::string get_error_message(
             string_view input, string_view filename ) const;
     };
 
 
     struct rule_trans {
-        sysdays_t  date;
+        sysdays_t   date;
         rule_at     at;
-        zone_save  save;
+        zone_save   save;
         rule_letter letter;
 
         /// Resolve the time when the rule would take effect, based on the
@@ -187,7 +187,7 @@ namespace vtz {
     //             -8:00	US	P%sT
 
     struct zone_entry {
-        from_utc   stdoff;
+        from_utc    stdoff;
         zone_until  until;
         zone_rule   rules;
         zone_format format;
@@ -217,7 +217,7 @@ namespace vtz {
     };
 
     struct zone {
-        string_view       name;
+        string_view        name;
         vector<zone_entry> ents;
 
         bool operator==( zone const& rhs ) const noexcept {
@@ -326,11 +326,11 @@ namespace vtz {
 
         /// Historical entries buffer
         rule_trans const* hist_;
-        size_t           hist_size_;
+        size_t            hist_size_;
 
         /// Rules which are active going forward into perpetuity
         rule_entry const* active_;
-        size_t           active_size_;
+        size_t            active_size_;
 
         /// Saves the first active year (for record keeping purposes, eg when
         /// it's necessary to retrieve the initial letter)
@@ -418,10 +418,10 @@ namespace vtz {
 
     class zone_trans_iter {
         rule_trans_iter rule_iter_;
-        rule_trans    next_;
-        rule_letter   current_letter_;
-        zone_save     current_save_;
-        bool          is_done;
+        rule_trans      next_;
+        rule_letter     current_letter_;
+        zone_save       current_save_;
+        bool            is_done;
 
       public:
 
@@ -485,7 +485,7 @@ namespace vtz {
             return zone_state( stdoff, current_save_, format, current_letter_ );
         }
 
-        zone_save  current_save() const noexcept { return current_save_; }
+        zone_save   current_save() const noexcept { return current_save_; }
         rule_letter current_letter() const noexcept { return current_letter_; }
 
         /// Return the next zone_transition, if one exists prior to the
@@ -558,8 +558,8 @@ namespace vtz {
         vector<zone_abbr> abbr_table_;
 
         abbr_block abbr_initial_;
-        i32       walloff_initial_;
-        i32       stdoff_initial_;
+        i32        walloff_initial_;
+        i32        stdoff_initial_;
 
         vector<sysseconds_t> abbr_trans_;
         vector<abbr_block>   abbr_;
@@ -634,7 +634,7 @@ namespace vtz {
         link_map links;
 
         rule_eval_result evaluate_rules( string_view rule ) const;
-        zone_states    get_zone_states( string_view name, i32 end_year ) const;
+        zone_states get_zone_states( string_view name, i32 end_year ) const;
 
         bool operator==( tz_data_file const& rhs ) const noexcept {
             return rules == rhs.rules    //

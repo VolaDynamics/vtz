@@ -122,13 +122,13 @@ namespace vtz {
         return p + 8;
     }
     /// Write a 2-digit int. Assumes value is < 100
-    VTZ_INLINE static char* _write2Digit( char* p, u8 x ) noexcept {
+    VTZ_INLINE static char* _write_2_digit( char* p, u8 x ) noexcept {
         p[0] = char( '0' + x / 10 );
         p[1] = char( '0' + x % 10 );
         return p + 2;
     }
     /// Write a 3-digit int. Assumes value is < 1000
-    VTZ_INLINE static char* _write3Digit( char* p, u16 x ) noexcept {
+    VTZ_INLINE static char* _write_3_digit( char* p, u16 x ) noexcept {
         p[0]  = char( '0' + x / 100 );
         x    %= 100;
         p[1]  = char( '0' + x / 10 );
@@ -275,7 +275,7 @@ namespace vtz {
                 {
                     auto yday = u16( date - resolve_civil( ymd.year, 1, 1 ) );
 
-                    p = _write3Digit( p, 1 + yday );
+                    p = _write_3_digit( p, 1 + yday );
                     continue;
                 }
             // writes weekday as a decimal number, where Sunday is 0 (range
@@ -301,7 +301,7 @@ namespace vtz {
                 {
                     int x = hr % 12;
                     if( x == 0 ) x = 12;
-                    p = _write2Digit( p, u8( x ) );
+                    p = _write_2_digit( p, u8( x ) );
                     continue;
                 }
             // writes day of the month as a decimal number (range [1,31]).
@@ -315,12 +315,14 @@ namespace vtz {
             case 'R': p = _write_iso_hhmm( p, hr, mi ); continue;
             // 	writes hour as a decimal number, 24 hour clock (range
             // [00-23])
-            case 'H': p = _write2Digit( p, u8( hr ) ); continue;
+            case 'H': p = _write_2_digit( p, u8( hr ) ); continue;
             // writes minute as a decimal number (range [00,59])
-            case 'M': p = _write2Digit( p, u8( mi ) ); continue;
+            case 'M': p = _write_2_digit( p, u8( mi ) ); continue;
             // writes second as a decimal number (range [00,60]). Will also
             // write a fractional component after the second.
-            case 'S': p = write_frac( _write2Digit( p, u8( sec ) ) ); continue;
+            case 'S':
+                p = write_frac( _write_2_digit( p, u8( sec ) ) );
+                continue;
             // equivalent to "%H:%M:%S" (the ISO 8601 time format)
             case 'T':
                 p = write_frac( _write_hhmmss( p, hr, mi, sec ) );

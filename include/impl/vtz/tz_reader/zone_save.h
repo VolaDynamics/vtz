@@ -22,10 +22,10 @@ namespace vtz {
 
         zone_save( string_view text );
 
-        static auto HHMM( int sign, i32 hour, i32 min ) noexcept -> zone_save {
+        static auto hh_mm( int sign, i32 hour, i32 min ) noexcept -> zone_save {
             return { sign * ( 3600 * hour + 60 * min ) };
         }
-        static auto HHMMSS( int sign, i32 hour, i32 min, i32 sec ) noexcept
+        static auto hh_mm_ss( int sign, i32 hour, i32 min, i32 sec ) noexcept
             -> zone_save {
             return { sign * ( 3600 * hour + 60 * min + sec ) };
         }

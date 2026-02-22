@@ -99,7 +99,7 @@ namespace vtz {
                     constexpr int MAR_1 = 31 + 28;
                     // Compute the day of the year. We subtract 1 because 1 <= n
                     // <= 365 for the Julian convention
-                    int doy = this->dayOfYear() - 1;
+                    int doy = this->day_of_year() - 1;
                     if( doy < MAR_1 )
                     {
                         // Day is before march 1st for a non-leap year, so we
@@ -115,7 +115,7 @@ namespace vtz {
                 }
             // We just use dayOfYear() as a direct count from the beginning of
             // the year
-            case DayOfYear: return resolve_civil( year ) + dayOfYear();
+            case DayOfYear: return resolve_civil( year ) + day_of_year();
             case DayOfMonth:
                 {
                     auto m = month();
@@ -138,7 +138,7 @@ namespace vtz {
         constexpr kind_t kind() const noexcept { return kind_t( repr_ & 0x3 ); }
 
         /// Day of the year (for kind() != DayOfMonth)
-        constexpr int dayOfYear() const noexcept { return repr_ >> 2; }
+        constexpr int day_of_year() const noexcept { return repr_ >> 2; }
 
         /// month range [1-12] (when kind() == DayOfMonth)
         constexpr month_t month() const noexcept {
@@ -159,7 +159,7 @@ namespace vtz {
     struct tz_rule : tz_date {
         i32 time; //< local time when transition occurs
 
-        using tz_date::dayOfYear;
+        using tz_date::day_of_year;
         using tz_date::dow;
         using tz_date::has_value;
         using tz_date::kind;
@@ -285,8 +285,8 @@ namespace vtz {
       private:
 
         tz_string s;
-        i32      year_dst;
-        i32      year_std;
-        bool     dst_next_;
+        i32       year_dst;
+        i32       year_std;
+        bool      dst_next_;
     };
 } // namespace vtz
