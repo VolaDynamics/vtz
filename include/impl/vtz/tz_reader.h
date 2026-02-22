@@ -529,19 +529,19 @@ namespace vtz {
 
     rule_eval_result evaluate_rules( vector<rule_entry> const& entries );
 
-    struct AbbrBlock {
+    struct abbr_block {
         u32 data_;
 
         constexpr size_t index() const noexcept { return data_ >> 4; }
         constexpr size_t size() const noexcept { return data_ & 0xf; }
 
-        static AbbrBlock make( size_t i, size_t s ) noexcept {
+        static abbr_block make( size_t i, size_t s ) noexcept {
             return { u32( i ) << 4 | u32( s & 0xf ) };
         }
 
         constexpr explicit operator u32() const noexcept { return data_; }
 
-        constexpr bool operator==( AbbrBlock const& rhs ) const noexcept {
+        constexpr bool operator==( abbr_block const& rhs ) const noexcept {
             return data_ == rhs.data_;
         }
     };
@@ -557,12 +557,12 @@ namespace vtz {
         sysseconds_t      safe_cycle_time;
         vector<zone_abbr> abbr_table_;
 
-        AbbrBlock abbr_initial_;
+        abbr_block abbr_initial_;
         i32       walloff_initial_;
         i32       stdoff_initial_;
 
         vector<sysseconds_t> abbr_trans_;
-        vector<AbbrBlock>    abbr_;
+        vector<abbr_block>   abbr_;
 
         vector<sysseconds_t> walloff_trans_;
         vector<i32>          walloff_;
@@ -592,13 +592,13 @@ namespace vtz {
             return i >= 0 ? walloff_[size_t( i )] : walloff_initial_;
         }
 
-        AbbrBlock const& abbr( sysseconds_t t ) const noexcept {
+        abbr_block const& abbr( sysseconds_t t ) const noexcept {
             auto i = _find( abbr_trans_, t );
             return i >= 0 ? abbr_[size_t( i )] : abbr_initial_;
         }
 
 
-        string_view abbr_to_sv( AbbrBlock block ) {
+        string_view abbr_to_sv( abbr_block block ) {
             return string_view(
                 abbr_table_[block.index()].buff_, block.size() );
         }
@@ -621,7 +621,7 @@ namespace vtz {
             return {
                 0,
                 { state.abbr },
-                AbbrBlock::make( 0, state.abbr.size() ),
+                abbr_block::make( 0, state.abbr.size() ),
                 state.walloff.off,
                 state.stdoff.off,
             };

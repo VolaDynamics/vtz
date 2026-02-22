@@ -30,7 +30,7 @@ namespace vtz {
     }
 
 
-    std::string format_as( AbbrBlock b ) {
+    std::string format_as( abbr_block b ) {
         return fmt::format( "(index: {}, size: {})", b.index(), b.size() );
     }
 

@@ -646,7 +646,7 @@ TEST( vtz, time_zone ) {
                 if( T0 >= TTabbr.value_or( ai, INT64_MAX ) ) current_abbr = zone_states.abbr_[ai++];
 
                 ASSERT_EQ_QUIET(
-                    AbbrBlock{ time_zone::_impl::get_abbr_table( tz ).abbr_block_s( T0 ) },
+                    abbr_block{ time_zone::_impl::get_abbr_table( tz ).abbr_block_s( T0 ) },
                     current_abbr );
                 ASSERT_EQ_QUIET( tz.offset_s( T0 ), current_off );
             }

@@ -408,11 +408,11 @@ namespace vtz {
             s.safe_cycle_time );
     }
 
-    abbr_table make_abbr_table( AbbrBlock initial,
-        span<sysseconds_t const>          tt,
-        span<AbbrBlock const>             abbr,
-        sec_t                             cycle_time,
-        span<zone_abbr const>             abbr_table ) {
+    abbr_table make_abbr_table( abbr_block initial,
+        span<sysseconds_t const>           tt,
+        span<abbr_block const>             abbr,
+        sec_t                              cycle_time,
+        span<zone_abbr const>              abbr_table ) {
         auto table = _copy_unique( abbr_table );
         // If the timezone contains no transitions, our table is valid for the
         // full range of possible inputs

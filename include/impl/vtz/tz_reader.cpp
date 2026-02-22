@@ -1330,16 +1330,16 @@ namespace vtz {
 
         map<zone_abbr, size_t> abbr_lookup;
 
-        AbbrBlock add_abbr( zone_abbr const& abbr ) {
+        abbr_block add_abbr( zone_abbr const& abbr ) {
             size_t& id = abbr_lookup[abbr];
             // If it's a valid id, we just return (id - 1) to get the index
-            if( id ) return AbbrBlock::make( id - 1, abbr.size_ );
+            if( id ) return abbr_block::make( id - 1, abbr.size_ );
 
             // Otherwise we set the id and update the table
             auto result = abbr_table_.size();
             id          = result + 1;
             abbr_table_.push_back( abbr );
-            return AbbrBlock::make( result, abbr.size_ );
+            return abbr_block::make( result, abbr.size_ );
         }
 
 
