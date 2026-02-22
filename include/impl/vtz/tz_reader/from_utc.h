@@ -38,7 +38,7 @@ namespace vtz {
 
         /// Consider America/New_York. When we 'save' 1 hour, our offset from
         /// UTC goes from `-5:00` to `-4:00` - the hour is _added_ to the offset
-        constexpr FromUTC save( RuleSave save ) const noexcept {
+        constexpr FromUTC save( zone_save save ) const noexcept {
             return { off + save.save };
         }
 
@@ -50,7 +50,7 @@ namespace vtz {
         }
 
         /// Remove the save (eg, to get the stdoff from the walloff)
-        constexpr FromUTC unsave( RuleSave save ) const noexcept {
+        constexpr FromUTC unsave( zone_save save ) const noexcept {
             return { off - save.save };
         }
 

@@ -9,28 +9,28 @@ namespace vtz {
     using std::string;
     using std::string_view;
 
-    struct RuleSave {
+    struct zone_save {
         i32 save = 0;
 
-        constexpr RuleSave() = default;
-        constexpr RuleSave( i32 save ) noexcept
+        constexpr zone_save() = default;
+        constexpr zone_save( i32 save ) noexcept
         : save( save ) {}
 
         template<size_t N>
-        RuleSave( char const ( &arr )[N] )
-        : RuleSave( string_view( arr ) ) {}
+        zone_save( char const ( &arr )[N] )
+        : zone_save( string_view( arr ) ) {}
 
-        RuleSave( string_view text );
+        zone_save( string_view text );
 
-        static auto HHMM( int sign, i32 hour, i32 min ) noexcept -> RuleSave {
+        static auto HHMM( int sign, i32 hour, i32 min ) noexcept -> zone_save {
             return { sign * ( 3600 * hour + 60 * min ) };
         }
         static auto HHMMSS( int sign, i32 hour, i32 min, i32 sec ) noexcept
-            -> RuleSave {
+            -> zone_save {
             return { sign * ( 3600 * hour + 60 * min + sec ) };
         }
 
-        bool operator==( RuleSave rhs ) const noexcept {
+        bool operator==( zone_save rhs ) const noexcept {
             return save == rhs.save;
         }
     };

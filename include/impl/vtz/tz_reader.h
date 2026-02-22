@@ -53,7 +53,7 @@ namespace vtz {
     struct RuleTrans {
         sysdays_t  date;
         RuleAt     at;
-        RuleSave   save;
+        zone_save  save;
         RuleLetter letter;
 
         /// Resolve the time when the rule would take effect, based on the
@@ -84,7 +84,7 @@ namespace vtz {
             u32                          mon,
             u32                          day,
             RuleAt                       at,
-            RuleSave                     save,
+            zone_save                    save,
             RuleLetter                   letter ) {
             return RuleTrans{
                 resolve_civil( year, mon, day ), at, save, letter
@@ -123,7 +123,7 @@ namespace vtz {
         Mon         in;
         RuleOn      on;
         RuleAt      at;
-        RuleSave    save;
+        zone_save   save;
         RuleLetter  letter;
 
         /// Resolve the DateTime (in sysseconds_t)
@@ -420,7 +420,7 @@ namespace vtz {
         RuleTransIter rule_iter_;
         RuleTrans     next_;
         RuleLetter    current_letter_;
-        RuleSave      current_save_;
+        zone_save     current_save_;
         bool          is_done;
 
       public:
@@ -485,7 +485,7 @@ namespace vtz {
             return ZoneState( stdoff, current_save_, format, current_letter_ );
         }
 
-        RuleSave   current_save() const noexcept { return current_save_; }
+        zone_save  current_save() const noexcept { return current_save_; }
         RuleLetter current_letter() const noexcept { return current_letter_; }
 
         /// Return the next ZoneTransition, if one exists prior to the

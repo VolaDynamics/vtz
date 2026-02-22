@@ -13,7 +13,7 @@ namespace vtz {
         ZoneState() = default;
 
         constexpr ZoneState(
-            FromUTC stdoff, RuleSave save, zone_abbr const& abbr ) noexcept
+            FromUTC stdoff, zone_save save, zone_abbr const& abbr ) noexcept
         : ZoneTime{ stdoff, stdoff.save( save ) }
         , abbr( abbr ) {}
 
@@ -31,7 +31,7 @@ namespace vtz {
         , abbr( fmt.format( walloff, stdoff != walloff, letter ) ) {}
 
         constexpr ZoneState( FromUTC stdoff,
-            RuleSave                 save,
+            zone_save                save,
             ZoneFormat const&        fmt,
             RuleLetter               letter ) noexcept
         : ZoneTime{ stdoff, stdoff.save( save ) }

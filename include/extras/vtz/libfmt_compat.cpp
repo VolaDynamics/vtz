@@ -35,7 +35,7 @@ namespace vtz {
     }
 
 
-    std::string format_as( RuleSave s ) {
+    std::string format_as( zone_save s ) {
         if( s.save == 0 ) { return "0"; }
 
         return to_hhmmss( s.save );

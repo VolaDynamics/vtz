@@ -418,12 +418,12 @@ namespace vtz {
 
     namespace {
 
-        RuleSave parse_rule_save( opt_token tok ) {
+        zone_save parse_rule_save( opt_token tok ) {
             size_t      size = tok.size();
             char const* p    = tok.data();
 
             auto result = parse_signed_hhmmss_offset( p, size );
-            if( result != OFFSET_NPOS ) return RuleSave{ result };
+            if( result != OFFSET_NPOS ) return zone_save{ result };
 
             // throw failure
             throw ParseError{
@@ -1193,7 +1193,7 @@ namespace vtz {
     }
 
 
-    RuleSave::RuleSave( string_view text ) {
+    zone_save::zone_save( string_view text ) {
         save = parse_rule_save( opt_token( text ) ).save;
     }
     RuleAt::RuleAt( string_view text )

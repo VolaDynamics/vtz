@@ -68,8 +68,8 @@ namespace vtz {
             return i32( _impl::_load4( data_.buff_ + 3 ) );
         }
 
-        /// Return the offset as a RuleSave
-        constexpr RuleSave save() const noexcept { return offset(); }
+        /// Return the offset as a zone_save
+        constexpr zone_save save() const noexcept { return offset(); }
 
         bool operator==( ZoneRule const& rhs ) const noexcept {
             return _b16( *this ) == _b16( rhs );

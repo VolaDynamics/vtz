@@ -47,7 +47,7 @@ struct entry {
     sysseconds_t begin;
     sysseconds_t end;
     FromUTC      offset;
-    RuleSave     save;
+    zone_save    save;
 
     template<size_t N>
     zone_abbr fix_abbr() const {
@@ -76,7 +76,7 @@ std::vector<entry> get_entries( string_view name, sys_seconds start, sys_seconds
             info.begin.time_since_epoch().count(),
             info.end.time_since_epoch().count(),
             FromUTC( i32( info.offset.count() ) ),
-            RuleSave( i32( info.save.count() * 60 ) ),
+            zone_save( i32( info.save.count() * 60 ) ),
         } );
         T = info.end;
     }

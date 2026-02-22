@@ -350,7 +350,7 @@ namespace vtz {
             // to get the stdoff this is a HEURISTIC to try and obtain a
             // reasonable stdoff quantity when the zone is always in dst
             auto stdoff
-                = ty.tt_isdst() ? utoff.unsave( RuleSave( 3600 ) ) : utoff;
+                = ty.tt_isdst() ? utoff.unsave( zone_save( 3600 ) ) : utoff;
             return {
                 stdoff,
                 utoff,
@@ -387,7 +387,8 @@ namespace vtz {
                 //
                 // the tzfile doesn't encode that this is the case, but we
                 // should assume that it is
-                if( stdoff == utoff ) stdoff = utoff.unsave( RuleSave{ 3600 } );
+                if( stdoff == utoff )
+                    stdoff = utoff.unsave( zone_save{ 3600 } );
             }
 
             return ZoneState{ stdoff, utoff, abbrev };
