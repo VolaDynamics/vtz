@@ -73,7 +73,7 @@ namespace vtz {
     };
 
     template<class T>
-    struct TrivialOpt {
+    struct trivial_opt {
         static_assert( std::is_trivial<T>{} );
         T    data;
         bool good;
@@ -98,7 +98,7 @@ namespace vtz {
             return { opt_traits<T>::NULL_VALUE };
         }
         template<class T>
-        constexpr operator TrivialOpt<T>() const noexcept {
+        constexpr operator trivial_opt<T>() const noexcept {
             return {};
         }
 
@@ -115,7 +115,7 @@ namespace vtz {
         T value;
 
         constexpr operator opt_class<T>() const noexcept { return { value }; }
-        constexpr operator TrivialOpt<T>() const noexcept {
+        constexpr operator trivial_opt<T>() const noexcept {
             return { value, true };
         }
 

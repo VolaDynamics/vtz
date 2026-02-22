@@ -108,7 +108,7 @@ namespace vtz {
         }
 
         // Parse 4 digits
-        TrivialOpt<i32> parse4( char const* src ) noexcept {
+        trivial_opt<i32> parse4( char const* src ) noexcept {
             i32 v0 = src[0] - '0';
             i32 v1 = src[1] - '0';
             i32 v2 = src[2] - '0';
@@ -120,7 +120,7 @@ namespace vtz {
         }
 
         // Parse 1 or 2 digits. Anything else is bad.
-        constexpr TrivialOpt<i32> parse1or2(
+        constexpr trivial_opt<i32> parse1or2(
             char const* src, size_t size ) noexcept {
             if( size == 2 )
             {
