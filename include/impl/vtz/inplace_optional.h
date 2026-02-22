@@ -111,7 +111,7 @@ namespace vtz {
 
     /// Holds a value, implicitly convertible to an OptV
     template<class T>
-    struct SomeType {
+    struct some_type {
         T value;
 
         constexpr operator opt_class<T>() const noexcept { return { value }; }
@@ -128,7 +128,7 @@ namespace vtz {
     constexpr inline none_type none{};
 
     template<class T>
-    constexpr inline SomeType<T> some( T value ) noexcept {
+    constexpr inline some_type<T> some( T value ) noexcept {
         return { value };
     }
 
