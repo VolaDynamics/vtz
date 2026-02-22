@@ -1069,9 +1069,9 @@ namespace vtz {
         auto content = read_file_bytes( fp.c_str() );
 
         TZData result{
-            RuleMap( RULE_BUCKETS ),
-            ZoneMap( ZONE_BUCKETS ),
-            LinkMap( LINK_BUCKETS ),
+            rule_map( RULE_BUCKETS ),
+            zone_map( ZONE_BUCKETS ),
+            link_map( LINK_BUCKETS ),
         };
 
         append_tzdata(
@@ -1085,9 +1085,9 @@ namespace vtz {
 
     TZData load_zone_info_from_dir( string dir ) {
         TZData result{
-            RuleMap( RULE_BUCKETS ),
-            ZoneMap( ZONE_BUCKETS ),
-            LinkMap( LINK_BUCKETS ),
+            rule_map( RULE_BUCKETS ),
+            zone_map( ZONE_BUCKETS ),
+            link_map( LINK_BUCKETS ),
         };
 
         // Attempt to open tzdata.zi. If present, we'll use that, and we don't
@@ -1184,9 +1184,9 @@ namespace vtz {
 
     TZDataFile parse_tzdata( string_view input, string_view filename ) {
         TZDataFile file{
-            RuleMap( RULE_BUCKETS ),
-            ZoneMap( ZONE_BUCKETS ),
-            LinkMap( LINK_BUCKETS ),
+            rule_map( RULE_BUCKETS ),
+            zone_map( ZONE_BUCKETS ),
+            link_map( LINK_BUCKETS ),
         };
 
         append_tzdata( file, input, filename );

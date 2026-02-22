@@ -225,9 +225,9 @@ namespace vtz {
         }
     };
 
-    using RuleMap = map<string_view, vector<RuleEntry>>;
-    using ZoneMap = map<string_view, vector<ZoneEntry>>;
-    using LinkMap = map<string_view, string_view>;
+    using rule_map = map<string_view, vector<RuleEntry>>;
+    using zone_map = map<string_view, vector<ZoneEntry>>;
+    using link_map = map<string_view, string_view>;
 
 
     /// Get's the initial state, before any transition has happened.
@@ -629,9 +629,9 @@ namespace vtz {
     };
 
     struct TZDataFile {
-        RuleMap rules;
-        ZoneMap zones;
-        LinkMap links;
+        rule_map rules;
+        zone_map zones;
+        link_map links;
 
         RuleEvalResult evaluate_rules( string_view rule ) const;
         zone_states    get_zone_states( string_view name, i32 end_year ) const;

@@ -317,7 +317,7 @@ namespace vtz {
         , rule_cache()
         , data()
         , zoneinfo_dir( std::move( zoneinfo_dir ) ) {
-            data.links = LinkMap( known_links.begin(), known_links.end() );
+            data.links = link_map( known_links.begin(), known_links.end() );
         }
 
 
