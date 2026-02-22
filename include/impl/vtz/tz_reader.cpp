@@ -507,7 +507,7 @@ namespace vtz {
             };
         }
 
-        ZoneUntil parse_zone_until( string_view sv ) {
+        zone_until parse_zone_until( string_view sv ) {
             constexpr rule_at midnight = rule_at( 0, rule_at::LOCAL_WALL );
 
             token_iter iter( sv );
@@ -538,22 +538,22 @@ namespace vtz {
                                 };
                             }
                             // 'UNTIL' field given year, month, day, and STDOFF
-                            return ZoneUntil{ date, at };
+                            return zone_until{ date, at };
                         }
                         // 'UNTIL' field given year, month, and day, but no time
                         // use midnight local time
-                        return ZoneUntil{ date, midnight };
+                        return zone_until{ date, midnight };
                     }
                     // 'UNTIL' field given a year and month - use midnight and
                     // the first day of the month
-                    return ZoneUntil{ resolve_civil( y, m, 1 ), midnight };
+                    return zone_until{ resolve_civil( y, m, 1 ), midnight };
                 }
                 // 'UNTIL' field only given a year
-                return ZoneUntil{ resolve_civil( y, 1, 1 ), midnight };
+                return zone_until{ resolve_civil( y, 1, 1 ), midnight };
             }
             // 'UNTIL' field is empty; reached end of
             // Zone entry
-            return ZoneUntil::none();
+            return zone_until::none();
         }
     } // namespace
 

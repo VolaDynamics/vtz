@@ -57,7 +57,7 @@ namespace vtz {
     }
 
 
-    std::string format_as( ZoneUntil until ) {
+    std::string format_as( zone_until until ) {
         if( until.has_value() )
         {
             auto ymd = to_civil( until.date );

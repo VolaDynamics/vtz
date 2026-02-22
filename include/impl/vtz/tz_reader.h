@@ -188,7 +188,7 @@ namespace vtz {
 
     struct ZoneEntry {
         from_utc   stdoff;
-        ZoneUntil  until;
+        zone_until  until;
         ZoneRule   rules;
         zone_format format;
 
@@ -197,7 +197,7 @@ namespace vtz {
         constexpr ZoneEntry( from_utc stdoff,
             ZoneRule                  rules,
             zone_format               format,
-            ZoneUntil                 until ) noexcept
+            zone_until                until ) noexcept
         : stdoff( stdoff )
         , until( until )
         , rules( rules )

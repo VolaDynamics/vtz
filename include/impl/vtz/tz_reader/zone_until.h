@@ -6,12 +6,12 @@
 #include <vtz/tz_reader/rule_at.h>
 
 namespace vtz {
-    struct ZoneUntil {
+    struct zone_until {
         sysdays_t date;
         rule_at   at; ///< Time of day when it ends
 
 
-        /// Return the date referred to by this ZoneUntil
+        /// Return the date referred to by this zone_until
         constexpr sysdays_t resolve_date() const noexcept { return date; }
 
         /// Return the time this 'until' refers to
@@ -19,12 +19,12 @@ namespace vtz {
             return at.resolve_at( date, time );
         }
 
-        bool operator==( ZoneUntil const& rhs ) const noexcept {
+        bool operator==( zone_until const& rhs ) const noexcept {
             return _b8( *this ) == _b8( rhs );
         }
 
         constexpr bool has_value() const noexcept { return date != MAX_DAYS; }
 
-        constexpr static ZoneUntil none() noexcept { return { MAX_DAYS, {} }; }
+        constexpr static zone_until none() noexcept { return { MAX_DAYS, {} }; }
     };
 } // namespace vtz
