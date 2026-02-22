@@ -17,11 +17,11 @@ namespace vtz {
     /// ```
     ///
     /// Format is `L <canonical name> <alias>`.
-    struct Link {
+    struct zone_link {
         string_view canonical;
         string_view alias;
 
-        bool operator==( Link rhs ) const noexcept {
+        bool operator==( zone_link rhs ) const noexcept {
             return canonical == rhs.canonical //
                    && alias == rhs.alias;
         }

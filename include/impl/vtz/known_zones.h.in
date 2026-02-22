@@ -15,7 +15,7 @@ namespace vtz {
 
     /// contains a list of known links. Used to construct the timezone link
     /// cache if the timezone source files cannot be found.
-    constexpr Link KNOWN_LINKS[] {
+    constexpr zone_link KNOWN_LINKS[] {
         @KNOWN_LINKS@,
     };
 

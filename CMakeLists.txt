@@ -226,7 +226,7 @@ if(PROJECT_IS_TOP_LEVEL)
     foreach(line IN LISTS TZDATA_ZI_LINKS)
         # Extract Link of form "L <name> <alias>"
         string(REGEX REPLACE "^L ([^ ]+) ([^ ]+)" "{ \"\\1\", \"\\2\" }" zone_link "${line}")
-        list(APPEND KNOWN_LINKS_LIST "Link${zone_link}")
+        list(APPEND KNOWN_LINKS_LIST "zone_link${zone_link}")
     endforeach()
     list(JOIN KNOWN_LINKS_LIST ",\n        " KNOWN_LINKS)
 

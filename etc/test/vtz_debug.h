@@ -46,7 +46,7 @@ STRUCT_INFO( vtz::ZoneEntry,
 
 STRUCT_INFO( vtz::Zone, FIELD( name ), FIELD( ents ) );
 
-STRUCT_INFO( vtz::Link, FIELD( canonical ), FIELD( alias ) );
+STRUCT_INFO( vtz::zone_link, FIELD( canonical ), FIELD( alias ) );
 
 STRUCT_INFO( vtz::TZDataFile,
     FIELD( rules ),

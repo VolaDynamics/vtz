@@ -681,8 +681,8 @@ namespace vtz {
     }
 
 
-    Link parse_link( token_iter tok_iter ) {
-        Link link;
+    zone_link parse_link( token_iter tok_iter ) {
+        zone_link link;
         link.canonical = tok_iter.next();
         link.alias     = tok_iter.next();
         return link;
@@ -782,7 +782,7 @@ namespace vtz {
                 }
                 if( what == "L" || what == "Link" )
                 {
-                    Link link              = parse_link( tok_iter );
+                    zone_link link         = parse_link( tok_iter );
                     file.links[link.alias] = link.canonical;
                     continue;
                 }

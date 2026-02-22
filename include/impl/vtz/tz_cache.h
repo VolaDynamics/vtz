@@ -312,7 +312,7 @@ namespace vtz {
 
         explicit TimeZoneCache( std::string zoneinfo_dir,
             span<std::string_view const>    known_zones = KNOWN_ZONES,
-            span<Link const>                known_links = KNOWN_LINKS )
+            span<zone_link const>           known_links = KNOWN_LINKS )
         : zone_cache( init_empty_map<time_zone>( known_zones ) )
         , rule_cache()
         , data()
@@ -372,15 +372,15 @@ namespace vtz {
             return result;
         }
 
-        std::vector<Link> links() {
-            auto result = std::vector<Link>( data.links.size() );
+        std::vector<zone_link> links() {
+            auto result = std::vector<zone_link>( data.links.size() );
 
             size_t i = 0;
             for( auto const& [key, value] : data.links )
             {
                 // value goes first because the key is the alias, which resolves
                 // to a canonical name
-                result[i++] = Link{ value, key };
+                result[i++] = zone_link{ value, key };
             }
 
             return result;
