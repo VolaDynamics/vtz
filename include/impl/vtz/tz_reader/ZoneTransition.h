@@ -13,7 +13,7 @@ namespace vtz {
         : when( when )
         , state( state ) {}
 
-        constexpr ZoneTransition( NoneType ) noexcept
+        constexpr ZoneTransition( none_type ) noexcept
         : when( INT64_MAX )
         , state() {}
 

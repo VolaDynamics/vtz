@@ -92,7 +92,7 @@ namespace vtz {
         constexpr explicit operator bool() const noexcept { return good; }
     };
 
-    struct NoneType {
+    struct none_type {
         template<class T>
         constexpr operator opt_class<T>() const noexcept {
             return { opt_traits<T>::NULL_VALUE };
@@ -125,7 +125,7 @@ namespace vtz {
         }
     };
 
-    constexpr inline NoneType none{};
+    constexpr inline none_type none{};
 
     template<class T>
     constexpr inline SomeType<T> some( T value ) noexcept {
