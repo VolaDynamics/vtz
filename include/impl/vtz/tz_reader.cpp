@@ -1459,7 +1459,7 @@ namespace vtz {
         // In this case, there should be no generated zone transitions.
         if( resolve_dst( 2001 ) == resolve_std( 2000 ) ) return {};
 
-        auto it = TZStringIter::start_after( *this, T );
+        auto it = tz_string_iter::start_after( *this, T );
 
         std::vector<zone_transition> result;
         for( ;; )

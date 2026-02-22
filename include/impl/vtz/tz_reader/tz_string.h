@@ -224,7 +224,7 @@ namespace vtz {
     };
 
 
-    class TZStringIter {
+    class tz_string_iter {
         using ZT = zone_transition;
 
         sysseconds_t peek_next_time() const noexcept {
@@ -258,24 +258,25 @@ namespace vtz {
             return result;
         }
 
-        /// Construct a TZStringIter from the given string spec, starting at the
-        /// given year. Assumes that the given string has daylight rules.
-        TZStringIter( tz_string const& s, i32 y )
+        /// Construct a tz_string_iter from the given string spec, starting at
+        /// the given year. Assumes that the given string has daylight rules.
+        tz_string_iter( tz_string const& s, i32 y )
         : s( s )
         , year_dst( y )
         , year_std( y )
         , dst_next_( s.resolve_dst( y ) < s.resolve_std( y ) ) {
             if( !s.has_daylight_rules() )
             {
-                throw std::runtime_error(
-                    "TZStringIter(): constructing a TZStringIter for a string "
-                    "that doesn't have dst rules" );
+                throw std::runtime_error( "tz_string_iter(): constructing a "
+                                          "tz_string_iter for a string "
+                                          "that doesn't have dst rules" );
             }
         }
 
-        static TZStringIter start_after( tz_string const& s, sysseconds_t T ) {
+        static tz_string_iter start_after(
+            tz_string const& s, sysseconds_t T ) {
             auto date = sysdays_t( vtz::math::div_floor<86400>( T ) );
-            auto it   = TZStringIter( s, civil_year( date ) );
+            auto it   = tz_string_iter( s, civil_year( date ) );
             it.advance_past( T );
             return it;
         }
