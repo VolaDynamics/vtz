@@ -67,7 +67,7 @@ namespace vtz {
     vector<string_view> lines( string_view input ) {
         auto result = vector<string_view>( count_lines( input ) );
 
-        LineIter r( input );
+        line_iter r( input );
         for( auto& elem : result ) { elem = r.next(); }
         return result;
     }

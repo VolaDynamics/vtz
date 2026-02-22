@@ -688,7 +688,7 @@ namespace vtz {
     ZoneEntry parse_zone_entry( token_iter tok_iter );
 
     /// Parses either a rule, zone, or link
-    void parse_entry( TZDataFile& file, string_view line, LineIter& lines );
+    void parse_entry( TZDataFile& file, string_view line, line_iter& lines );
 
     // Estimated number of buckets for rules
     // There are 130 rules:

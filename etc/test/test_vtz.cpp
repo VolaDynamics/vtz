@@ -119,7 +119,7 @@ namespace {
     }
 
     void check_lines( string_view input, std::vector<string_view> lines ) {
-        auto reader = LineIter( input );
+        auto reader = line_iter( input );
         for( auto expected : lines )
         {
             auto line = reader.next();

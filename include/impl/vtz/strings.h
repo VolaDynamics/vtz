@@ -268,16 +268,16 @@ namespace vtz {
     }
 
 
-    struct LineIter {
+    struct line_iter {
       private:
 
         string_view input;
 
       public:
 
-        LineIter() = default;
+        line_iter() = default;
 
-        constexpr LineIter( string_view input ) noexcept
+        constexpr line_iter( string_view input ) noexcept
         : input( input ) {}
 
         constexpr opt_sv next() noexcept {

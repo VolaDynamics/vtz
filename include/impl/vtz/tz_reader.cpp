@@ -713,7 +713,7 @@ namespace vtz {
         };
     }
 
-    string_view next_zone_line( LineIter& lines ) {
+    string_view next_zone_line( line_iter& lines ) {
         while( auto next_line = lines.next() )
         {
             auto line = strip_leading_delim( *next_line );
@@ -726,7 +726,7 @@ namespace vtz {
             lines.rest() };
     }
 
-    Zone parse_zone( token_iter tok_iter, LineIter& lines ) {
+    Zone parse_zone( token_iter tok_iter, line_iter& lines ) {
         Zone z;
         z.name = tok_iter.next();
         z.ents.reserve( 32 );
@@ -750,7 +750,7 @@ namespace vtz {
         TZDataFile& file, string_view input, string_view filename ) {
         try
         {
-            auto lines = LineIter( input );
+            auto lines = line_iter( input );
 
             while( auto next_line = lines.next() )
             {
@@ -1058,7 +1058,7 @@ namespace vtz {
         if( !starts_with( content, VERSION_PREFIX ) ) { return opt_sv(); }
 
         auto     remainder = content.substr( VERSION_PREFIX.size() );
-        LineIter it( remainder );
+        line_iter it( remainder );
 
         return it.next();
     }
@@ -1136,7 +1136,7 @@ namespace vtz {
         // Load the version. Throw an exception if we're unable to load the
         // version.
         result.version
-            = std::string( LineIter( read_file( join_path( dir, "version" ) ) )
+            = std::string( line_iter( read_file( join_path( dir, "version" ) ) )
                     .next()
                     .value_or( "(unknown version)" ) );
 
