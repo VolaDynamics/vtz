@@ -7,7 +7,7 @@
 #include <memory>
 
 namespace vtz {
-    struct LeapTable {
+    struct leap_table {
         size_t                 leapcnt_ = 0;
         std::unique_ptr<i32[]> counts_  = nullptr;
         std::unique_ptr<i64[]> when_    = nullptr;
@@ -27,10 +27,10 @@ namespace vtz {
         i32 counts( size_t i ) const noexcept { return counts_[i]; }
         i64 when( size_t i ) const noexcept { return when_[i]; }
 
-        LeapTable() = default;
+        leap_table() = default;
 
         template<class T>
-        LeapTable( endian::span_bytes<leap_bytes<T>> tt )
+        leap_table( endian::span_bytes<leap_bytes<T>> tt )
         : leapcnt_( tt.size() )
         , counts_( tt.empty() ? nullptr : new i32[tt.size()] )
         , when_( tt.empty() ? nullptr : new i64[tt.size()] ) {

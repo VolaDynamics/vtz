@@ -1486,7 +1486,7 @@ namespace vtz {
 
         auto TT           = file.transition_times();
         auto type_indices = file.type_indices();
-        auto leap         = LeapTable( file.leap() );
+        auto leap         = leap_table( file.leap() );
 
         // We are going to keep track of the current stdoff. This will be
         // updated as we compute Zone States

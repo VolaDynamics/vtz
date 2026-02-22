@@ -108,7 +108,7 @@ void print_file(
     auto   ttinfo       = ff.ttinfo();
     auto   designations = ff.abbrev_buff();
 
-    vtz::LeapTable leaps = ff.leap();
+    vtz::leap_table leaps = ff.leap();
 
     auto is_std = ff.isstd();
     auto is_utc = ff.isutc();
