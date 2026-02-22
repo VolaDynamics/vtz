@@ -25,20 +25,20 @@ namespace vtz {
     using ankerl::unordered_dense::map;
 
     template<class T>
-    class AtomicEnt {
+    class atomic_entry {
         mutable std::atomic<T const*> tz = nullptr;
 
       public:
 
-        AtomicEnt() = default;
+        atomic_entry() = default;
 
-        AtomicEnt( std::nullptr_t )
+        atomic_entry( std::nullptr_t )
         : tz( nullptr ) {}
 
-        AtomicEnt( std::unique_ptr<T>&& tz ) noexcept
+        atomic_entry( std::unique_ptr<T>&& tz ) noexcept
         : tz( tz.release() ) {}
 
-        AtomicEnt( AtomicEnt&& rhs )
+        atomic_entry( atomic_entry&& rhs )
         : tz( rhs.tz.exchange( nullptr, std::memory_order_relaxed ) ) {}
 
         T const* load() const noexcept {
@@ -79,7 +79,7 @@ namespace vtz {
             }
         }
 
-        ~AtomicEnt() {
+        ~atomic_entry() {
             auto* ptr = tz.load( std::memory_order_relaxed );
             delete ptr;
         }
@@ -87,8 +87,8 @@ namespace vtz {
 
 
     template<class T, class K, class V>
-    auto init_empty_map( map<K, V> const& m ) -> map<K, AtomicEnt<T>> {
-        using result_t   = map<string_view, AtomicEnt<T>>;
+    auto init_empty_map( map<K, V> const& m ) -> map<K, atomic_entry<T>> {
+        using result_t   = map<string_view, atomic_entry<T>>;
         using value_type = typename result_t::value_type;
         struct _ent {
             K key;
@@ -105,8 +105,8 @@ namespace vtz {
     }
 
     template<class T, class K>
-    auto init_empty_map( span<K const> keys ) -> map<K, AtomicEnt<T>> {
-        using result_t   = map<string_view, AtomicEnt<T>>;
+    auto init_empty_map( span<K const> keys ) -> map<K, atomic_entry<T>> {
+        using result_t   = map<string_view, atomic_entry<T>>;
         using value_type = typename result_t::value_type;
         struct _ent {
             K key;
@@ -257,12 +257,12 @@ namespace vtz {
     struct TimeZoneCache {
         /// These are the zones that have been successfully loaded. When
         /// attempting to locate a zone, `locate_zone()` will check here first.
-        map<string_view, AtomicEnt<time_zone>> zone_cache;
+        map<string_view, atomic_entry<time_zone>> zone_cache;
 
 
         /// These are the rules that have been successfully loaded. This cache
         /// is used when loading a zone that has not yet been loaded.
-        map<string_view, AtomicEnt<RuleEvalResult>> rule_cache;
+        map<string_view, atomic_entry<RuleEvalResult>> rule_cache;
 
 
         TZData data;

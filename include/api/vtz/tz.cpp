@@ -497,7 +497,7 @@ namespace vtz {
     , name_( name ) {}
 
 
-    using TZHolder = AtomicEnt<time_zone>;
+    using TZHolder = atomic_entry<time_zone>;
 
 
 } // namespace vtz
