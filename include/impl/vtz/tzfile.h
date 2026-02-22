@@ -10,8 +10,8 @@
 #include <vtz/impl/bit.h>
 #include <vtz/span.h>
 #include <vtz/strings.h>
-#include <vtz/tz_reader/FromUTC.h>
-#include <vtz/tz_reader/ZoneState.h>
+#include <vtz/tz_reader/from_utc.h>
+#include <vtz/tz_reader/zone_state.h>
 
 
 namespace vtz {

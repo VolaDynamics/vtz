@@ -8,10 +8,10 @@
 #include <vtz/strings.h>
 #include <vtz/tz_cache.h>
 #include <vtz/tz_reader.h>
-#include <vtz/tz_reader/FromUTC.h>
-#include <vtz/tz_reader/LeapTable.h>
-#include <vtz/tz_reader/ZoneFormat.h>
-#include <vtz/tz_reader/ZoneRule.h>
+#include <vtz/tz_reader/from_utc.h>
+#include <vtz/tz_reader/leap_table.h>
+#include <vtz/tz_reader/zone_format.h>
+#include <vtz/tz_reader/zone_rule.h>
 #include <vtz/tzfile.h>
 
 #include <algorithm>

@@ -2,7 +2,7 @@
 
 #include <vtz/impl/bit.h>
 #include <vtz/strings.h>
-#include <vtz/tz_reader/RuleSave.h>
+#include <vtz/tz_reader/zone_save.h>
 
 namespace vtz {
     using RuleName = fix_str<15>;

@@ -2,8 +2,8 @@
 
 #include <vtz/civil.h>
 #include <vtz/impl/bit.h>
-#include <vtz/tz_reader/FromUTC.h>
-#include <vtz/tz_reader/ZoneTime.h>
+#include <vtz/tz_reader/from_utc.h>
+#include <vtz/tz_reader/zone_time.h>
 
 #include <vtz/inplace_optional.h>
 

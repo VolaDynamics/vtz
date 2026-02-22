@@ -5,7 +5,7 @@
 #include <vtz/impl/bit.h>
 #include <vtz/impl/zone_abbr.h>
 #include <vtz/strings.h>
-#include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/from_utc.h>
 
 namespace vtz {
 

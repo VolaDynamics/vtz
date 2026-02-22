@@ -3,7 +3,7 @@
 #include <vtz/civil.h>
 #include <vtz/date_types.h>
 #include <vtz/inplace_optional.h>
-#include <vtz/tz_reader/RuleAt.h>
+#include <vtz/tz_reader/rule_at.h>
 
 namespace vtz {
     struct ZoneUntil {

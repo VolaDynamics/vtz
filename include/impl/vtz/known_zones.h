@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string_view>
-#include <vtz/tz_reader/Link.h>
+#include <vtz/tz_reader/link.h>
 
 namespace vtz {
     // Disabled because we don't want code to be changed after generation

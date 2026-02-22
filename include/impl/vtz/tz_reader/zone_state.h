@@ -1,9 +1,9 @@
 #pragma once
 
 #include <vtz/strings.h>
-#include <vtz/tz_reader/RuleLetter.h>
-#include <vtz/tz_reader/ZoneFormat.h>
-#include <vtz/tz_reader/ZoneTime.h>
+#include <vtz/tz_reader/rule_letter.h>
+#include <vtz/tz_reader/zone_format.h>
+#include <vtz/tz_reader/zone_time.h>
 
 namespace vtz {
 

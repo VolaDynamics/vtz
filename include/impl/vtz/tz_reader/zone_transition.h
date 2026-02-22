@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vtz/tz_reader/ZoneState.h>
+#include <vtz/tz_reader/zone_state.h>
 
 namespace vtz {
 

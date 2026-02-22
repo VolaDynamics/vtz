@@ -2,11 +2,11 @@
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <vtz/files.h>
-#include <vtz/strings.h>
 #include <vtz/format.h>
+#include <vtz/strings.h>
 #include <vtz/tz.h>
-#include <vtz/tz_reader/FromUTC.h>
-#include <vtz/tz_reader/LeapTable.h>
+#include <vtz/tz_reader/from_utc.h>
+#include <vtz/tz_reader/leap_table.h>
 #include <vtz/tzfile.h>
 
 #include <vtz/libfmt_compat.h>

@@ -4,11 +4,11 @@
 #include "vtz_testing.h"
 
 
-#include <vtz/tz_reader/ZoneTransition.h>
+#include <fmt/chrono.h>
 #include <vtz/impl/math.h>
 #include <vtz/tz.h>
-#include <fmt/chrono.h>
 #include <vtz/tz_reader.h>
+#include <vtz/tz_reader/zone_transition.h>
 
 DECLARE_STRINGLIKE( vtz::zone_abbr );
 

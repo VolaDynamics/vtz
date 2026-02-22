@@ -5,7 +5,7 @@
 #include <vtz/impl/bit.h>
 #include <vtz/impl/math.h>
 #include <vtz/strings.h>
-#include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/from_utc.h>
 
 namespace vtz::detail {
     // clang-format off

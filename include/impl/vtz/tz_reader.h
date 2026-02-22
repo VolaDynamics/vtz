@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vtz/tz_reader/TZString.h"
+#include "vtz/tz_reader/tz_string.h"
 #include <algorithm>
 #include <utility>
 #include <vtz/civil.h>
@@ -11,16 +11,16 @@
 #include <vtz/span.h>
 #include <vtz/strings.h>
 
-#include <vtz/tz_reader/FromUTC.h>
-#include <vtz/tz_reader/Link.h>
-#include <vtz/tz_reader/RuleAt.h>
-#include <vtz/tz_reader/RuleLetter.h>
-#include <vtz/tz_reader/RuleOn.h>
-#include <vtz/tz_reader/RuleSave.h>
-#include <vtz/tz_reader/ZoneFormat.h>
-#include <vtz/tz_reader/ZoneRule.h>
-#include <vtz/tz_reader/ZoneState.h>
-#include <vtz/tz_reader/ZoneUntil.h>
+#include <vtz/tz_reader/from_utc.h>
+#include <vtz/tz_reader/link.h>
+#include <vtz/tz_reader/rule_at.h>
+#include <vtz/tz_reader/rule_letter.h>
+#include <vtz/tz_reader/rule_on.h>
+#include <vtz/tz_reader/zone_format.h>
+#include <vtz/tz_reader/zone_rule.h>
+#include <vtz/tz_reader/zone_save.h>
+#include <vtz/tz_reader/zone_state.h>
+#include <vtz/tz_reader/zone_until.h>
 
 #include <ankerl/unordered_dense.h>
 #include <array>

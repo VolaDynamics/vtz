@@ -4,7 +4,7 @@
 #include <vtz/tz.h>
 #include <vtz/tz_cache.h>
 #include <vtz/tz_reader.h>
-#include <vtz/tz_reader/FromUTC.h>
+#include <vtz/tz_reader/from_utc.h>
 
 #include <vtz/libfmt_compat.h>
 

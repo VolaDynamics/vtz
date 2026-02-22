@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vtz/impl/bit.h>
-#include <vtz/tz_reader/FromUTC.h>
-#include <vtz/tz_reader/RuleSave.h>
+#include <vtz/tz_reader/from_utc.h>
+#include <vtz/tz_reader/zone_save.h>
 
 namespace vtz {
     /// Holds the stdoff and walloff for a zone at a particular point in time

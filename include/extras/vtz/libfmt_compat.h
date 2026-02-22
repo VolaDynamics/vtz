@@ -2,9 +2,9 @@
 
 #include <string>
 #include <vtz/tz_reader.h>
-#include <vtz/tz_reader/RuleOn.h>
-#include <vtz/tz_reader/RuleSave.h>
-#include <vtz/tz_reader/ZoneUntil.h>
+#include <vtz/tz_reader/rule_on.h>
+#include <vtz/tz_reader/zone_save.h>
+#include <vtz/tz_reader/zone_until.h>
 
 
 namespace vtz {
