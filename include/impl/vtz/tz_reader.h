@@ -62,14 +62,14 @@ namespace vtz {
             return at.resolve_at( date, time );
         }
 
-        /// Resolve the ZoneTransition when the rule would take effect, based
+        /// Resolve the zone_transition when the rule would take effect, based
         /// on the current state of the zone.
         ///
         /// The rule will take effect based on the zone's _CURRENT_ stdoff or
         /// walloff, so we need to pass in the full zone_time object.
-        constexpr ZoneTransition resolve_trans(
+        constexpr zone_transition resolve_trans(
             zone_time time, zone_format format ) const noexcept {
-            return ZoneTransition{
+            return zone_transition{
                 resolve( time ),
                 zone_state{
                     time.stdoff,
@@ -488,11 +488,11 @@ namespace vtz {
         zone_save  current_save() const noexcept { return current_save_; }
         rule_letter current_letter() const noexcept { return current_letter_; }
 
-        /// Return the next ZoneTransition, if one exists prior to the
+        /// Return the next zone_transition, if one exists prior to the
         /// until_time
-        std::optional<ZoneTransition> next( sysseconds_t until_time,
-            from_utc                                     stdoff,
-            zone_format const&                           format ) {
+        std::optional<zone_transition> next( sysseconds_t until_time,
+            from_utc                                      stdoff,
+            zone_format const&                            format ) {
             // Record the current walloff. This is needed because the time
             // when the next transition will occur will be in terms of the
             // current walloff.
@@ -572,7 +572,7 @@ namespace vtz {
 
         vector<sysseconds_t> tt_;
 
-        vector<ZoneTransition> get_transitions() const;
+        vector<zone_transition> get_transitions() const;
 
         zone_state initial() const noexcept {
             return {

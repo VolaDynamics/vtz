@@ -219,13 +219,13 @@ namespace vtz {
 
 
         /// Get zone transitions appearing strictly _after_ T
-        vector<ZoneTransition> get_states(
+        vector<zone_transition> get_states(
             sysseconds_t T, sysseconds_t max ) const;
     };
 
 
     class TZStringIter {
-        using ZT = ZoneTransition;
+        using ZT = zone_transition;
 
         sysseconds_t peek_next_time() const noexcept {
             return dst_next_ ? s.resolve_dst( year_dst )
@@ -252,7 +252,7 @@ namespace vtz {
         }
 
         /// Get the next zone transition
-        ZoneTransition next() noexcept {
+        zone_transition next() noexcept {
             auto result = peek();
             advance();
             return result;

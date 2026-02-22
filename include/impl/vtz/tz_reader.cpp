@@ -1361,7 +1361,7 @@ namespace vtz {
             current_stdoff = state.stdoff.off;
         }
 
-        void add( ZoneTransition const& trans ) {
+        void add( zone_transition const& trans ) {
             auto abbr   = trans.state.abbr;
             auto off    = trans.state.walloff.off;
             auto stdoff = trans.state.stdoff.off;
@@ -1440,7 +1440,7 @@ namespace vtz {
     }
 
 
-    vector<ZoneTransition> TZString::get_states(
+    vector<zone_transition> TZString::get_states(
         sysseconds_t T, sysseconds_t maxT ) const {
         // If there are no daylight rules, there are no transitions
         if( !has_daylight_rules() ) return {};
@@ -1461,10 +1461,10 @@ namespace vtz {
 
         auto it = TZStringIter::start_after( *this, T );
 
-        std::vector<ZoneTransition> result;
+        std::vector<zone_transition> result;
         for( ;; )
         {
-            ZoneTransition trans = it.next();
+            zone_transition trans = it.next();
             if( trans.when >= maxT ) return result;
             result.push_back( trans );
         }
@@ -1500,7 +1500,7 @@ namespace vtz {
             i64  T     = leap.remove_leap( TT[i] );
             auto ti    = type_indices[i];
             auto state = file.state_from_ti( ti, stdoff );
-            agg.add( ZoneTransition{ T, state } );
+            agg.add( zone_transition{ T, state } );
 
             ++i;
 
@@ -1896,7 +1896,7 @@ namespace vtz {
         return evaluate_rules( rules.data(), rules.data() + rules.size() );
     }
 
-    vector<ZoneTransition> zone_states::get_transitions() const {
+    vector<zone_transition> zone_states::get_transitions() const {
         constexpr static sysseconds_t MAX_TIME
             = std::numeric_limits<sysseconds_t>::max();
 
@@ -1915,7 +1915,7 @@ namespace vtz {
         auto                   s_current = stdoff_initial_;
         auto                   w_current = walloff_initial_;
         auto                   r_current = abbr_initial_;
-        vector<ZoneTransition> result;
+        vector<zone_transition> result;
         for( ;; )
         {
             auto st = stt.value_or( si, MAX_TIME );
@@ -1934,7 +1934,7 @@ namespace vtz {
             wi += int( wt == T );
             ri += int( rt == T );
 
-            result.push_back( ZoneTransition{
+            result.push_back( zone_transition{
                 T,
                 zone_state{
                     from_utc( s_current ),
