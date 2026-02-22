@@ -42,7 +42,7 @@ namespace vtz {
     struct opt_traits;
 
     template<class T>
-    struct OptClass {
+    struct opt_class {
         constexpr static T NULL_VALUE = opt_traits<T>::NULL_VALUE;
 
         T data = NULL_VALUE;
@@ -63,12 +63,12 @@ namespace vtz {
         }
 
         // clang-format off
-        constexpr bool operator==( OptClass const& rhs ) const noexcept { return data == rhs.data; }
-        constexpr bool operator!=( OptClass const& rhs ) const noexcept { return data != rhs.data; }
-        constexpr bool operator<=( OptClass const& rhs ) const noexcept { return data <= rhs.data; }
-        constexpr bool operator>=( OptClass const& rhs ) const noexcept { return data >= rhs.data; }
-        constexpr bool operator< ( OptClass const& rhs ) const noexcept { return data <  rhs.data; }
-        constexpr bool operator> ( OptClass const& rhs ) const noexcept { return data >  rhs.data; }
+        constexpr bool operator==( opt_class const& rhs ) const noexcept { return data == rhs.data; }
+        constexpr bool operator!=( opt_class const& rhs ) const noexcept { return data != rhs.data; }
+        constexpr bool operator<=( opt_class const& rhs ) const noexcept { return data <= rhs.data; }
+        constexpr bool operator>=( opt_class const& rhs ) const noexcept { return data >= rhs.data; }
+        constexpr bool operator< ( opt_class const& rhs ) const noexcept { return data <  rhs.data; }
+        constexpr bool operator> ( opt_class const& rhs ) const noexcept { return data >  rhs.data; }
         // clang-format on
     };
 
@@ -94,7 +94,7 @@ namespace vtz {
 
     struct NoneType {
         template<class T>
-        constexpr operator OptClass<T>() const noexcept {
+        constexpr operator opt_class<T>() const noexcept {
             return { opt_traits<T>::NULL_VALUE };
         }
         template<class T>
@@ -114,7 +114,7 @@ namespace vtz {
     struct SomeType {
         T value;
 
-        constexpr operator OptClass<T>() const noexcept { return { value }; }
+        constexpr operator opt_class<T>() const noexcept { return { value }; }
         constexpr operator TrivialOpt<T>() const noexcept {
             return { value, true };
         }

@@ -104,6 +104,6 @@ namespace vtz {
         constexpr static RuleAt NULL_VALUE = RuleAt::from_repr( INT32_MIN );
     };
 
-    using OptRuleAt = OptClass<RuleAt>;
+    using OptRuleAt = opt_class<RuleAt>;
 
 } // namespace vtz

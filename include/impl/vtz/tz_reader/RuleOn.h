@@ -99,5 +99,5 @@ namespace vtz {
         constexpr static RuleOn NULL_VALUE = RuleOn::from_repr( 0 );
     };
 
-    using OptRuleOn = OptClass<RuleOn>;
+    using OptRuleOn = opt_class<RuleOn>;
 } // namespace vtz
