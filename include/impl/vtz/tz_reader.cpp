@@ -146,7 +146,7 @@ namespace vtz {
             }
             throw ParseError{ "Expected unsigned int",
                 "error occurred when parsing",
-                OptTok( p, end - p ) };
+                opt_token( p, end - p ) };
         }
     } // namespace
 
@@ -180,7 +180,7 @@ namespace vtz {
         }
     }
 
-    rule_year_t parse_year( OptTok tok ) {
+    rule_year_t parse_year( opt_token tok ) {
         char const* begin = tok.data();
         size_t      size  = tok.size();
         if( size == 4 )
@@ -203,7 +203,7 @@ namespace vtz {
         };
     }
 
-    rule_year_t parse_year_to( OptTok tok, rule_year_t from ) {
+    rule_year_t parse_year_to( opt_token tok, rule_year_t from ) {
         if( tok == "ma" || tok == "max" ) { return Y_MAX; }
         if( tok == "o" || tok == "only" ) { return from; }
         char const* begin = tok.data();
@@ -231,7 +231,7 @@ namespace vtz {
         };
     }
 
-    Mon parse_month( OptTok tok ) {
+    Mon parse_month( opt_token tok ) {
         using _impl::_load1;
         using _impl::_load2;
         using _impl::_load3;
@@ -268,11 +268,11 @@ namespace vtz {
             "Expected day of the month",
             size ? "is not a valid day of the month (day must be 1-31)"
                  : no_token,
-            OptTok( tok, size ),
+            opt_token( tok, size ),
         };
     }
 
-    RuleOn parse_rule_on( OptTok tok ) {
+    RuleOn parse_rule_on( opt_token tok ) {
         using namespace _impl;
 
         size_t      size = tok.size();
@@ -410,7 +410,7 @@ namespace vtz {
         i32 offset = parse_hhmmss_offset( p, i, sign );
         if( offset == OFFSET_NPOS )
             throw ParseError{
-                expected, "was not an offset", OptTok( p, end - p )
+                expected, "was not an offset", opt_token( p, end - p )
             };
         p += i;
         return offset;
@@ -418,7 +418,7 @@ namespace vtz {
 
     namespace {
 
-        RuleSave parse_rule_save( OptTok tok ) {
+        RuleSave parse_rule_save( opt_token tok ) {
             size_t      size = tok.size();
             char const* p    = tok.data();
 
@@ -431,7 +431,7 @@ namespace vtz {
             };
         }
 
-        RuleAt parse_rule_at( OptTok tok ) {
+        RuleAt parse_rule_at( opt_token tok ) {
             size_t      size = tok.size();
             char const* p    = tok.data();
             if( size > 0 )
@@ -466,7 +466,7 @@ namespace vtz {
             };
         }
 
-        RuleLetter parse_rule_letter( OptTok tok ) {
+        RuleLetter parse_rule_letter( opt_token tok ) {
             constexpr RuleLetter hyphen = RuleLetter( "-" );
 
             size_t      size = tok.size();
@@ -493,7 +493,7 @@ namespace vtz {
             };
         }
 
-        FromUTC parse_zone_off( OptTok tok ) {
+        FromUTC parse_zone_off( opt_token tok ) {
             size_t      size = tok.size();
             char const* p    = tok.data();
 
@@ -559,13 +559,15 @@ namespace vtz {
 
     ZoneRule parse_zone_rule( char const* p, size_t size ) {
         if( !size )
-            throw ParseError{ "Expected ZoneRule", no_token, OptTok( p, 0 ) };
+            throw ParseError{
+                "Expected ZoneRule", no_token, opt_token( p, 0 )
+            };
 
         if( size > 15 )
             throw ParseError{ "Expected ZoneRule",
                 "is too long to be a zone rule (expected a name 15 characters "
                 "or less)",
-                OptTok( p, size ) };
+                opt_token( p, size ) };
 
 
         if( p[0] == '-' && size == 1 )
@@ -600,23 +602,25 @@ namespace vtz {
         }
 
         throw ParseError{
-            "Expected ZoneRule", bad_zone_rule, OptTok( p, size )
+            "Expected ZoneRule", bad_zone_rule, opt_token( p, size )
         };
     }
 
-    ZoneRule parse_zone_rule( OptTok tok ) {
+    ZoneRule parse_zone_rule( opt_token tok ) {
         return parse_zone_rule( tok.data(), tok.size() );
     }
     ZoneFormat parse_zone_format( char const* p, size_t size ) {
         if( !size )
-            throw ParseError{ "Expected ZoneFormat", no_token, OptTok( p, 0 ) };
+            throw ParseError{
+                "Expected ZoneFormat", no_token, opt_token( p, 0 )
+            };
 
         if( size > 14 )
             throw ParseError{
                 "Expected ZoneFormat",
                 "is too long to be a zone format (expected 14 characters or "
                 "less)",
-                OptTok( p, size ),
+                opt_token( p, size ),
             };
 
         ZoneFormat result{};
@@ -646,7 +650,7 @@ namespace vtz {
                     "Expected ZoneFormat",
                     "ended with a '%' (expected either a '%z' or a '%s', a "
                     "isolated '%' is invalid)",
-                    OptTok( p, size ),
+                    opt_token( p, size ),
                 };
             }
             char fmt_char = p[i2];
@@ -655,7 +659,7 @@ namespace vtz {
                     "Expected ZoneFormat",
                     "is not a recognized specifier (expected either '%s' "
                     "or '%z' if a '%' is present)",
-                    OptTok( p + i, 2 ),
+                    opt_token( p + i, 2 ),
                 };
 
             auto fmt = fmt_char == 's' ? ZoneFormat::FMT_S : ZoneFormat::FMT_Z;
@@ -670,7 +674,7 @@ namespace vtz {
         result.set_fmt( ZoneFormat::LITERAL, size, 0 );
         return result;
     }
-    ZoneFormat parse_zone_format( OptTok tok ) {
+    ZoneFormat parse_zone_format( opt_token tok ) {
         return parse_zone_format( tok.data(), tok.size() );
     }
 
@@ -904,7 +908,7 @@ namespace vtz {
         if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
         if( *p != ',' )
             throw ParseError{
-                TZ_expected_rule, "isn't a valid rule", OptTok( p, end - p )
+                TZ_expected_rule, "isn't a valid rule", opt_token( p, end - p )
             };
         ++p;
         if( p == end ) throw ParseError{ TZ_expected_rule, end_of_string };
@@ -916,30 +920,30 @@ namespace vtz {
             if( p == end || *p != '.' )
                 throw ParseError{ "expected week (range [1-5]) following '.'",
                     "didn't match \".[1-5]\"",
-                    OptTok( p, end - p ) };
+                    opt_token( p, end - p ) };
             ++p;
             auto n = eat_u32_or_throw( p, end );
             if( p == end || *p != '.' )
                 throw ParseError{
                     "expected day of week (range [0-6]) following '.'",
                     "didn't match \".[0-6]\"",
-                    OptTok( p, end - p )
+                    opt_token( p, end - p )
                 };
             ++p;
             auto d = eat_u32_or_throw( p, end );
             if( m < 1 || m > 12 )
                 throw ParseError{ "Expected Mm.n.d",
                     "had an out-of-bounds month (expected range [1-12])",
-                    OptTok( s0, end - s0 ) };
+                    opt_token( s0, end - s0 ) };
             if( n < 1 || n > 5 )
                 throw ParseError{ "Expected Mm.n.d",
                     "had an out-of-bounds week of month (expected range [1-5])",
-                    OptTok( s0, end - s0 ) };
+                    opt_token( s0, end - s0 ) };
             if( d > 6 )
                 throw ParseError{ "Expected Mm.n.d",
                     "had an out-of-bounds day of the week (expected range "
                     "[0-6])",
-                    OptTok( s0, end - s0 ) };
+                    opt_token( s0, end - s0 ) };
             return TZDate::make_dom( Mon( m ), n, DOW( d ) );
         }
         else if( *p == 'J' )
@@ -951,7 +955,7 @@ namespace vtz {
                 throw ParseError{
                     "Expected Rule Date of form Jn where 1 <= n <= 365",
                     "contained an out-of-bounds value for n",
-                    OptTok( s0, end - s0 )
+                    opt_token( s0, end - s0 )
                 };
             return TZDate::make_julian( n );
         }
@@ -961,7 +965,7 @@ namespace vtz {
             if( n > 365 )
                 throw ParseError{ "Expected Rule Date n where 0 <= n <= 365",
                     "contained an out-of-bounds value for n",
-                    OptTok( s0, end - s0 ) };
+                    opt_token( s0, end - s0 ) };
             return TZDate::make_doy( n );
         }
     }
@@ -1024,7 +1028,7 @@ namespace vtz {
             throw ParseError{
                 "Expected end of TZ string",
                 "came after what should have been the end",
-                OptTok( p, end - p ),
+                opt_token( p, end - p ),
             };
 
         return result;
@@ -1190,7 +1194,7 @@ namespace vtz {
 
 
     RuleSave::RuleSave( string_view text ) {
-        save = parse_rule_save( OptTok( text ) ).save;
+        save = parse_rule_save( opt_token( text ) ).save;
     }
     RuleAt::RuleAt( string_view text )
     : RuleAt( parse_rule_at( text ) ) {}

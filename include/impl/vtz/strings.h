@@ -96,14 +96,14 @@ namespace vtz {
     ///
     /// An empty token may still, however, have a valid data() pointer. This is
     /// used to simplify error handling:
-    struct OptTok : string_view {
-        OptTok() = default;
+    struct opt_token : string_view {
+        opt_token() = default;
 
-        constexpr OptTok( char const* cstr )
+        constexpr opt_token( char const* cstr )
         : string_view( cstr ) {}
-        constexpr OptTok( char const* p, size_t len ) noexcept
+        constexpr opt_token( char const* p, size_t len ) noexcept
         : string_view( p, len ) {}
-        constexpr OptTok( string_view rhs ) noexcept
+        constexpr opt_token( string_view rhs ) noexcept
         : string_view( rhs ) {}
 
         constexpr string_view value() const noexcept { return *this; }
@@ -124,8 +124,8 @@ namespace vtz {
         ///
         /// `data()` must still be valid, so that we can obtain a proper
         /// lineno/column when providing an error message to the user.
-        constexpr static OptTok missing_at( char const* at ) noexcept {
-            return OptTok( at, size_t( 0 ) );
+        constexpr static opt_token missing_at( char const* at ) noexcept {
+            return opt_token( at, size_t( 0 ) );
         }
     };
 
@@ -189,13 +189,13 @@ namespace vtz {
 
         void clear() noexcept { b_ = e_; }
 
-        OptTok next() {
+        opt_token next() {
             auto start = find_non_delim( b_, e_ );
 
             if( start == e_ )
             {
                 clear();
-                return OptTok::missing_at( e_ );
+                return opt_token::missing_at( e_ );
             }
 
             auto end = find_delim( start + 1, e_ );
@@ -210,15 +210,15 @@ namespace vtz {
             return result;
         }
 
-        OptTok next_non_comment() {
+        opt_token next_non_comment() {
             auto start = find_non_delim( b_, e_ );
 
             if( start == e_ )
             {
                 clear();
-                return OptTok::missing_at( e_ );
+                return opt_token::missing_at( e_ );
             }
-            if( *start == '#' ) return OptTok::missing_at( start );
+            if( *start == '#' ) return opt_token::missing_at( start );
 
             auto end = find_delim( start + 1, e_ );
 

@@ -43,7 +43,7 @@ namespace vtz {
     struct ParseError {
         char const* expected; ///< What was expected
         char const* but;      ///< Reason why input was bad
-        OptTok      token;    ///< token where failure occurred
+        opt_token   token;    ///< token where failure occurred
 
         std::string getErrorMessage(
             string_view input, string_view filename ) const;
@@ -664,11 +664,11 @@ namespace vtz {
         }
     };
 
-    rule_year_t parse_year( OptTok tok );
-    rule_year_t parse_year_to( OptTok tok );
-    Mon         parse_month( OptTok tok );
-    u8          parse_day_of_month( OptTok tok );
-    RuleOn      parse_rule_on( OptTok tok );
+    rule_year_t parse_year( opt_token tok );
+    rule_year_t parse_year_to( opt_token tok );
+    Mon         parse_month( opt_token tok );
+    u8          parse_day_of_month( opt_token tok );
+    RuleOn      parse_rule_on( opt_token tok );
 
     /// Parse a POSIX TZ String that may appear at the end of a tzfile
     TZString parse_tz_string( string_view sv );
@@ -679,10 +679,10 @@ namespace vtz {
     /// - A '-', indicating that there is no associated rule
     /// - A named rule, such as 'US' or 'Indianapolis'
     /// - A offset, such as 1:00
-    ZoneRule parse_zone_rule( OptTok tok );
+    ZoneRule parse_zone_rule( opt_token tok );
 
     /// Parse a zone format
-    ZoneFormat parse_zone_format( OptTok tok );
+    ZoneFormat parse_zone_format( opt_token tok );
 
     /// Parse a zone entry
     ZoneEntry parse_zone_entry( TokenIter tok_iter );
