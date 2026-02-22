@@ -972,15 +972,15 @@ namespace vtz {
         }
     }
 
-    TZRule eat_tzrule( char const*& p, char const* end ) {
+    tz_rule eat_tzrule( char const*& p, char const* end ) {
         auto date = eat_tzdate( p, end );
-        if( p == end ) { return TZRule{ date, 7200 }; }
+        if( p == end ) { return tz_rule{ date, 7200 }; }
         if( *p == '/' )
         {
             ++p;
-            return TZRule{ date, eat_signed_hhmmss( p, end ) };
+            return tz_rule{ date, eat_signed_hhmmss( p, end ) };
         }
-        return TZRule{ date, 7200 };
+        return tz_rule{ date, 7200 };
     }
 
     static tz_string _parse_tz_string( char const* p, size_t size ) {
@@ -995,8 +995,8 @@ namespace vtz {
                 abbr1,
                 off1,
                 off1,
-                TZRule{},
-                TZRule{},
+                tz_rule{},
+                tz_rule{},
             };
         }
 

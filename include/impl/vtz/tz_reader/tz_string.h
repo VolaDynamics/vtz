@@ -155,7 +155,7 @@ namespace vtz {
     };
 
 
-    struct TZRule : tz_date {
+    struct tz_rule : tz_date {
         i32 time; //< local time when transition occurs
 
         using tz_date::dayOfYear;
@@ -171,10 +171,10 @@ namespace vtz {
 
         tz_date const& date() const noexcept { return *this; }
 
-        bool operator==( TZRule const& rhs ) const noexcept {
+        bool operator==( tz_rule const& rhs ) const noexcept {
             return _b8{ *this } == _b8{ rhs };
         }
-        bool operator!=( TZRule const& rhs ) const noexcept {
+        bool operator!=( tz_rule const& rhs ) const noexcept {
             return _b8{ *this } != _b8{ rhs };
         }
     };
@@ -189,8 +189,8 @@ namespace vtz {
         zone_abbr abbr2; /// Daylight abbreviation
         from_utc  off1;  /// Standard offset
         from_utc  off2;  /// DST offset
-        TZRule    r1;
-        TZRule    r2;
+        tz_rule   r1;
+        tz_rule   r2;
 
 
         /// Resolve the start of dst within the year
