@@ -73,7 +73,7 @@ namespace {
         return DAYS_IN_EACH_MONTH[month];
     }
 
-    constexpr YMD ymd( i32 year, i32 mon, i32 day ) noexcept {
+    constexpr civil_ymd ymd( i32 year, i32 mon, i32 day ) noexcept {
         return { year, u16( mon ), u16( day ) };
     }
 } // namespace
@@ -106,13 +106,13 @@ TEST( vtz, ymd_to_string ) {
 TEST( vtz, civil ) {
     COUNT_ASSERTIONS();
 
-    static_assert( to_civil( 0 ) == YMD{ 1970, 1, 1 } );
-    static_assert( to_civil( -135140 ) == YMD{ 1600, 1, 1 } );
-    static_assert( to_civil( -135081 ) == YMD( 1600, 2, 29 ) );
-    static_assert( to_civil( -135080 ) == YMD( 1600, 3, 1 ) );
-    static_assert( to_civil( 10957 ) == YMD{ 2000, 1, 1 } );
-    static_assert( to_civil( 20376 ) == YMD{ 2025, 10, 15 } );
-    static_assert( to_civil( 19782 ) == YMD{ 2024, 02, 29 } );
+    static_assert( to_civil( 0 ) == civil_ymd{ 1970, 1, 1 } );
+    static_assert( to_civil( -135140 ) == civil_ymd{ 1600, 1, 1 } );
+    static_assert( to_civil( -135081 ) == civil_ymd( 1600, 2, 29 ) );
+    static_assert( to_civil( -135080 ) == civil_ymd( 1600, 3, 1 ) );
+    static_assert( to_civil( 10957 ) == civil_ymd{ 2000, 1, 1 } );
+    static_assert( to_civil( 20376 ) == civil_ymd{ 2025, 10, 15 } );
+    static_assert( to_civil( 19782 ) == civil_ymd{ 2024, 02, 29 } );
 
     static_assert( resolve_civil( 1970, 1, 1 ) == 0 );
     static_assert( resolve_civil( 1600, 1, 1 ) == -135140 );
@@ -337,8 +337,8 @@ TEST( vtz, civil_big_test ) {
                     to_civil( dse ),
                     to_civil_year_doy( dse ) );
 
-                auto ymd  = YMD{ year, u16( month ), u16( day ) };
-                auto ymd0 = YMD{ year, u16( month - 1 ), u16( day - 1 ) };
+                auto ymd  = civil_ymd{ year, u16( month ), u16( day ) };
+                auto ymd0 = civil_ymd{ year, u16( month - 1 ), u16( day - 1 ) };
 
                 ASSERT_EQ_QUIET( dow, dow_from_days( dse ) );
                 ASSERT_EQ_QUIET( to_civil( dse ), ymd );

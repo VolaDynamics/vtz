@@ -168,26 +168,26 @@ namespace vtz {
         i32 doy;
     };
 
-    struct alignas( u64 ) YMD {
+    struct alignas( u64 ) civil_ymd {
         i32 year;
         u16 month;
         u16 day;
 
-        YMD() = default;
+        civil_ymd() = default;
 
-        constexpr YMD( i32 year, u16 mon, u16 day ) noexcept
+        constexpr civil_ymd( i32 year, u16 mon, u16 day ) noexcept
         : year( year )
         , month( mon )
         , day( day ) {}
 
-        constexpr YMD( i32 year, Mon mon, u16 day ) noexcept
+        constexpr civil_ymd( i32 year, Mon mon, u16 day ) noexcept
         : year( year )
         , month( u16( mon ) )
         , day( day ) {}
 
         constexpr Mon mon() const noexcept { return Mon( month ); }
 
-        constexpr bool operator==( YMD const& rhs ) const noexcept {
+        constexpr bool operator==( civil_ymd const& rhs ) const noexcept {
             return year == rhs.year && month == rhs.month && day == rhs.day;
         }
 
@@ -205,7 +205,7 @@ namespace vtz {
     };
 
 
-    inline string format_as( YMD ymd ) { return ymd.str(); }
+    inline string format_as( civil_ymd ymd ) { return ymd.str(); }
 
 
     /// Checks if the given year is a leap year as per the international
@@ -251,7 +251,7 @@ namespace vtz {
     }
 
     /// Return 0-based year/month/day, so month is 0-11 and day is 0-30
-    constexpr YMD to_civil0( sysdays_t days ) noexcept {
+    constexpr civil_ymd to_civil0( sysdays_t days ) noexcept {
         days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
         const i64 era = ( days >= 0 ? days : days - 146096 ) / 146097;
         const u32 doe = u32( days - era * 146097 ); // [0, 146096]
@@ -262,7 +262,7 @@ namespace vtz {
         const u32 mp  = ( 5 * doy + 2 ) / 153;                     // [0, 11]
         const u32 d   = doy - ( 153 * mp + 2 ) / 5;                // [0, 30]
         const u32 m   = mp < 10 ? mp + 2 : mp - 10;                // [0, 11]
-        return YMD{ i32( y + ( m <= 1 ) ), u16( m ), u16( d ) };
+        return civil_ymd{ i32( y + ( m <= 1 ) ), u16( m ), u16( d ) };
     }
 
     constexpr sysdays_t resolve_civil0( i32 y, u32 m, u32 d ) noexcept {
@@ -329,14 +329,14 @@ namespace vtz {
         return resolve_civil( y, u32( m ), d );
     }
 
-    /// Get a date as a year, month, and day. The return value is YMD, which
-    /// holds a Year/Month/Day triplet
+    /// Get a date as a year, month, and day. The return value is civil_ymd,
+    /// which holds a Year/Month/Day triplet
     ///
     /// Based on reference implementation by Howard Hinnant provided here:
     /// https://howardhinnant.github.io/date_algorithms.html#civil_from_days
     ///
     /// @param days Days since the epoch (The epoch being January 1st, 1970)
-    constexpr YMD to_civil( sysdays_t days ) noexcept {
+    constexpr civil_ymd to_civil( sysdays_t days ) noexcept {
         days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
         const auto parts = math::div_floor2<146097>( days );
         i32        era   = parts.quot;
@@ -349,7 +349,7 @@ namespace vtz {
         const u32 mp  = ( 5 * doy + 2 ) / 153;                     // [0, 11]
         const u32 d   = doy - ( 153 * mp + 2 ) / 5 + 1;            // [1, 31]
         const u32 m   = mp < 10 ? mp + 3 : mp - 9;                 // [1, 12]
-        return YMD{ i32( y + ( m <= 2 ) ), u16( m ), u16( d ) };
+        return civil_ymd{ i32( y + ( m <= 2 ) ), u16( m ), u16( d ) };
     }
 
 
@@ -510,7 +510,7 @@ namespace vtz {
     }
 
 
-    constexpr YMD get_ymd_dow_ge(
+    constexpr civil_ymd get_ymd_dow_ge(
         i32 year, u32 month, u32 dom, DOW dow ) noexcept {
         u32 last_dom = last_day_of_month( year, month );
 
@@ -528,10 +528,10 @@ namespace vtz {
             }
         }
 
-        return YMD{ year, u16( month ), u16( dom ) };
+        return civil_ymd{ year, u16( month ), u16( dom ) };
     }
 
-    constexpr YMD get_ymd_dow_le(
+    constexpr civil_ymd get_ymd_dow_le(
         i32 year, u32 month, u32 dom, DOW dow ) noexcept {
         // Add as many days as needed to get to the desired weekday
         auto dom2
@@ -548,7 +548,7 @@ namespace vtz {
             dom2 += last_day_of_month( year, month );
         }
 
-        return YMD{ year, u16( month ), u16( dom2 ) };
+        return civil_ymd{ year, u16( month ), u16( dom2 ) };
     }
 
     constexpr sysseconds_t sysseconds( sysdays_t date, i32 offset ) {
@@ -556,27 +556,27 @@ namespace vtz {
     }
 
     static_assert(
-        get_ymd_dow_le( 2025, 10, 3, DOW::Sun ) == YMD{ 2025, 9, 28 } );
+        get_ymd_dow_le( 2025, 10, 3, DOW::Sun ) == civil_ymd{ 2025, 9, 28 } );
 
     static_assert(
-        get_ymd_dow_le( 2025, 1, 1, DOW::Sun ) == YMD{ 2024, 12, 29 } );
+        get_ymd_dow_le( 2025, 1, 1, DOW::Sun ) == civil_ymd{ 2024, 12, 29 } );
     static_assert(
-        get_ymd_dow_le( 2025, 4, 1, DOW::Sat ) == YMD{ 2025, 3, 29 } );
+        get_ymd_dow_le( 2025, 4, 1, DOW::Sat ) == civil_ymd{ 2025, 3, 29 } );
     static_assert(
-        get_ymd_dow_le( 2025, 4, 1, DOW::Sun ) == YMD{ 2025, 3, 30 } );
+        get_ymd_dow_le( 2025, 4, 1, DOW::Sun ) == civil_ymd{ 2025, 3, 30 } );
     static_assert(
-        get_ymd_dow_le( 2025, 4, 1, DOW::Mon ) == YMD{ 2025, 3, 31 } );
+        get_ymd_dow_le( 2025, 4, 1, DOW::Mon ) == civil_ymd{ 2025, 3, 31 } );
 
 
     // 2025 Oct Sat>=11 == 2025 Oct 11
     static_assert(
-        get_ymd_dow_ge( 2025, 10, 11, DOW::Sat ) == YMD{ 2025, 10, 11 } );
+        get_ymd_dow_ge( 2025, 10, 11, DOW::Sat ) == civil_ymd{ 2025, 10, 11 } );
     // 2025 Oct Sun>=11 == 2025 Oct 12
     static_assert(
-        get_ymd_dow_ge( 2025, 10, 11, DOW::Sun ) == YMD{ 2025, 10, 12 } );
+        get_ymd_dow_ge( 2025, 10, 11, DOW::Sun ) == civil_ymd{ 2025, 10, 12 } );
     // 2025 Oct Mon>=11 == 2025 Oct 13
     static_assert(
-        get_ymd_dow_ge( 2025, 10, 11, DOW::Mon ) == YMD{ 2025, 10, 13 } );
+        get_ymd_dow_ge( 2025, 10, 11, DOW::Mon ) == civil_ymd{ 2025, 10, 13 } );
 
 
     static_assert( dow_from_civil( 2025, 10, 11 ) == DOW::Sat );

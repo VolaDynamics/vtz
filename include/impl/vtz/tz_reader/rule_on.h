@@ -73,12 +73,12 @@ namespace vtz {
 
         /// Evaluate the rule for a given year/month in order to obtain an
         /// actual date
-        constexpr YMD eval( i32 year, Mon mon ) const noexcept {
+        constexpr civil_ymd eval( i32 year, Mon mon ) const noexcept {
             switch( kind() )
             {
-            case DAY: return YMD( year, mon, day() );
+            case DAY: return civil_ymd( year, mon, day() );
             case DOW_LAST:
-                return YMD( year,
+                return civil_ymd( year,
                     mon,
                     u16( get_last_dowin_month( year, u32( mon ), dow() ) ) );
             case DOW_GE:

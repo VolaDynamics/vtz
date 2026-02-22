@@ -61,5 +61,5 @@ STRUCT_INFO( vtz::math::div_t<int>,
     FIELD( quot ),
     FIELD( rem ) );
 
-STRUCT_INFO( vtz::YMD, FIELD( year ), FIELD( month ), FIELD( day ) );
+STRUCT_INFO( vtz::civil_ymd, FIELD( year ), FIELD( month ), FIELD( day ) );
 STRUCT_INFO( vtz::year_doy, FIELD( year ), FIELD( doy ) );

@@ -81,7 +81,8 @@ vector<vtz::sys_days> random_sys_days(
 }
 
 
-vector<vtz::YMD> random_ymd( size_t count, int start_year, int end_year ) {
+vector<vtz::civil_ymd> random_ymd(
+    size_t count, int start_year, int end_year ) {
     return random_values( count,
         vtz::resolve_civil( start_year ),
         vtz::resolve_civil( end_year ),
