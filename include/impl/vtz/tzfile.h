@@ -292,7 +292,7 @@ namespace vtz {
             }
         }
 
-        OptSV tz_string() const {
+        opt_sv tz_string() const {
             static_assert( is_64_bit,
                 "Invoke .load_modern() to obtain a modern tzdata file, before "
                 "calling tz_string" );

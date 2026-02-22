@@ -65,14 +65,14 @@ namespace vtz {
     ///
     /// `has_value()` implies `data() != nullptr`. This makes it appropriate for
     /// returning from a LineIterator, since non-empty lines are still valid.
-    struct OptSV : string_view {
+    struct opt_sv : string_view {
         using string_view::string_view;
 
         // Allow construction from base
-        constexpr OptSV( string_view rhs ) noexcept
+        constexpr opt_sv( string_view rhs ) noexcept
         : string_view( rhs ) {}
 
-        constexpr OptSV( std::nullopt_t ) noexcept
+        constexpr opt_sv( std::nullopt_t ) noexcept
         : string_view() {}
 
         constexpr string_view const& operator*() const noexcept {
@@ -91,7 +91,7 @@ namespace vtz {
         }
     };
 
-    /// Optional-like interface representing a token. Unlike OptSV, has_value()
+    /// Optional-like interface representing a token. Unlike opt_sv, has_value()
     /// returns true if the token is not empty.
     ///
     /// An empty token may still, however, have a valid data() pointer. This is
@@ -280,7 +280,7 @@ namespace vtz {
         constexpr LineIter( string_view input ) noexcept
         : input( input ) {}
 
-        constexpr OptSV next() noexcept {
+        constexpr opt_sv next() noexcept {
             auto p = input.find( '\n' );
             if( p != string_view::npos )
             {

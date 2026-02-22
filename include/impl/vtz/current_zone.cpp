@@ -159,7 +159,7 @@ namespace vtz::unix {
             escape_string( string_view( buf, sizeof( buf ) ) ) ) );
     }
 
-    static OptSV _get_by_zoneinfo( string_view path ) {
+    static opt_sv _get_by_zoneinfo( string_view path ) {
         string_view term = "zoneinfo/";
         auto        p    = path.rfind( term );
         if( p != string_view::npos )
@@ -171,7 +171,7 @@ namespace vtz::unix {
         return std::nullopt;
     }
 
-    static OptSV _get_tzname_fallback( string_view path ) {
+    static opt_sv _get_tzname_fallback( string_view path ) {
         constexpr static string_view _prefixes[]{
             "America/",
             "Europe/",

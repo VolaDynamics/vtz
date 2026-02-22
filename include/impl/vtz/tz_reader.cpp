@@ -846,8 +846,8 @@ namespace vtz {
     }
 
 
-    static OptSV eat_tz_string_zone_abbr( char const*& p, char const* end ) {
-        if( p == end ) return OptSV();
+    static opt_sv eat_tz_string_zone_abbr( char const*& p, char const* end ) {
+        if( p == end ) return opt_sv();
         if( *p == '<' )
         {
             ++p;
@@ -891,7 +891,7 @@ namespace vtz {
         };
     }
 
-    zone_abbr to_zone_abbr( OptSV sv ) {
+    zone_abbr to_zone_abbr( opt_sv sv ) {
         if( sv ) return to_zone_abbr( *sv );
         throw ParseError{
             "Expected zone abbreviation",
@@ -1048,10 +1048,10 @@ namespace vtz {
     ///
     /// We will try to load it from the file.
 
-    OptSV load_version_from_tzdata_file( string_view content ) {
+    opt_sv load_version_from_tzdata_file( string_view content ) {
         constexpr string_view VERSION_PREFIX = "# version ";
         // If the content does not contain the version prefix
-        if( !starts_with( content, VERSION_PREFIX ) ) { return OptSV(); }
+        if( !starts_with( content, VERSION_PREFIX ) ) { return opt_sv(); }
 
         auto     remainder = content.substr( VERSION_PREFIX.size() );
         LineIter it( remainder );
