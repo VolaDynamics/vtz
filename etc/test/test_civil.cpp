@@ -248,7 +248,7 @@ TEST( vtz, resolve_dow_le ) {
 
 
 TEST( vtz, resolve_rule ) {
-    auto US_DST_Start = RuleEntry{
+    auto US_DST_Start = rule_entry{
         2007,
         Y_MAX,
         Mon::Mar,
@@ -257,7 +257,7 @@ TEST( vtz, resolve_rule ) {
         "1:00",
         "D",
     };
-    auto US_DST_End = RuleEntry{
+    auto US_DST_End = rule_entry{
         2007,
         Y_MAX,
         Mon::Nov,
@@ -266,7 +266,7 @@ TEST( vtz, resolve_rule ) {
         "0",
         "S",
     };
-    auto US_Peace_Time = RuleEntry{
+    auto US_Peace_Time = rule_entry{
         1945,
         1945,
         Mon::Aug,

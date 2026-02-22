@@ -117,7 +117,7 @@ namespace vtz {
     /// Rule  Chicago 1922 1954  -   Sep lastSun 2:00 0    S
     /// Rule  Chicago 1955 1966  -   Oct lastSun 2:00 0    S
 
-    struct RuleEntry {
+    struct rule_entry {
         rule_year_t from;
         rule_year_t to;
         Mon         in;
@@ -151,7 +151,7 @@ namespace vtz {
             return u64( year ) > u64( to );
         }
 
-        bool operator==( RuleEntry const& rhs ) const noexcept {
+        bool operator==( rule_entry const& rhs ) const noexcept {
             return from == rhs.from    //
                    && to == rhs.to     //
                    && in == rhs.in     //
@@ -162,20 +162,20 @@ namespace vtz {
         }
 
         constexpr static auto is_expired( i64 year ) noexcept {
-            return [year]( RuleEntry const& rule ) {
+            return [year]( rule_entry const& rule ) {
                 return rule.expires_before( year );
             };
         }
 
 
         constexpr static auto compare_from() noexcept {
-            return []( RuleEntry const& lhs, RuleEntry const& rhs ) {
+            return []( rule_entry const& lhs, rule_entry const& rhs ) {
                 return lhs.from < rhs.from;
             };
         }
 
         constexpr static auto has_expiry() noexcept {
-            return []( RuleEntry const& rule ) { return rule.to != Y_MAX; };
+            return []( rule_entry const& rule ) { return rule.to != Y_MAX; };
         }
     };
 
@@ -225,7 +225,7 @@ namespace vtz {
         }
     };
 
-    using rule_map = map<string_view, vector<RuleEntry>>;
+    using rule_map = map<string_view, vector<rule_entry>>;
     using zone_map = map<string_view, vector<ZoneEntry>>;
     using link_map = map<string_view, string_view>;
 
@@ -274,7 +274,7 @@ namespace vtz {
         vector<rule_trans> historical;
         // Rule Entries that are still active after evaluation (these are
         // entries which have 'max' as the TO fields)
-        vector<RuleEntry> active;
+        vector<rule_entry> active;
         // First year where there's a rule
         i32 year_start;
         // Year where the historical rule transitions no longer apply
@@ -283,15 +283,15 @@ namespace vtz {
     };
 
 
-    size_t dump_active( RuleEntry const* active,
-        size_t                           active_count,
-        size_t                           year,
-        rule_trans*                      p );
+    size_t dump_active( rule_entry const* active,
+        size_t                            active_count,
+        size_t                            year,
+        rule_trans*                       p );
 
     /// Return the earliest active rule with a save of 0. Returns nullptr
     /// if no active rule with a save of 0 is found
-    inline RuleEntry const* earliest_active_with_save_zero(
-        RuleEntry const* active, size_t active_count, i32 year ) noexcept {
+    inline rule_entry const* earliest_active_with_save_zero(
+        rule_entry const* active, size_t active_count, i32 year ) noexcept {
         size_t    result        = size_t( -1 );
         sysdays_t earliest_date = MAX_DAYS;
         for( size_t i = 0; i < active_count; ++i )
@@ -329,7 +329,7 @@ namespace vtz {
         size_t           hist_size_;
 
         /// Rules which are active going forward into perpetuity
-        RuleEntry const* active_;
+        rule_entry const* active_;
         size_t           active_size_;
 
         /// Saves the first active year (for record keeping purposes, eg when
@@ -341,7 +341,7 @@ namespace vtz {
 
         RuleTransIter( rule_trans const* hist,
             size_t                       hist_size,
-            RuleEntry const*             active,
+            rule_entry const*            active,
             size_t                       active_size,
             int                          first_active_year ) noexcept
         : i( 0 )
@@ -527,7 +527,7 @@ namespace vtz {
     };
 
 
-    RuleEvalResult evaluate_rules( vector<RuleEntry> const& entries );
+    RuleEvalResult evaluate_rules( vector<rule_entry> const& entries );
 
     struct AbbrBlock {
         u32 data_;

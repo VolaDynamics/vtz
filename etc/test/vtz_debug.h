@@ -29,7 +29,7 @@ STRUCT_INFO( vtz::zone_state, FIELD( stdoff ), FIELD( walloff ), FIELD( abbr ) )
 
 STRUCT_INFO( vtz::location, FIELD( line ), FIELD( col ) );
 
-STRUCT_INFO( vtz::RuleEntry,
+STRUCT_INFO( vtz::rule_entry,
     FIELD( from ),
     FIELD( to ),
     FIELD( in ),

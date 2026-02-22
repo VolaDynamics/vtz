@@ -323,7 +323,7 @@ Rule	US	1974	only	-	Jan	6	2:00	1:00	D
         ( TZDataFile{
             { {
                 "US",
-                vector<RuleEntry>{
+                vector<rule_entry>{
                     { 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
                     { 1918, 1919, M::Oct, lastSun, "2:00", "0", "S" },
                     { 1942, 1942, M::Feb, on( 9 ), "2:00", "1:00", "W" },
@@ -769,7 +769,7 @@ TEST( vtz_tz, US_rules ) {
 
     auto US = zones.evaluate_rules( "US" );
 
-    using RE = RuleEntry;
+    using RE = rule_entry;
     using RT = rule_trans;
 
     // https://www.timeanddate.com/calendar/?year=1919&country=1

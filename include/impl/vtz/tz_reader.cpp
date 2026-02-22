@@ -697,9 +697,9 @@ namespace vtz {
         return e;
     }
 
-    RuleEntry parse_rule_entry( token_iter tok_iter ) {
+    rule_entry parse_rule_entry( token_iter tok_iter ) {
         rule_year_t from = parse_year( tok_iter.next() );
-        return RuleEntry{
+        return rule_entry{
             from,
             /// For the 'TO' year, the values 'only' and 'max' must also be
             /// accepted
@@ -807,7 +807,7 @@ namespace vtz {
                 auto begin = rule_entries.data();
                 auto end   = rule_entries.data() + rule_entries.size();
 
-                if( !std::is_sorted( begin, end, RuleEntry::compare_from() ) )
+                if( !std::is_sorted( begin, end, rule_entry::compare_from() ) )
                 {
                     // This is very rare, but occasionally we end up with Rule
                     // entries which _aren't_ sorted by year (one example being
@@ -817,7 +817,7 @@ namespace vtz {
                     // Rule SanLuis 2007 2008 - Oct Sun>=8 0:00 1:00 -
                     //
                     // These should be sorted by year
-                    std::sort( begin, end, RuleEntry::compare_from() );
+                    std::sort( begin, end, rule_entry::compare_from() );
                 }
             }
         }
@@ -1213,10 +1213,10 @@ namespace vtz {
     , until( parse_zone_until( until ) ) {}
 
 
-    size_t dump_active( RuleEntry const* active,
-        size_t                           active_count,
-        size_t                           year,
-        rule_trans*                      p ) {
+    size_t dump_active( rule_entry const* active,
+        size_t                            active_count,
+        size_t                            year,
+        rule_trans*                       p ) {
         // Compute transitions for all active rules for the given year
         for( size_t i = 0; i < active_count; i++ )
             p[i] = active[i].resolve_trans( i32( year ) );
@@ -1228,26 +1228,27 @@ namespace vtz {
 
 
     namespace {
-        [[nodiscard]] constexpr RuleEntry const* find_newly_active( size_t year,
-            RuleEntry const* begin,
-            RuleEntry const* end ) noexcept {
-            RuleEntry const* cursor = begin;
+        [[nodiscard]] constexpr rule_entry const* find_newly_active(
+            size_t            year,
+            rule_entry const* begin,
+            rule_entry const* end ) noexcept {
+            rule_entry const* cursor = begin;
             while( cursor != end && cursor->from == year ) ++cursor;
             return cursor;
         }
 
-        [[nodiscard]] RuleEntry const* pull_newly_active(
-            vector<RuleEntry>& active,
-            size_t             year,
-            RuleEntry const*   begin,
-            RuleEntry const*   end ) {
+        [[nodiscard]] rule_entry const* pull_newly_active(
+            vector<rule_entry>& active,
+            size_t              year,
+            rule_entry const*   begin,
+            rule_entry const*   end ) {
             auto cursor = find_newly_active( year, begin, end );
             active.insert( active.end(), begin, cursor );
             return cursor;
         }
 
         [[nodiscard]] constexpr size_t next_expiry_year(
-            RuleEntry const* p, size_t size, size_t initial = -1 ) noexcept {
+            rule_entry const* p, size_t size, size_t initial = -1 ) noexcept {
             for( size_t i = 0; i < size; i++ )
             {
                 size_t expiry = size_t( p[i].to );
@@ -1256,13 +1257,13 @@ namespace vtz {
             return initial;
         }
 
-        [[nodiscard]] size_t next_expiry_year( vector<RuleEntry> const& active,
+        [[nodiscard]] size_t next_expiry_year( vector<rule_entry> const& active,
             size_t initial_year = -1 ) noexcept {
             return next_expiry_year(
                 active.data(), active.size(), initial_year );
         }
 
-        [[nodiscard]] size_t fill_transition_table( RuleEntry const* active,
+        [[nodiscard]] size_t fill_transition_table( rule_entry const* active,
             size_t              active_count,
             size_t              year,
             size_t              year_end,
@@ -1296,10 +1297,10 @@ namespace vtz {
         ///
         /// @return year_end
         [[nodiscard]] size_t fill_transition_table(
-            vector<RuleEntry> const& active,
-            size_t                   year,
-            size_t                   year_end,
-            vector<rule_trans>&      dest ) {
+            vector<rule_entry> const& active,
+            size_t                    year,
+            size_t                    year_end,
+            vector<rule_trans>&       dest ) {
             return fill_transition_table(
                 active.data(), active.size(), year, year_end, dest );
         }
@@ -1818,16 +1819,16 @@ namespace vtz {
 
 
     RuleEvalResult evaluate_rules(
-        RuleEntry const* begin, RuleEntry const* end ) {
+        rule_entry const* begin, rule_entry const* end ) {
         if( begin == end )
             throw std::runtime_error(
                 "evaluate_rules(): Error: given empty rule set" );
 
-        if( !std::is_sorted( begin, end, RuleEntry::compare_from() ) )
+        if( !std::is_sorted( begin, end, rule_entry::compare_from() ) )
             throw std::runtime_error(
                 "Expected Rule to be sorted by 'FROM' year" );
 
-        auto active = vector<RuleEntry>(); ///< Current set of active rules
+        auto active = vector<rule_entry>(); ///< Current set of active rules
         auto tt     = vector<rule_trans>(); ///< Computed Transition Table
 
         size_t year0 = begin->from;        ///< First year with a rule
@@ -1852,7 +1853,7 @@ namespace vtz {
             // Remove any rules that have expired
             active.erase( std::remove_if( active.begin(),
                               active.end(),
-                              RuleEntry::is_expired( year ) ),
+                              rule_entry::is_expired( year ) ),
                 active.end() );
 
             // We have no active rules right now, so we should jump forward
@@ -1881,7 +1882,7 @@ namespace vtz {
             // Remove any rules that have expired
             active.erase( std::remove_if( active.begin(),
                               active.end(),
-                              RuleEntry::is_expired( year ) ),
+                              rule_entry::is_expired( year ) ),
                 active.end() );
         }
 
@@ -1893,7 +1894,7 @@ namespace vtz {
         };
     }
 
-    RuleEvalResult evaluate_rules( vector<RuleEntry> const& rules ) {
+    RuleEvalResult evaluate_rules( vector<rule_entry> const& rules ) {
         return evaluate_rules( rules.data(), rules.data() + rules.size() );
     }
 
