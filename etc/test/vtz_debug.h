@@ -44,10 +44,7 @@ STRUCT_INFO( vtz::zone, FIELD( name ), FIELD( ents ) );
 
 STRUCT_INFO( vtz::zone_link, FIELD( canonical ), FIELD( alias ) );
 
-STRUCT_INFO( vtz::TZDataFile,
-    FIELD( rules ),
-    FIELD( zones ),
-    FIELD( links ) );
+STRUCT_INFO( vtz::tz_data_file, FIELD( rules ), FIELD( zones ), FIELD( links ) );
 
 
 STRUCT_INFO( vtz::math::div_t<int>,

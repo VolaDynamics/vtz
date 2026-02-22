@@ -749,7 +749,7 @@ namespace vtz {
 
     /// Append timezone data from the given input
     void append_tzdata(
-        TZDataFile& file, string_view input, string_view filename ) {
+        tz_data_file& file, string_view input, string_view filename ) {
         try
         {
             auto lines = line_iter( input );
@@ -1182,8 +1182,8 @@ namespace vtz {
         return result;
     }
 
-    TZDataFile parse_tzdata( string_view input, string_view filename ) {
-        TZDataFile file{
+    tz_data_file parse_tzdata( string_view input, string_view filename ) {
+        tz_data_file file{
             rule_map( RULE_BUCKETS ),
             zone_map( ZONE_BUCKETS ),
             link_map( LINK_BUCKETS ),
@@ -1779,7 +1779,7 @@ namespace vtz {
     }
 
 
-    zone_states TZDataFile::get_zone_states(
+    zone_states tz_data_file::get_zone_states(
         string_view name, i32 end_year ) const {
         // Represents a map of rule names to evaluated rules
         using RuleCache = map<string_view, zone_trans_iter>;
@@ -1949,7 +1949,7 @@ namespace vtz {
         return result;
     }
 
-    rule_eval_result TZDataFile::evaluate_rules( string_view rule ) const {
+    rule_eval_result tz_data_file::evaluate_rules( string_view rule ) const {
         auto it = rules.find( rule );
         if( it == rules.end() )
         {

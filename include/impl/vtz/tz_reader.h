@@ -628,7 +628,7 @@ namespace vtz {
         }
     };
 
-    struct TZDataFile {
+    struct tz_data_file {
         rule_map rules;
         zone_map zones;
         link_map links;
@@ -636,7 +636,7 @@ namespace vtz {
         rule_eval_result evaluate_rules( string_view rule ) const;
         zone_states    get_zone_states( string_view name, i32 end_year ) const;
 
-        bool operator==( TZDataFile const& rhs ) const noexcept {
+        bool operator==( tz_data_file const& rhs ) const noexcept {
             return rules == rhs.rules    //
                    && zones == rhs.zones //
                    && links == rhs.links;
@@ -651,7 +651,7 @@ namespace vtz {
         }
     };
 
-    struct TZData : TZDataFile {
+    struct TZData : tz_data_file {
         vector<std::pair<string, file_bytes>> data;
 
         std::string version;
@@ -688,7 +688,7 @@ namespace vtz {
     zone_entry parse_zone_entry( token_iter tok_iter );
 
     /// Parses either a rule, zone, or link
-    void parse_entry( TZDataFile& file, string_view line, line_iter& lines );
+    void parse_entry( tz_data_file& file, string_view line, line_iter& lines );
 
     // Estimated number of buckets for rules
     // There are 130 rules:
@@ -708,12 +708,13 @@ namespace vtz {
     /// Load zone info from a directory, eg build/data/tzdata
     TZData load_zone_info_from_dir( string fp );
 
-    TZDataFile parse_tzdata(
+    tz_data_file parse_tzdata(
         string_view input, string_view filename = "(none)" );
 
     /// Append timezone data from the given input
-    void append_tzdata(
-        TZDataFile& file, string_view input, string_view filename = "(none)" );
+    void append_tzdata( tz_data_file& file,
+        string_view                   input,
+        string_view                   filename = "(none)" );
 
 
     zone_states load_zone_states( span<zone_entry const> entries,

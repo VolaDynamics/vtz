@@ -280,7 +280,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 
 # Arizona mostly uses MST.
 )" ),
-        ( TZDataFile{
+        ( tz_data_file{
             {},
             {
                 {
@@ -320,7 +320,7 @@ Rule	US	1974	only	-	Jan	6	2:00	1:00	D
 
 # Arizona mostly uses MST.
 )" ),
-        ( TZDataFile{
+        ( tz_data_file{
             { {
                 "US",
                 vector<rule_entry>{
@@ -364,7 +364,7 @@ Link	Africa/Abidjan	Africa/Banjul
 Link	Africa/Abidjan	Africa/Conakry
 Link	Africa/Abidjan	Africa/Dakar
 )" ),
-        ( TZDataFile{
+        ( tz_data_file{
             { {
                 {
                     "US",
@@ -410,7 +410,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 
 # Arizona mostly uses MST.
 )" ),
-        ( TZDataFile{
+        ( tz_data_file{
             {},
             {
                 {
@@ -445,7 +445,7 @@ Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
 			 -8:00	US	P%sT	1983 Oct 30  2:00
 			 -9:00	US	Y%sT	1983 Nov 30
 			 -9:00	US	AK%sT)" ),
-        ( TZDataFile{
+        ( tz_data_file{
             {},
             {
                 { "America/Juneau",
@@ -710,7 +710,7 @@ TEST( vtz_parser, parse_errors ) {
 
 
 namespace {
-    std::pair<string, TZDataFile> test_load_file( char const* fp ) {
+    std::pair<string, tz_data_file> test_load_file( char const* fp ) {
         using HRC = std::chrono::high_resolution_clock;
         using std::chrono::duration_cast;
 
