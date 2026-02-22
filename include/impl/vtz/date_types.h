@@ -38,8 +38,8 @@ namespace vtz {
         return ( l - r ) + ( l < r ? 7 : 0 );
     }
 
-    using OptMon = OptV<Mon, Mon{}>;
-    using OptDOW = OptV<DOW, DOW{ 7 }>;
+    using OptMon = opt_val<Mon, Mon{}>;
+    using OptDOW = opt_val<DOW, DOW{ 7 }>;
 
 } // namespace vtz
 

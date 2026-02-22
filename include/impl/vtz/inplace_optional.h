@@ -8,7 +8,7 @@ namespace vtz {
     /// Implements an optional-like wrapper over a type, where some _value_
     /// of the type represents the 'null' value.
     template<class T, T NULL_VALUE>
-    struct OptV {
+    struct opt_val {
         static_assert( std::is_trivial<T>::value, "Type must be trivial" );
 
         T data = NULL_VALUE;
@@ -29,12 +29,12 @@ namespace vtz {
         }
 
         // clang-format off
-        constexpr bool operator==( OptV const& rhs ) const noexcept { return data == rhs.data; }
-        constexpr bool operator!=( OptV const& rhs ) const noexcept { return data != rhs.data; }
-        constexpr bool operator<=( OptV const& rhs ) const noexcept { return data <= rhs.data; }
-        constexpr bool operator>=( OptV const& rhs ) const noexcept { return data >= rhs.data; }
-        constexpr bool operator< ( OptV const& rhs ) const noexcept { return data <  rhs.data; }
-        constexpr bool operator> ( OptV const& rhs ) const noexcept { return data >  rhs.data; }
+        constexpr bool operator==( opt_val const& rhs ) const noexcept { return data == rhs.data; }
+        constexpr bool operator!=( opt_val const& rhs ) const noexcept { return data != rhs.data; }
+        constexpr bool operator<=( opt_val const& rhs ) const noexcept { return data <= rhs.data; }
+        constexpr bool operator>=( opt_val const& rhs ) const noexcept { return data >= rhs.data; }
+        constexpr bool operator< ( opt_val const& rhs ) const noexcept { return data <  rhs.data; }
+        constexpr bool operator> ( opt_val const& rhs ) const noexcept { return data >  rhs.data; }
         // clang-format on
     };
 
@@ -103,7 +103,7 @@ namespace vtz {
         }
 
         template<class T, T NULL_VALUE>
-        constexpr operator OptV<T, NULL_VALUE>() const noexcept {
+        constexpr operator opt_val<T, NULL_VALUE>() const noexcept {
             return { NULL_VALUE };
         }
     };
@@ -120,7 +120,7 @@ namespace vtz {
         }
 
         template<T NULL_VALUE>
-        constexpr operator OptV<T, NULL_VALUE>() const noexcept {
+        constexpr operator opt_val<T, NULL_VALUE>() const noexcept {
             return { value };
         }
     };
