@@ -164,6 +164,54 @@ namespace {
             "Expected C Locale Month abbreviation (Jan, Feb, Mar, ...)" };
     }
 
+    /// Parse a weekday name as per the C locale. Accepts either an abbreviated
+    /// weekday name, or a full weekday name.
+    ///
+    /// The match is done in a case-insensitive manner.
+    ///
+    /// 'Mon' -> 3 characters are consumed, return 1
+    /// 'Monday' -> 6 characters are consumed, return 1
+    ///
+    /// Returns the weekday as a number in the range [0-6], where Sunday is 0.
+    ///
+    /// See `parse_month_name` for more exposition on how parsing works.
+
+    VTZ_INLINE int parse_weekday_name( char const*& p, char const* end ) {
+        auto rem = end - p;
+        using _impl::_load3;
+
+        if( rem >= 3 ) VTZ_LIKELY
+        {
+            u32 p0 = u8( p[0] ) | 32u;
+            u32 p1 = u8( p[1] ) | 32u;
+            u32 p2 = u8( p[2] ) | 32u;
+
+            u32 key = p0 | ( p1 << 8 ) | ( p2 << 16 );
+
+            p += 3;
+            switch( key )
+            {
+            // sunday -> "sun", "day"
+            case _load3( "sun" ): return _consume_suffix( p, end, 0, "day" );
+            // monday -> "mon", "day"
+            case _load3( "mon" ): return _consume_suffix( p, end, 1, "day" );
+            // tuesday -> "tue", "sday"
+            case _load3( "tue" ): return _consume_suffix( p, end, 2, "sday" );
+            // wednesday -> "wed", "nesday"
+            case _load3( "wed" ): return _consume_suffix( p, end, 3, "nesday" );
+            // thursday -> "thu", "rsday"
+            case _load3( "thu" ): return _consume_suffix( p, end, 4, "rsday" );
+            // friday -> "fri", "day"
+            case _load3( "fri" ): return _consume_suffix( p, end, 5, "day" );
+            // saturday -> "sat", "urday"
+            case _load3( "sat" ): return _consume_suffix( p, end, 6, "urday" );
+            }
+            p -= 3;
+        }
+
+        throw parse_fail{ p, "Expected C Locale Weekday (Sun, Mon, Tue, ...)" };
+    }
+
     template<class Int>
     VTZ_INLINE bool parse_digit_to( char ch, Int& dest ) noexcept {
         int  x       = ch - '0';
@@ -449,6 +497,10 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             case 'd': dom = parse_d2_allow_space( p, p_end ); continue;
 
             // DAY OF THE WEEK
+
+            // weekday name (abbreviated or full), consumed but not used
+            case 'a':
+            case 'A': (void)parse_weekday_name( p, p_end ); continue;
 
             // weekday 0-6, sunday is 0
             case 'w':
