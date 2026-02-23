@@ -92,6 +92,41 @@ namespace {
         return result;
     }
 
+
+    // parse 2 digits, permitting a leading space in the event of a single digit
+    VTZ_INLINE int parse_d2_allow_space( char const*& p, char const* end ) {
+        int result = 0;
+
+        if( p != end && parse_digit_to( *p, result ) ) VTZ_LIKELY
+        {
+            // Happy path - we have 1 or 2 digits, which we can parse into the result
+            ++p;
+            if( p != end && parse_digit_to( *p, result ) ) ++p;
+            return result;
+        }
+        else
+        {
+            // Sad path - check
+            if( p != end )
+            {
+                // Consume leading space
+                if( *p != ' ' )
+                    throw parse_fail{ p, "Expected digit or leading space" };
+                ++p;
+
+                // Parse the digit
+                if( p != end && parse_digit_to( *p, result ) )
+                {
+                    ++p;
+                    return result;
+                }
+                // otherwise, fall through to error...
+            }
+            throw parse_fail{ p, "Expected digit" };
+        }
+    }
+
+
     VTZ_INLINE int parse_d3( char const*& p, char const* end ) {
         int result = 0;
 
@@ -288,7 +323,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
 
             // parse month as decimal number (range [01,12]), leading 0s
             // permitted but not required
-            case 'm': month = parse_d2( p, p_end ); continue;
+            case 'm': month = parse_d2_allow_space( p, p_end ); continue;
 
             // DAY OF THE YEAR/MONTH
 
@@ -298,7 +333,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // parses the day of the month as a decimal number (range
             // [01,31]), leading 0s permitted but not required
             case 'e': // (synonym of 'd')
-            case 'd': dom = parse_d2( p, p_end ); continue;
+            case 'd': dom = parse_d2_allow_space( p, p_end ); continue;
 
             // DAY OF THE WEEK
 
@@ -327,7 +362,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
 
             // parses the hour as a decimal number, 24 hour clock (range
             // [00-23]), leading 0s permitted but not required
-            case 'H': hr = parse_d2( p, p_end ); continue;
+            case 'H': hr = parse_d2_allow_space( p, p_end ); continue;
             // minute
             case 'M': mi = parse_d2( p, p_end ); continue;
             // second
@@ -340,7 +375,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // %H:%M
             case 'R':
                 {
-                    hr = parse_d2( p, p_end );
+                    hr = parse_d2_allow_space( p, p_end );
                     if( p == p_end || *p != ':' )
                         throw parse_fail{ p, "Expected ':'" };
                     ++p;
@@ -354,17 +389,17 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     if( p == p_end || *p != '-' )
                         throw parse_fail{ p, "Expected '-'" };
                     ++p;
-                    month = parse_d2( p, p_end );
+                    month = parse_d2_allow_space( p, p_end );
                     if( p == p_end || *p != '-' )
                         throw parse_fail{ p, "Expected '-'" };
                     ++p;
-                    dom = parse_d2( p, p_end );
+                    dom = parse_d2_allow_space( p, p_end );
                     continue;
                 }
             // %H:%M:%S
             case 'T':
                 {
-                    hr = parse_d2( p, p_end );
+                    hr = parse_d2_allow_space( p, p_end );
                     if( p == p_end || *p != ':' )
                         throw parse_fail{ p, "Expected ':'" };
                     ++p;
