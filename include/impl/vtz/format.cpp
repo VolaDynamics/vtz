@@ -454,6 +454,19 @@ namespace vtz {
             case 'T':
                 p = write_frac( _write_hhmmss( p, hr, mi, sec ) );
                 continue;
+            // writes "AM" or "PM" in the C locale. Even though %p is lowercase,
+            // it is written in uppercase.
+            case 'p':
+                p[0]  = hr < 12 ? 'A' : 'P';
+                p[1]  = 'M';
+                p    += 2;
+                continue;
+            // writes "am" or "pm" in the C locale (GNU extension)
+            case 'P':
+                p[0]  = hr < 12 ? 'a' : 'p';
+                p[1]  = 'm';
+                p    += 2;
+                continue;
             // writes seconds since the Unix epoch (UTC)
             case 's':
                 p = write_frac( std::to_chars( p, p + 22, t ).ptr );
