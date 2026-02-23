@@ -1,4 +1,5 @@
 
+#include <vtz/impl/macros.h>
 #include <vtz/civil.h>
 #include <vtz/format.h>
 #include <vtz/impl/bit.h>
@@ -158,6 +159,123 @@ namespace vtz {
         return p;
     }
 
+    VTZ_INLINE static char* _write_c_weekday_abbr( char* p, int dow ) {
+        constexpr static char weekdays[][4]{
+            "Sun",
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+        };
+
+        _vtz_memcpy( p, weekdays[dow], 3 );
+
+        return p + 3;
+    }
+
+    /// Writes the abbreviation for the given month in the C locale. `mon` is a
+    /// month range [1-12]
+    VTZ_INLINE static char* _write_c_month_abbr( char* p, int mon ) {
+        constexpr static char months[][4]{
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        };
+
+        _vtz_memcpy( p, months[mon - 1], 3 );
+
+        return p + 3;
+    }
+
+    /// Writes the name for the given month in the C locale. `mon` is a month
+    /// range [1-12]
+    VTZ_INLINE static char* _write_c_month( char* p, int mon ) {
+        struct _name {
+            alignas( 16 ) char name[16];
+        };
+
+        constexpr static _name months[]{
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        };
+
+        constexpr static size_t month_lens[]{
+            7, // January
+            8, // February
+            5, // March
+            5, // April
+            3, // May
+            4, // June
+            4, // July
+            6, // August
+            9, // September
+            7, // October
+            8, // November
+            8, // December
+        };
+
+        size_t len = month_lens[mon - 1];
+        _vtz_memcpy( p, months[mon - 1].name, 16 );
+        return p + len;
+    }
+
+    VTZ_INLINE static char* _write_c_weekday( char* p, int dow ) {
+        struct _name {
+            alignas( 16 ) char name[16];
+        };
+
+        constexpr static _name weekdays[]{
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+        };
+
+        constexpr static size_t weekday_lens[]{
+            6, // Sunday
+            6, // Monday
+            7, // Tuesday
+            9, // Wednesday
+            8, // Thursday
+            6, // Friday
+            8, // Saturday
+        };
+
+        size_t len = weekday_lens[dow];
+
+        // We can optimistically write all 16 bytes, because the format
+        // implementation reserves 19 bytes per format specifier when
+        // constructing the buffer. This allows us to avoid actually doing a
+        // call to memcpy, since the size is known at compile time.
+        _vtz_memcpy( p, weekdays[dow].name, 16 );
+        return p + len;
+    }
+
+
     namespace {
         struct write_noop {
             VTZ_INLINE static size_t dump( char const*, size_t size ) {
@@ -287,6 +405,18 @@ namespace vtz {
                     *p++     = char( '0' + dow );
                     continue;
                 }
+            // Writes weekday abbreviation in the C locale
+            case 'a':
+                p = _write_c_weekday_abbr( p, int( dow_from_days( date ) ) );
+                continue;
+            // Write the weekday name in the C locale
+            case 'A':
+                p = _write_c_weekday( p, int( dow_from_days( date ) ) );
+                continue;
+            // Writes abbreviated month name in the C locale
+            case 'b': p = _write_c_month_abbr( p, ymd.month ); continue;
+            // Writes full month name in the C locale
+            case 'B': p = _write_c_month( p, ymd.month ); continue;
             // 	writes weekday as a decimal number, where Monday is 1 (ISO 8601
             // format) (range [1-7])
             case 'u':
