@@ -1,8 +1,8 @@
 
-#include <vtz/impl/macros.h>
 #include <vtz/civil.h>
 #include <vtz/format.h>
 #include <vtz/impl/bit.h>
+#include <vtz/impl/macros.h>
 #include <vtz/tz.h>
 
 #include <charconv>
@@ -311,15 +311,12 @@ namespace vtz {
         F                                func ) {
         constexpr size_t MAX_SPECIFIERS = 64;
         constexpr size_t MAX_SIZE       = MAX_SPECIFIERS * 2;
-        // In the worst case, the year is 13 bytes. (this occurs if, eg, the
-        // input is INT64_MIN) in which case the year would be around
-        // -292471208678 - this gives the length:
+        // In the worst case, we have a specifier such as %s which, including
+        // the nanos specifier (if `write_frac` writes one), can end up being 30
+        // characters long in the worst case.
         //
-        //     len(str(-2**63 // (365 * 86400)))
-        //
-        // The longest expansion is %F, which expands to %Y-%m-%d, so (13+6), so
-        // 19 characters in length
-        constexpr size_t REQUIRED_BUFF_SIZE = 19 * MAX_SPECIFIERS + 1;
+        // This would be, for instance, `-9223372036854775808.999999999`
+        constexpr size_t REQUIRED_BUFF_SIZE = 30 * MAX_SPECIFIERS;
         // Make buffer size a power of 2
         constexpr size_t BUFF_SIZE
             = 1ull << ( 1 + _blog2_fallback( REQUIRED_BUFF_SIZE ) );
@@ -456,6 +453,10 @@ namespace vtz {
             // equivalent to "%H:%M:%S" (the ISO 8601 time format)
             case 'T':
                 p = write_frac( _write_hhmmss( p, hr, mi, sec ) );
+                continue;
+            // writes seconds since the Unix epoch (UTC)
+            case 's':
+                p = write_frac( std::to_chars( p, p + 22, t ).ptr );
                 continue;
             // writes offset from UTC in the ISO 8601 format (e.g. -0430)
             case 'z': p += write_shortest_offset( gmtoff, p ); continue;
