@@ -416,6 +416,16 @@ namespace vtz {
             case 'h': p = _write_c_month_abbr( p, ymd.month ); continue;
             // Writes full month name in the C locale
             case 'B': p = _write_c_month( p, ymd.month ); continue;
+            // writes the century (year/100) as a 2-digit decimal number
+            case 'C':
+                {
+                    i64 century = ymd.year / 100;
+                    if( u64( century ) < 100 )
+                        p = _write_2_digit( p, u8( century ) );
+                    else
+                        p = std::to_chars( p, p + 22, century ).ptr;
+                    continue;
+                }
             // 	writes weekday as a decimal number, where Monday is 1 (ISO 8601
             // format) (range [1-7])
             case 'u':
