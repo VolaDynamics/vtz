@@ -411,7 +411,9 @@ namespace vtz {
                 p = _write_c_weekday( p, int( dow_from_days( date ) ) );
                 continue;
             // Writes abbreviated month name in the C locale
-            case 'b': p = _write_c_month_abbr( p, ymd.month ); continue;
+            case 'b':
+            // %h is equivalent to %b
+            case 'h': p = _write_c_month_abbr( p, ymd.month ); continue;
             // Writes full month name in the C locale
             case 'B': p = _write_c_month( p, ymd.month ); continue;
             // 	writes weekday as a decimal number, where Monday is 1 (ISO 8601
