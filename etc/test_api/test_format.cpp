@@ -12,6 +12,21 @@ using sv = std::string_view;
 
 
 namespace {
+    // Convert a datetime (in terms of year, month, day, hour, minute, and sec)
+    // to a sys_seconds object, treating everything as UTC time.
+    vtz::sys_seconds _get_time( int year,
+        unsigned                    month,
+        unsigned                    day,
+        int                         hour   = 0,
+        int                         minute = 0,
+        int                         second = 0 ) {
+        auto days = date::sys_days( date::year_month_day{
+            date::year{ year }, date::month{ month }, date::day{ day } } );
+
+        return days + std::chrono::hours{ hour }
+               + std::chrono::minutes{ minute }
+               + std::chrono::seconds{ second };
+    }
 
     // Reference formatters using the Hinnant date library
 
@@ -128,6 +143,12 @@ namespace {
             ASSERT_EQ( n4, sz );
             ASSERT_EQ( sv( gpb.data(), n4 ), prefix );
         }
+    }
+
+    void check_format_time(
+        char const* fmt, sys_seconds t_sys, std::string const& expected ) {
+        return check_format_time(
+            fmt, t_sys.time_since_epoch().count(), expected );
     }
 
     void check_format_precise( const char* fmt,
@@ -483,4 +504,77 @@ TEST( vtz_format, format_generic ) {
                 // pathological: longer than a second, non-integer
                 check_format_generic<seven_thirds>( fmt, t, nanos );
             }
+}
+
+
+TEST( vtz_format, c_locale_sanity_test ) {
+    // Part 1: Hardcoded sanity checks for %a, %A, %b, %B
+    //
+    // Weekday names — Jan 1 2024 is a Monday; test 7 consecutive days
+    check_format_time( "%a", _get_time( 2024, 1, 1 ), "Mon" );
+    check_format_time( "%a", _get_time( 2024, 1, 2 ), "Tue" );
+    check_format_time( "%a", _get_time( 2024, 1, 3 ), "Wed" );
+    check_format_time( "%a", _get_time( 2024, 1, 4 ), "Thu" );
+    check_format_time( "%a", _get_time( 2024, 1, 5 ), "Fri" );
+    check_format_time( "%a", _get_time( 2024, 1, 6 ), "Sat" );
+    check_format_time( "%a", _get_time( 2024, 1, 7 ), "Sun" );
+
+    check_format_time( "%A", _get_time( 2024, 1, 1 ), "Monday" );
+    check_format_time( "%A", _get_time( 2024, 1, 2 ), "Tuesday" );
+    check_format_time( "%A", _get_time( 2024, 1, 3 ), "Wednesday" );
+    check_format_time( "%A", _get_time( 2024, 1, 4 ), "Thursday" );
+    check_format_time( "%A", _get_time( 2024, 1, 5 ), "Friday" );
+    check_format_time( "%A", _get_time( 2024, 1, 6 ), "Saturday" );
+    check_format_time( "%A", _get_time( 2024, 1, 7 ), "Sunday" );
+
+    // Month names — 1st of each month in 2024
+    check_format_time( "%b", _get_time( 2024, 1, 1 ), "Jan" );
+    check_format_time( "%b", _get_time( 2024, 2, 1 ), "Feb" );
+    check_format_time( "%b", _get_time( 2024, 3, 1 ), "Mar" );
+    check_format_time( "%b", _get_time( 2024, 4, 1 ), "Apr" );
+    check_format_time( "%b", _get_time( 2024, 5, 1 ), "May" );
+    check_format_time( "%b", _get_time( 2024, 6, 1 ), "Jun" );
+    check_format_time( "%b", _get_time( 2024, 7, 1 ), "Jul" );
+    check_format_time( "%b", _get_time( 2024, 8, 1 ), "Aug" );
+    check_format_time( "%b", _get_time( 2024, 9, 1 ), "Sep" );
+    check_format_time( "%b", _get_time( 2024, 10, 1 ), "Oct" );
+    check_format_time( "%b", _get_time( 2024, 11, 1 ), "Nov" );
+    check_format_time( "%b", _get_time( 2024, 12, 1 ), "Dec" );
+
+    check_format_time( "%B", _get_time( 2024, 1, 1 ), "January" );
+    check_format_time( "%B", _get_time( 2024, 2, 1 ), "February" );
+    check_format_time( "%B", _get_time( 2024, 3, 1 ), "March" );
+    check_format_time( "%B", _get_time( 2024, 4, 1 ), "April" );
+    check_format_time( "%B", _get_time( 2024, 5, 1 ), "May" );
+    check_format_time( "%B", _get_time( 2024, 6, 1 ), "June" );
+    check_format_time( "%B", _get_time( 2024, 7, 1 ), "July" );
+    check_format_time( "%B", _get_time( 2024, 8, 1 ), "August" );
+    check_format_time( "%B", _get_time( 2024, 9, 1 ), "September" );
+    check_format_time( "%B", _get_time( 2024, 10, 1 ), "October" );
+    check_format_time( "%B", _get_time( 2024, 11, 1 ), "November" );
+    check_format_time( "%B", _get_time( 2024, 12, 1 ), "December" );
+
+    // Composite formats with a time component
+    check_format_time( "%a, %d %b %Y %T",
+        _get_time( 2024, 2, 29, 14, 30, 0 ),
+        "Thu, 29 Feb 2024 14:30:00" );
+    check_format_time( "%A %B %d, %Y %R",
+        _get_time( 2024, 9, 1, 8, 5, 0 ),
+        "Sunday September 01, 2024 08:05" );
+    check_format_time(
+        "%B %e, %Y", _get_time( 2024, 12, 25 ), "December 25, 2024" );
+
+    // Part 2: Every day of 2024 (leap year, 366 days), checked against
+    // date::format
+    constexpr unsigned days_in_month[]
+        = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    const char* fmts[] = { "%a", "%A", "%b", "%B", "%a %b %d %Y" };
+    for( unsigned m = 1; m <= 12; m++ )
+        for( unsigned d = 1; d <= days_in_month[m - 1]; d++ )
+        {
+            auto t = _get_time( 2024, m, d );
+            for( auto fmt : fmts )
+                check_format_time(
+                    fmt, t, ref_time( fmt, t.time_since_epoch().count() ) );
+        }
 }
