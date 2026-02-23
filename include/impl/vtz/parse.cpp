@@ -8,6 +8,8 @@
 #include <vtz/strings.h>
 #include <vtz/util/microfmt.h>
 
+#include <vtz/parse.h>
+
 namespace vtz {
     template<class F>
     auto _do_parse( string_view format, string_view input, F func )
