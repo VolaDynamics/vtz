@@ -443,6 +443,24 @@ namespace vtz {
             // 	writes hour as a decimal number, 24 hour clock (range
             // [00-23])
             case 'H': p = _write_2_digit( p, u8( hr ) ); continue;
+            // writes hour (24h) space-padded (range [ 0,23])
+            case 'k':
+                {
+                    p[0]  = hr < 10 ? ' ' : char( '0' + hr / 10 );
+                    p[1]  = char( '0' + hr % 10 );
+                    p    += 2;
+                    continue;
+                }
+            // writes hour (12h) space-padded (range [ 1,12])
+            case 'l':
+                {
+                    int x = hr % 12;
+                    if( x == 0 ) x = 12;
+                    p[0]  = x < 10 ? ' ' : char( '0' + x / 10 );
+                    p[1]  = char( '0' + x % 10 );
+                    p    += 2;
+                    continue;
+                }
             // writes minute as a decimal number (range [00,59])
             case 'M': p = _write_2_digit( p, u8( mi ) ); continue;
             // writes second as a decimal number (range [00,60]). Will also
