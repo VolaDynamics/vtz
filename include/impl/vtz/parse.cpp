@@ -1,10 +1,13 @@
 
 
+#include <cstddef>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
 #include <string>
 #include <vtz/civil.h>
+#include <vtz/impl/bit.h>
+#include <vtz/impl/macros.h>
 #include <vtz/strings.h>
 #include <vtz/util/microfmt.h>
 
@@ -58,6 +61,109 @@ namespace {
                || ch == '\xc';
     }
 
+
+    // Attempts to consume the given suffix in a case-insensitive way.
+    //
+    // On success, updates p to point past the consumed suffix.
+    //
+    // suffix must be lowercase.
+    template<size_t N>
+    VTZ_INLINE int _consume_suffix( char const*& p,
+        char const*                              end,
+        int                                      result,
+        char const ( &suffix )[N] ) noexcept {
+        constexpr intptr_t suffix_len = intptr_t( N ) - 1;
+
+        if( ( end - p ) < suffix_len )
+        {
+            // Cannot consume suffix; just return
+            return result;
+        }
+
+        for( size_t i = 0; i < suffix_len; ++i )
+        {
+            // mismatch - don't consume suffix, just return
+            if( u8( u8( p[i] ) | 32u ) != u8( suffix[i] ) ) return result;
+        }
+        // We can consume suffix and return
+        p += suffix_len;
+        return result;
+    }
+
+
+    /// Parse a month name as per the C locale. Accepts either an abbreviated
+    /// month name, or a full month name.
+    ///
+    /// The match is done in a case-insensitive manner. Eg, jan, JAN, and Jan
+    /// are all treated the same.
+    ///
+    /// 'Feb' -> 3 characters are consumed, return month=2
+    /// 'February' -> 8 characters are consumed, return month=2
+    ///
+    /// If a month name is incomplete, only the abbreviation will be consumed.
+    /// Eg:
+    ///
+    /// 'Febru' -> 3 characters are consumed, result is month=2. p points to
+    /// 'ru'
+
+    VTZ_INLINE int parse_month_name( char const*& p, char const* end ) {
+        auto rem = end - p;
+        using _impl::_load3;
+        using _impl::_load4;
+
+        if( rem >= 3 ) VTZ_LIKELY
+        {
+            // We use `| 32u` to convert to lowercase here
+            // This changes non-letter characters, but that's okay, because
+            // a non-letter will never be changed into a letter.
+            //
+            // So, when we construct the key into the switch, anything that
+            // is not a valid month will not be matched.
+            u32 p0 = u8( p[0] ) | 32u;
+            u32 p1 = u8( p[1] ) | 32u;
+            u32 p2 = u8( p[2] ) | 32u;
+
+            // this is used to determine which month we're on, based on the
+            // abbreviation
+            u32 key = p0 | ( p1 << 8 ) | ( p2 << 16 );
+
+            // Handle month abbreviations
+            p += 3; // Optimistically update p
+            switch( key )
+            {
+            // january -> "jan", "uary"
+            case _load3( "jan" ): return _consume_suffix( p, end, 1, "uary" );
+            // february -> "feb", "ruary"
+            case _load3( "feb" ): return _consume_suffix( p, end, 2, "ruary" );
+            // march -> "mar", "ch"
+            case _load3( "mar" ): return _consume_suffix( p, end, 3, "ch" );
+            // april -> "apr", "il"
+            case _load3( "apr" ): return _consume_suffix( p, end, 4, "il" );
+            // may (no suffix for may)
+            case _load3( "may" ): return 5;
+            // june -> "jun", "e"
+            case _load3( "jun" ): return _consume_suffix( p, end, 6, "e" );
+            // july -> "jul", "y"
+            case _load3( "jul" ): return _consume_suffix( p, end, 7, "y" );
+            // august -> "aug", "ust"
+            case _load3( "aug" ): return _consume_suffix( p, end, 8, "ust" );
+            // september -> "sep", "tember"
+            case _load3( "sep" ): return _consume_suffix( p, end, 9, "tember" );
+            // october -> "oct", "ober"
+            case _load3( "oct" ): return _consume_suffix( p, end, 10, "ober" );
+            // november -> "nov", "ember"
+            case _load3( "nov" ): return _consume_suffix( p, end, 11, "ember" );
+            // december -> "dec", "ember"
+            case _load3( "dec" ): return _consume_suffix( p, end, 12, "ember" );
+            }
+            // Whoops! We failed - set p back
+            p -= 3;
+        }
+
+        throw parse_fail{ p,
+            "Expected C Locale Month abbreviation (Jan, Feb, Mar, ...)" };
+    }
+
     template<class Int>
     VTZ_INLINE bool parse_digit_to( char ch, Int& dest ) noexcept {
         int  x       = ch - '0';
@@ -99,7 +205,8 @@ namespace {
 
         if( p != end && parse_digit_to( *p, result ) ) VTZ_LIKELY
         {
-            // Happy path - we have 1 or 2 digits, which we can parse into the result
+            // Happy path - we have 1 or 2 digits, which we can parse into the
+            // result
             ++p;
             if( p != end && parse_digit_to( *p, result ) ) ++p;
             return result;
@@ -324,6 +431,12 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // parse month as decimal number (range [01,12]), leading 0s
             // permitted but not required
             case 'm': month = parse_d2_allow_space( p, p_end ); continue;
+
+            // parse a month, either the abbreviated name ('Jan') or the full
+            // name ('January'). Uses C locale.
+            case 'b':
+            case 'B':
+            case 'h': month = parse_month_name( p, p_end ); continue;
 
             // DAY OF THE YEAR/MONTH
 
