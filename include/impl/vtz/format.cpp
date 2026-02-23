@@ -426,6 +426,14 @@ namespace vtz {
                         p = std::to_chars( p, p + 22, century ).ptr;
                     continue;
                 }
+            // equivalent to "%m/%d/%y"
+            case 'D':
+                p    = _write_mon( p, u8( ymd.month ) );
+                *p++ = '/';
+                p    = _write_dom_d( p, u8( ymd.day ) );
+                *p++ = '/';
+                p    = _write_year_short( p, ymd.year );
+                continue;
             // 	writes weekday as a decimal number, where Monday is 1 (ISO 8601
             // format) (range [1-7])
             case 'u':
