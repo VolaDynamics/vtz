@@ -1,7 +1,9 @@
+#include <chrono>
 #include <gtest/gtest.h>
 #include <string>
 #include <string_view>
 #include <vtz/format.h>
+#include <vtz/types.h>
 
 #include <date/date.h>
 
@@ -12,6 +14,9 @@ using sv = std::string_view;
 
 
 namespace {
+    vtz::sys_seconds _to_sys( sysseconds_t s ) {
+        return sys_seconds{ std::chrono::seconds{ s } };
+    }
     // Convert a datetime (in terms of year, month, day, hour, minute, and sec)
     // to a sys_seconds object, treating everything as UTC time.
     vtz::sys_seconds _get_time( int year,
@@ -334,15 +339,21 @@ namespace {
         "%Z", // timezone abbreviation, eg 'UTC'
         "%Y", // full year, e.g. "2025"
         "%y", // last 2 digits of year, e.g. "25"
+        "%C", // century, e.g. "20"
         "%m", // month [01,12]
         "%d", // day of month, zero-padded [01,31]
         "%e", // day of month, space-padded [ 1,31]
         "%j", // day of year [001,366]
         "%w", // weekday, Sunday=0 [0,6]
         "%u", // weekday, Monday=1 ISO [1,7]
+        "%b", // abbreviated month name
+        "%h", // abbreviated month name (equivalent to %b)
+        "%B", // full month name
         "%F", // ISO date, equivalent to %Y-%m-%d
+        "%D", // equivalent to %m/%d/%y
         "%H", // hour, 24-hour clock [00,23]
         "%I", // hour, 12-hour clock [01,12]
+        "%p", // AM/PM
         "%M", // minute [00,59]
         "%S", // second [00,60]
         "%R", // equivalent to %H:%M
@@ -362,13 +373,18 @@ namespace {
     const char* DATE_FMTS[] = {
         "%Y", // full year, e.g. "2025"
         "%y", // last 2 digits of year, e.g. "25"
+        "%C", // century, e.g. "20"
         "%m", // month [01,12]
         "%d", // day of month, zero-padded [01,31]
         "%e", // day of month, space-padded [ 1,31]
         "%j", // day of year [001,366]
         "%w", // weekday, Sunday=0 [0,6]
         "%u", // weekday, Monday=1 ISO [1,7]
+        "%b", // abbreviated month name
+        "%h", // abbreviated month name (equivalent to %b)
+        "%B", // full month name
         "%F", // ISO date, equivalent to %Y-%m-%d
+        "%D", // equivalent to %m/%d/%y
         "%Y-%m-%d",
         "%d/%m/%Y",
         "%Y%m%d",
@@ -568,7 +584,8 @@ TEST( vtz_format, c_locale_sanity_test ) {
     // date::format
     constexpr unsigned days_in_month[]
         = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-    const char* fmts[] = { "%a", "%A", "%b", "%B", "%a %b %d %Y" };
+    const char* fmts[]
+        = { "%a", "%A", "%b", "%B", "%h", "%C", "%D", "%p", "%a %b %d %Y" };
     for( unsigned m = 1; m <= 12; m++ )
         for( unsigned d = 1; d <= days_in_month[m - 1]; d++ )
         {
@@ -577,4 +594,61 @@ TEST( vtz_format, c_locale_sanity_test ) {
                 check_format_time(
                     fmt, t, ref_time( fmt, t.time_since_epoch().count() ) );
         }
+}
+
+
+TEST( vtz_format, gnu_extensions ) {
+    // %k — hour (24h) space-padded
+    check_format_time( "%k", _get_time( 2024, 1, 1, 0, 0, 0 ), " 0" );
+    check_format_time( "%k", _get_time( 2024, 1, 1, 5, 0, 0 ), " 5" );
+    check_format_time( "%k", _get_time( 2024, 1, 1, 9, 0, 0 ), " 9" );
+    check_format_time( "%k", _get_time( 2024, 1, 1, 10, 0, 0 ), "10" );
+    check_format_time( "%k", _get_time( 2024, 1, 1, 13, 0, 0 ), "13" );
+    check_format_time( "%k", _get_time( 2024, 1, 1, 23, 0, 0 ), "23" );
+
+    // %l — hour (12h) space-padded
+    check_format_time( "%l", _get_time( 2024, 1, 1, 0, 0, 0 ), "12" );
+    check_format_time( "%l", _get_time( 2024, 1, 1, 1, 0, 0 ), " 1" );
+    check_format_time( "%l", _get_time( 2024, 1, 1, 9, 0, 0 ), " 9" );
+    check_format_time( "%l", _get_time( 2024, 1, 1, 10, 0, 0 ), "10" );
+    check_format_time( "%l", _get_time( 2024, 1, 1, 12, 0, 0 ), "12" );
+    check_format_time( "%l", _get_time( 2024, 1, 1, 13, 0, 0 ), " 1" );
+    check_format_time( "%l", _get_time( 2024, 1, 1, 23, 0, 0 ), "11" );
+
+    // %p — AM/PM
+    check_format_time( "%p", _get_time( 2024, 1, 1, 0, 0, 0 ), "AM" );
+    check_format_time( "%p", _get_time( 2024, 1, 1, 11, 59, 59 ), "AM" );
+    check_format_time( "%p", _get_time( 2024, 1, 1, 12, 0, 0 ), "PM" );
+    check_format_time( "%p", _get_time( 2024, 1, 1, 23, 59, 59 ), "PM" );
+
+    // %P — am/pm (lowercase)
+    check_format_time( "%P", _get_time( 2024, 1, 1, 0, 0, 0 ), "am" );
+    check_format_time( "%P", _get_time( 2024, 1, 1, 11, 59, 59 ), "am" );
+    check_format_time( "%P", _get_time( 2024, 1, 1, 12, 0, 0 ), "pm" );
+    check_format_time( "%P", _get_time( 2024, 1, 1, 23, 59, 59 ), "pm" );
+
+    // %s — seconds since epoch. Use raw epoch seconds as input so the
+    // expected output is trivially the same number.
+    check_format_time( "%s", 0, "0" );
+    check_format_time( "%s", 1, "1" );
+    check_format_time( "%s", 946684800, "946684800" );
+    check_format_time( "%s", 1740000000, "1740000000" );
+    check_format_time( "%s", -1, "-1" );
+    check_format_time( "%s", -62167219200, "-62167219200" );
+    check_format_time( "%s", 999999999999ll, "999999999999" );
+
+    // Check '%s' with fractional component
+    check_format_precise(
+        "%s", 4000000000ll, 123456789, 3, "4000000000.123" );
+    check_format_precise(
+        "%s", 4000000000ll, 123456789, 6, "4000000000.123456" );
+    check_format_precise(
+        "%s", 4000000000ll, 123456789, 9, "4000000000.123456789" );
+
+    // composite formats
+    check_format_time(
+        "%l:%M %P", _get_time( 2024, 7, 4, 15, 30, 0 ), " 3:30 pm" );
+    check_format_time( "%k:%M on %F",
+        _get_time( 2024, 12, 25, 8, 0, 0 ),
+        " 8:00 on 2024-12-25" );
 }
