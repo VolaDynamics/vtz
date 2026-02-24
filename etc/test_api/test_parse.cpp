@@ -104,6 +104,45 @@ TEST( vtz_parse, sanity ) {
     // %% — literal percent
     EXPECT_EQ( parse_sys_seconds( "%F %% %T", "2024-01-01 % 12:00:00" ),
         _get_time( 2024, 1, 1, 12, 0, 0 ) );
+
+    // %I %p — 12-hour clock with AM/PM
+    // 12:00 AM = 00:00
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 12:00:00 AM" ),
+        _get_time( 2024, 1, 1, 0, 0, 0 ) );
+    // 12:30 AM = 00:30
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 12:30:00 AM" ),
+        _get_time( 2024, 1, 1, 0, 30, 0 ) );
+    // 1:00 AM = 01:00
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 01:00:00 AM" ),
+        _get_time( 2024, 1, 1, 1, 0, 0 ) );
+    // 11:59 AM = 11:59
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 11:59:59 AM" ),
+        _get_time( 2024, 1, 1, 11, 59, 59 ) );
+    // 12:00 PM = 12:00
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 12:00:00 PM" ),
+        _get_time( 2024, 1, 1, 12, 0, 0 ) );
+    // 1:00 PM = 13:00
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 01:00:00 PM" ),
+        _get_time( 2024, 1, 1, 13, 0, 0 ) );
+    // 11:59 PM = 23:59
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 11:59:59 PM" ),
+        _get_time( 2024, 1, 1, 23, 59, 59 ) );
+
+    // %p is case-insensitive
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 03:00:00 am" ),
+        _get_time( 2024, 1, 1, 3, 0, 0 ) );
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 03:00:00 pm" ),
+        _get_time( 2024, 1, 1, 15, 0, 0 ) );
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 03:00:00 Am" ),
+        _get_time( 2024, 1, 1, 3, 0, 0 ) );
+    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 03:00:00 pM" ),
+        _get_time( 2024, 1, 1, 15, 0, 0 ) );
+
+    // %p before %I (order-independent)
+    EXPECT_EQ( parse_sys_seconds( "%F %p %I:%M:%S", "2024-01-01 PM 02:30:00" ),
+        _get_time( 2024, 1, 1, 14, 30, 0 ) );
+    EXPECT_EQ( parse_sys_seconds( "%F %p %I:%M:%S", "2024-01-01 AM 12:00:00" ),
+        _get_time( 2024, 1, 1, 0, 0, 0 ) );
 }
 
 
@@ -199,15 +238,31 @@ TEST( vtz_parse, round_trip ) {
 
     // Formats that carry enough information for a lossless round-trip
     const char* round_trip_fmts[] = {
-        "%F %T",               // ISO date + ISO time
-        "%Y-%m-%d %H:%M:%S",   // equivalent, spelled out
-        "%Y%m%d %H:%M:%S",     // compact date
-        "%d/%m/%Y %T",         // day/month/year
-        "%Y-%j %T",            // ordinal date + time
-        "%Y-%j %H:%M:%S",      // ordinal date + time, spelled out
-        "%C%y%m%d %T",         // century + 2-digit year + compact date
-        "%C%y-%m-%d %H:%M:%S", // century + 2-digit year + date
-        "%Y-%m-%d %R:%S",      // %R for hour:minute, then %S
+        "%F %T",                  // ISO date + ISO time
+        "%Y-%m-%d %H:%M:%S",      // equivalent, spelled out
+        "%Y%m%d %H:%M:%S",        // compact date
+        "%d/%m/%Y %T",            // day/month/year
+        "%Y-%j %T",               // ordinal date + time
+        "%Y-%j %H:%M:%S",         // ordinal date + time, spelled out
+        "%C%y%m%d %T",            // century + 2-digit year + compact date
+        "%C%y-%m-%d %H:%M:%S",    // century + 2-digit year + date
+        "%Y-%m-%d %R:%S",         // %R for hour:minute, then %S
+        "%d %b %Y %T",            // abbreviated month name
+        "%d %B %Y %T",            // full month name
+        "%a %F %T",               // abbreviated weekday + ISO date/time
+        "%A %F %T",               // full weekday + ISO date/time
+        "%F %I:%M:%S %p",         // 12-hour clock with AM/PM
+        "%a %b %d %H:%M:%S %Y",   // date format, eg
+                                  // `Thu Jan 01 22:46:40 1970`
+        "%a %b %d %I:%M:%S%P %Y", // date format (am/pm), eg
+                                  // `Thu Jan 01 10:46:40pm 1970`
+        "%a %b %e %H:%M:%S %Y",   // date format, eg
+                                  // `Thu Jan  1 22:46:40 1970`
+        "%a %b %e %I:%M:%S%P %Y", // date format (am/pm), eg
+                                  // `Thu Jan  1 10:46:40pm 1970`
+        "%a %b %e %l:%M:%S%P %Y", // date format (am/pm), eg
+                                  // `Thu Jan  1  7:46:40pm 1970`
+
     };
 
     for( auto tp : time_values )
@@ -241,6 +296,10 @@ TEST( vtz_parse, round_trip ) {
         "%Y-%j",      // ordinal date
         "%C%y-%m-%d", // century + 2-digit year
         "%C%y%m%d",   // century + 2-digit year, compact
+        "%d %b %Y",   // abbreviated month name
+        "%d %B %Y",   // full month name
+        "%a %F",      // abbreviated weekday + ISO date
+        "%A %F",      // full weekday + ISO date
     };
 
     for( auto dp : date_values )
