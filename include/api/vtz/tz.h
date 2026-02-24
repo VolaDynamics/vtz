@@ -19,6 +19,47 @@
 namespace vtz {
     using std::string;
 
+    class VTZ_EXPORT time_zone;
+
+    /// If `vtz` is using timezones loaded from timezone source files, or from
+    /// `tzdata.zi`, returns the version of the timezone database source files
+    /// used to load timezones.
+    VTZ_EXPORT std::string tzdb_version();
+
+    /// Set the path to use for the timezone database. Will throw an exception
+    /// if the timezone database is already loaded.
+    VTZ_EXPORT void set_install( std::string path );
+
+    /// Returns the path to the timezone database.
+    VTZ_EXPORT std::string get_install();
+
+    /// Find a timezone by name
+    VTZ_EXPORT time_zone const* locate_zone( string_view name );
+
+    /// Get the current timezone for the application. By default, this is the
+    /// system's current timezone.
+    VTZ_EXPORT time_zone const* current_zone();
+
+
+    /// Sets the current zone used by vtz. This does NOT change the system
+    /// timezone, it only sets the current zone returned by vtz. It's primarily
+    /// useful if your application uses vtz, and you wish to use something other
+    /// than the system timezone.
+    ///
+    /// Throws an exception if the given zone name could not be found within the
+    /// timezone database.
+    VTZ_EXPORT time_zone const* set_current_zone_for_application(
+        string_view name );
+
+
+    /// VTZ operates under the assumption that the current timezone will not
+    /// change while the application is running.
+    ///
+    /// In order to override this behavior, you can call this function to
+    /// atomically reload the current zone. The new current zone is returned.
+    VTZ_EXPORT time_zone const* reload_current_zone();
+
+
     class VTZ_EXPORT time_zone
     : private off_tables
     , private abbr_table
@@ -331,36 +372,6 @@ namespace vtz {
     };
 
 
-    VTZ_EXPORT std::string tzdb_version();
-
-    /// Set the path to use for the timezone database. Will throw an exception
-    /// if the timezone database is already loaded.
-    VTZ_EXPORT void set_install( std::string path );
-
-    VTZ_EXPORT std::string get_install();
-
-    VTZ_EXPORT time_zone const* locate_zone( string_view name );
-
-    VTZ_EXPORT time_zone const* current_zone();
-
-
-    /// Sets the current zone used by vtz. This does NOT change the system
-    /// timezone, it only sets the current zone returned by vtz. It's primarily
-    /// useful if your application uses vtz, and you wish to use something other
-    /// than the system timezone.
-    ///
-    /// Throws an exception if the given zone name could not be found within the
-    /// timezone database.
-    VTZ_EXPORT time_zone const* set_current_zone_for_application(
-        string_view name );
-
-
-    /// VTZ operates under the assumption that the current timezone will not
-    /// change while the application is running.
-    ///
-    /// In order to override this behavior, you can call this function to
-    /// atomically reload the current zone. The new current zone is returned.
-    VTZ_EXPORT time_zone const* reload_current_zone();
 } // namespace vtz
 
 
