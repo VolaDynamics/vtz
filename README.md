@@ -36,6 +36,33 @@ cmake -B build -G Ninja -DVTZ_ONLY=1
 cmake --build build
 ```
 
+## Using the library in your project
+
+The fastest and most convinient way to use `vtz` as a dependency in your project
+is with [cpm][cpm]:
+
+```cmake
+CPMAddPackage("gh:voladynamics/vtz@1.0.0")
+```
+
+If `vtz` is installed on the system, it can also be located with
+[`find_package`][find-package]:
+
+```cmake
+find_package(vtz REQUIRED)
+```
+
+With either method, you can link against `vtz` using
+`target_link_libraries(... vtz::vtz)`:
+
+```cmake
+# use VTZ as private dependency of your application
+target_link_libraries(my_app PRIVATE vtz::vtz)
+```
+
+[cpm]: https://github.com/cpm-cmake/CPM.cmake
+[find-package]: https://cmake.org/cmake/help/latest/command/find_package.html
+
 ## API basics - Using vtz
 
 vtz aims to provide an interface which is familiar to people who have used
