@@ -212,6 +212,32 @@ namespace {
         throw parse_fail{ p, "Expected C Locale Weekday (Sun, Mon, Tue, ...)" };
     }
 
+
+    /// Parse an AM/PM designator in a case-insensitive manner.
+    /// Returns 0 for AM, 12 for PM (to be added to the hour).
+
+    VTZ_INLINE int parse_am_pm( char const*& p, char const* end ) {
+        if( end - p >= 2 )
+        {
+            u32 c0  = u8( p[0] ) | 32u;
+            u32 c1  = u8( p[1] ) | 32u;
+            u32 key = c0 | ( c1 << 8 );
+
+            p += 2; // Optimistically update 'p'
+
+            switch( key )
+            {
+            case _impl::_load2( "am" ): return 0;
+            case _impl::_load2( "pm" ): return 12;
+            }
+
+            p -= 2;
+        }
+
+        throw parse_fail{ p, "Expected AM or PM" };
+    }
+
+
     template<class Int>
     VTZ_INLINE bool parse_digit_to( char ch, Int& dest ) noexcept {
         int  x       = ch - '0';
@@ -528,6 +554,14 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // parses the hour as a decimal number, 24 hour clock (range
             // [00-23]), leading 0s permitted but not required
             case 'H': hr = parse_d2_allow_space( p, p_end ); continue;
+            case 'l': // Because of GNU extensions, '%l' is accepted as a
+                      // synonym of %I
+            case 'I': hr += parse_d2_allow_space( p, p_end ) % 12; continue;
+            // parses AM/PM designator (case-insensitive). Adds 0 for AM,
+            // 12 for PM.
+            case 'P': // Because of GNU extensions, '%P' is accepted as a
+                      // synonym of '%p'
+            case 'p': hr += parse_am_pm( p, p_end ); continue;
             // minute
             case 'M': mi = parse_d2( p, p_end ); continue;
             // second
