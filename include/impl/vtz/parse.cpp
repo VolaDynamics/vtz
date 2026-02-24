@@ -540,14 +540,13 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                 }
             // weekday 1-7, monday is 1
             case 'u':
+                if( p < p_end )
                 {
-                    if( p < p_end )
-                    {
-                        int weekday = *p++ - '1';
-                        if( 0 <= weekday && weekday < 7 ) continue;
-                    }
-                    throw parse_fail{ p - 1, "Expected weekday (range [1-7])" };
+                    int weekday = *p++ - '1';
+                    if( 0 <= weekday && weekday < 7 ) continue;
                 }
+                throw parse_fail{ p - 1, "Expected weekday (range [1-7])" };
+
 
             // HOUR, MINUTE, SECOND
 
