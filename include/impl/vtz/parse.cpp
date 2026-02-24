@@ -13,30 +13,95 @@
 
 #include <vtz/parse.h>
 
+using vtz::i32;
+using vtz::u32;
+
+namespace {
+    /// Holds a zone offset (%z).
+    ///
+    /// INTENT:
+    ///
+    /// We are going to add `tz->parse` in the future.
+    ///
+    /// Let's suppose someone calls `tz->parse( "%F %T", ... )`. This will:
+    ///
+    /// 1. Parse `%F %T` to obtain some number of local seconds
+    /// 2. Convert local seconds to sys seconds
+    /// 3. Return the number of sys seconds.
+    ///
+    /// But consider this - what if the format is '%F %T %z'? In this case,
+    /// the UTC offset is known, so after parsing we can compute the number
+    /// of sys_seconds by subtracting the UTC offset, and we don't need to
+    /// do a timezone conversion.
+    ///
+    /// In that case, we should instead do:
+    ///
+    /// 1. Parse `%F %T` to obtain some number of local seconds
+    /// 2. Subtract the UTC offset
+    /// 3. Return the number of sys seconds.
+    ///
+    /// And the correct thing to do is to _bypass the timezone logic, because
+    /// the offset is specified in the timestamp_.
+    ///
+    /// This is why we need to be able to check `has_value()`.
+
+    class opt_z {
+        u32 r_{};
+
+      public:
+
+        opt_z() = default;
+        constexpr opt_z( i32 offset ) noexcept
+        : r_( ( u32( offset ) << 1 ) | 1u ) {}
+
+        constexpr bool has_value() const noexcept { return bool( r_ & 1u ); }
+        constexpr explicit operator bool() const noexcept { return r_ & 1u; }
+
+        /// Returns the value, or 0 if no value is held. Implementing 'z' this
+        /// way allows us to avoid a branch if we don't need to be able to check
+        /// for %z
+        constexpr i32 value() const noexcept { return i32( r_ ) >> 1; }
+    };
+
+    static_assert( !opt_z().has_value() );
+    // Default-constructed has value of 0 (this is always safe)
+    static_assert( opt_z().value() == 0 );
+    static_assert( opt_z( 0 ).has_value() );
+    static_assert( opt_z( 0 ).value() == 0 );
+    static_assert( opt_z( -10 ).value() == -10 );
+    static_assert( opt_z( 10 ).value() == 10 );
+} // namespace
+
+
 namespace vtz {
     template<class F>
     auto _do_parse( string_view format, string_view input, F func )
-        -> decltype( func( i32(), i32(), i32() ) );
+        -> decltype( func( i32(), i32(), i32(), opt_z() ) );
 
     sysdays_t parse_date_d( string_view fmt, string_view date_str ) {
-        return _do_parse( fmt, date_str, []( i32 date, i32 time, i32 nanos ) {
-            (void)time;
-            (void)nanos;
-            return date;
-        } );
+        return _do_parse(
+            fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
+                (void)time;
+                (void)nanos;
+                (void)z;
+                return date;
+            } );
     }
 
     sec_t parse_time_s( string_view fmt, string_view date_str ) {
-        return _do_parse( fmt, date_str, []( i32 date, i32 time, i32 nanos ) {
-            (void)nanos;
-            return date * 86400ll + time;
-        } );
+        return _do_parse(
+            fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
+                (void)nanos;
+                return date * 86400ll + time - z.value();
+            } );
     }
 
     nanos_t parse_time_ns( string_view fmt, string_view date_str ) {
-        return _do_parse( fmt, date_str, []( i32 date, i32 time, i32 nanos ) {
-            return ( date * 86400ll + time ) * 1000000000ll + nanos;
-        } );
+        return _do_parse(
+            fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
+                return ( date * 86400ll + time - z.value() ) * 1000000000ll
+                       + nanos;
+            } );
     }
 } // namespace vtz
 
@@ -261,6 +326,62 @@ namespace {
     }
 
 
+    /// Parse a %z specifier of the form `[+|-]hh[mm]`
+    VTZ_INLINE i32 parse_z( char const*& p, char const* end ) {
+        auto rem = end - p;
+
+        if( rem >= 5 )
+        {
+            // p[0] should be '+' or '-'. So you can compute the sign by doing
+            // ',' - p[0] see: https://www.asciitable.com/
+            i32 sign = ',' - p[0];
+            i32 h0   = p[1] - '0';
+            i32 h1   = p[2] - '0';
+            i32 m0   = p[3] - '0';
+            i32 m1   = p[4] - '0';
+
+            bool hh_good = size_t( h0 ) < 10 && size_t( h1 ) < 10;
+            // [00, 59] permitted for minute
+            bool mm_good   = size_t( m0 ) < 6 && size_t( m1 ) < 10;
+            bool sign_good = sign * sign == 1;
+
+            i32 hh = ( 10 * h0 + h1 ) * 3600;
+            i32 mm = ( 10 * m0 + m1 ) * 60;
+
+            if( sign_good && hh_good )
+            {
+                if( mm_good )
+                {
+                    p += 5;
+                    return sign * ( hh + mm );
+                }
+
+                p += 3;
+                return sign * hh;
+            }
+        }
+        else if( rem >= 3 )
+        {
+            i32 sign = ',' - p[0];
+            i32 h0   = p[1] - '0';
+            i32 h1   = p[2] - '0';
+
+            bool hh_good   = size_t( h0 ) < 10 && size_t( h1 ) < 10;
+            bool sign_good = sign * sign == 1;
+
+            i32 hh = ( 10 * h0 + h1 ) * 3600;
+
+            if( sign_good && hh_good )
+            {
+                p += 3;
+                return sign * hh;
+            }
+        }
+
+        throw parse_fail{ p, "Expected tz offset of form [+|-]hh[mm]" };
+    }
+
+
     VTZ_INLINE int parse_d2( char const*& p, char const* end ) {
         int result = 0;
 
@@ -399,12 +520,12 @@ namespace {
 
 template<class F>
 auto vtz::_do_parse( string_view format, string_view input, F func )
-    -> decltype( func( i32(), i32(), i32() ) ) {
+    -> decltype( func( i32(), i32(), i32(), opt_z() ) ) {
     if( format.size() == 0 )
     {
         // Format string is empty. So: date is epoch date, time of day is 0,
-        // nanos is 0
-        return func( 0, 0, 0 );
+        // nanos is 0, timezone is not specified
+        return func( 0, 0, 0, opt_z() );
     }
 
     char const* f = format.data();
@@ -428,6 +549,10 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
     int mi    = 0;
     int se    = 0;
     i32 nanos = 0;
+
+    // This holds the timezone offset (if present)
+    // if no %z flag is specified, z.has_value() will be false
+    auto z = opt_z();
 
     try
     {
@@ -605,6 +730,8 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     }
                     continue;
                 }
+            // Parses offset from UTC in the format `[+|-]hh[mm]`
+            case 'z': z = parse_z( p, p_end ); continue;
 
 
             // PARSE COMPOUND SPECIFIERS
@@ -686,8 +813,10 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                                     "' specifier" ) );
                         }
 
-                        return func(
-                            date_from_tm( tm ), time_from_tm( tm ), 0 );
+                        return func( date_from_tm( tm ),
+                            time_from_tm( tm ),
+                            0,
+                            opt_z() );
                     } );
                 }
             }
@@ -715,7 +844,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
 
         i32 time_of_day = i32( hr ) * 3600 + i32( mi ) * 60 + i32( se );
 
-        return func( date, time_of_day, nanos );
+        return func( date, time_of_day, nanos, z );
     }
     catch( parse_fail const& p )
     {
