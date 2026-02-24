@@ -369,54 +369,26 @@ namespace vtz {
             char next = format[i++];
             switch( next )
             {
+            // FORMAT LITERAL SPECIFIERS
+
             // writes literal %. The full conversion specification must be %%.
             case '%': *p++ = '%'; continue;
             // writes newline character
             case 'n': *p++ = '\n'; continue;
             // writes horizontal tab character
             case 't': *p++ = '\t'; continue;
+
+
+            // FORMAT YEAR
+
             // writes year as a decimal number, e.g. 2017
             case 'Y': p = _write_year( p, ymd.year ); continue;
             // writes last 2 digits of year as a decimal number (range
             // [00,99])
-            case 'y': p = _write_year_short( p, ymd.year ); continue;
-            // writes month as a decimal number (range [01,12])
-            case 'm': p = _write_mon( p, u8( ymd.month ) ); continue;
-            // 	writes day of the month as a decimal number (range
-            // [01,31])
-            case 'd': p = _write_dom_d( p, u8( ymd.day ) ); continue;
-            // writes day of the year as a decimal number (range [001,366])
-            case 'j':
-                {
-                    auto yday = u16( date - resolve_civil( ymd.year, 1, 1 ) );
-
-                    p = _write_3_digit( p, 1 + yday );
-                    continue;
-                }
-            // writes weekday as a decimal number, where Sunday is 0 (range
-            // [0-6])
-            case 'w':
-                {
-                    static_assert( int( dow_t::Sun ) == 0 );
-                    auto dow = int( dow_from_days( date ) );
-                    *p++     = char( '0' + dow );
-                    continue;
-                }
-            // Writes weekday abbreviation in the C locale
-            case 'a':
-                p = _write_c_weekday_abbr( p, int( dow_from_days( date ) ) );
+            case 'y':
+                p = _write_year_short( p, ymd.year );
                 continue;
-            // Write the weekday name in the C locale
-            case 'A':
-                p = _write_c_weekday( p, int( dow_from_days( date ) ) );
-                continue;
-            // Writes abbreviated month name in the C locale
-            case 'b':
-            // %h is equivalent to %b
-            case 'h': p = _write_c_month_abbr( p, ymd.month ); continue;
-            // Writes full month name in the C locale
-            case 'B': p = _write_c_month( p, ymd.month ); continue;
-            // writes the century (year/100) as a 2-digit decimal number
+                // writes the century (year/100) as a 2-digit decimal number
             case 'C':
                 {
                     i64 century = ymd.year / 100;
@@ -426,21 +398,79 @@ namespace vtz {
                         p = std::to_chars( p, p + 22, century ).ptr;
                     continue;
                 }
-            // equivalent to "%m/%d/%y"
-            case 'D':
-                p    = _write_mon( p, u8( ymd.month ) );
-                *p++ = '/';
-                p    = _write_dom_d( p, u8( ymd.day ) );
-                *p++ = '/';
-                p    = _write_year_short( p, ymd.year );
+
+
+            // FORMAT MONTH
+
+            // writes month as a decimal number (range [01,12])
+            case 'm': p = _write_mon( p, u8( ymd.month ) ); continue;
+
+            // Writes abbreviated month name in the C locale:
+            case 'b': // %h is equivalent to %b
+            case 'h': p = _write_c_month_abbr( p, ymd.month ); continue;
+
+            // Writes full month name in the C locale
+            case 'B': p = _write_c_month( p, ymd.month ); continue;
+
+
+            // FORMAT DAY OF THE YEAR/MONTH
+
+            // writes day of the month as a decimal number, range [01,31]
+            case 'd': p = _write_dom_d( p, u8( ymd.day ) ); continue;
+
+            // writes day of the month with leading space for single digit
+            case 'e': p = _write_dom_e( p, u8( ymd.day ) ); continue;
+
+            // writes day of the year as a decimal number (range [001,366])
+            case 'j':
+                {
+                    auto yday = u16( date - resolve_civil( ymd.year, 1, 1 ) );
+
+                    p = _write_3_digit( p, 1 + yday );
+                    continue;
+                }
+
+
+            // FORMAT DAY OF THE WEEK
+
+            // Writes weekday abbreviation in the C locale
+            case 'a':
+                p = _write_c_weekday_abbr( p, int( dow_from_days( date ) ) );
                 continue;
-            // 	writes weekday as a decimal number, where Monday is 1 (ISO 8601
-            // format) (range [1-7])
+            // Write the weekday name in the C locale
+            case 'A':
+                p = _write_c_weekday( p, int( dow_from_days( date ) ) );
+                continue;
+
+            // Writes weekday as a decimal number [0-6], Sunday is 0
+            case 'w':
+                {
+                    static_assert( int( dow_t::Sun ) == 0 );
+                    auto dow = int( dow_from_days( date ) );
+                    *p++     = char( '0' + dow );
+                    continue;
+                }
+
+            // Writes weekday as a decimal number [1-7], Monday is 1 (ISO 8601)
             case 'u':
                 {
                     auto dow = int( dow_from_days( date ) );
                     if( dow == 0 ) dow = 7;
                     *p++ = char( '0' + dow );
+                    continue;
+                }
+
+
+            // FORMAT HOUR, MINUTE, SECOND
+
+            // writes hour as a decimal number [00-23], 24 hour clock
+            case 'H': p = _write_2_digit( p, u8( hr ) ); continue;
+            // writes hour as a decimal number [ 0,23], 24-hour clock
+            case 'k':
+                {
+                    p[0]  = hr < 10 ? ' ' : char( '0' + hr / 10 );
+                    p[1]  = char( '0' + hr % 10 );
+                    p    += 2;
                     continue;
                 }
             // writes hour as a decimal number, 12 hour clock (range [01,12])
@@ -449,26 +479,6 @@ namespace vtz {
                     int x = hr % 12;
                     if( x == 0 ) x = 12;
                     p = _write_2_digit( p, u8( x ) );
-                    continue;
-                }
-            // writes day of the month as a decimal number (range [1,31]).
-            // Single digit is preceded by a space.
-            case 'e': p = _write_dom_e( p, u8( ymd.day ) ); continue;
-            // equivalent to "%Y-%m-%d" (the ISO 8601 date format)
-            case 'F':
-                p = _write_iso_date( p, ymd.year, ymd.month, ymd.day );
-                continue;
-            // equivalent to "%H:%M"
-            case 'R': p = _write_iso_hhmm( p, hr, mi ); continue;
-            // 	writes hour as a decimal number, 24 hour clock (range
-            // [00-23])
-            case 'H': p = _write_2_digit( p, u8( hr ) ); continue;
-            // writes hour (24h) space-padded (range [ 0,23])
-            case 'k':
-                {
-                    p[0]  = hr < 10 ? ' ' : char( '0' + hr / 10 );
-                    p[1]  = char( '0' + hr % 10 );
-                    p    += 2;
                     continue;
                 }
             // writes hour (12h) space-padded (range [ 1,12])
@@ -481,6 +491,19 @@ namespace vtz {
                     p    += 2;
                     continue;
                 }
+            // writes "AM" or "PM" in the C locale
+            case 'p':
+                p[0]  = hr < 12 ? 'A' : 'P';
+                p[1]  = 'M';
+                p    += 2;
+                continue;
+            // writes lowercase "am" or "pm" in the C locale (GNU extension)
+            case 'P':
+                p[0]  = hr < 12 ? 'a' : 'p';
+                p[1]  = 'm';
+                p    += 2;
+                continue;
+
             // writes minute as a decimal number (range [00,59])
             case 'M': p = _write_2_digit( p, u8( mi ) ); continue;
             // writes second as a decimal number (range [00,60]). Will also
@@ -488,30 +511,47 @@ namespace vtz {
             case 'S':
                 p = write_frac( _write_2_digit( p, u8( sec ) ) );
                 continue;
-            // equivalent to "%H:%M:%S" (the ISO 8601 time format)
-            case 'T':
-                p = write_frac( _write_hhmmss( p, hr, mi, sec ) );
-                continue;
-            // writes "AM" or "PM" in the C locale. Even though %p is lowercase,
-            // it is written in uppercase.
-            case 'p':
-                p[0]  = hr < 12 ? 'A' : 'P';
-                p[1]  = 'M';
-                p    += 2;
-                continue;
-            // writes "am" or "pm" in the C locale (GNU extension)
-            case 'P':
-                p[0]  = hr < 12 ? 'a' : 'p';
-                p[1]  = 'm';
-                p    += 2;
-                continue;
+
+
+            // FORMAT TIMEZONE DESIGNATION/OFFSET
+
+            // writes offset from UTC in the ISO 8601 format (e.g. -0430)
+            case 'z': p += write_shortest_offset( gmtoff, p ); continue;
+            case 'Z': p += tz.abbrev_to_s( t, p ); continue;
+
+
+            // FORMAT SECONDS SINCE THE UNIX EPOCH
+
             // writes seconds since the Unix epoch (UTC)
             case 's':
                 p = write_frac( std::to_chars( p, p + 22, t ).ptr );
                 continue;
-            // writes offset from UTC in the ISO 8601 format (e.g. -0430)
-            case 'z': p += write_shortest_offset( gmtoff, p ); continue;
-            case 'Z': p += tz.abbrev_to_s( t, p ); continue;
+
+
+            // FORMAT COMPOUND SPECIFIERS
+
+            // equivalent to "%H:%M"
+            case 'R': p = _write_iso_hhmm( p, hr, mi ); continue;
+
+            // equivalent to "%Y-%m-%d" (ISO 8601 date format)
+            case 'F':
+                p = _write_iso_date( p, ymd.year, ymd.month, ymd.day );
+                continue;
+
+            // equivalent to "%H:%M:%S" (the ISO 8601 time format)
+            case 'T':
+                p = write_frac( _write_hhmmss( p, hr, mi, sec ) );
+                continue;
+
+            // equivalent to "%m/%d/%y"
+            case 'D':
+                p    = _write_mon( p, u8( ymd.month ) );
+                *p++ = '/';
+                p    = _write_dom_d( p, u8( ymd.day ) );
+                *p++ = '/';
+                p    = _write_year_short( p, ymd.year );
+                continue;
+
             default:
                 {
                     *p++           = c;

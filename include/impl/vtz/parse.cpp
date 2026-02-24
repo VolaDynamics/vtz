@@ -447,7 +447,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             char next = *f++;
             switch( next )
             {
-            // LITERAL SPECIFIERS
+            // PARSE LITERAL SPECIFIERS
 
             // Expect literal '%'
             case '%':
@@ -459,11 +459,13 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                 while( p < p_end && is_whitespace( *p ) ) ++p;
                 continue;
 
+
             // PARSE YEAR
 
             // Expect Year
             case 'Y': year = ::parse_year( p, p_end ); continue;
             case 'y':
+            parse_year_within_century:
                 {
                     has_small_y = true;
                     auto y      = parse_d2( p, p_end );
@@ -500,7 +502,8 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     continue;
                 }
 
-            // MONTH
+
+            // PARSE MONTH
 
             // parse month as decimal number (range [01,12]), leading 0s
             // permitted but not required
@@ -512,7 +515,8 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             case 'B':
             case 'h': month = parse_month_name( p, p_end ); continue;
 
-            // DAY OF THE YEAR/MONTH
+
+            // PARSE DAY OF THE YEAR/MONTH
 
             // parses the day of the year as a decimal number (range
             // [001,366]), leading 0s permitted but not required
@@ -554,14 +558,11 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             // [00-23]), leading 0s permitted but not required
             case 'k': // Because of GNU extensions, '%k' is accepted as a
                       // synonym of %H
-            case 'H':
-                hr = parse_d2_allow_space( p, p_end );
-                continue;
+            case 'H': hr = parse_d2_allow_space( p, p_end ); continue;
 
-                // parses the hour as a decimal number, 12 hour clock (range
-                // [01-12]). Adds (value % 12) so that combined with %p it
-                // produces the correct 24-hour value.
-
+            // parses the hour as a decimal number, 12 hour clock (range
+            // [01-12]). Adds (value % 12) so that combined with %p it
+            // produces the correct 24-hour value.
             case 'l': // Because of GNU extensions, '%l' is accepted as a
                       // synonym of %I
             case 'I': hr += parse_d2_allow_space( p, p_end ) % 12; continue;
@@ -579,7 +580,36 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     nanos = parse_frac_as_nanos( p, p_end );
                     continue;
                 }
-            // %H:%M
+
+
+            // PARSE TIMEZONE DESIGNATION/OFFSET
+
+            // Parses the time zone abbreviation or name, taken as the
+            // longest sequence of characters that only contains the
+            // characters A through Z, a through z, 0 through 9, -, +, _,
+            // and /.
+            case 'Z':
+                {
+                    while( p != p_end )
+                    {
+                        char c        = *p;
+                        bool is_zchar = 'A' <= c && c <= 'Z'    //
+                                        || 'a' <= c && c <= 'z' //
+                                        || '0' <= c && c <= '9' //
+                                        || c == '-'             //
+                                        || c == '+'             //
+                                        || c == '_'             //
+                                        || c == '/';
+                        if( !is_zchar ) break;
+                        ++p;
+                    }
+                    continue;
+                }
+
+
+            // PARSE COMPOUND SPECIFIERS
+
+            // equivalent to %H:%M
             case 'R':
                 {
                     hr = parse_d2_allow_space( p, p_end );
@@ -618,27 +648,22 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     nanos = parse_frac_as_nanos( p, p_end );
                     continue;
                 }
-            // Parses the time zone abbreviation or name, taken as the
-            // longest sequence of characters that only contains the
-            // characters A through Z, a through z, 0 through 9, -, +, _,
-            // and /.
-            case 'Z':
+            // equivalent to '%m/%d/%y' (American Date Format) (Evil-coded)
+            case 'D':
                 {
-                    while( p != p_end )
-                    {
-                        char c        = *p;
-                        bool is_zchar = 'A' <= c && c <= 'Z'    //
-                                        || 'a' <= c && c <= 'z' //
-                                        || '0' <= c && c <= '9' //
-                                        || c == '-'             //
-                                        || c == '+'             //
-                                        || c == '_'             //
-                                        || c == '/';
-                        if( !is_zchar ) break;
-                        ++p;
-                    }
-                    continue;
+                    month = parse_d2_allow_space( p, p_end );
+                    if( p == p_end || *p != '/' )
+                        throw parse_fail{ p, "Expected '/'" };
+                    ++p;
+                    dom = parse_d2_allow_space( p, p_end );
+                    if( p == p_end || *p != '/' )
+                        throw parse_fail{ p, "Expected '/'" };
+                    ++p;
+                    // NOTE: parsing of %y touches some state in the function.
+                    // It is easiest to just go to this block directly
+                    goto parse_year_within_century;
                 }
+
 
             default:
                 {
