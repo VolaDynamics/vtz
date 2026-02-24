@@ -13,6 +13,29 @@ refer to it simply as the tz database.
 [tz-database]: https://www.iana.org/time-zones
 [tz-database-wiki]: https://en.wikipedia.org/wiki/Tz_database
 
+## Building the library
+
+You can build the library with:
+
+```sh
+cmake -B build -G Ninja
+cmake --build build
+```
+
+Then, install with `cmake --install`:
+
+```sh
+cmake --install build --prefix /path/to/install
+```
+
+By default, this will build the library, tests, and benchmarks. To build _only_
+the library, use `-DVTZ_ONLY=1`:
+
+```sh
+cmake -B build -G Ninja -DVTZ_ONLY=1
+cmake --build build
+```
+
 ## API basics - Using vtz
 
 vtz aims to provide an interface which is familiar to people who have used
