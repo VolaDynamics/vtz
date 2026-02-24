@@ -331,3 +331,58 @@ TEST( vtz_parse, round_trip ) {
                 << " formatted=\"" << formatted << "\"";
         }
 }
+
+
+TEST( vtz_parse, utc_offset ) {
+    // %z — parse UTC offset and adjust to UTC
+
+    // -0500 means local time is 5 hours behind UTC
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 10:40:00 -0500" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // -0500 means local time is 5 hours 30 minutes behind UTC
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 10:10:00 -0530" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // -05 is handled the same way as -0500
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 10:40:00 -05" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // When we change the position of %z (meaning more of the string remains),
+    // everything works as expected (ensures parser validates minutes)
+    EXPECT_EQ( parse_sys_seconds( "%z %F %T", "-0530 2025-02-24 10:10:00" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+    EXPECT_EQ( parse_sys_seconds( "%z %F %T", "-05 2025-02-24 10:40:00" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // +0000 — already UTC
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 15:40:00 +00" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 15:40:00 +0000" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // +0530 — India Standard Time
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 21:10:00 +0530" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // -0000 — equivalent to +0000
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 15:40:00 -0000" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // +1200 — far ahead of UTC
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-25 03:40:00 +1200" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // -1100 — far behind UTC
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 04:40:00 -1100" ),
+        _get_time( 2025, 2, 24, 15, 40, 0 ) );
+
+    // Offset that crosses midnight backwards
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 02:00:00 +0800" ),
+        _get_time( 2025, 2, 23, 18, 0, 0 ) );
+
+    // Offset that crosses midnight forwards
+    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 23:00:00 -0500" ),
+        _get_time( 2025, 2, 25, 4, 0, 0 ) );
+}
