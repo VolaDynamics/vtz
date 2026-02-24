@@ -25,7 +25,7 @@ namespace vtz {
     /// @param days days since 1970-01-01 (the Unix Epoch)
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT std::string format_date_d( string_view fmt, sysdays_t days );
+    VTZ_EXPORT std::string format_d( string_view fmt, sysdays_t days );
 
 
     /// Formats a date to a string, with date given as a
@@ -39,7 +39,7 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     inline std::string format_date( string_view fmt, sys_days days ) {
-        return format_date_d( fmt, days.time_since_epoch().count() );
+        return format_d( fmt, days.time_since_epoch().count() );
     }
 
 
@@ -54,7 +54,7 @@ namespace vtz {
     /// @return number of characters written to the buffer.
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT size_t format_date_to_d(
+    VTZ_EXPORT size_t format_to_d(
         string_view format, sysdays_t days, char* buff, size_t count );
 
 
@@ -71,7 +71,7 @@ namespace vtz {
 
     inline size_t format_date_to(
         string_view fmt, sys_days days, char* buff, size_t count ) {
-        return format_date_to_d(
+        return format_to_d(
             fmt, days.time_since_epoch().count(), buff, count );
     }
 
@@ -89,7 +89,7 @@ namespace vtz {
     /// @param t seconds since 1970-01-01 00:00:00 UTC
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT std::string format_time_s( string_view fmt, sysseconds_t t );
+    VTZ_EXPORT std::string format_s( string_view fmt, sysseconds_t t );
 
 
     /// Formats a UTC time to a string, with time given as a
@@ -106,7 +106,7 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     inline std::string format_time( string_view fmt, sys_seconds t ) {
-        return format_time_s( fmt, t.time_since_epoch().count() );
+        return format_s( fmt, t.time_since_epoch().count() );
     }
 
 
@@ -124,7 +124,7 @@ namespace vtz {
     /// @return number of characters written to the buffer.
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT size_t format_time_to_s(
+    VTZ_EXPORT size_t format_to_s(
         string_view fmt, sysseconds_t t, char* buff, size_t count );
 
 
@@ -145,7 +145,7 @@ namespace vtz {
 
     inline size_t format_time_to(
         string_view fmt, sys_seconds t, char* buff, size_t count ) {
-        return format_time_to_s(
+        return format_to_s(
             fmt, t.time_since_epoch().count(), buff, count );
     }
 
@@ -277,7 +277,7 @@ namespace vtz {
 
         if constexpr( prec == 0 )
         {
-            return format_time_s(
+            return format_s(
                 fmt, seconds( t.time_since_epoch() ).count() );
         }
         else
@@ -316,7 +316,7 @@ namespace vtz {
 
         if constexpr( prec == 0 )
         {
-            return format_time_to_s(
+            return format_to_s(
                 fmt, seconds( t.time_since_epoch() ).count(), buff, count );
         }
         else

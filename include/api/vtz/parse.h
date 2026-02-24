@@ -27,7 +27,7 @@ namespace vtz {
     /// @return the number of days since the epoch, as an int
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT sysdays_t parse_date_d( string_view fmt, string_view date_str );
+    VTZ_EXPORT sysdays_t parse_d( string_view fmt, string_view date_str );
 
 
     /// Parse the given input as a date, with the date returned as a
@@ -43,7 +43,7 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     inline sys_days parse_sys_days( string_view fmt, string_view date_str ) {
-        return sys_days( days( parse_date_d( fmt, date_str ) ) );
+        return sys_days( days( parse_d( fmt, date_str ) ) );
     }
 
 
@@ -59,7 +59,7 @@ namespace vtz {
     /// @return the number of seconds since the epoch, as a 64-bit int
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT sec_t parse_time_s( string_view fmt, string_view time_str );
+    VTZ_EXPORT sec_t parse_s( string_view fmt, string_view time_str );
 
 
     /// Parse the given input as a datetime, with the time returned as a
@@ -76,7 +76,7 @@ namespace vtz {
 
     inline sys_seconds parse_sys_seconds(
         string_view fmt, string_view time_str ) {
-        return sys_seconds( seconds( parse_time_s( fmt, time_str ) ) );
+        return sys_seconds( seconds( parse_s( fmt, time_str ) ) );
     }
 
 
@@ -98,7 +98,7 @@ namespace vtz {
     /// @return the number of nanoseconds since the epoch, as a 64-bit int
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT nanos_t parse_time_ns( string_view fmt, string_view time_str );
+    VTZ_EXPORT nanos_t parse_ns( string_view fmt, string_view time_str );
 
 
     /// Parse the given input as a datetime, with the time returned as an
@@ -123,7 +123,7 @@ namespace vtz {
     inline sys_time<nanoseconds> parse_sys_nanoseconds(
         string_view fmt, string_view time_str ) {
         return sys_time<nanoseconds>(
-            nanoseconds( parse_time_ns( fmt, time_str ) ) );
+            nanoseconds( parse_ns( fmt, time_str ) ) );
     }
 
 
@@ -154,13 +154,13 @@ namespace vtz {
                     if constexpr( n == 86400 )
                     {
                         // result is exactly a day
-                        return _tp{ days( parse_date_d( fmt, time_str ) ) };
+                        return _tp{ days( parse_d( fmt, time_str ) ) };
                     }
                     else
                     {
                         // result is multiple of a day
                         return _tp{ floor<Dur>(
-                            days( parse_date_d( fmt, time_str ) ) ) };
+                            days( parse_d( fmt, time_str ) ) ) };
                     }
                 }
                 else
@@ -168,13 +168,13 @@ namespace vtz {
                     if constexpr( n == 1 )
                     {
                         // result is exactly a second
-                        return _tp{ seconds( parse_time_s( fmt, time_str ) ) };
+                        return _tp{ seconds( parse_s( fmt, time_str ) ) };
                     }
                     else
                     {
                         // result is a multiple of a second
                         return _tp{ floor<Dur>(
-                            seconds( parse_time_s( fmt, time_str ) ) ) };
+                            seconds( parse_s( fmt, time_str ) ) ) };
                     }
                 }
             }
@@ -215,7 +215,7 @@ namespace vtz {
                     // Best thing to do is (1) convert to nanoseconds
 
                     return _tp{ floor<Dur>(
-                        nanoseconds( parse_time_ns( fmt, time_str ) ) ) };
+                        nanoseconds( parse_ns( fmt, time_str ) ) ) };
                 }
             }
         }

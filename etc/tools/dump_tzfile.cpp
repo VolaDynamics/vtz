@@ -129,9 +129,9 @@ void print_file(
         if( !leaps.empty() )
         {
             println( "raw={} utc={} local={} off={} dst={} abbr={} ti={}",
-                styled( vtz::format_time_s( "%F %T", Traw ), bold_magenta ),
-                styled( vtz::format_time_s( "%F %T", T ), bold_magenta ),
-                styled( vtz::format_time_s( "%F %T", T + utoff ), bold_blue ),
+                styled( vtz::format_s( "%F %T", Traw ), bold_magenta ),
+                styled( vtz::format_s( "%F %T", T ), bold_magenta ),
+                styled( vtz::format_s( "%F %T", T + utoff ), bold_blue ),
                 styled( vtz::from_utc( utoff ), bold_green ),
                 styled( int( isdst ), bold_white ),
                 styled( abbr, bold_red ),
@@ -140,8 +140,8 @@ void print_file(
         else
         {
             println( "utc={} local={} off={} dst={} abbr={} ti={}",
-                styled( vtz::format_time_s( "%F %T", T ), bold_magenta ),
-                styled( vtz::format_time_s( "%F %T", T + utoff ), bold_blue ),
+                styled( vtz::format_s( "%F %T", T ), bold_magenta ),
+                styled( vtz::format_s( "%F %T", T + utoff ), bold_blue ),
                 styled( vtz::from_utc( utoff ), bold_green ),
                 styled( int( isdst ), bold_white ),
                 styled( abbr, bold_red ),
@@ -157,7 +157,7 @@ void print_file(
             fmt::println( "  [{:>2}] count={:>2} when={}",
                 i,
                 leaps.counts( i ),
-                vtz::format_time_s( "%F %T", leaps.when( i ) ) );
+                vtz::format_s( "%F %T", leaps.when( i ) ) );
         }
     }
 

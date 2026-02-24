@@ -626,7 +626,7 @@ namespace vtz {
         static size_t abbrev_to_s( sec_t, char* ) noexcept { return 0; }
     };
 
-    std::string format_date_d( string_view fmt, sysdays_t days ) {
+    std::string format_d( string_view fmt, sysdays_t days ) {
         return _do_strformat(
             dummy_time_zone{},
             fmt.data(),
@@ -650,7 +650,7 @@ namespace vtz {
         }
     };
 
-    std::string format_time_s( string_view fmt, sysseconds_t t ) {
+    std::string format_s( string_view fmt, sysseconds_t t ) {
         return _do_strformat(
             dummy_time_zone_utc{},
             fmt.data(),
@@ -660,7 +660,7 @@ namespace vtz {
             write_to_string{} );
     }
 
-    size_t format_time_to_s(
+    size_t format_to_s(
         string_view fmt, sysseconds_t t, char* buff, size_t count ) {
         return _do_strformat(
             dummy_time_zone_utc{},
@@ -671,7 +671,7 @@ namespace vtz {
             write_to_buff{ buff, count } );
     }
 
-    size_t format_date_to_d(
+    size_t format_to_d(
         string_view fmt, sysdays_t days, char* buff, size_t count ) {
         return _do_strformat(
             dummy_time_zone{},

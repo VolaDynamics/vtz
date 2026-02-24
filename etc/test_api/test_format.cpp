@@ -79,7 +79,7 @@ namespace {
         const char* fmt, int64_t t, const std::string& expected ) {
         auto t_sys = sys_seconds( seconds( t ) );
 
-        ASSERT_EQ( format_time_s( fmt, t ), expected );
+        ASSERT_EQ( format_s( fmt, t ), expected );
         ASSERT_EQ( format_time( fmt, t_sys ), expected );
 
         // format_precise with precision=0 should match
@@ -89,7 +89,7 @@ namespace {
         // format_time_to_s / format_time_to
         {
             char   buf[256];
-            size_t n = format_time_to_s( fmt, t, buf, sizeof( buf ) );
+            size_t n = format_to_s( fmt, t, buf, sizeof( buf ) );
             ASSERT_EQ( sv( buf, n ), expected );
         }
         {
@@ -116,7 +116,7 @@ namespace {
             auto prefix = sv( expected ).substr( 0, sz );
             auto gpb    = guard_page_buffer( sz );
 
-            size_t n1 = format_time_to_s( fmt, t, gpb.data(), sz );
+            size_t n1 = format_to_s( fmt, t, gpb.data(), sz );
             ASSERT_EQ( n1, sz );
             ASSERT_EQ( sv( gpb.data(), n1 ), prefix );
 
@@ -245,13 +245,13 @@ namespace {
         const char* fmt, int32_t d, const std::string& expected ) {
         auto d_sys = sys_days( days( d ) );
 
-        ASSERT_EQ( format_date_d( fmt, d ), expected );
+        ASSERT_EQ( format_d( fmt, d ), expected );
         ASSERT_EQ( format_date( fmt, d_sys ), expected );
 
         // format_date_to_d
         {
             char   buf[256];
-            size_t n = format_date_to_d( fmt, d, buf, sizeof( buf ) );
+            size_t n = format_to_d( fmt, d, buf, sizeof( buf ) );
             ASSERT_EQ( sv( buf, n ), expected );
         }
 
@@ -268,7 +268,7 @@ namespace {
             auto prefix = sv( expected ).substr( 0, sz );
             auto gpb    = guard_page_buffer( sz );
 
-            size_t n1 = format_date_to_d( fmt, d, gpb.data(), sz );
+            size_t n1 = format_to_d( fmt, d, gpb.data(), sz );
             ASSERT_EQ( n1, sz );
             ASSERT_EQ( sv( gpb.data(), n1 ), prefix );
 

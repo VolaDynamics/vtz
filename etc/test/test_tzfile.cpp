@@ -54,8 +54,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
         ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-09 07:00:00 UTC" );
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-11-02 06:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-09 07:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-11-02 06:00:00 UTC" );
 
         ASSERT_TRUE( tz.has_daylight_rules() );
     }
@@ -73,8 +73,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
         ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-30 01:00:00 UTC" );
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-10-26 01:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-30 01:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-10-26 01:00:00 UTC" );
 
         ASSERT_TRUE( tz.has_daylight_rules() );
     }
@@ -92,8 +92,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
         ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2100 ) ), "2100-03-27 00:00:00 UTC" );
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2100 ) ), "2100-10-29 23:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_dst( 2100 ) ), "2100-03-27 00:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_std( 2100 ) ), "2100-10-29 23:00:00 UTC" );
 
         ASSERT_TRUE( tz.has_daylight_rules() );
     }
@@ -111,8 +111,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
         ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-09 05:00:00 UTC" );
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-11-02 04:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-03-09 05:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-11-02 04:00:00 UTC" );
         ASSERT_TRUE( tz.has_daylight_rules() );
     }
 
@@ -129,8 +129,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( int( tz.r1.kind() ), int( tz_date::DayOfMonth ) );
         ASSERT_EQ( int( tz.r2.kind() ), int( tz_date::DayOfMonth ) );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-10-04 15:30:00 UTC" );
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-04-05 15:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_dst( 2025 ) ), "2025-10-04 15:30:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_std( 2025 ) ), "2025-04-05 15:00:00 UTC" );
         ASSERT_TRUE( tz.has_daylight_rules() );
     }
 
@@ -144,8 +144,8 @@ TEST( vtz, tz_string ) {
         ASSERT_EQ( tz.r1.time, 0 );
         ASSERT_EQ( tz.r2.time, 23 * 3600 );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_dst( 2100 ) ), "2099-12-31 22:00:00 UTC" );
-        ASSERT_EQ( format_time_s( "%F %T %Z", tz.resolve_std( 2100 ) ), "2100-12-31 22:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_dst( 2100 ) ), "2099-12-31 22:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", tz.resolve_std( 2100 ) ), "2100-12-31 22:00:00 UTC" );
         ASSERT_TRUE( tz.has_daylight_rules() );
     }
 }
@@ -171,19 +171,19 @@ TEST( vtz, tz_string_get_states ) {
         ASSERT_EQ( states.size(), 4 );
 
         // Verify the 2024 transitions
-        ASSERT_EQ( format_time_s( "%F %T %Z", states[0].when ), "2024-03-10 07:00:00 UTC" ); // Spring forward
+        ASSERT_EQ( format_s( "%F %T %Z", states[0].when ), "2024-03-10 07:00:00 UTC" ); // Spring forward
         ASSERT_EQ( states[0].state.abbr.sv(), "EDT" );
         ASSERT_EQ( states[0].state.walloff, from_utc::hhmmss( -4 ) );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", states[1].when ), "2024-11-03 06:00:00 UTC" ); // Fall back
+        ASSERT_EQ( format_s( "%F %T %Z", states[1].when ), "2024-11-03 06:00:00 UTC" ); // Fall back
         ASSERT_EQ( states[1].state.abbr.sv(), "EST" );
         ASSERT_EQ( states[1].state.walloff, from_utc::hhmmss( -5 ) );
 
         // Verify the 2025 transitions
-        ASSERT_EQ( format_time_s( "%F %T %Z", states[2].when ), "2025-03-09 07:00:00 UTC" ); // Spring forward
+        ASSERT_EQ( format_s( "%F %T %Z", states[2].when ), "2025-03-09 07:00:00 UTC" ); // Spring forward
         ASSERT_EQ( states[2].state.abbr.sv(), "EDT" );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", states[3].when ), "2025-11-02 06:00:00 UTC" ); // Fall back
+        ASSERT_EQ( format_s( "%F %T %Z", states[3].when ), "2025-11-02 06:00:00 UTC" ); // Fall back
         ASSERT_EQ( states[3].state.abbr.sv(), "EST" );
 
         for( size_t i = 0; i < states.size(); ++i )
@@ -204,7 +204,7 @@ TEST( vtz, tz_string_get_states ) {
         auto states = tz.get_states( _ct( 2024, 7, 1, 0, 0, 0 ), _ct( 2025, 1, 1, 0, 0, 0 ) );
 
         ASSERT_EQ( states.size(), 1 );
-        ASSERT_EQ( format_time_s( "%F %T %Z", states[0].when ), "2024-11-03 06:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", states[0].when ), "2024-11-03 06:00:00 UTC" );
         ASSERT_EQ( states[0].state.abbr.sv(), "EST" );
     }
 
@@ -235,9 +235,9 @@ TEST( vtz, tz_string_get_states ) {
         // The others are cutoff due to the cutoff provided to get_states
         ASSERT_EQ( states.size(), 3 );
 
-        ASSERT_EQ( format_time_s( "%F %T %Z", states[0].when ), "2024-04-06 15:00:00 UTC" );
-        ASSERT_EQ( format_time_s( "%F %T %Z", states[1].when ), "2024-10-05 15:30:00 UTC" );
-        ASSERT_EQ( format_time_s( "%F %T %Z", states[2].when ), "2025-04-05 15:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", states[0].when ), "2024-04-06 15:00:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", states[1].when ), "2024-10-05 15:30:00 UTC" );
+        ASSERT_EQ( format_s( "%F %T %Z", states[2].when ), "2025-04-05 15:00:00 UTC" );
 
         // All of them should have the same stdoff
         ASSERT_EQ( states[0].state.stdoff, from_utc::hhmmss( 10, 30 ) );
@@ -403,8 +403,8 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
         {
             ADD_CONTEXT( "Checking that zone_state matches",
                 i,
-                format_time_s( "%F %T %Z", tt1[i].when ),
-                format_time_s( "%F %T %Z", tt2[i].when ),
+                format_s( "%F %T %Z", tt1[i].when ),
+                format_s( "%F %T %Z", tt2[i].when ),
                 tt1[i].state,
                 tt2[i].state );
 
@@ -540,12 +540,12 @@ TEST( vtz, tzdb_vs_tzfile_state_coherence ) {
                     fmt::println( "  {} - Mismatch at transition {} ({})",
                         zone_name,
                         i,
-                        format_time_s( "%F %T %Z", tt1[i].when ) );
+                        format_s( "%F %T %Z", tt1[i].when ) );
                     fmt::println( "    tzdata: [when={}] {}",
-                        format_time_s( "%F %T %Z", tt1[i].when ),
+                        format_s( "%F %T %Z", tt1[i].when ),
                         _test_vtz::debug_to_string( tt1[i].state ) );
                     fmt::println( "    tzfile: [when={}] {}",
-                        format_time_s( "%F %T %Z", tt2[i].when ),
+                        format_s( "%F %T %Z", tt2[i].when ),
                         _test_vtz::debug_to_string( tt2[i].state ) );
                     zone_passed = false;
                     break;

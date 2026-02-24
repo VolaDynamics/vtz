@@ -270,8 +270,8 @@ TEST( vtz_parse, round_trip ) {
         auto t = tp.time_since_epoch().count();
         for( auto fmt : round_trip_fmts )
         {
-            auto formatted = format_time_s( fmt, t );
-            auto parsed    = parse_time_s( fmt, formatted );
+            auto formatted = format_s( fmt, t );
+            auto parsed    = parse_s( fmt, formatted );
             ASSERT_EQ( parsed, t )
                 << "round-trip failed for t=" << t << " fmt=\"" << fmt
                 << "\" formatted=\"" << formatted << "\"";
@@ -308,8 +308,8 @@ TEST( vtz_parse, round_trip ) {
             = i32( std::chrono::floor<days>( dp.time_since_epoch() ).count() );
         for( auto fmt : date_fmts )
         {
-            auto formatted = format_date_d( fmt, d );
-            auto parsed    = parse_date_d( fmt, formatted );
+            auto formatted = format_d( fmt, d );
+            auto parsed    = parse_d( fmt, formatted );
             ASSERT_EQ( parsed, d )
                 << "round-trip failed for d=" << d << " fmt=\"" << fmt
                 << "\" formatted=\"" << formatted << "\"";
@@ -324,8 +324,8 @@ TEST( vtz_parse, round_trip ) {
         {
             auto t         = _get_time( 2024, m, d );
             auto t_sec     = t.time_since_epoch().count();
-            auto formatted = format_time_s( "%F", t_sec );
-            auto parsed    = parse_time_s( "%F", formatted );
+            auto formatted = format_s( "%F", t_sec );
+            auto parsed    = parse_s( "%F", formatted );
             ASSERT_EQ( parsed, t_sec )
                 << "round-trip failed for 2024-" << m << "-" << d
                 << " formatted=\"" << formatted << "\"";

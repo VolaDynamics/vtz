@@ -78,7 +78,7 @@ namespace vtz {
     auto _do_parse( string_view format, string_view input, F func )
         -> decltype( func( i32(), i32(), i32(), opt_z() ) );
 
-    sysdays_t parse_date_d( string_view fmt, string_view date_str ) {
+    sysdays_t parse_d( string_view fmt, string_view date_str ) {
         return _do_parse(
             fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
                 (void)time;
@@ -88,7 +88,7 @@ namespace vtz {
             } );
     }
 
-    sec_t parse_time_s( string_view fmt, string_view date_str ) {
+    sec_t parse_s( string_view fmt, string_view date_str ) {
         return _do_parse(
             fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
                 (void)nanos;
@@ -96,7 +96,7 @@ namespace vtz {
             } );
     }
 
-    nanos_t parse_time_ns( string_view fmt, string_view date_str ) {
+    nanos_t parse_ns( string_view fmt, string_view date_str ) {
         return _do_parse(
             fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
                 return ( date * 86400ll + time - z.value() ) * 1000000000ll

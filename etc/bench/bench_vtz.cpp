@@ -654,12 +654,12 @@ BENCH( vtz_parse_date, state ) {
     auto   dd = random_values( COUNT,
         vtz::resolve_civil( 1900 ),
         vtz::resolve_civil( 2100 ),
-        []( sysdays_t days ) { return vtz::format_date_d( "%F", days ); } );
+        []( sysdays_t days ) { return vtz::format_d( "%F", days ); } );
     size_t i  = 0;
     for( auto _ : state )
     {
         auto const& entry = dd[i % COUNT];
-        benchmark::DoNotOptimize( vtz::parse_date_d( "%Y-%m-%d", entry ) );
+        benchmark::DoNotOptimize( vtz::parse_d( "%Y-%m-%d", entry ) );
         ++i;
     }
 }
@@ -669,14 +669,14 @@ BENCH( vtz_parse_time, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return vtz::format_time_s( "%F %T %Z", t ); } );
+        []( vtz::sec_t t ) { return vtz::format_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
     for( auto _ : state )
     {
         auto const& entry = dd[i % COUNT];
         benchmark::DoNotOptimize(
-            vtz::parse_time_s( "%Y-%m-%d %H:%M:%S", entry ) );
+            vtz::parse_s( "%Y-%m-%d %H:%M:%S", entry ) );
         ++i;
     }
 }
@@ -685,7 +685,7 @@ BENCH( hinnant_parse_date, state ) {
     auto   dd = random_values( COUNT,
         vtz::resolve_civil( 1900 ),
         vtz::resolve_civil( 2100 ),
-        []( sysdays_t days ) { return vtz::format_date_d( "%F", days ); } );
+        []( sysdays_t days ) { return vtz::format_d( "%F", days ); } );
     size_t i  = 0;
     for( auto _ : state )
     {
@@ -702,7 +702,7 @@ BENCH( hinnant_parse_time, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return vtz::format_time_s( "%F %T %Z", t ); } );
+        []( vtz::sec_t t ) { return vtz::format_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
     for( auto _ : state )
@@ -720,13 +720,13 @@ BENCH( vtz_parse_date_compact, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return vtz::format_time_s( "%F %T %Z", t ); } );
+        []( vtz::sec_t t ) { return vtz::format_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
     for( auto _ : state )
     {
         auto const& entry = dd[i % COUNT];
-        benchmark::DoNotOptimize( vtz::parse_date_d( "%F", entry ) );
+        benchmark::DoNotOptimize( vtz::parse_d( "%F", entry ) );
         ++i;
     }
 }
@@ -735,13 +735,13 @@ BENCH( vtz_parse_time_compact, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return vtz::format_time_s( "%F %T %Z", t ); } );
+        []( vtz::sec_t t ) { return vtz::format_s( "%F %T %Z", t ); } );
 
     size_t i = 0;
     for( auto _ : state )
     {
         auto const& entry = dd[i % COUNT];
-        benchmark::DoNotOptimize( vtz::parse_time_s( "%F %T", entry ) );
+        benchmark::DoNotOptimize( vtz::parse_s( "%F %T", entry ) );
         ++i;
     }
 }
