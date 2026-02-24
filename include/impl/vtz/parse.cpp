@@ -103,6 +103,17 @@ namespace vtz {
                        + nanos;
             } );
     }
+
+    parse_precise_result parse_precise(
+        string_view fmt, string_view time_str ) {
+        return _do_parse(
+            fmt, time_str, []( i32 date, i32 time, u32 nanos, opt_z z ) {
+                return parse_precise_result{
+                    date * 86400ll + time - z.value(),
+                    nanos,
+                };
+            } );
+    }
 } // namespace vtz
 
 

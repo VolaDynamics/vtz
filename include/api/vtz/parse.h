@@ -123,4 +123,14 @@ namespace vtz {
         return sys_time<nanoseconds>(
             nanoseconds( parse_time_ns( fmt, time_str ) ) );
     }
+
+
+    struct parse_precise_result {
+        sysseconds_t seconds;
+        u32          nanos;
+    };
+
+    VTZ_EXPORT parse_precise_result parse_precise(
+        string_view fmt, string_view time_str );
+
 } // namespace vtz
