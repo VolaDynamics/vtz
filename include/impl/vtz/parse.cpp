@@ -553,7 +553,16 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
 
             // parses the hour as a decimal number, 24 hour clock (range
             // [00-23]), leading 0s permitted but not required
-            case 'H': hr = parse_d2_allow_space( p, p_end ); continue;
+            case 'k': // Because of GNU extensions, '%k' is accepted as a
+                      // synonym of %H
+            case 'H':
+                hr = parse_d2_allow_space( p, p_end );
+                continue;
+
+                // parses the hour as a decimal number, 12 hour clock (range
+                // [01-12]). Adds (value % 12) so that combined with %p it
+                // produces the correct 24-hour value.
+
             case 'l': // Because of GNU extensions, '%l' is accepted as a
                       // synonym of %I
             case 'I': hr += parse_d2_allow_space( p, p_end ) % 12; continue;
