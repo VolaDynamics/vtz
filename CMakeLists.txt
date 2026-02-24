@@ -17,6 +17,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
+option(VTZ_ONLY "Only build the vtz library. Don't build tests or benchmarks" OFF)
+
+
 # Set up ccache/sccache for the project
 find_program(COMPILER_CACHE sccache ccache)
 if(COMPILER_CACHE)
@@ -51,17 +54,25 @@ if(PROJECT_IS_TOP_LEVEL AND UNIX)
     set(CMAKE_CXX_FLAGS_PROFILE "-Og -g")
 endif()
 
-add_subdirectory(etc/examples)
+if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
+    add_subdirectory(etc/examples)
+endif()
 
 # (For development) download dependencies
-if(PROJECT_IS_TOP_LEVEL)
+if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     include(cmake/get_cpm.cmake)
 
     set(RUN_HAVE_STD_REGEX 1)
     set(HAVE_STD_REGEX ON)
 
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
-    CPMAddPackage("gh:martinus/unordered_dense@4.7.0")
+
+    # For aquiring ankerl::unordered_dense
+    #
+    # We have provisioned headers for v4.8.1 @ etc/3rd/ankerl
+    # CPMAddPackage("gh:martinus/unordered_dense@4.8.1")
+
+
     CPMAddPackage(
         URI "gh:abseil/abseil-cpp#20260107.1"
         OPTIONS
@@ -119,6 +130,9 @@ target_sources(
 
 set_target_properties(vtz PROPERTIES VERIFY_INTERFACE_HEADER_SETS ON)
 
+add_library(ankerl_unordered_dense INTERFACE)
+target_include_directories(ankerl_unordered_dense INTERFACE etc/3rd/ankerl)
+add_library(unordered_dense::unordered_dense ALIAS ankerl_unordered_dense)
 
 add_library(vtz_impl STATIC $<TARGET_OBJECTS:vtz_objects>)
 add_library(vtz::impl ALIAS vtz_impl)
@@ -137,10 +151,10 @@ target_link_libraries(
 
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 install(
     TARGETS
     vtz
-    unordered_dense
     EXPORT vtz
     FILE_SET HEADERS
 )
@@ -160,7 +174,7 @@ install(FILES "${PROJECT_BINARY_DIR}/vtzConfig.cmake"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/vtz)
 
 # Add tests and benchmarks
-if(PROJECT_IS_TOP_LEVEL)
+if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     file(GLOB_RECURSE src include/extras/*.cpp)
     add_library(vtz_extras ${src})
     target_include_directories(vtz_extras PUBLIC include/extras)
