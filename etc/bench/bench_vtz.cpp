@@ -599,7 +599,7 @@ BENCH( vtz_format_date, state ) {
     size_t i  = 0;
     for( auto _ : state )
     {
-        benchmark::DoNotOptimize( vtz::format_date( "%F", dd[i % COUNT] ) );
+        benchmark::DoNotOptimize( vtz::format( "%F", dd[i % COUNT] ) );
         ++i;
     }
 }
@@ -611,7 +611,7 @@ BENCH( vtz_format_date_to, state ) {
     for( auto _ : state )
     {
         benchmark::DoNotOptimize(
-            vtz::format_date_to( "%F", dd[i % COUNT], buff, sizeof( buff ) ) );
+            vtz::format_to( "%F", dd[i % COUNT], buff, sizeof( buff ) ) );
         ++i;
     }
 }

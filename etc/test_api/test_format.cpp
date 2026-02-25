@@ -80,13 +80,13 @@ namespace {
         auto t_sys = sys_seconds( seconds( t ) );
 
         ASSERT_EQ( format_s( fmt, t ), expected );
-        ASSERT_EQ( format_time( fmt, t_sys ), expected );
+        ASSERT_EQ( format( fmt, t_sys ), expected );
 
         // format_precise with precision=0 should match
         ASSERT_EQ( format_precise_s( fmt, t, 0, 0 ), expected );
         ASSERT_EQ( format_precise( fmt, t_sys, 0 ), expected );
 
-        // format_time_to_s / format_time_to
+        // format_to_s / format_to
         {
             char   buf[256];
             size_t n = format_to_s( fmt, t, buf, sizeof( buf ) );
@@ -94,7 +94,7 @@ namespace {
         }
         {
             char   buf[256];
-            size_t n = format_time_to( fmt, t_sys, buf, sizeof( buf ) );
+            size_t n = format_to( fmt, t_sys, buf, sizeof( buf ) );
             ASSERT_EQ( sv( buf, n ), expected );
         }
 
@@ -120,7 +120,7 @@ namespace {
             ASSERT_EQ( n1, sz );
             ASSERT_EQ( sv( gpb.data(), n1 ), prefix );
 
-            size_t n2 = format_time_to( fmt, t_sys, gpb.data(), sz );
+            size_t n2 = format_to( fmt, t_sys, gpb.data(), sz );
             ASSERT_EQ( n2, sz );
             ASSERT_EQ( sv( gpb.data(), n2 ), prefix );
 
@@ -246,7 +246,7 @@ namespace {
         auto d_sys = sys_days( days( d ) );
 
         ASSERT_EQ( format_d( fmt, d ), expected );
-        ASSERT_EQ( format_date( fmt, d_sys ), expected );
+        ASSERT_EQ( format( fmt, d_sys ), expected );
 
         // format_date_to_d
         {
@@ -258,7 +258,7 @@ namespace {
         // format_date_to
         {
             char   buf[256];
-            size_t n = format_date_to( fmt, d_sys, buf, sizeof( buf ) );
+            size_t n = format_to( fmt, d_sys, buf, sizeof( buf ) );
             ASSERT_EQ( sv( buf, n ), expected );
         }
 
@@ -272,7 +272,7 @@ namespace {
             ASSERT_EQ( n1, sz );
             ASSERT_EQ( sv( gpb.data(), n1 ), prefix );
 
-            size_t n2 = format_date_to( fmt, d_sys, gpb.data(), sz );
+            size_t n2 = format_to( fmt, d_sys, gpb.data(), sz );
             ASSERT_EQ( n2, sz );
             ASSERT_EQ( sv( gpb.data(), n2 ), prefix );
         }
