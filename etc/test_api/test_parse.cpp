@@ -378,6 +378,18 @@ TEST( vtz_parse, utc_offset ) {
     // Offset that crosses midnight forwards
     EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 23:00:00 -0500" ),
         _get_time( 2025, 2, 25, 4, 0, 0 ) );
+
+    // parse<days> with %z: offset doesn't cross midnight — date unchanged
+    EXPECT_EQ( parse<days>( "%F %T %z", "2025-02-24 10:40:00 -0500" ),
+        std::chrono::floor<days>( _get_time( 2025, 2, 24, 15, 40, 0 ) ) );
+
+    // parse<days> with %z: negative offset pushes UTC into next day
+    EXPECT_EQ( parse<days>( "%F %T %z", "2025-02-24 23:00:00 -0500" ),
+        std::chrono::floor<days>( _get_time( 2025, 2, 25 ) ) );
+
+    // parse<days> with %z: positive offset pushes UTC into previous day
+    EXPECT_EQ( parse<days>( "%F %T %z", "2025-02-24 02:00:00 +0800" ),
+        std::chrono::floor<days>( _get_time( 2025, 2, 23 ) ) );
 }
 
 
