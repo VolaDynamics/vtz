@@ -28,7 +28,7 @@ namespace vtz {
     VTZ_EXPORT std::string format_d( string_view fmt, sysdays_t days );
 
 
-    /// Formats a date to the given buffer, with date given as as days
+    /// Formats a date to the given buffer, with date given as days
     /// since the unix epoch. Output is truncated if it would exceed `count`.
     ///
     /// For format specifiers, see:
@@ -40,7 +40,7 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT size_t format_to_d(
-        string_view format, sysdays_t days, char* buff, size_t count );
+        string_view fmt, sysdays_t days, char* buff, size_t count );
 
 
     /// Formats a UTC time to a string, with time given as seconds since the

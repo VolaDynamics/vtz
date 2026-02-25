@@ -94,7 +94,8 @@ namespace vtz {
     /// `"%Y-%m-%d %H:%M:%S"`)
     /// @param time_str string describing the time, eg `"2026-02-19
     /// 16:19:27.12878"`
-    /// @return the number of nanoseconds since the epoch, as a 64-bit int
+    /// @return a `parse_precise_result` holding seconds and nanoseconds since
+    ///         the epoch
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT parse_precise_result parse_precise(
@@ -125,7 +126,7 @@ namespace vtz {
     /// `"%Y-%m-%d %H:%M:%S"`)
     /// @param time_str string describing the time, eg `"2026-02-19
     /// 16:19:27.12878"`
-    /// @return the number of nanoseconds since the epoch, as a 64-bit int
+    /// @return a sys_time<Dur> representing the parsed datetime
     /// @throws if the given format specifier is invalid
 
     template<class Dur>
@@ -219,15 +220,13 @@ namespace vtz {
             auto parts = parse_precise( fmt, time_str );
 
             constexpr rep ns_div = 1000000000 / rep( d );
-            // If a whole number of nanoseconds fit into the
-            // denominator, we want to put both seconds and nanoseconds
-            // in terms of (1/den)
+
             rep result = rep( parts.seconds ) * rep( d ) // seconds -> 1/d
                          + rep( parts.nanos ) / ns_div   // nanos -> 1/d
                 ;
             if constexpr( n == 1 )
             {
-                // Duration is in terms of 1/d seconds, which is t
+                // Duration is in terms of 1/d seconds
                 return _tp{ Dur( result ) };
             }
             else
