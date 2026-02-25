@@ -8,6 +8,7 @@
 #include <vtz/civil.h>
 #include <vtz/impl/bit.h>
 #include <vtz/impl/macros.h>
+#include <vtz/impl/math.h>
 #include <vtz/strings.h>
 #include <vtz/util/microfmt.h>
 
@@ -81,10 +82,8 @@ namespace vtz {
     sysdays_t parse_d( string_view fmt, string_view date_str ) {
         return _do_parse(
             fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
-                (void)time;
                 (void)nanos;
-                (void)z;
-                return date;
+                return date + math::div_floor<86400>( time - z.value() );
             } );
     }
 
