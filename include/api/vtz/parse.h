@@ -30,23 +30,6 @@ namespace vtz {
     VTZ_EXPORT sysdays_t parse_d( string_view fmt, string_view date_str );
 
 
-    /// Parse the given input as a date, with the date returned as a
-    /// `std::chrono::sys_days`
-    ///
-    /// For format specifiers, see:
-    /// https://en.cppreference.com/w/cpp/chrono/parse.html
-    ///
-    /// @param fmt format specifier describes layout of a date (eg,
-    /// `"%Y-%m-%d"`)
-    /// @param date_str string describing date, eg `"2026-02-19"`
-    /// @return a `std::chrono::sys_days` value representing the date
-    /// @throws if the given format specifier is invalid
-
-    inline sys_days parse_sys_days( string_view fmt, string_view date_str ) {
-        return sys_days( days( parse_d( fmt, date_str ) ) );
-    }
-
-
     /// Parse the given input as a datetime, with the time returned as an
     /// integral number of seconds since the Unix Epoch.
     ///
@@ -60,24 +43,6 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT sec_t parse_s( string_view fmt, string_view time_str );
-
-
-    /// Parse the given input as a datetime, with the time returned as a
-    /// `std::chrono::sys_seconds`
-    ///
-    /// For format specifiers, see:
-    /// https://en.cppreference.com/w/cpp/chrono/parse.html
-    ///
-    /// @param fmt format specifier describes layout of a date (eg,
-    /// `"%Y-%m-%d %H:%M:%S"`)
-    /// @param time_str string describing the time, eg `"2026-02-19 16:19:27"`
-    /// @return a `std::chrono::sys_seconds` value representing the time
-    /// @throws if the given format specifier is invalid
-
-    inline sys_seconds parse_sys_seconds(
-        string_view fmt, string_view time_str ) {
-        return sys_seconds( seconds( parse_s( fmt, time_str ) ) );
-    }
 
 
     /// Parse the given input as a datetime, with the time returned as an
@@ -101,8 +66,21 @@ namespace vtz {
     VTZ_EXPORT nanos_t parse_ns( string_view fmt, string_view time_str );
 
 
+    /// Holds (seconds, nanoseconds) as a pair when both components are needed.
+    ///
+    /// This allows for parsing dates and times outside of the range supported
+    /// by an int64_t number of nanoseconds since the epoch.
+
+    struct parse_precise_result {
+        /// Seconds since the epoch
+        sysseconds_t seconds;
+        /// Nanoseconds component, range [0,999999999]
+        u32 nanos;
+    };
+
+
     /// Parse the given input as a datetime, with the time returned as an
-    /// integral number of nanoseconds since the Unix Epoch.
+    /// integral number of seconds and nanoseconds since the Unix Epoch.
     ///
     /// Decimal digits are permitted after the number of seconds. For example,
     /// if the format string is `"%Y-%m-%d %H:%M:%S"` then `"2025-02-19
@@ -116,24 +94,39 @@ namespace vtz {
     /// `"%Y-%m-%d %H:%M:%S"`)
     /// @param time_str string describing the time, eg `"2026-02-19
     /// 16:19:27.12878"`
-    /// @return a `std::chrono::sys_time<nanoseconds>` value representing the
-    /// time
+    /// @return the number of nanoseconds since the epoch, as a 64-bit int
     /// @throws if the given format specifier is invalid
-
-    inline sys_time<nanoseconds> parse_sys_nanoseconds(
-        string_view fmt, string_view time_str ) {
-        return sys_time<nanoseconds>(
-            nanoseconds( parse_ns( fmt, time_str ) ) );
-    }
-
-
-    struct parse_precise_result {
-        sysseconds_t seconds;
-        u32          nanos;
-    };
 
     VTZ_EXPORT parse_precise_result parse_precise(
         string_view fmt, string_view time_str );
+
+
+    /// Parse the given input as a datetime, with the time returned as a
+    /// sys_time<Dur>
+    ///
+    /// Decimal digits are permitted after the number of seconds. For example,
+    /// if the format string is `"%Y-%m-%d %H:%M:%S"` then `"2025-02-19
+    /// 16:19:27.12878"` is interpreted as "2025-02-19 16:19:27, and 128780000
+    /// nanoseconds".
+    ///
+    /// In the event that the time given is _more_ precise than what can be
+    /// represented by the given `sys_time<Dur>`, the floor of the result is
+    /// taken. So, for example, if the result has a precision of seconds, then
+    /// `"2026-02-19 19:00:13.9999"` would be rounded down to `2026-02-19
+    /// 19:00:13`.
+    ///
+    /// Similarly, if the result has a precision of days, then the result is
+    /// rounded down to `2026-02-19`.
+    ///
+    /// For format specifiers, see:
+    /// https://en.cppreference.com/w/cpp/chrono/parse.html
+    ///
+    /// @param fmt format specifier describes layout of a date (eg,
+    /// `"%Y-%m-%d %H:%M:%S"`)
+    /// @param time_str string describing the time, eg `"2026-02-19
+    /// 16:19:27.12878"`
+    /// @return the number of nanoseconds since the epoch, as a 64-bit int
+    /// @throws if the given format specifier is invalid
 
     template<class Dur>
     sys_time<Dur> parse( string_view fmt, string_view time_str ) {

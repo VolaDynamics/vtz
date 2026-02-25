@@ -10,138 +10,138 @@ using namespace vtz;
 TEST( vtz_parse, sanity ) {
     // %F — ISO date
     EXPECT_EQ(
-        parse_sys_seconds( "%F", "2024-01-01" ), _get_time( 2024, 1, 1 ) );
+        parse<seconds>( "%F", "2024-01-01" ), _get_time( 2024, 1, 1 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%F", "2024-02-29" ), _get_time( 2024, 2, 29 ) );
+        parse<seconds>( "%F", "2024-02-29" ), _get_time( 2024, 2, 29 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%F", "2024-12-31" ), _get_time( 2024, 12, 31 ) );
+        parse<seconds>( "%F", "2024-12-31" ), _get_time( 2024, 12, 31 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%F", "1970-01-01" ), _get_time( 1970, 1, 1 ) );
+        parse<seconds>( "%F", "1970-01-01" ), _get_time( 1970, 1, 1 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%F", "2000-01-01" ), _get_time( 2000, 1, 1 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F", "0001-01-01" ), _get_time( 1, 1, 1 ) );
+        parse<seconds>( "%F", "2000-01-01" ), _get_time( 2000, 1, 1 ) );
+    EXPECT_EQ( parse<seconds>( "%F", "0001-01-01" ), _get_time( 1, 1, 1 ) );
 
     // %F %T — ISO date + time
-    EXPECT_EQ( parse_sys_seconds( "%F %T", "2024-02-29 14:30:00" ),
+    EXPECT_EQ( parse<seconds>( "%F %T", "2024-02-29 14:30:00" ),
         _get_time( 2024, 2, 29, 14, 30, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %T", "2024-12-31 23:59:59" ),
+    EXPECT_EQ( parse<seconds>( "%F %T", "2024-12-31 23:59:59" ),
         _get_time( 2024, 12, 31, 23, 59, 59 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %T", "1970-01-01 00:00:00" ),
+    EXPECT_EQ( parse<seconds>( "%F %T", "1970-01-01 00:00:00" ),
         _get_time( 1970, 1, 1, 0, 0, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %T", "2025-02-19 21:20:00" ),
+    EXPECT_EQ( parse<seconds>( "%F %T", "2025-02-19 21:20:00" ),
         _get_time( 2025, 2, 19, 21, 20, 0 ) );
 
     // %Y-%m-%d %H:%M:%S — same as above, spelled out
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%d %H:%M:%S", "2024-07-04 15:30:45" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%d %H:%M:%S", "2024-07-04 15:30:45" ),
         _get_time( 2024, 7, 4, 15, 30, 45 ) );
 
     // %Y%m%d — compact date
     EXPECT_EQ(
-        parse_sys_seconds( "%Y%m%d", "20240101" ), _get_time( 2024, 1, 1 ) );
+        parse<seconds>( "%Y%m%d", "20240101" ), _get_time( 2024, 1, 1 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%Y%m%d", "20241231" ), _get_time( 2024, 12, 31 ) );
+        parse<seconds>( "%Y%m%d", "20241231" ), _get_time( 2024, 12, 31 ) );
 
     // %d/%m/%Y — day/month/year
-    EXPECT_EQ( parse_sys_seconds( "%d/%m/%Y", "29/02/2024" ),
+    EXPECT_EQ( parse<seconds>( "%d/%m/%Y", "29/02/2024" ),
         _get_time( 2024, 2, 29 ) );
-    EXPECT_EQ( parse_sys_seconds( "%d/%m/%Y", "25/12/2024" ),
+    EXPECT_EQ( parse<seconds>( "%d/%m/%Y", "25/12/2024" ),
         _get_time( 2024, 12, 25 ) );
 
     // %R — HH:MM
-    EXPECT_EQ( parse_sys_seconds( "%F %R", "2024-03-15 08:05" ),
+    EXPECT_EQ( parse<seconds>( "%F %R", "2024-03-15 08:05" ),
         _get_time( 2024, 3, 15, 8, 5, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %R", "2024-03-15 23:59" ),
+    EXPECT_EQ( parse<seconds>( "%F %R", "2024-03-15 23:59" ),
         _get_time( 2024, 3, 15, 23, 59, 0 ) );
 
     // %y — 2-digit year
     EXPECT_EQ(
-        parse_sys_seconds( "%y-%m-%d", "24-06-15" ), _get_time( 2024, 6, 15 ) );
+        parse<seconds>( "%y-%m-%d", "24-06-15" ), _get_time( 2024, 6, 15 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%y-%m-%d", "00-01-01" ), _get_time( 2000, 1, 1 ) );
+        parse<seconds>( "%y-%m-%d", "00-01-01" ), _get_time( 2000, 1, 1 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%y-%m-%d", "69-01-01" ), _get_time( 1969, 1, 1 ) );
-    EXPECT_EQ( parse_sys_seconds( "%y-%m-%d", "99-12-31" ),
+        parse<seconds>( "%y-%m-%d", "69-01-01" ), _get_time( 1969, 1, 1 ) );
+    EXPECT_EQ( parse<seconds>( "%y-%m-%d", "99-12-31" ),
         _get_time( 1999, 12, 31 ) );
 
     // %C%y — century + 2-digit year
-    EXPECT_EQ( parse_sys_seconds( "%C%y-%m-%d", "2024-06-15" ),
+    EXPECT_EQ( parse<seconds>( "%C%y-%m-%d", "2024-06-15" ),
         _get_time( 2024, 6, 15 ) );
-    EXPECT_EQ( parse_sys_seconds( "%C%y-%m-%d", "1900-01-01" ),
+    EXPECT_EQ( parse<seconds>( "%C%y-%m-%d", "1900-01-01" ),
         _get_time( 1900, 1, 1 ) );
 
     // %j — day of year (ordinal date)
     EXPECT_EQ(
-        parse_sys_seconds( "%Y-%j", "2024-001" ), _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse_sys_seconds( "%Y-%j", "2024-060" ),
+        parse<seconds>( "%Y-%j", "2024-001" ), _get_time( 2024, 1, 1 ) );
+    EXPECT_EQ( parse<seconds>( "%Y-%j", "2024-060" ),
         _get_time( 2024, 2, 29 ) ); // 2024 leap: day 60 = Feb 29
     EXPECT_EQ(
-        parse_sys_seconds( "%Y-%j", "2024-366" ), _get_time( 2024, 12, 31 ) );
+        parse<seconds>( "%Y-%j", "2024-366" ), _get_time( 2024, 12, 31 ) );
 
     // %e — synonym of %d
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%e", "2024-01-01" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%e", "2024-01-01" ),
         _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%e", "2024-01-15" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%e", "2024-01-15" ),
         _get_time( 2024, 1, 15 ) );
 
     // %w and %u — weekday parsing (consumed but not used for date resolution)
     EXPECT_EQ(
-        parse_sys_seconds( "%w %F", "1 2024-01-01" ), _get_time( 2024, 1, 1 ) );
+        parse<seconds>( "%w %F", "1 2024-01-01" ), _get_time( 2024, 1, 1 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%u %F", "1 2024-01-01" ), _get_time( 2024, 1, 1 ) );
+        parse<seconds>( "%u %F", "1 2024-01-01" ), _get_time( 2024, 1, 1 ) );
 
     // %Z — timezone abbreviation (consumed but not used for offset)
-    EXPECT_EQ( parse_sys_seconds( "%F %T %Z", "2024-01-01 00:00:00 UTC" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %Z", "2024-01-01 00:00:00 UTC" ),
         _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %T %Z", "2024-06-15 12:00:00 EST" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %Z", "2024-06-15 12:00:00 EST" ),
         _get_time( 2024, 6, 15, 12, 0, 0 ) );
 
     // %n and %t — whitespace matching
-    EXPECT_EQ( parse_sys_seconds( "%F%n%T", "2024-01-01 12:30:00" ),
+    EXPECT_EQ( parse<seconds>( "%F%n%T", "2024-01-01 12:30:00" ),
         _get_time( 2024, 1, 1, 12, 30, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F%t%T", "2024-01-01\t12:30:00" ),
+    EXPECT_EQ( parse<seconds>( "%F%t%T", "2024-01-01\t12:30:00" ),
         _get_time( 2024, 1, 1, 12, 30, 0 ) );
 
     // %% — literal percent
-    EXPECT_EQ( parse_sys_seconds( "%F %% %T", "2024-01-01 % 12:00:00" ),
+    EXPECT_EQ( parse<seconds>( "%F %% %T", "2024-01-01 % 12:00:00" ),
         _get_time( 2024, 1, 1, 12, 0, 0 ) );
 
     // %I %p — 12-hour clock with AM/PM
     // 12:00 AM = 00:00
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 12:00:00 AM" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 12:00:00 AM" ),
         _get_time( 2024, 1, 1, 0, 0, 0 ) );
     // 12:30 AM = 00:30
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 12:30:00 AM" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 12:30:00 AM" ),
         _get_time( 2024, 1, 1, 0, 30, 0 ) );
     // 1:00 AM = 01:00
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 01:00:00 AM" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 01:00:00 AM" ),
         _get_time( 2024, 1, 1, 1, 0, 0 ) );
     // 11:59 AM = 11:59
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 11:59:59 AM" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 11:59:59 AM" ),
         _get_time( 2024, 1, 1, 11, 59, 59 ) );
     // 12:00 PM = 12:00
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 12:00:00 PM" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 12:00:00 PM" ),
         _get_time( 2024, 1, 1, 12, 0, 0 ) );
     // 1:00 PM = 13:00
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 01:00:00 PM" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 01:00:00 PM" ),
         _get_time( 2024, 1, 1, 13, 0, 0 ) );
     // 11:59 PM = 23:59
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 11:59:59 PM" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 11:59:59 PM" ),
         _get_time( 2024, 1, 1, 23, 59, 59 ) );
 
     // %p is case-insensitive
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 03:00:00 am" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 03:00:00 am" ),
         _get_time( 2024, 1, 1, 3, 0, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 03:00:00 pm" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 03:00:00 pm" ),
         _get_time( 2024, 1, 1, 15, 0, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 03:00:00 Am" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 03:00:00 Am" ),
         _get_time( 2024, 1, 1, 3, 0, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %I:%M:%S %p", "2024-01-01 03:00:00 pM" ),
+    EXPECT_EQ( parse<seconds>( "%F %I:%M:%S %p", "2024-01-01 03:00:00 pM" ),
         _get_time( 2024, 1, 1, 15, 0, 0 ) );
 
     // %p before %I (order-independent)
-    EXPECT_EQ( parse_sys_seconds( "%F %p %I:%M:%S", "2024-01-01 PM 02:30:00" ),
+    EXPECT_EQ( parse<seconds>( "%F %p %I:%M:%S", "2024-01-01 PM 02:30:00" ),
         _get_time( 2024, 1, 1, 14, 30, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %p %I:%M:%S", "2024-01-01 AM 12:00:00" ),
+    EXPECT_EQ( parse<seconds>( "%F %p %I:%M:%S", "2024-01-01 AM 12:00:00" ),
         _get_time( 2024, 1, 1, 0, 0, 0 ) );
 }
 
@@ -151,65 +151,65 @@ TEST( vtz_parse, leading_space ) {
     //   %d, %e, %m, %H  (and their compound forms %F, %R, %T)
 
     // %d — day of month with leading space
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%d", "2024-01- 1" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024-01- 1" ),
         _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%d", "2024-12- 9" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024-12- 9" ),
         _get_time( 2024, 12, 9 ) );
 
     // %e — synonym of %d, same behavior
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%e", "2024-01- 1" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%e", "2024-01- 1" ),
         _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%e", "2024-06- 5" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%e", "2024-06- 5" ),
         _get_time( 2024, 6, 5 ) );
 
     // %m — month with leading space
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%d", "2024- 1-01" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024- 1-01" ),
         _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%d", "2024- 8-15" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024- 8-15" ),
         _get_time( 2024, 8, 15 ) );
 
     // %m and %d both with leading spaces
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%d", "2024- 8- 9" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024- 8- 9" ),
         _get_time( 2024, 8, 9 ) );
 
     // %H — hour with leading space
-    EXPECT_EQ( parse_sys_seconds( "%F %H:%M:%S", "2024-01-01  5:30:00" ),
+    EXPECT_EQ( parse<seconds>( "%F %H:%M:%S", "2024-01-01  5:30:00" ),
         _get_time( 2024, 1, 1, 5, 30, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %H:%M:%S", "2024-01-01  0:00:00" ),
+    EXPECT_EQ( parse<seconds>( "%F %H:%M:%S", "2024-01-01  0:00:00" ),
         _get_time( 2024, 1, 1, 0, 0, 0 ) );
 
     // %F — compound; month and day parts accept leading space
     EXPECT_EQ(
-        parse_sys_seconds( "%F", "2024- 1- 1" ), _get_time( 2024, 1, 1 ) );
+        parse<seconds>( "%F", "2024- 1- 1" ), _get_time( 2024, 1, 1 ) );
     EXPECT_EQ(
-        parse_sys_seconds( "%F", "2024- 3-15" ), _get_time( 2024, 3, 15 ) );
+        parse<seconds>( "%F", "2024- 3-15" ), _get_time( 2024, 3, 15 ) );
 
     // %R — compound; hour part accepts leading space
-    EXPECT_EQ( parse_sys_seconds( "%F %R", "2024-01-01  8:05" ),
+    EXPECT_EQ( parse<seconds>( "%F %R", "2024-01-01  8:05" ),
         _get_time( 2024, 1, 1, 8, 5, 0 ) );
 
     // %T — compound; hour part accepts leading space
-    EXPECT_EQ( parse_sys_seconds( "%F %T", "2024-01-01  8:05:30" ),
+    EXPECT_EQ( parse<seconds>( "%F %T", "2024-01-01  8:05:30" ),
         _get_time( 2024, 1, 1, 8, 5, 30 ) );
 
     // Two-digit values still work (no regression)
-    EXPECT_EQ( parse_sys_seconds( "%Y-%m-%d", "2024-12-31" ),
+    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024-12-31" ),
         _get_time( 2024, 12, 31 ) );
-    EXPECT_EQ( parse_sys_seconds( "%F %T", "2024-01-01 23:59:59" ),
+    EXPECT_EQ( parse<seconds>( "%F %T", "2024-01-01 23:59:59" ),
         _get_time( 2024, 1, 1, 23, 59, 59 ) );
 
     // Specifiers that should NOT accept a leading space: %y, %C, %M, %S
 
     // %y requires digits only (2-digit year is always zero-padded)
-    EXPECT_THROW( parse_sys_seconds( "%y-%m-%d", " 4-01-01" ), std::exception );
+    EXPECT_THROW( parse<seconds>( "%y-%m-%d", " 4-01-01" ), std::exception );
     // %C requires digits only (century is always zero-padded)
     EXPECT_THROW(
-        parse_sys_seconds( "%C%y-%m-%d", " 024-01-01" ), std::exception );
+        parse<seconds>( "%C%y-%m-%d", " 024-01-01" ), std::exception );
     // %M requires digits only (minutes are always zero-padded)
-    EXPECT_THROW( parse_sys_seconds( "%F %H:%M:%S", "2024-01-01 12: 5:00" ),
+    EXPECT_THROW( parse<seconds>( "%F %H:%M:%S", "2024-01-01 12: 5:00" ),
         std::exception );
     // %S requires digits only (seconds are always zero-padded)
-    EXPECT_THROW( parse_sys_seconds( "%F %H:%M:%S", "2024-01-01 12:05: 0" ),
+    EXPECT_THROW( parse<seconds>( "%F %H:%M:%S", "2024-01-01 12:05: 0" ),
         std::exception );
 }
 
@@ -337,53 +337,53 @@ TEST( vtz_parse, utc_offset ) {
     // %z — parse UTC offset and adjust to UTC
 
     // -0500 means local time is 5 hours behind UTC
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 10:40:00 -0500" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 10:40:00 -0500" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // -0500 means local time is 5 hours 30 minutes behind UTC
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 10:10:00 -0530" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 10:10:00 -0530" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // -05 is handled the same way as -0500
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 10:40:00 -05" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 10:40:00 -05" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // When we change the position of %z (meaning more of the string remains),
     // everything works as expected (ensures parser validates minutes)
-    EXPECT_EQ( parse_sys_seconds( "%z %F %T", "-0530 2025-02-24 10:10:00" ),
+    EXPECT_EQ( parse<seconds>( "%z %F %T", "-0530 2025-02-24 10:10:00" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
-    EXPECT_EQ( parse_sys_seconds( "%z %F %T", "-05 2025-02-24 10:40:00" ),
+    EXPECT_EQ( parse<seconds>( "%z %F %T", "-05 2025-02-24 10:40:00" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // +0000 — already UTC
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 15:40:00 +00" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 15:40:00 +00" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 15:40:00 +0000" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 15:40:00 +0000" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // +0530 — India Standard Time
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 21:10:00 +0530" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 21:10:00 +0530" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // -0000 — equivalent to +0000
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 15:40:00 -0000" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 15:40:00 -0000" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // +1200 — far ahead of UTC
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-25 03:40:00 +1200" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-25 03:40:00 +1200" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // -1100 — far behind UTC
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 04:40:00 -1100" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 04:40:00 -1100" ),
         _get_time( 2025, 2, 24, 15, 40, 0 ) );
 
     // Offset that crosses midnight backwards
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 02:00:00 +0800" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 02:00:00 +0800" ),
         _get_time( 2025, 2, 23, 18, 0, 0 ) );
 
     // Offset that crosses midnight forwards
-    EXPECT_EQ( parse_sys_seconds( "%F %T %z", "2025-02-24 23:00:00 -0500" ),
+    EXPECT_EQ( parse<seconds>( "%F %T %z", "2025-02-24 23:00:00 -0500" ),
         _get_time( 2025, 2, 25, 4, 0, 0 ) );
 }
 
