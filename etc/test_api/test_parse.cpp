@@ -9,16 +9,12 @@ using namespace vtz;
 
 TEST( vtz_parse, sanity ) {
     // %F — ISO date
-    EXPECT_EQ(
-        parse<seconds>( "%F", "2024-01-01" ), _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ(
-        parse<seconds>( "%F", "2024-02-29" ), _get_time( 2024, 2, 29 ) );
+    EXPECT_EQ( parse<seconds>( "%F", "2024-01-01" ), _get_time( 2024, 1, 1 ) );
+    EXPECT_EQ( parse<seconds>( "%F", "2024-02-29" ), _get_time( 2024, 2, 29 ) );
     EXPECT_EQ(
         parse<seconds>( "%F", "2024-12-31" ), _get_time( 2024, 12, 31 ) );
-    EXPECT_EQ(
-        parse<seconds>( "%F", "1970-01-01" ), _get_time( 1970, 1, 1 ) );
-    EXPECT_EQ(
-        parse<seconds>( "%F", "2000-01-01" ), _get_time( 2000, 1, 1 ) );
+    EXPECT_EQ( parse<seconds>( "%F", "1970-01-01" ), _get_time( 1970, 1, 1 ) );
+    EXPECT_EQ( parse<seconds>( "%F", "2000-01-01" ), _get_time( 2000, 1, 1 ) );
     EXPECT_EQ( parse<seconds>( "%F", "0001-01-01" ), _get_time( 1, 1, 1 ) );
 
     // %F %T — ISO date + time
@@ -42,10 +38,10 @@ TEST( vtz_parse, sanity ) {
         parse<seconds>( "%Y%m%d", "20241231" ), _get_time( 2024, 12, 31 ) );
 
     // %d/%m/%Y — day/month/year
-    EXPECT_EQ( parse<seconds>( "%d/%m/%Y", "29/02/2024" ),
-        _get_time( 2024, 2, 29 ) );
-    EXPECT_EQ( parse<seconds>( "%d/%m/%Y", "25/12/2024" ),
-        _get_time( 2024, 12, 25 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%d/%m/%Y", "29/02/2024" ), _get_time( 2024, 2, 29 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%d/%m/%Y", "25/12/2024" ), _get_time( 2024, 12, 25 ) );
 
     // %R — HH:MM
     EXPECT_EQ( parse<seconds>( "%F %R", "2024-03-15 08:05" ),
@@ -60,28 +56,27 @@ TEST( vtz_parse, sanity ) {
         parse<seconds>( "%y-%m-%d", "00-01-01" ), _get_time( 2000, 1, 1 ) );
     EXPECT_EQ(
         parse<seconds>( "%y-%m-%d", "69-01-01" ), _get_time( 1969, 1, 1 ) );
-    EXPECT_EQ( parse<seconds>( "%y-%m-%d", "99-12-31" ),
-        _get_time( 1999, 12, 31 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%y-%m-%d", "99-12-31" ), _get_time( 1999, 12, 31 ) );
 
     // %C%y — century + 2-digit year
     EXPECT_EQ( parse<seconds>( "%C%y-%m-%d", "2024-06-15" ),
         _get_time( 2024, 6, 15 ) );
-    EXPECT_EQ( parse<seconds>( "%C%y-%m-%d", "1900-01-01" ),
-        _get_time( 1900, 1, 1 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%C%y-%m-%d", "1900-01-01" ), _get_time( 1900, 1, 1 ) );
 
     // %j — day of year (ordinal date)
-    EXPECT_EQ(
-        parse<seconds>( "%Y-%j", "2024-001" ), _get_time( 2024, 1, 1 ) );
+    EXPECT_EQ( parse<seconds>( "%Y-%j", "2024-001" ), _get_time( 2024, 1, 1 ) );
     EXPECT_EQ( parse<seconds>( "%Y-%j", "2024-060" ),
         _get_time( 2024, 2, 29 ) ); // 2024 leap: day 60 = Feb 29
     EXPECT_EQ(
         parse<seconds>( "%Y-%j", "2024-366" ), _get_time( 2024, 12, 31 ) );
 
     // %e — synonym of %d
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%e", "2024-01-01" ),
-        _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%e", "2024-01-15" ),
-        _get_time( 2024, 1, 15 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%e", "2024-01-01" ), _get_time( 2024, 1, 1 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%e", "2024-01-15" ), _get_time( 2024, 1, 15 ) );
 
     // %w and %u — weekday parsing (consumed but not used for date resolution)
     EXPECT_EQ(
@@ -151,26 +146,26 @@ TEST( vtz_parse, leading_space ) {
     //   %d, %e, %m, %H  (and their compound forms %F, %R, %T)
 
     // %d — day of month with leading space
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024-01- 1" ),
-        _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024-12- 9" ),
-        _get_time( 2024, 12, 9 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%d", "2024-01- 1" ), _get_time( 2024, 1, 1 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%d", "2024-12- 9" ), _get_time( 2024, 12, 9 ) );
 
     // %e — synonym of %d, same behavior
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%e", "2024-01- 1" ),
-        _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%e", "2024-06- 5" ),
-        _get_time( 2024, 6, 5 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%e", "2024-01- 1" ), _get_time( 2024, 1, 1 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%e", "2024-06- 5" ), _get_time( 2024, 6, 5 ) );
 
     // %m — month with leading space
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024- 1-01" ),
-        _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024- 8-15" ),
-        _get_time( 2024, 8, 15 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%d", "2024- 1-01" ), _get_time( 2024, 1, 1 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%d", "2024- 8-15" ), _get_time( 2024, 8, 15 ) );
 
     // %m and %d both with leading spaces
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024- 8- 9" ),
-        _get_time( 2024, 8, 9 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%d", "2024- 8- 9" ), _get_time( 2024, 8, 9 ) );
 
     // %H — hour with leading space
     EXPECT_EQ( parse<seconds>( "%F %H:%M:%S", "2024-01-01  5:30:00" ),
@@ -179,10 +174,8 @@ TEST( vtz_parse, leading_space ) {
         _get_time( 2024, 1, 1, 0, 0, 0 ) );
 
     // %F — compound; month and day parts accept leading space
-    EXPECT_EQ(
-        parse<seconds>( "%F", "2024- 1- 1" ), _get_time( 2024, 1, 1 ) );
-    EXPECT_EQ(
-        parse<seconds>( "%F", "2024- 3-15" ), _get_time( 2024, 3, 15 ) );
+    EXPECT_EQ( parse<seconds>( "%F", "2024- 1- 1" ), _get_time( 2024, 1, 1 ) );
+    EXPECT_EQ( parse<seconds>( "%F", "2024- 3-15" ), _get_time( 2024, 3, 15 ) );
 
     // %R — compound; hour part accepts leading space
     EXPECT_EQ( parse<seconds>( "%F %R", "2024-01-01  8:05" ),
@@ -193,8 +186,8 @@ TEST( vtz_parse, leading_space ) {
         _get_time( 2024, 1, 1, 8, 5, 30 ) );
 
     // Two-digit values still work (no regression)
-    EXPECT_EQ( parse<seconds>( "%Y-%m-%d", "2024-12-31" ),
-        _get_time( 2024, 12, 31 ) );
+    EXPECT_EQ(
+        parse<seconds>( "%Y-%m-%d", "2024-12-31" ), _get_time( 2024, 12, 31 ) );
     EXPECT_EQ( parse<seconds>( "%F %T", "2024-01-01 23:59:59" ),
         _get_time( 2024, 1, 1, 23, 59, 59 ) );
 
@@ -392,7 +385,7 @@ TEST( vtz_parse, parse_generic_integral ) {
     using std::chrono::microseconds;
     using std::chrono::milliseconds;
 
-    // 1. Days
+    // Days
     {
         EXPECT_EQ( parse<days>( "%F", "2024-03-15" ),
             std::chrono::floor<days>( _get_time( 2024, 3, 15 ) ) );
@@ -402,7 +395,7 @@ TEST( vtz_parse, parse_generic_integral ) {
             std::chrono::floor<days>( _get_time( 9999, 12, 31 ) ) );
     }
 
-    // 2. Hours
+    // Hours
     {
         EXPECT_EQ( parse<hours>( "%F %T", "2024-03-15 14:00:00" ),
             std::chrono::floor<hours>( _get_time( 2024, 3, 15, 14, 0, 0 ) ) );
@@ -411,7 +404,7 @@ TEST( vtz_parse, parse_generic_integral ) {
             std::chrono::floor<hours>( _get_time( 2024, 3, 15, 14, 30, 45 ) ) );
     }
 
-    // 3. Minutes
+    // Minutes
     {
         EXPECT_EQ( parse<minutes>( "%F %T", "2024-03-15 14:30:00" ),
             std::chrono::floor<minutes>(
@@ -422,7 +415,7 @@ TEST( vtz_parse, parse_generic_integral ) {
                 _get_time( 2024, 3, 15, 14, 30, 45 ) ) );
     }
 
-    // 4. Seconds — including years beyond 2292
+    // Seconds — including years beyond 2292
     {
         EXPECT_EQ( parse<seconds>( "%F %T", "2024-03-15 14:30:45" ),
             _get_time( 2024, 3, 15, 14, 30, 45 ) );
@@ -432,7 +425,7 @@ TEST( vtz_parse, parse_generic_integral ) {
             _get_time( 9999, 12, 31, 23, 59, 59 ) );
     }
 
-    // 5. Milliseconds — including years beyond 2292
+    // Milliseconds — including years beyond 2292
     {
         using ms = milliseconds;
         EXPECT_EQ( parse<ms>( "%F %T", "2024-03-15 14:30:45.123" ),
@@ -445,7 +438,7 @@ TEST( vtz_parse, parse_generic_integral ) {
             _get_time( 9999, 12, 31, 23, 59, 59 ) + ms( 999 ) );
     }
 
-    // 6. Microseconds — including years beyond 2292
+    // Microseconds — including years beyond 2292
     {
         using us = microseconds;
         EXPECT_EQ( parse<us>( "%F %T", "2024-03-15 14:30:45.123456" ),
@@ -456,7 +449,7 @@ TEST( vtz_parse, parse_generic_integral ) {
             _get_time( 9999, 12, 31, 23, 59, 59 ) + us( 999999 ) );
     }
 
-    // 7. Nanoseconds (int64 nanoseconds overflow beyond ~year 2262,
+    // Nanoseconds (int64 nanoseconds overflow beyond ~year 2262,
     //    so we only test dates within that range)
     {
         using ns = nanoseconds;
@@ -466,7 +459,7 @@ TEST( vtz_parse, parse_generic_integral ) {
             _get_time( 2024, 3, 15, 14, 30, 45 ) + ns( 0 ) );
     }
 
-    // 8. Pathological: 1/7 of a second
+    // Pathological: 1/7 of a second
     //    Period does not divide evenly into nanoseconds, so this exercises
     //    the floor<Dur>(nanoseconds(...)) fallback path.
     //    Date is near the epoch to avoid intermediate overflow in
@@ -483,8 +476,7 @@ TEST( vtz_parse, parse_generic_integral ) {
         EXPECT_EQ( parse<seventh>( "%F %T", "1971-06-15 12:00:00" ), base );
 
         // 0.1s: floor(0.1 * 7) = floor(0.7) = 0 ticks past the second
-        EXPECT_EQ(
-            parse<seventh>( "%F %T", "1971-06-15 12:00:00.1" ), base );
+        EXPECT_EQ( parse<seventh>( "%F %T", "1971-06-15 12:00:00.1" ), base );
 
         // 0.15s: floor(0.15 * 7) = floor(1.05) = 1 tick (just past 1/7)
         EXPECT_EQ( parse<seventh>( "%F %T", "1971-06-15 12:00:00.15" ),
@@ -499,12 +491,11 @@ TEST( vtz_parse, parse_generic_integral ) {
             base + seventh( 3 ) );
 
         // 0.999999999s: floor(0.999999999 * 7) = floor(6.999999993) = 6
-        EXPECT_EQ(
-            parse<seventh>( "%F %T", "1971-06-15 12:00:00.999999999" ),
+        EXPECT_EQ( parse<seventh>( "%F %T", "1971-06-15 12:00:00.999999999" ),
             base + seventh( 6 ) );
     }
 
-    // 9. Pathological: 2/5 of a second
+    // Pathological: 2/5 of a second
     //    Both n > 1 and d > 1, so this exercises the div_floor<n> path
     //    inside the parse_precise branch.
     {
@@ -519,8 +510,7 @@ TEST( vtz_parse, parse_generic_integral ) {
 
         // 0.123s falls within the same 0.4s tick or the next, depending
         // on alignment — floor handles this correctly
-        EXPECT_EQ(
-            parse<two_fifths>( "%F %T", "2024-03-15 14:30:45.123" ),
+        EXPECT_EQ( parse<two_fifths>( "%F %T", "2024-03-15 14:30:45.123" ),
             floor<two_fifths>( base + milliseconds( 123 ) ) );
 
         // 0.5s: past the first 0.4s tick, before the second (0.8s)
