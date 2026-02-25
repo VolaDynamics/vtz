@@ -19,6 +19,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 option(VTZ_ONLY "Only build the vtz library. Don't build tests or benchmarks" OFF)
 
+option(VTZ_BUILD_SHARED "Build vtz as a shared library" OFF)
 set(
     VTZ_TZDATA_PATH_VARS
     "VTZ_TZDATA_PATH"
@@ -146,7 +147,11 @@ target_compile_features(
         cxx_std_17
 )
 
-add_library(vtz $<TARGET_OBJECTS:vtz_objects>)
+if(VTZ_BUILD_SHARED)
+    add_library(vtz SHARED $<TARGET_OBJECTS:vtz_objects>)
+else()
+    add_library(vtz $<TARGET_OBJECTS:vtz_objects>)
+endif()
 add_library(vtz::vtz ALIAS vtz)
 
 
