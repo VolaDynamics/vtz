@@ -522,3 +522,103 @@ TEST( vtz_parse, parse_generic_integral ) {
             floor<two_fifths>( base + milliseconds( 900 ) ) );
     }
 }
+
+
+TEST( vtz_parse, parse_generic_float ) {
+    using dsec = std::chrono::duration<double>;
+    using dms  = std::chrono::duration<double, std::milli>;
+    using dmin = std::chrono::duration<double, std::ratio<60>>;
+    using dday = std::chrono::duration<double, std::ratio<86400>>;
+
+    // double-seconds: integer seconds
+    {
+        auto t        = _get_time( 2024, 3, 15, 14, 30, 45 );
+        auto expected = dsec( t.time_since_epoch().count() );
+        EXPECT_DOUBLE_EQ( parse<dsec>( "%F %T", "2024-03-15 14:30:45" )
+                              .time_since_epoch()
+                              .count(),
+            expected.count() );
+    }
+
+    // double-seconds: fractional seconds
+    {
+        auto base = dsec(
+            _get_time( 2024, 3, 15, 14, 30, 45 ).time_since_epoch().count() );
+        auto parsed = parse<dsec>( "%F %T", "2024-03-15 14:30:45.5" )
+                          .time_since_epoch()
+                          .count();
+        EXPECT_DOUBLE_EQ( parsed, base.count() + 0.5 );
+    }
+
+    // double-seconds: sub-millisecond precision
+    {
+        auto base = dsec( _get_time( 2024, 1, 1 ).time_since_epoch().count() );
+        auto parsed = parse<dsec>( "%F %T", "2024-01-01 00:00:00.123456789" )
+                          .time_since_epoch()
+                          .count();
+        EXPECT_NEAR( parsed, base.count() + 0.123456789, 1e-9 );
+    }
+
+    // double-milliseconds
+    {
+        auto base_s
+            = _get_time( 2024, 3, 15, 14, 30, 45 ).time_since_epoch().count();
+        auto expected = dms( double( base_s ) * 1000.0 + 500.0 );
+        EXPECT_DOUBLE_EQ( parse<dms>( "%F %T", "2024-03-15 14:30:45.5" )
+                              .time_since_epoch()
+                              .count(),
+            expected.count() );
+    }
+
+    // double-minutes (n > 1): integer minutes
+    {
+        auto t        = _get_time( 2024, 3, 15, 14, 30, 0 );
+        auto expected = dmin( t.time_since_epoch().count() / 60.0 );
+        EXPECT_DOUBLE_EQ( parse<dmin>( "%F %T", "2024-03-15 14:30:00" )
+                              .time_since_epoch()
+                              .count(),
+            expected.count() );
+    }
+
+    // double-minutes: fractional minute from seconds
+    {
+        auto t        = _get_time( 2024, 3, 15, 14, 30, 45 );
+        auto expected = dmin( t.time_since_epoch().count() / 60.0 );
+        EXPECT_DOUBLE_EQ( parse<dmin>( "%F %T", "2024-03-15 14:30:45" )
+                              .time_since_epoch()
+                              .count(),
+            expected.count() );
+    }
+
+    // double-days (n = 86400): exact day
+    {
+        auto t        = _get_time( 2024, 3, 15 );
+        auto expected = dday( t.time_since_epoch().count() / 86400.0 );
+        EXPECT_DOUBLE_EQ(
+            parse<dday>( "%F", "2024-03-15" ).time_since_epoch().count(),
+            expected.count() );
+    }
+
+    // double-days: fractional day from time
+    {
+        // 12:00:00 = exactly half a day
+        auto t        = _get_time( 2024, 3, 15, 12, 0, 0 );
+        auto expected = dday( t.time_since_epoch().count() / 86400.0 );
+        EXPECT_DOUBLE_EQ( parse<dday>( "%F %T", "2024-03-15 12:00:00" )
+                              .time_since_epoch()
+                              .count(),
+            expected.count() );
+    }
+
+    // sanity check - date around Epoch
+    {
+        EXPECT_DOUBLE_EQ( parse<dsec>( "%F %T", "1970-01-01 00:00:00" )
+                              .time_since_epoch()
+                              .count(),
+            0.0 );
+        EXPECT_DOUBLE_EQ( parse<dsec>( "%F %T", "1970-01-01 00:00:00.25" )
+                              .time_since_epoch()
+                              .count(),
+            0.25 );
+    }
+}
