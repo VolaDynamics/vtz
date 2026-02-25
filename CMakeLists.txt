@@ -146,7 +146,7 @@ target_compile_features(
         cxx_std_17
 )
 
-add_library(vtz SHARED $<TARGET_OBJECTS:vtz_objects>)
+add_library(vtz $<TARGET_OBJECTS:vtz_objects>)
 add_library(vtz::vtz ALIAS vtz)
 
 
