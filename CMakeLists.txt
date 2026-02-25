@@ -19,6 +19,31 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 option(VTZ_ONLY "Only build the vtz library. Don't build tests or benchmarks" OFF)
 
+set(
+    VTZ_TZDATA_PATH_VARS
+    "VTZ_TZDATA_PATH"
+    CACHE
+    STRING
+    "List of enviroment variable names to check for timezone source files"
+)
+
+option(
+    VTZ_CHECK_IN_TZDATA
+    "If this option is enabled, vtz will look for the timezone source 
+    files inside ${VTZ_TZDATA_PATH}/tzdata/. Otherwise, it will look 
+    directly inside ${VTZ_TZDATA_PATH}/"
+    OFF
+)
+
+option(
+    VTZ_REQUIRE_TZDATA
+    "If this option is enabled, vtz will ONLY check for tz database 
+    source files. vtz will not attempt to load compiled tzif files from 
+    /usr/share/zoneinfo. Note: windows does not have compiled tzif files
+    so vtz acts as if this option is always enabled on that platform."
+    OFF
+)
+
 
 # Set up ccache/sccache for the project
 find_program(COMPILER_CACHE sccache ccache)
@@ -103,6 +128,13 @@ target_include_directories(
     PRIVATE
         include/impl
         include/api
+)
+target_compile_definitions(
+    vtz_objects
+    PRIVATE
+        "VTZ_TZDATA_PATH_VARS=\"$<JOIN:${VTZ_TZDATA_PATH_VARS},\"$<COMMA>\">\""
+        "$<$<BOOL:${VTZ_CHECK_IN_TZDATA}>:VTZ_CHECK_IN_TZDATA>"
+        "$<$<BOOL:${VTZ_REQUIRE_TZDATA}>:VTZ_REQUIRE_TZDATA>"
 )
 target_link_libraries(
     vtz_objects

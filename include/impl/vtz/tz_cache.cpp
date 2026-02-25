@@ -7,6 +7,24 @@
 #include <string_view>
 #include <vtz/util/microfmt.h>
 
+
+#ifndef VTZ_TZDATA_PATH_VARS
+    #define VTZ_TZDATA_PATH_VARS "VTZ_TZDATA_PATH"
+#endif
+
+
+#if defined( _WIN32 ) || defined( VTZ_REQUIRE_TZDATA )
+    #define REQUIRE_TZDATA 1
+#else
+    #define REQUIRE_TZDATA 0
+#endif
+
+#if defined( VTZ_CHECK_IN_TZDATA )
+    #define CHECK_IN_TZDATA 1
+#else
+    #define CHECK_IN_TZDATA 0
+#endif
+
 namespace vtz {
 
     rule_eval_result const& time_zone_cache::locate_rule(
@@ -104,21 +122,76 @@ namespace vtz {
             " could not be found" ) );
     }
 
-    /// Attempts to determine the tzdata path. Returns an empty string if the
-    /// path could not be determined.
-    static std::string get_tzdata_path() {
-        constexpr char const* env_vars[]{
-            "VOLA_TZDATA_PATH",
-            "VOLAR_TZDATA_PATH",
-        };
 
-        for( char const* env_var : env_vars )
+    constexpr static char const* tzdata_env_vars[]{ VTZ_TZDATA_PATH_VARS };
+
+    static std::string _get_path_from( char const* tzdata ) {
+#if CHECK_IN_TZDATA
+        return join_path( tzdata, "tzdata" );
+#else
+        return tzdata;
+#endif
+    }
+
+    /// Attempts to determine the tzdata path.
+    static std::string get_tzdata_path() {
+        for( char const* env_var : tzdata_env_vars )
         {
             char const* tzdata = std::getenv( env_var );
-            if( tzdata ) { return join_path( tzdata, "tzdata" ); }
+            if( tzdata ) return _get_path_from( tzdata );
         }
 
         return std::string();
+    }
+
+    static std::string get_tzdata_path_error( std::string_view what ) {
+        std::string msg = //
+            util::join( "Unable to load the tz database: ",
+                what,
+                "\n\nChecked the following locations:\n\n" );
+
+        for( char const* env_var : tzdata_env_vars )
+        {
+            char const* tzdata = std::getenv( env_var );
+            if( tzdata == nullptr )
+            {
+                msg += util::join(
+                    "- getenv(", escape_string( env_var ), ") -> nil\n" );
+                continue;
+            }
+
+            msg += util::join( "- getenv(",
+                escape_string( env_var ),
+                ") -> ",
+                escape_string( _get_path_from( tzdata ) ),
+                '\n' );
+
+            break; // We don't check additional env vars after the first
+                   // non-skipped env var
+        }
+
+        msg += "\n"
+               "Please configure one of the above so that your application "
+               "can find the tz database.\n"
+               "\n"
+               "The timezone database may be downloaded at "
+               "https://www.iana.org/time-zones\n"
+               "\n"
+               "To use the timezone database, unpack one of these source "
+               "files, and configure the environment to point to that "
+               "directory.\n";
+
+#if CHECK_IN_TZDATA
+        msg += "\n"
+               "Note: This application checks for tzdata source files in the "
+               "directory given by getenv(...)/tzdata/\n";
+#else
+        msg += "\n"
+               "Note: This application checks for tzdata source files in the "
+               "directory given by getenv(...)\n";
+#endif
+
+        return msg;
     }
 
 
@@ -165,11 +238,9 @@ namespace vtz {
 
         if( path.empty() )
         {
-#ifdef _WIN32
+#if REQUIRE_TZDATA
             throw std::runtime_error(
-                "Unable to determine VOLA_TZDATA_PATH. Please configure the "
-                "VOLA_TZDATA_PATH env variable to the directory containing "
-                "'tzdata'" );
+                get_tzdata_path_error( "Cannot determine install path." ) );
 #else
             // TODO: do we want to support checking any other directories for
             // zoneinfo?
@@ -181,13 +252,20 @@ namespace vtz {
             return result;
 #endif
         }
+        try
+        {
+            auto result = time_zone_cache( load_zone_info_from_dir( path ) );
 
-        auto result = time_zone_cache( load_zone_info_from_dir( path ) );
+            // if result loaded successfully, mark this as true
+            TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
 
-        // if result loaded successfully, mark this as true
-        TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
-
-        return result;
+            return result;
+        }
+        catch( std::exception const& ex )
+        {
+            // Provide helpful context and rethrow
+            throw std::runtime_error( get_tzdata_path_error( ex.what() ) );
+        }
     }
 
     time_zone_cache const& tzdb_cache() {
