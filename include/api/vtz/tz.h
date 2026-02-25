@@ -24,20 +24,63 @@ namespace vtz {
     /// If `vtz` is using timezones loaded from timezone source files, or from
     /// `tzdata.zi`, returns the version of the timezone database source files
     /// used to load timezones.
+
     VTZ_EXPORT std::string tzdb_version();
 
     /// Set the path to use for the timezone database. Will throw an exception
     /// if the timezone database is already loaded.
+
     VTZ_EXPORT void set_install( std::string path );
 
-    /// Returns the path to the timezone database.
+
+    /// Returns the path to the timezone database. By default, this is read from
+    /// the `VTZ_TZDATA_PATH` environment variable, but if `set_install` is
+    /// called before the library is loaded, it will be read from that instead.
+    ///
+    /// When building the library, you may specify a set of environment
+    /// variables to check for the path by defining the `VTZ_TZDATA_PATH_VARS`
+    /// configuration option in CMake: `-DVTZ_TZDATA_PATH_VARS=env1,env2,...`.
+    ///
+    /// These variables will be checked in the given order, and the first one
+    /// that is set will be used as the path.
+    ///
+    /// On Unix systems, if no environment variable has been set, then `vtz`
+    /// will use the system timezone information available at
+    /// /usr/share/zoneinfo/
+
     VTZ_EXPORT std::string get_install();
 
-    /// Find a timezone by name
+
+    /// Find a timezone based on its name in the IANA timezone database.
+    ///
+    /// Examples:
+    ///
+    /// - `vtz::locate_zone( "America/New_York" )` returns the timezone for
+    ///   US Eastern Time (EST/EDT)
+    /// - `vtz::locate_zone( "Europe/London" )` returns the main timezone for
+    ///   the UK (GMT/BST)
+    ///
+    /// etcetera.
+    ///
+    /// To get a full understanding of how timezone naming works, I recommend
+    /// reading "Theory and pragmatics of the tz code and data", which discusses
+    /// naming in depth. This document can be found at
+    /// https://data.iana.org/time-zones/theory.html, and a copy of it is
+    /// provisioned together with the timezone database when downloaded from the
+    /// IANA site.
+    ///
+    /// Wikipedia maintains a full list of timezone names:
+    /// https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    ///
+    /// If a timezone is not present on your system, you can download the most
+    /// up-to-date copy of the timezone database from
+    /// https://www.iana.org/time-zones
+
     VTZ_EXPORT time_zone const* locate_zone( string_view name );
 
     /// Get the current timezone for the application. By default, this is the
     /// system's current timezone.
+
     VTZ_EXPORT time_zone const* current_zone();
 
 
@@ -48,15 +91,18 @@ namespace vtz {
     ///
     /// Throws an exception if the given zone name could not be found within the
     /// timezone database.
+
     VTZ_EXPORT time_zone const* set_current_zone_for_application(
         string_view name );
 
 
-    /// VTZ operates under the assumption that the current timezone will not
-    /// change while the application is running.
+    /// VTZ operates under the assumption that the system's current timezone
+    /// will not change while the application is running.
     ///
     /// In order to override this behavior, you can call this function to
-    /// atomically reload the current zone. The new current zone is returned.
+    /// atomically reload the current zone for the system. The new current zone
+    /// is returned.
+
     VTZ_EXPORT time_zone const* reload_current_zone();
 
 
@@ -67,144 +113,142 @@ namespace vtz {
     , private trans_table {
       public:
 
-        time_zone( string_view name, zone_states const& states );
 
-        using abbr_table::abbrev_s;
-        using abbr_table::abbrev_string_s;
-        using abbr_table::abbrev_to_s;
-        using off_tables::offset_s;
-        using off_tables::to_local_ns;
-        using off_tables::to_local_s;
-        using off_tables::to_sys_ns;
-        using off_tables::to_sys_s;
-        using stdoff_table::stdoff_s;
+        /// Return the name of the zone. This will be the name in the IANA
+        /// timezone database - "America/New_York", "Europe/London",
+        /// "Australia/Melbourne", etc.
+        ///
+        /// To get a full understanding of how timezone naming works, I
+        /// recommend reading "Theory and pragmatics of the tz code and data"
+        ///
+        /// This can be found at https://data.iana.org/time-zones/theory.html
 
-        /// For a given system time T, represented as "offsets from UTC", return
-        /// the timezone's current offset from UTC, in seconds.
-        template<class Dur>
-        seconds offset( sys_time<Dur> t ) const {
-            return seconds( offset_s( _raw_time( t ) ) );
-        }
-
-        /// Return the name of the zone
         string_view name() const noexcept { return name_; }
 
-        /// Return the current save, in seconds
-        i32 save_s( sysseconds_t t ) const noexcept {
-            return i32( offset_s( t ) - stdoff_s( t ) );
-        }
 
-        /// Convert the given time (sys_seconds) to local seconds
-        local_seconds to_local( sys_seconds s ) const {
-            return _local( to_local_s( s.time_since_epoch().count() ) );
-        }
-
-        /// Convert the given time (local seconds) to UTC
-        sys_seconds to_sys( local_seconds s, choose z ) const {
-            return _sys( to_sys_s( s.time_since_epoch().count(), z ) );
-        }
-
-        /// Convert the given time (sys_seconds) to local seconds
-        template<class Dur>
-        auto to_local( sys_time<Dur> t ) const
-            -> local_time<std::common_type_t<Dur, seconds>> {
-            // This is the time we're actually looking up, in seconds
-            sys_seconds t2 = std::chrono::floor<seconds>( t );
-
-            // This is the local time (with the unit being seconds)
-            local_seconds local_t
-                = _local( to_local_s( t2.time_since_epoch().count() ) );
-
-            // if t2 is less precise than t, we chopped off some unit of time
-            // (eg, some number of nanoseconds)
-            //
-            // We need to add it back.
-            auto delta = t - t2;
-
-            return local_t + delta;
-        }
-
-        /// Convert the given time (local seconds) to UTC
-        template<class Dur>
-        auto to_sys( local_time<Dur> t, choose z ) const
-            -> sys_time<std::common_type_t<Dur, seconds>> {
-            // Time we're looking up (must be seconds)
-            local_seconds t2 = std::chrono::floor<seconds>( t );
-
-            // This is the corresponding system time (with the unit being in
-            // seconds)
-            sys_seconds sys_t
-                = _sys( to_sys_s( t2.time_since_epoch().count(), z ) );
-
-            // if t2 is less precise than t, we chopped off some unit of time
-            // (eg, some number of nanoseconds)
-            //
-            // We need to add it back.
-            auto delta = t - t2;
-
-            return sys_t + delta;
-        }
-
-        sys_info get_info_sys_s( sysseconds_t t ) const {
-            auto range = sys_range_s( t );
-
-            auto off  = offset_s( t );
-            auto save = off - stdoff_s( t );
-
-            return sys_info{
-                sys_seconds( seconds( range.begin ) ),
-                sys_seconds( seconds( range.end ) ),
-                seconds( off ),
-                std::chrono::floor<minutes>( seconds( save ) ),
-                abbrev_string_s( t ),
-            };
-        }
-
-        local_info get_info_local_s( sec_t t ) const {
-            sysseconds_t tt[2];
-            int          result = lookup_local( t, tt );
-            if( result == local_info::unique )
-            {
-                return local_info{
-                    result,
-                    get_info_sys_s( tt[0] ),
-                    sys_info{},
-                };
-            }
-            return local_info{
-                result,
-                get_info_sys_s( tt[0] ),
-                get_info_sys_s( tt[1] ),
-            };
-        }
-
-        template<class Dur>
-        local_info get_info( local_time<Dur> input ) const {
-            return get_info_local_s( _raw_time( input ) );
-        }
+        /// timezones are broken down into periods of time with a particular
+        /// offset. For example, in America/New_York, Daylight Savings Time
+        /// currently starts on the second Sunday in March, and ends on the
+        /// first Sunday in November.
+        ///
+        /// During this time period, the offset is UTC-04, and the timezone
+        /// abbreviation is 'EDT'.
+        ///
+        /// When daylight savings time ends, the offset will be UTC-05, and the
+        /// timezone abbreviation will be 'EST'.
+        ///
+        /// `get_info( T )` for a given `T: sys_time` returns a `sys_info`
+        /// representing the UTC offset and timezone abbreviation at time T, as
+        /// well as the begin and end times at which that offset applies.
 
         template<class Dur>
         sys_info get_info( sys_time<Dur> input ) const {
             return get_info_sys_s( _raw_time( input ) );
         }
 
-        /// Returns a number [0,86400) representing the current time of day
-        /// (local time)
-        u32 local_time_of_day_s( sysseconds_t s ) const noexcept {
-            return u32( math::rem<86400>( to_local_s( s ) ) );
+
+        /// `get_info( local_time )` acts in much the same way as
+        /// `get_info( sys_time )`, however it returns a `local_info` object
+        /// rather than a `sys_info` object.
+        ///
+        /// What's the difference?
+        ///
+        /// local times are ambiguous when the clock moves back, and you also
+        /// have local times which are non-existent when the clock moves
+        /// forwards.
+        /// `get_info( local_time )` handles this ambiguity. Suppose
+        /// you have:
+        ///
+        /// ```cpp
+        /// local_info info = get_info( T );
+        /// ```
+        ///
+        /// - if `info.result == local_info::unique`, then the local time
+        ///   uniquely refers to a system time, and `info.first` contains
+        ///   information about the current offset, abbreviation, and the start
+        ///   and end times when that offset & abbreviation apply.
+        /// - if `info.result == local_info::nonexistent`, then the local time
+        ///   is nonexistent. `info.first` contains the information for the
+        ///   period that just ended, and `info.second` contains the information
+        ///   for the time period that is about to begin.
+        /// - if `info.result == local_info::ambiguous`, then the local time is
+        ///   ambiguous: and there are two periods that it could correspond to.
+        ///   The earlier period is placed in `info.first`, and the latter
+        ///   period is placed in `info.second`.
+
+        template<class Dur>
+        local_info get_info( local_time<Dur> input ) const {
+            return get_info_local_s( _raw_time( input ) );
         }
 
-        /// Returns the date of the given systime, as number of days since the
-        /// epoch
-        i64 local_date_s( sysseconds_t t ) const noexcept {
-            return math::div_floor<86400>( to_local_s( t ) );
+
+        /// Convert the given time (in seconds) to UTC.
+        ///
+        /// For example, if the timezone is America/New_York,
+        /// and input time is `Wed Feb 25  5:45 PM`, the output
+        /// time will be `Wed Feb 25 10:45 PM` (UTC time)
+
+        sys_seconds to_sys( local_seconds s, choose z ) const {
+            return _sys( to_sys_s( _raw_time( s ), z ) );
         }
 
-        /// Given nanoseconds since the epoch, return the current date (as days
-        /// since the epoch)
-        i64 local_date_ns( nanos_t nanos ) const noexcept {
-            return math::div_floor<86400000000000ll>( to_local_ns( nanos ) );
+
+        /// Convert the given time to UTC. The input duration can be arbitrary
+        /// (minutes, seconds, milliseconds, etc), but the result will always
+        /// have precision of _at least_ seconds.
+
+        template<class Dur>
+        inline auto to_sys( local_time<Dur> t, choose z ) const
+            -> sys_time<std::common_type_t<Dur, seconds>>;
+
+
+        /// Convert a UTC time to local time within the given zone.
+        ///
+        /// For example, if the timezone is America/New_York,
+        /// and the input time is `Wed Feb 25 10:45 PM` (UTC time),
+        /// the output time will be `Wed Feb 25  5:45 PM` (local time)
+
+        local_seconds to_local( sys_seconds s ) const {
+            return _local( to_local_s( _raw_time( s ) ) );
         }
+
+
+        /// Convert a UTC time to a local time within the given zone.
+        ///
+        /// The input duration can be arbitrary (minutes, seconds, milliseconds,
+        /// etc), but the result will always have precision of _at least_
+        /// seconds.
+
+        template<class Dur>
+        auto to_local( sys_time<Dur> t ) const
+            -> local_time<std::common_type_t<Dur, seconds>>;
+
+
+        /// For a given system time T, represented as "offsets from UTC", return
+        /// the timezone's current offset from UTC, in seconds.
+        ///
+        /// For example, `America/New_York` has an offset of UTC-05 during
+        /// standard time, and an offset of UTC-04 during daylight savings time.
+        ///
+        /// This `offset( T )` will return `-(5 * 3600)` seconds if `T` is in
+        /// standard time, and `-(4*3600)` if `T` is in daylight savings time.
+        ///
+        /// **Why is the returned offset in seconds?** Not all timezones are
+        /// a fixed number of hours from UTC, particularly for dates and times
+        /// far in the past.
+
+        template<class Dur>
+        seconds offset( sys_time<Dur> t ) const {
+            return seconds( offset_s( _raw_time( t ) ) );
+        }
+
+
+        /// Returns the date of the given time, within the current timezone.
+        ///
+        /// For example - suppose the input time is Saturday, Feb 28th at 1
+        /// AM UTC time. America/New_York is 5 hours behind, so
+        /// `tz->local_date()` for America/New_York would return Friday, Feb
+        /// 27th.
 
         template<class Dur>
         auto local_date( sys_time<Dur> t ) const -> local_days {
@@ -216,13 +260,13 @@ namespace vtz {
 
         // clang-format off
 
-        /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime
         size_t format_to_s( string_view format, sysseconds_t t, char* buff, size_t count ) const;
-        /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime
         size_t format_to(   string_view format, sys_seconds  t, char* buff, size_t count ) const { return format_to_s( format, t.time_since_epoch().count(), buff, count ); }
-        /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime
         string format_s(    string_view format, sysseconds_t t ) const;
-        /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime
         string format(      string_view format, sys_seconds  t ) const { return format_s( format, t.time_since_epoch().count() ); }
 
 
@@ -257,10 +301,10 @@ namespace vtz {
 
 
         /// Formats a time (expressed as seconds and nanoseconds) to the given buffer.
-        /// For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime.html
+        /// For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime
         ///
         /// Preconditions: nanos is in the range `[0, 999999999]`, and precision<=9.
-        /// The fractional component will formatted as a decimal followed by the given digits,
+        /// The fractional component will be formatted as a decimal followed by the given digits,
         /// and it will be placed immediately after the 'seconds' component.
         ///
         /// When formatting, if precision is less than 9, the value is truncated. Eg, if nanos
@@ -285,7 +329,7 @@ namespace vtz {
         }
 
         /// Formats a time (expressed as seconds and nanoseconds) to the given buffer. For more information,
-        /// see the equivalent version of `format_to_s`.
+        /// see the equivalent version of `format_precise_to_s`.
         string format_precise_s( string_view format, sysseconds_t t, u32 nanos, int precision ) const;
 
         /// Format the given time, with the requested precision (up to 9 digits)
@@ -342,14 +386,85 @@ namespace vtz {
         // clang-format on
 
 
+        using abbr_table::abbrev_s;
+        using abbr_table::abbrev_string_s;
+        using abbr_table::abbrev_to_s;
+        using off_tables::offset_s;
+        using off_tables::to_local_ns;
+        using off_tables::to_local_s;
+        using off_tables::to_sys_ns;
+        using off_tables::to_sys_s;
+        using stdoff_table::stdoff_s;
+
+        /// Return the current save, in seconds
+
+        i32 save_s( sysseconds_t t ) const noexcept {
+            return i32( offset_s( t ) - stdoff_s( t ) );
+        }
+
+        sys_info get_info_sys_s( sysseconds_t t ) const {
+            auto range = sys_range_s( t );
+
+            auto off  = offset_s( t );
+            auto save = off - stdoff_s( t );
+
+            return sys_info{
+                sys_seconds( seconds( range.begin ) ),
+                sys_seconds( seconds( range.end ) ),
+                seconds( off ),
+                std::chrono::floor<minutes>( seconds( save ) ),
+                abbrev_string_s( t ),
+            };
+        }
+
+        local_info get_info_local_s( sec_t t ) const {
+            sysseconds_t tt[2];
+            int          result = lookup_local( t, tt );
+            if( result == local_info::unique )
+            {
+                return local_info{
+                    result,
+                    get_info_sys_s( tt[0] ),
+                    sys_info{},
+                };
+            }
+            return local_info{
+                result,
+                get_info_sys_s( tt[0] ),
+                get_info_sys_s( tt[1] ),
+            };
+        }
+
+
+        /// Returns a number [0,86400) representing the current time of day
+        /// (local time)
+        u32 local_time_of_day_s( sysseconds_t s ) const noexcept {
+            return u32( math::rem<86400>( to_local_s( s ) ) );
+        }
+
+        /// Returns the date of the given systime within the current zone, as
+        /// number of days since the epoch
+        i64 local_date_s( sysseconds_t t ) const noexcept {
+            return math::div_floor<86400>( to_local_s( t ) );
+        }
+
+        /// Given nanoseconds since the epoch, return the current date (as days
+        /// since the epoch)
+        i64 local_date_ns( nanos_t nanos ) const noexcept {
+            return math::div_floor<86400000000000ll>( to_local_ns( nanos ) );
+        }
+
+
         struct _impl;
+
+        time_zone( string_view name, zone_states const& states );
 
       private:
 
-        static sec_t _raw_time( local_seconds s ) {
+        VTZ_INLINE static sec_t _raw_time( local_seconds s ) {
             return s.time_since_epoch().count();
         }
-        static sec_t _raw_time( sys_seconds s ) {
+        VTZ_INLINE static sec_t _raw_time( sys_seconds s ) {
             return s.time_since_epoch().count();
         }
         template<class Dur>
@@ -372,6 +487,47 @@ namespace vtz {
     };
 
 
+    template<class Dur>
+    auto time_zone::to_sys( local_time<Dur> t, choose z ) const
+        -> sys_time<std::common_type_t<Dur, seconds>> {
+        {
+            // Time we're looking up (must be seconds)
+            local_seconds t2 = std::chrono::floor<seconds>( t );
+
+            // This is the corresponding system time (with the unit being in
+            // seconds)
+            sys_seconds sys_t
+                = _sys( to_sys_s( t2.time_since_epoch().count(), z ) );
+
+            // if t2 is less precise than t, we chopped off some unit of time
+            // (eg, some number of nanoseconds)
+            //
+            // We need to add it back.
+            auto delta = t - t2;
+
+            return sys_t + delta;
+        }
+    }
+
+
+    template<class Dur>
+    auto time_zone::to_local( sys_time<Dur> t ) const
+        -> local_time<std::common_type_t<Dur, seconds>> {
+        // This is the time we're actually looking up, in seconds
+        sys_seconds t2 = std::chrono::floor<seconds>( t );
+
+        // This is the local time (with the unit being seconds)
+        local_seconds local_t
+            = _local( to_local_s( t2.time_since_epoch().count() ) );
+
+        // if t2 is less precise than t, we chopped off some unit of time
+        // (eg, some number of nanoseconds)
+        //
+        // We need to add it back.
+        auto delta = t - t2;
+
+        return local_t + delta;
+    }
 } // namespace vtz
 
 
