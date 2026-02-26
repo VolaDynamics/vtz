@@ -80,6 +80,14 @@ namespace vtz {
 
     /// Get the current timezone for the application. By default, this is the
     /// system's current timezone.
+    ///
+    /// vtz checks the system timezone the first time `vtz::current_zone()` is
+    /// called, and then uses that timezone for subsequent calls to
+    /// `current_zone()`
+    ///
+    /// If you expect the timezone to change while the application is running,
+    /// you can use `vtz::reload_current_zone()` to update the timezone returned by
+    /// `current_zone()`
 
     VTZ_EXPORT time_zone const* current_zone();
 
