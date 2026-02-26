@@ -18,4 +18,7 @@ build config="Release" *extra:
     @just gen {{config}} {{extra}}
     cmake --build build
 
+docgen:
+    uv run --python 3.11 etc/scripts/docgen.py
+
 

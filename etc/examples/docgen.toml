@@ -1,0 +1,17 @@
+output_dir = "etc/docs"
+exe_dir = "build/etc/examples"
+env = ["VTZ_TZDATA_PATH=build/data/tzdata"]
+
+[[examples]]
+source = "etc/examples/src/vtz_a_guided_tour.cpp"
+title = "Hello VTZ"
+include_output = true
+output_matchers = ["fmt::print", "print_info"]
+insert_into = "README.md"
+insert_at = "## A Guided Tour of VTZ"
+example_intro = """
+This document serves as a guided tour of vtz. For a full understanding of the 
+library API, please refer to `vtz/tz.h`, which does it's best to provide 
+thorough documentation of the API and it's constraints.
+
+---"""
