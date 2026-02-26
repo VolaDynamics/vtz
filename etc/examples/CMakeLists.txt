@@ -30,4 +30,4 @@ foreach(example_file IN LISTS examples)
 endforeach()
 
 # hello_vtz uses C++20 std::chrono aliases such as sys_seconds
-target_compile_features(hello_vtz PRIVATE cxx_std_20)
+target_compile_features(vtz_a_guided_tour PRIVATE cxx_std_20)
