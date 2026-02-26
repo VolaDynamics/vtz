@@ -341,6 +341,7 @@ namespace {
         "%M", // minute [00,59]
         "%S", // second [00,60]
         "%R", // equivalent to %H:%M
+        "%r", // equivalent to %I:%M:%S %p
         "%T", // equivalent to %H:%M:%S
         "%Y-%m-%d %H:%M:%S",
         "%F %T",
@@ -610,6 +611,20 @@ TEST( vtz_format, gnu_extensions ) {
     check_format_time( "%P", _get_time( 2024, 1, 1, 11, 59, 59 ), "am" );
     check_format_time( "%P", _get_time( 2024, 1, 1, 12, 0, 0 ), "pm" );
     check_format_time( "%P", _get_time( 2024, 1, 1, 23, 59, 59 ), "pm" );
+
+    // %r — 12-hour clock time with AM/PM, equivalent to %I:%M:%S %p
+    check_format_time(
+        "%r", _get_time( 2024, 1, 1, 0, 0, 0 ), "12:00:00 AM" );
+    check_format_time(
+        "%r", _get_time( 2024, 1, 1, 1, 30, 0 ), "01:30:00 AM" );
+    check_format_time(
+        "%r", _get_time( 2024, 1, 1, 11, 59, 59 ), "11:59:59 AM" );
+    check_format_time(
+        "%r", _get_time( 2024, 1, 1, 12, 0, 0 ), "12:00:00 PM" );
+    check_format_time(
+        "%r", _get_time( 2024, 1, 1, 13, 0, 0 ), "01:00:00 PM" );
+    check_format_time(
+        "%r", _get_time( 2024, 1, 1, 23, 59, 59 ), "11:59:59 PM" );
 
     // %s — seconds since epoch. Use raw epoch seconds as input so the
     // expected output is trivially the same number.

@@ -138,6 +138,23 @@ TEST( vtz_parse, sanity ) {
         _get_time( 2024, 1, 1, 14, 30, 0 ) );
     EXPECT_EQ( parse<seconds>( "%F %p %I:%M:%S", "2024-01-01 AM 12:00:00" ),
         _get_time( 2024, 1, 1, 0, 0, 0 ) );
+
+    // %r — equivalent to %I:%M:%S %p
+    // 12:00:00 AM = midnight
+    EXPECT_EQ( parse<seconds>( "%F %r", "2024-01-01 12:00:00 AM" ),
+        _get_time( 2024, 1, 1, 0, 0, 0 ) );
+    // 12:00:00 PM = noon
+    EXPECT_EQ( parse<seconds>( "%F %r", "2024-01-01 12:00:00 PM" ),
+        _get_time( 2024, 1, 1, 12, 0, 0 ) );
+    // 01:30:00 AM
+    EXPECT_EQ( parse<seconds>( "%F %r", "2024-01-01 01:30:00 AM" ),
+        _get_time( 2024, 1, 1, 1, 30, 0 ) );
+    // 11:59:59 PM
+    EXPECT_EQ( parse<seconds>( "%F %r", "2024-01-01 11:59:59 PM" ),
+        _get_time( 2024, 1, 1, 23, 59, 59 ) );
+    // 01:00:00 PM = 13:00
+    EXPECT_EQ( parse<seconds>( "%F %r", "2024-01-01 01:00:00 PM" ),
+        _get_time( 2024, 1, 1, 13, 0, 0 ) );
 }
 
 
@@ -255,7 +272,7 @@ TEST( vtz_parse, round_trip ) {
                                   // `Thu Jan  1 10:46:40pm 1970`
         "%a %b %e %l:%M:%S%P %Y", // date format (am/pm), eg
                                   // `Thu Jan  1  7:46:40pm 1970`
-
+        "%F %r",                  // ISO date + 12-hour time with AM/PM
     };
 
     for( auto tp : time_values )
