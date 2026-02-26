@@ -251,6 +251,16 @@ namespace vtz {
         }
 
 
+        /// Return the zone abbreviation at time T. This is the abbreviation
+        /// most people are familiar with when they see a zoned time, eg 'EST'
+        /// (Eastern Standard Time) or 'EDT' (Eastern Daylight Time)
+
+        template<class Dur>
+        string_view abbrev( sys_time<Dur> t ) const {
+            return abbrev_s( _raw_time( t ) );
+        }
+
+
         /// Returns the date of the given time, within the current timezone.
         ///
         /// For example - suppose the input time is Saturday, Feb 28th at 1
