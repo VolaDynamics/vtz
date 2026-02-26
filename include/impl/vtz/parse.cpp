@@ -785,6 +785,25 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     nanos = parse_frac_as_nanos( p, p_end );
                     continue;
                 }
+            // equivalent to %I:%M:%S %p (12-hour clock with AM/PM)
+            case 'r':
+                {
+                    hr += parse_d2_allow_space( p, p_end ) % 12;
+                    if( p == p_end || *p != ':' )
+                        throw parse_fail{ p, "Expected ':'" };
+                    ++p;
+                    mi = parse_d2( p, p_end );
+                    if( p == p_end || *p != ':' )
+                        throw parse_fail{ p, "Expected ':'" };
+                    ++p;
+                    se    = parse_d2( p, p_end );
+                    nanos = parse_frac_as_nanos( p, p_end );
+                    if( p == p_end || *p != ' ' )
+                        throw parse_fail{ p, "Expected ' '" };
+                    ++p;
+                    hr += parse_am_pm( p, p_end );
+                    continue;
+                }
             // equivalent to '%m/%d/%y' (American Date Format) (Evil-coded)
             case 'D':
                 {
