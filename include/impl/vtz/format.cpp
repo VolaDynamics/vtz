@@ -137,6 +137,50 @@ namespace vtz {
         return p + 3;
     }
 
+    // Write '%P' - lowercase am or pm (C Locale)
+    VTZ_INLINE static char* _write_am_pm_lower( char* p, int hr ) {
+        p[0] = hr < 12 ? 'a' : 'p';
+        p[1] = 'm';
+        return p + 2;
+    }
+
+    // Write '%p' - uppercase AM or PM (C Locale)
+    VTZ_INLINE static char* _write_am_pm_upper( char* p, int hr ) {
+        p[0] = hr < 12 ? 'A' : 'P';
+        p[1] = 'M';
+        return p + 2;
+    }
+
+    /// Write '%I' - the hour on a 12-hour clock (1-12)
+    VTZ_INLINE static char* _write_12h( char* p, int h ) noexcept {
+        if( h > 12 ) h -= 12;
+        if( h == 0 ) h = 12;
+        p[0] = char( '0' + h / 10 );
+        p[1] = char( '0' + h % 10 );
+        return p + 2;
+    }
+
+    /// Write '%r', which is equivalent to "%I:%M:%S %p"
+    VTZ_INLINE static char* _write_hhmmss_p_12h(
+        char* p, int h, int m, int s ) noexcept {
+        char a_or_p = h >= 12 ? 'P' : 'A';
+
+        if( h >= 12 ) h -= 12; // 13:00 -> 01:00, etc
+        if( h == 0 ) h = 12;   // 00:00 -> 12:00
+        p[0]  = char( '0' + h / 10 );
+        p[1]  = char( '0' + h % 10 );
+        p[2]  = ':';
+        p[3]  = char( '0' + m / 10 );
+        p[4]  = char( '0' + m % 10 );
+        p[5]  = ':';
+        p[6]  = char( '0' + s / 10 );
+        p[7]  = char( '0' + s % 10 );
+        p[8]  = ' ';
+        p[9]  = a_or_p;
+        p[10] = 'M';
+        return p + 11;
+    }
+
     /// equivalent to "%Y-%m-%d" (the ISO 8601 date format)
     /// Assumes there is at least 28 characters of space in the buffer
     /// (21 characters needed for excessively large negative/positive year)
@@ -474,13 +518,8 @@ namespace vtz {
                     continue;
                 }
             // writes hour as a decimal number, 12 hour clock (range [01,12])
-            case 'I':
-                {
-                    int x = hr % 12;
-                    if( x == 0 ) x = 12;
-                    p = _write_2_digit( p, u8( x ) );
-                    continue;
-                }
+            case 'I': p = _write_12h( p, hr ); continue;
+
             // writes hour (12h) space-padded (range [ 1,12])
             case 'l':
                 {
@@ -491,18 +530,12 @@ namespace vtz {
                     p    += 2;
                     continue;
                 }
+
             // writes "AM" or "PM" in the C locale
-            case 'p':
-                p[0]  = hr < 12 ? 'A' : 'P';
-                p[1]  = 'M';
-                p    += 2;
-                continue;
+            case 'p': p = _write_am_pm_upper( p, hr ); continue;
+
             // writes lowercase "am" or "pm" in the C locale (GNU extension)
-            case 'P':
-                p[0]  = hr < 12 ? 'a' : 'p';
-                p[1]  = 'm';
-                p    += 2;
-                continue;
+            case 'P': p = _write_am_pm_lower( p, hr ); continue;
 
             // writes minute as a decimal number (range [00,59])
             case 'M': p = _write_2_digit( p, u8( mi ) ); continue;
@@ -532,6 +565,10 @@ namespace vtz {
 
             // equivalent to "%H:%M"
             case 'R': p = _write_iso_hhmm( p, hr, mi ); continue;
+
+            // Writes the 12-hour clock using AM or PM (C Locale)
+            // Equivalent to '%I:%M:%S %p'
+            case 'r': p = _write_hhmmss_p_12h( p, hr, mi, sec ); continue;
 
             // equivalent to "%Y-%m-%d" (ISO 8601 date format)
             case 'F':
