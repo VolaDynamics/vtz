@@ -327,6 +327,44 @@ TEST( vtz_parse, round_trip ) {
         }
     }
 
+    // clang-format off
+    sys_seconds near_time_values[] = {
+        _get_time( 1969,  1,  1,  0,  0,  0 ), // First year '%y' supports
+        _get_time( 1970,  1,  1,  0,  0,  0 ),
+        _get_time( 1970,  1,  1, 23, 59, 59 ),
+        _get_time( 2000,  1,  1 ),
+        _get_time( 2009,  2, 13, 23, 31, 30 ),
+        _get_time( 2024,  3,  1, 12,  0,  0 ),
+        _get_time( 2024, 12, 31, 23, 59, 59 ),
+        _get_time( 2025,  2, 19, 21, 20,  0 ),
+        _get_time( 2025, 11,  6, 15, 24, 45 ),
+        _get_time( 2038,  1, 19,  3, 14,  7 ),
+        _get_time( 2038,  1, 19,  3, 14,  8 ),
+        _get_time( 2068, 12, 31, 23, 59, 59 ), // Last year '%y' supports
+    };
+    // clang-format on
+
+    // Formats which use 2-digit year
+    char const* near_round_trip_fmts[]{
+        "%b %e %k:%M:%S '%y", // 2 digit year
+        "%D %T",              // American date/time
+        "%D %r",              // American date/time (AM/PM)
+        "%x %X",              // locale-preferred date/time representation
+    };
+
+    for( auto tp : near_time_values )
+    {
+        auto t = tp.time_since_epoch().count();
+        for( auto fmt : near_round_trip_fmts )
+        {
+            auto formatted = format_s( fmt, t );
+            auto parsed    = parse_s( fmt, formatted );
+            ASSERT_EQ( parsed, t )
+                << "round-trip failed for t=" << t << " fmt=\"" << fmt
+                << "\" formatted=\"" << formatted << "\"";
+        }
+    }
+
     // Date-only round-trips
     sys_seconds date_values[] = {
         _get_time( 1970, 1, 1 ),

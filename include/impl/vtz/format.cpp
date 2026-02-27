@@ -575,11 +575,19 @@ namespace vtz {
                 p = _write_iso_date( p, ymd.year, ymd.month, ymd.day );
                 continue;
 
+            // preferred time representation for the current locale
+            // For the C locale this is '%T'
+            // Test with: env LC_ALL=C date '+%x %X'
+            case 'X':
             // equivalent to "%H:%M:%S" (the ISO 8601 time format)
             case 'T':
                 p = write_frac( _write_hhmmss( p, hr, mi, sec ) );
                 continue;
 
+            // preferred date representation for the current locale
+            // For the C locale, this is '%m/%d/%y' (???)
+            // Test with: env LC_ALL=C date '+%x %X'
+            case 'x':
             // equivalent to "%m/%d/%y"
             case 'D':
                 p    = _write_mon( p, u8( ymd.month ) );

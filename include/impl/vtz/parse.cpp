@@ -890,6 +890,11 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     dom = parse_d2_allow_space( p, p_end );
                     continue;
                 }
+
+            // preferred time representation for the current locale
+            // For the C locale this is '%T'
+            // Test with: env LC_ALL=C date '+%x %X'
+            case 'X':
             // %H:%M:%S
             case 'T':
                 {
@@ -924,6 +929,11 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     hr += parse_am_pm( p, p_end );
                     continue;
                 }
+
+            // preferred date representation for the current locale
+            // For the C locale, this is '%m/%d/%y' (???)
+            // Test with: env LC_ALL=C date '+%x %X'
+            case 'x':
             // equivalent to '%m/%d/%y' (American Date Format) (Evil-coded)
             case 'D':
                 {
