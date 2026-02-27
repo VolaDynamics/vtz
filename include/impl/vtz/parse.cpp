@@ -930,6 +930,40 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     continue;
                 }
 
+            // preferred date and time representation for the current locale
+            // For the C locale this is '%a %b %e %H:%M:%S %Y'
+            // Test with: env LC_ALL=C date '+%c'
+            case 'c':
+                {
+                    (void)parse_weekday_name( p, p_end );
+                    if( p == p_end || *p != ' ' )
+                        throw parse_fail{ p, "Expected ' '" };
+                    ++p;
+                    month = parse_month_name( p, p_end );
+                    if( p == p_end || *p != ' ' )
+                        throw parse_fail{ p, "Expected ' '" };
+                    ++p;
+                    dom = parse_d2_allow_space( p, p_end );
+                    if( p == p_end || *p != ' ' )
+                        throw parse_fail{ p, "Expected ' '" };
+                    ++p;
+                    hr = parse_d2_allow_space( p, p_end );
+                    if( p == p_end || *p != ':' )
+                        throw parse_fail{ p, "Expected ':'" };
+                    ++p;
+                    mi = parse_d2( p, p_end );
+                    if( p == p_end || *p != ':' )
+                        throw parse_fail{ p, "Expected ':'" };
+                    ++p;
+                    se    = parse_d2( p, p_end );
+                    nanos = parse_frac_as_nanos( p, p_end );
+                    if( p == p_end || *p != ' ' )
+                        throw parse_fail{ p, "Expected ' '" };
+                    ++p;
+                    year = ::parse_year( p, p_end );
+                    continue;
+                }
+
             // preferred date representation for the current locale
             // For the C locale, this is '%m/%d/%y' (???)
             // Test with: env LC_ALL=C date '+%x %X'

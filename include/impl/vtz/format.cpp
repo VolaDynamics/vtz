@@ -584,6 +584,24 @@ namespace vtz {
                 p = write_frac( _write_hhmmss( p, hr, mi, sec ) );
                 continue;
 
+            // preferred date and time representation for the current locale
+            // For the C locale this is '%a %b %e %H:%M:%S %Y'
+            // Test with: env LC_ALL=C date '+%c'
+            case 'c':
+                {
+                    auto dow = int( dow_from_days( date ) );
+                    p    = _write_c_weekday_abbr( p, dow );
+                    *p++ = ' ';
+                    p    = _write_c_month_abbr( p, ymd.month );
+                    *p++ = ' ';
+                    p    = _write_dom_e( p, u8( ymd.day ) );
+                    *p++ = ' ';
+                    p    = _write_hhmmss( p, hr, mi, sec );
+                    *p++ = ' ';
+                    p    = _write_year( p, ymd.year );
+                    continue;
+                }
+
             // preferred date representation for the current locale
             // For the C locale, this is '%m/%d/%y' (???)
             // Test with: env LC_ALL=C date '+%x %X'
