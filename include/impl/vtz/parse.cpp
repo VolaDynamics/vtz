@@ -71,6 +71,13 @@ namespace {
     static_assert( opt_z( 0 ).value() == 0 );
     static_assert( opt_z( -10 ).value() == -10 );
     static_assert( opt_z( 10 ).value() == 10 );
+
+    template<class... T>
+    struct overload_set : T... {
+        using T::operator()...;
+    };
+    template<class... T>
+    overload_set( T... ) -> overload_set<T...>;
 } // namespace
 
 
@@ -79,38 +86,69 @@ namespace vtz {
     auto _do_parse( string_view format, string_view input, F func )
         -> decltype( func( i32(), i32(), i32(), opt_z() ) );
 
+    // Consume the input, run parsing logic, but discard anything computed. Just
+    // return the result.
+    template<class T>
+    static T _parse_validate(
+        string_view format, string_view date_str, T result ) {
+        return _do_parse( format, date_str, [&]( auto... ) {
+            return static_cast<T&&>( result );
+        } );
+    }
+
     sysdays_t parse_d( string_view fmt, string_view date_str ) {
-        return _do_parse(
-            fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
-                (void)nanos;
-                return date + math::div_floor<86400>( time - z.value() );
+        return _do_parse( fmt,
+            date_str,
+            overload_set{
+                []( i32 date, i32 time, i32 nanos, opt_z z ) {
+                    (void)nanos;
+                    return date + math::div_floor<86400>( time - z.value() );
+                },
+                []( i64 sec, i32 nanos ) {
+                    (void)nanos;
+                    return sysdays_t( math::div_floor<86400>( sec ) );
+                },
             } );
     }
 
     sec_t parse_s( string_view fmt, string_view date_str ) {
-        return _do_parse(
-            fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
-                (void)nanos;
-                return date * 86400ll + time - z.value();
+        return _do_parse( fmt,
+            date_str,
+            overload_set{
+                []( i32 date, i32 time, i32 nanos, opt_z z ) {
+                    (void)nanos;
+                    return date * 86400ll + time - z.value();
+                },
+                []( i64 sec, i32 ) { return sec; },
             } );
     }
 
     nanos_t parse_ns( string_view fmt, string_view date_str ) {
-        return _do_parse(
-            fmt, date_str, []( i32 date, i32 time, i32 nanos, opt_z z ) {
-                return ( date * 86400ll + time - z.value() ) * 1000000000ll
-                       + nanos;
+        return _do_parse( fmt,
+            date_str,
+            overload_set{
+                []( i32 date, i32 time, i32 nanos, opt_z z ) {
+                    return ( date * 86400ll + time - z.value() ) * 1000000000ll
+                           + nanos;
+                },
+                []( i64 sec, i32 nanos ) { return sec * 1000000000ll + nanos; },
             } );
     }
 
     parse_precise_result parse_precise(
         string_view fmt, string_view time_str ) {
-        return _do_parse(
-            fmt, time_str, []( i32 date, i32 time, u32 nanos, opt_z z ) {
-                return parse_precise_result{
-                    date * 86400ll + time - z.value(),
-                    nanos,
-                };
+        return _do_parse( fmt,
+            time_str,
+            overload_set{
+                []( i32 date, i32 time, u32 nanos, opt_z z ) {
+                    return parse_precise_result{
+                        date * 86400ll + time - z.value(),
+                        nanos,
+                    };
+                },
+                []( i64 sec, i32 nanos ) {
+                    return parse_precise_result{ sec, u32( nanos ) };
+                },
             } );
     }
 } // namespace vtz
@@ -741,7 +779,37 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     continue;
                 }
             // Parses offset from UTC in the format `[+|-]hh[mm]`
-            case 'z': z = parse_z( p, p_end ); continue;
+            case 'z':
+                z = parse_z( p, p_end );
+                continue;
+
+
+                // PARSE SECONDS SINCE THE UNIX EPOCH
+
+            // reads seconds since the unix epoch. If a decimal point appears
+            // after '%s', parses as nanoseconds.
+            case 's':
+                {
+                    int64_t sec{};
+                    auto    result = std::from_chars( p, p_end, sec );
+                    if( result.ec != std::errc{} )
+                    {
+                        throw parse_fail{ p,
+                            "Expected seconds since the unix epoch" };
+                    }
+                    p = result.ptr;
+
+                    nanos = parse_frac_as_nanos( p, p_end );
+
+
+                    if( f == format.end() ) { return func( sec, nanos ); }
+
+                    // Check the remainder of the string, but return whatever
+                    // was discovered from %s
+                    return _parse_validate( string_view( f, format.end() - f ),
+                        string_view( p, p_end - p ),
+                        func( sec, nanos ) );
+                }
 
 
             // PARSE COMPOUND SPECIFIERS
