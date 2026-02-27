@@ -19,14 +19,16 @@ namespace {
 
     // Reference formatters using the Hinnant date library
 
+    auto const& c_locale = std::locale::classic();
+
     std::string ref_time( const char* fmt, int64_t t ) {
         auto tp = date::sys_seconds{ std::chrono::seconds{ t } };
-        return date::format( fmt, tp );
+        return date::format( c_locale, fmt, tp );
     }
 
     std::string ref_date( const char* fmt, int32_t d ) {
         auto tp = date::sys_days{ date::days{ d } };
-        return date::format( fmt, tp );
+        return date::format( c_locale, fmt, tp );
     }
 
     // Reference formatter for sub-second precision. Constructs a sys_time
@@ -39,7 +41,7 @@ namespace {
         auto tp = date::sys_time<D>{ std::chrono::duration_cast<D>(
                                          std::chrono::seconds{ t } )
                                      + D{ frac } };
-        return date::format( fmt, tp );
+        return date::format( c_locale, fmt, tp );
     }
 
     std::string ref_time(
@@ -330,6 +332,8 @@ namespace {
         "%j", // day of year [001,366]
         "%w", // weekday, Sunday=0 [0,6]
         "%u", // weekday, Monday=1 ISO [1,7]
+        "%a", // abbreviated weekday name
+        "%A", // full weekday name
         "%b", // abbreviated month name
         "%h", // abbreviated month name (equivalent to %b)
         "%B", // full month name
@@ -343,6 +347,8 @@ namespace {
         "%R", // equivalent to %H:%M
         "%r", // equivalent to %I:%M:%S %p
         "%T", // equivalent to %H:%M:%S
+        "%X", // preferred time representation (C locale: %H:%M:%S)
+        "%c", // preferred date and time (C locale: %a %b %e %H:%M:%S %Y)
         "%Y-%m-%d %H:%M:%S",
         "%F %T",
         "%H:%M on %F",
@@ -365,11 +371,14 @@ namespace {
         "%j", // day of year [001,366]
         "%w", // weekday, Sunday=0 [0,6]
         "%u", // weekday, Monday=1 ISO [1,7]
+        "%a", // abbreviated weekday name
+        "%A", // full weekday name
         "%b", // abbreviated month name
         "%h", // abbreviated month name (equivalent to %b)
         "%B", // full month name
         "%F", // ISO date, equivalent to %Y-%m-%d
         "%D", // equivalent to %m/%d/%y
+        "%x", // preferred date representation (C locale: %m/%d/%y)
         "%Y-%m-%d",
         "%d/%m/%Y",
         "%Y%m%d",
@@ -569,8 +578,18 @@ TEST( vtz_format, c_locale_sanity_test ) {
     // date::format
     constexpr unsigned days_in_month[]
         = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-    const char* fmts[]
-        = { "%a", "%A", "%b", "%B", "%h", "%C", "%D", "%p", "%a %b %d %Y" };
+    const char* fmts[] = { "%a",
+        "%A",
+        "%b",
+        "%B",
+        "%h",
+        "%C",
+        "%D",
+        "%x",
+        "%X",
+        "%c",
+        "%p",
+        "%a %b %d %Y" };
     for( unsigned m = 1; m <= 12; m++ )
         for( unsigned d = 1; d <= days_in_month[m - 1]; d++ )
         {
@@ -613,16 +632,12 @@ TEST( vtz_format, gnu_extensions ) {
     check_format_time( "%P", _get_time( 2024, 1, 1, 23, 59, 59 ), "pm" );
 
     // %r — 12-hour clock time with AM/PM, equivalent to %I:%M:%S %p
-    check_format_time(
-        "%r", _get_time( 2024, 1, 1, 0, 0, 0 ), "12:00:00 AM" );
-    check_format_time(
-        "%r", _get_time( 2024, 1, 1, 1, 30, 0 ), "01:30:00 AM" );
+    check_format_time( "%r", _get_time( 2024, 1, 1, 0, 0, 0 ), "12:00:00 AM" );
+    check_format_time( "%r", _get_time( 2024, 1, 1, 1, 30, 0 ), "01:30:00 AM" );
     check_format_time(
         "%r", _get_time( 2024, 1, 1, 11, 59, 59 ), "11:59:59 AM" );
-    check_format_time(
-        "%r", _get_time( 2024, 1, 1, 12, 0, 0 ), "12:00:00 PM" );
-    check_format_time(
-        "%r", _get_time( 2024, 1, 1, 13, 0, 0 ), "01:00:00 PM" );
+    check_format_time( "%r", _get_time( 2024, 1, 1, 12, 0, 0 ), "12:00:00 PM" );
+    check_format_time( "%r", _get_time( 2024, 1, 1, 13, 0, 0 ), "01:00:00 PM" );
     check_format_time(
         "%r", _get_time( 2024, 1, 1, 23, 59, 59 ), "11:59:59 PM" );
 
@@ -637,8 +652,7 @@ TEST( vtz_format, gnu_extensions ) {
     check_format_time( "%s", 999999999999ll, "999999999999" );
 
     // Check '%s' with fractional component
-    check_format_precise(
-        "%s", 4000000000ll, 123456789, 3, "4000000000.123" );
+    check_format_precise( "%s", 4000000000ll, 123456789, 3, "4000000000.123" );
     check_format_precise(
         "%s", 4000000000ll, 123456789, 6, "4000000000.123456" );
     check_format_precise(

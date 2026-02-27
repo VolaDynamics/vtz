@@ -312,6 +312,7 @@ TEST( vtz_parse, round_trip ) {
                                   // `Thu Jan  1  7:46:40pm 1970`
         "%F %r",                  // ISO date + 12-hour time with AM/PM
         "%s",                     // Number of seconds since the epoch, UTC time
+        "%c",                     // C locale preferred date and time
     };
 
     for( auto tp : time_values )
