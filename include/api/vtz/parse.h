@@ -76,6 +76,13 @@ namespace vtz {
         sysseconds_t seconds;
         /// Nanoseconds component, range [0,999999999]
         u32 nanos;
+
+        bool operator==( parse_precise_result const& rhs ) const noexcept {
+            return seconds == rhs.seconds && nanos == rhs.nanos;
+        }
+        bool operator!=( parse_precise_result const& rhs ) const noexcept {
+            return !( *this == rhs );
+        }
     };
 
 
