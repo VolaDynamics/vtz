@@ -15,6 +15,7 @@
 #include <vtz/parse.h>
 
 using vtz::i32;
+using vtz::i64;
 using vtz::u32;
 
 namespace {
@@ -72,12 +73,43 @@ namespace {
     static_assert( opt_z( -10 ).value() == -10 );
     static_assert( opt_z( 10 ).value() == 10 );
 
-    template<class... T>
-    struct overload_set : T... {
-        using T::operator()...;
+    /// Holds two functions to obtain the parse result.
+    /// One for the (date, time of day) case, and one for the timestamp case.
+    ///
+    /// This allows us to avoid splitting the timestamp into constituent parts,
+    /// only to recombine them.
+
+    template<class F_Date, class F_Seconds>
+    struct _finish_parse
+    : F_Date
+    , F_Seconds {
+        using F_Date::operator();
+        using F_Seconds::operator();
+
+        constexpr static bool is_validate = false;
     };
-    template<class... T>
-    overload_set( T... ) -> overload_set<T...>;
+    template<class F1, class F2>
+    _finish_parse( F1, F2 ) -> _finish_parse<F1, F2>;
+
+
+    /// Used for doing validation. This is primarily useful for when we've
+    /// already obtained the result from a format specifier representing a
+    /// source-of-truth (aka, '%s'), but we want to check the rest of the
+    /// string.
+    ///
+    /// (really ugly but oh well)
+
+    template<class T>
+    struct parse_validate {
+        T           result;
+        char const* f;
+        char const* p;
+
+        T operator()( i32, i32, i32, opt_z ) { return result; }
+        T operator()( i64, i32 ) { return result; }
+
+        constexpr static bool is_validate = true;
+    };
 } // namespace
 
 
@@ -86,20 +118,30 @@ namespace vtz {
     auto _do_parse( string_view format, string_view input, F func )
         -> decltype( func( i32(), i32(), i32(), opt_z() ) );
 
-    // Consume the input, run parsing logic, but discard anything computed. Just
-    // return the result.
+    /// Consume the input, run parsing logic, but discard anything computed. Just
+    /// return the result.
+    ///
+    /// Params `f` and `p` are where parsing left off.
+
     template<class T>
-    static T _parse_validate(
-        string_view format, string_view date_str, T result ) {
-        return _do_parse( format, date_str, [&]( auto... ) {
-            return static_cast<T&&>( result );
-        } );
+    static T _parse_validate( string_view format,
+        string_view                       date_str,
+        T                                 result,
+        char const*                       f,
+        char const*                       p ) {
+        return _do_parse( format,
+            date_str,
+            parse_validate<T>{
+                static_cast<T&&>( result ),
+                f,
+                p,
+            } );
     }
 
     sysdays_t parse_d( string_view fmt, string_view date_str ) {
         return _do_parse( fmt,
             date_str,
-            overload_set{
+            _finish_parse{
                 []( i32 date, i32 time, i32 nanos, opt_z z ) {
                     (void)nanos;
                     return date + math::div_floor<86400>( time - z.value() );
@@ -114,7 +156,7 @@ namespace vtz {
     sec_t parse_s( string_view fmt, string_view date_str ) {
         return _do_parse( fmt,
             date_str,
-            overload_set{
+            _finish_parse{
                 []( i32 date, i32 time, i32 nanos, opt_z z ) {
                     (void)nanos;
                     return date * 86400ll + time - z.value();
@@ -126,7 +168,7 @@ namespace vtz {
     nanos_t parse_ns( string_view fmt, string_view date_str ) {
         return _do_parse( fmt,
             date_str,
-            overload_set{
+            _finish_parse{
                 []( i32 date, i32 time, i32 nanos, opt_z z ) {
                     return ( date * 86400ll + time - z.value() ) * 1000000000ll
                            + nanos;
@@ -139,7 +181,7 @@ namespace vtz {
         string_view fmt, string_view time_str ) {
         return _do_parse( fmt,
             time_str,
-            overload_set{
+            _finish_parse{
                 []( i32 date, i32 time, u32 nanos, opt_z z ) {
                     return parse_precise_result{
                         date * 86400ll + time - z.value(),
@@ -602,6 +644,17 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
     // if no %z flag is specified, z.has_value() will be false
     auto z = opt_z();
 
+    // If we're running the validator, we want to skip into the middle of the
+    // input, to finish validation. the reason for this is that error messages
+    // should still be reported relative to `format` and `input`, so those
+    // shouldn't be changed when passed to the validator
+    if constexpr( F::is_validate )
+    {
+        f = func.f;
+        p = func.p;
+    }
+
+
     try
     {
         while( f < f_back && p < p_end )
@@ -806,9 +859,8 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
 
                     // Check the remainder of the string, but return whatever
                     // was discovered from %s
-                    return _parse_validate( string_view( f, format.end() - f ),
-                        string_view( p, p_end - p ),
-                        func( sec, nanos ) );
+                    return _parse_validate(
+                        format, input, func( sec, nanos ), f, p );
                 }
 
 
