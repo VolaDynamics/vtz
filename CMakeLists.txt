@@ -308,6 +308,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
         test_vtz_api
         PRIVATE
             GTest::gtest_main
+            GTest::gmock
             vtz::vtz
             fmt::fmt
             date::date

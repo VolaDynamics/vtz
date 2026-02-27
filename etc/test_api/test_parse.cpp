@@ -1,10 +1,49 @@
 #include "test_helper.h"
 
+#include <fmt/format.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <vtz/format.h>
 #include <vtz/parse.h>
 
 using namespace vtz;
+using testing::HasSubstr;
+
+
+/// Verify that all four parse functions (parse_d, parse_s, parse_ns,
+/// parse_precise) throw an error that reports the expected position and
+/// character. If `expected_msg` is non-empty, also check that the error
+/// message contains it.
+void expect_parse_error( string_view fmt,
+    string_view                      input,
+    int                              pos,
+    char                             ch,
+    string_view                      expected_msg = {} ) {
+    auto check = [&]( std::exception const& e, char const* fn ) {
+        std::string msg = e.what();
+        EXPECT_THAT( msg, HasSubstr( fmt::format( "input[{}]", pos ) ) ) << fn;
+        EXPECT_THAT( msg, HasSubstr( fmt::format( "char='{}'", ch ) ) ) << fn;
+        if( !expected_msg.empty() )
+            EXPECT_THAT( msg, HasSubstr( std::string( expected_msg ) ) ) << fn;
+    };
+
+    auto run = [&]( auto parse_fn, char const* fn ) {
+        try
+        {
+            parse_fn( fmt, input );
+            ADD_FAILURE() << fn << ": expected exception for fmt=\"" << fmt
+                          << "\" input=\"" << input << "\"";
+        }
+        catch( std::exception const& e )
+        { check( e, fn ); }
+    };
+
+    run( []( string_view f, string_view i ) { parse_d( f, i ); }, "parse_d" );
+    run( []( string_view f, string_view i ) { parse_s( f, i ); }, "parse_s" );
+    run( []( string_view f, string_view i ) { parse_ns( f, i ); }, "parse_ns" );
+    run( []( string_view f, string_view i ) { parse_precise( f, i ); },
+        "parse_precise" );
+}
 
 
 TEST( vtz_parse, sanity ) {
@@ -211,16 +250,15 @@ TEST( vtz_parse, leading_space ) {
     // Specifiers that should NOT accept a leading space: %y, %C, %M, %S
 
     // %y requires digits only (2-digit year is always zero-padded)
-    EXPECT_THROW( parse<seconds>( "%y-%m-%d", " 4-01-01" ), std::exception );
+    expect_parse_error( "%y-%m-%d", " 4-01-01", 0, ' ', "Expected digit" );
     // %C requires digits only (century is always zero-padded)
-    EXPECT_THROW(
-        parse<seconds>( "%C%y-%m-%d", " 024-01-01" ), std::exception );
+    expect_parse_error( "%C%y-%m-%d", " 024-01-01", 0, ' ', "Expected digit" );
     // %M requires digits only (minutes are always zero-padded)
-    EXPECT_THROW( parse<seconds>( "%F %H:%M:%S", "2024-01-01 12: 5:00" ),
-        std::exception );
+    expect_parse_error(
+        "%F %H:%M:%S", "2024-01-01 12: 5:00", 14, ' ', "Expected digit" );
     // %S requires digits only (seconds are always zero-padded)
-    EXPECT_THROW( parse<seconds>( "%F %H:%M:%S", "2024-01-01 12:05: 0" ),
-        std::exception );
+    expect_parse_error(
+        "%F %H:%M:%S", "2024-01-01 12:05: 0", 17, ' ', "Expected digit" );
 }
 
 
@@ -273,6 +311,7 @@ TEST( vtz_parse, round_trip ) {
         "%a %b %e %l:%M:%S%P %Y", // date format (am/pm), eg
                                   // `Thu Jan  1  7:46:40pm 1970`
         "%F %r",                  // ISO date + 12-hour time with AM/PM
+        "%s",                     // Number of seconds since the epoch, UTC time
     };
 
     for( auto tp : time_values )
@@ -550,6 +589,66 @@ TEST( vtz_parse, parse_generic_integral ) {
         EXPECT_EQ( parse<two_fifths>( "%F %T", "2024-03-15 14:30:45.9" ),
             floor<two_fifths>( base + milliseconds( 900 ) ) );
     }
+}
+
+
+TEST( vtz_parse, epoch_seconds ) {
+    // %s — seconds since the Unix epoch
+
+    // parse_s
+    EXPECT_EQ( parse_s( "%s", "0" ), 0 );
+    EXPECT_EQ( parse_s( "%s", "1704067200" ), 1704067200 );
+    EXPECT_EQ( parse_s( "%s", "1740000000" ), 1740000000 );
+    EXPECT_EQ( parse_s( "%s", "-86400" ), -86400 );
+
+    // parse_d — floors to day boundary
+    EXPECT_EQ( parse_d( "%s", "0" ), 0 );              // epoch = day 0
+    EXPECT_EQ( parse_d( "%s", "86399" ), 0 );          // last second of day 0
+    EXPECT_EQ( parse_d( "%s", "86400" ), 1 );          // first second of day 1
+    EXPECT_EQ( parse_d( "%s", "1704067200" ), 19723 ); // 2024-01-01
+    EXPECT_EQ( parse_d( "%s", "1704110400" ), 19723 ); // 2024-01-01 12:00:00
+    EXPECT_EQ( parse_d( "%s", "-1" ), -1 ); // last second before epoch
+
+    // parse_ns — with and without fractional seconds
+    EXPECT_EQ( parse_ns( "%s", "100" ), 100000000000ll );
+    EXPECT_EQ( parse_ns( "%s", "100.123456789" ), 100123456789ll );
+    EXPECT_EQ( parse_ns( "%s", "0.000000001" ), 1 );
+    EXPECT_EQ( parse_ns( "%s", "0.1" ), 100000000 );
+
+    // parse_precise — seconds + nanos
+    {
+        auto r = parse_precise( "%s", "1704067200.500000000" );
+        EXPECT_EQ( r.seconds, 1704067200 );
+        EXPECT_EQ( r.nanos, 500000000u );
+    }
+    {
+        auto r = parse_precise( "%s", "1704067200" );
+        EXPECT_EQ( r.seconds, 1704067200 );
+        EXPECT_EQ( r.nanos, 0u );
+    }
+
+    // %s result takes priority over other specifiers — the date in %F
+    // disagrees with %s, but the %s value must win.
+    EXPECT_EQ( parse_s( "%s %F", "1704067200 1999-12-31" ), 1704067200 );
+    EXPECT_EQ(
+        parse_s( "%s %F %T", "1704067200 1999-12-31 23:59:59" ), 1704067200 );
+
+    // Validation is still performed on trailing specifiers
+    // Valid %s but invalid %F
+    expect_parse_error(
+        "%s %F", "1704067200 not-a-date", 11, 'n', "Expected digit" );
+    // Valid %s but mismatched literal separator
+    expect_parse_error( "%s-%F",
+        "1704067200 2024-01-01",
+        10,
+        ' ',
+        "Character doesn't match input format string" );
+    // Valid %s but trailing %T cannot be parsed
+    expect_parse_error( "%s %F %T",
+        "1704067200 2024-01-01 xx:yy:zz",
+        22,
+        'x',
+        "Expected digit or leading space" );
 }
 
 
