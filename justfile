@@ -21,4 +21,11 @@ build config="Release" *extra:
 docgen:
     uv run --python 3.11 etc/scripts/docgen.py
 
-
+run_bench_groups:
+    # Run format benchmarks
+    build/bench_vtz --benchmark_filter='to_local_([a-z]+)$'
+    build/bench_vtz --benchmark_filter='to_(sys_(earliest|latest))_([a-z]+)$'
+    build/bench_vtz --benchmark_filter='format'
+    build/bench_vtz --benchmark_filter='parse'
+    build/bench_vtz --benchmark_filter='locate_zone'
+    build/bench_vtz --benchmark_filter='locate_random_zone'
