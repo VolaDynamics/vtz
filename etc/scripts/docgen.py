@@ -5,6 +5,17 @@ import sys
 import tomllib
 
 
+def format_text(text, cmd):
+    """Pipe text through a shell formatting command and return the result."""
+    result = subprocess.run(
+        cmd, shell=True, input=text, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f'warning: format command failed: {result.stderr.strip()}',
+              file=sys.stderr)
+        return text
+    return result.stdout
+
+
 def load_config(config_path):
     with open(config_path, 'rb') as f:
         return tomllib.load(f)
@@ -211,6 +222,20 @@ def heading_level(line):
     return None
 
 
+def adjust_heading_depth(lines, min_depth):
+    """Shift all headings so the shallowest is at least min_depth."""
+    current_min = None
+    for line in lines:
+        h = heading_level(line)
+        if h is not None and (current_min is None or h < current_min):
+            current_min = h
+    if current_min is None or current_min >= min_depth:
+        return lines
+    shift = min_depth - current_min
+    return [('#' * shift + line if heading_level(line) is not None else line)
+            for line in lines]
+
+
 def insert_into_file(target_path, insert_at, content):
     """Replace a section in a markdown file.
 
@@ -254,6 +279,8 @@ def insert_into_file(target_path, insert_at, content):
         if content_lines and not content_lines[0].strip():
             content_lines = content_lines[1:]
 
+    content_lines = adjust_heading_depth(content_lines, level + 1)
+
     replacement = [lines[idx], ''] + content_lines + ['']
     new_lines = lines[:idx] + replacement + lines[end:]
     target_path.write_text('\n'.join(new_lines) + '\n')
@@ -273,6 +300,7 @@ def main():
     exe_dir_rel = config.get('exe_dir', 'build/etc/examples')
     exe_dir = project_root / exe_dir_rel
     default_env = config.get('env', [])
+    format_cmd = config.get('format_cmd')
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for entry in config['examples']:
@@ -316,6 +344,8 @@ def main():
         standalone_intro = example_intro if intro_is_standalone else None
         markdown = generate_markdown(title, source_text, **common_args,
                                      intro=standalone_intro)
+        if format_cmd:
+            markdown = format_text(markdown, format_cmd)
 
         out_name = source_path.stem + '.md'
         out_path = output_dir / out_name
@@ -326,6 +356,8 @@ def main():
             insert_md = generate_markdown(title, source_text, **common_args,
                                           intro=None if intro_is_standalone
                                           else example_intro)
+            if format_cmd:
+                insert_md = format_text(insert_md, format_cmd)
             target_path = project_root / entry['insert_into']
             insert_into_file(target_path, entry['insert_at'], insert_md)
             print(f'  -> {entry["insert_into"]} @ "{entry["insert_at"]}"')
