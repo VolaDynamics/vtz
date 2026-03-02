@@ -730,3 +730,23 @@ TEST( vtz_format, fractional_placement ) {
         ASSERT_EQ( vtz::format( "%s", tp ), std::to_string( ts ) + ".123" );
     }
 }
+
+
+TEST( vtz_format, local_time_unzoned_tz_specifiers ) {
+    auto    t   = _get_time( 2024, 3, 1, 14, 5, 9 );
+    int64_t ts  = t.time_since_epoch().count();
+    auto    sys = sys_seconds{ seconds{ ts } };
+
+    // sys_time: %Z -> "UTC", %z -> "+00"
+    ASSERT_EQ( vtz::format( "%Z", sys ), "UTC" );
+    ASSERT_EQ( vtz::format( "%z", sys ), "+00" );
+    ASSERT_EQ( vtz::format( "%F %T %Z", sys ), "2024-03-01 14:05:09 UTC" );
+    ASSERT_EQ( vtz::format( "%F %T%z", sys ), "2024-03-01 14:05:09+00" );
+
+    // local_time: %Z -> "-00", %z -> "-00"
+    auto local = local_seconds{ seconds{ ts } };
+    ASSERT_EQ( vtz::format( "%Z", local ), "-00" );
+    ASSERT_EQ( vtz::format( "%z", local ), "-00" );
+    ASSERT_EQ( vtz::format( "%F %T %Z", local ), "2024-03-01 14:05:09 -00" );
+    ASSERT_EQ( vtz::format( "%F %T%z", local ), "2024-03-01 14:05:09-00" );
+}
