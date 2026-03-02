@@ -60,17 +60,16 @@ fmt::println( "Current Time:\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Current Time:
-  Sun Mar  1 23:51:12 2026 EST
-  Sun Mar  1 23:51:12 2026 EST
-  2026-03-02T04:51:12Z     (UTC Timestamp)
+  Mon Mar  2 00:16:00 2026 EST
+  Mon Mar  2 00:16:00 2026 EST
+  2026-03-02T05:16:00Z     (UTC Timestamp)
 ```
 
 </details>
-<br>
 
 `system_clock::now()` usually returns time in milliseconds or microseconds
 (depending on the system), se we used `std::chrono::floor()` to get a time in
@@ -102,17 +101,16 @@ fmt::println( "Current Time (full available precision):\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Current Time (full available precision):
-  Sun Mar  1 23:51:12.945207 2026 EST
-  Sun Mar  1 23:51:12.945207 2026 EST
-  2026-03-02T04:51:12.945207Z     (UTC Timestamp)
+  Mon Mar  2 00:16:00.975896 2026 EST
+  Mon Mar  2 00:16:00.975896 2026 EST
+  2026-03-02T05:16:00.975896Z     (UTC Timestamp)
 ```
 
 </details>
-<br>
 
 ### Parsing Timestamps
 
@@ -156,14 +154,13 @@ assert( T_precise == T + micros( 192873 ) );
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Parsed timestamp: 2026-02-26T10:30:00.192873Z
 ```
 
 </details>
-<br>
 
 See the docs for [`strftime`] for a full list of format specifiers.
 
@@ -191,7 +188,7 @@ fmt::println( "UTC time vs Local Time (America/New_York):\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 UTC time vs Local Time (America/New_York):
@@ -199,7 +196,6 @@ UTC time vs Local Time (America/New_York):
 ```
 
 </details>
-<br>
 
 Let's display the time in a couple other timezones:
 
@@ -217,7 +213,7 @@ fmt::println( "Time in other zones:\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Time in other zones:
@@ -227,7 +223,6 @@ Time in other zones:
 ```
 
 </details>
-<br>
 
 ## UTC Offsets & Daylight Savings Time
 
@@ -246,14 +241,13 @@ fmt::println( "UTC offset at T: {} ({})\n",
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 UTC offset at T: -18000s (UTC-05)
 ```
 
 </details>
-<br>
 
 Say, when does Daylight Savings Time start, anyways?
 
@@ -299,7 +293,7 @@ fmt::println( "Offset, Abbreviation, and Save @ {} ({})\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Offset, Abbreviation, and Save @ Thu Feb 26 05:30:00 2026 EST (America/New_York)
@@ -312,7 +306,6 @@ Offset, Abbreviation, and Save @ Thu Feb 26 05:30:00 2026 EST (America/New_York)
 ```
 
 </details>
-<br>
 
 There we go. The current offset at T is -5h (-18000 seconds), the abbreviation
 is `EST`, the save is 0 minutes (we're not in daylight savings time), and at
@@ -335,7 +328,7 @@ fmt::println( "UTC Time:   {}\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 UTC Time:   Thu Feb 26 10:30:00 2026
@@ -344,7 +337,6 @@ Offset:     -18000s
 ```
 
 </details>
-<br>
 
 Updating `T` to be the start of daylight savings time, we see that daylight
 savings time lasts from 3AM EDT on the second Sunday in March, to 1:59:59 AM EDT
@@ -379,7 +371,7 @@ print_info();
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Offset, Abbreviation, and Save @ Sun Mar 08 03:00:00 2026 EDT (America/New_York)
@@ -391,7 +383,6 @@ Offset, Abbreviation, and Save @ Sun Mar 08 03:00:00 2026 EDT (America/New_York)
 ```
 
 </details>
-<br>
 
 ## Converting Back to UTC, and ambiguous local times
 
@@ -432,7 +423,7 @@ fmt::println( "Input:         {}\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Input:         2026-11-01 01:30:00
@@ -441,7 +432,6 @@ latest time:   2026-11-01 06:30:00 UTC
 ```
 
 </details>
-<br>
 
 Both of these map to the same local time, but the zone abbreviation and offset
 are different:
@@ -458,7 +448,7 @@ fmt::println( "T_early: {}\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 T_early: Sun Nov  1 01:30:00 2026 EDT
@@ -466,7 +456,6 @@ T_late:  Sun Nov  1 01:30:00 2026 EST
 ```
 
 </details>
-<br>
 
 ## Conclusion / Historical Errata
 
@@ -489,7 +478,7 @@ print_info();
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Offset, Abbreviation, and Save @ Mon Feb 09 20:00:00 1942 EWT (America/New_York)
@@ -501,7 +490,6 @@ Offset, Abbreviation, and Save @ Mon Feb 09 20:00:00 1942 EWT (America/New_York)
 ```
 
 </details>
-<br>
 
 If this example gives the wrong dates, your system's timezone files exclude
 historical dates. To get the correct dates, you can set `VTZ_TZDATA_PATH` to
@@ -528,7 +516,7 @@ fmt::println( "Truman announces Japanese surrender:\n"
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Truman announces Japanese surrender:
@@ -537,7 +525,6 @@ Truman announces Japanese surrender:
 ```
 
 </details>
-<br>
 
 Eastern Peace Time lasted from August 14th until September 30th, when Eastern
 Standard Time resumed as per the daylight savings time rules in place at the
@@ -551,7 +538,7 @@ print_info();
 ```
 
 <details>
-<summary>output</summary>
+<summary>Example Output</summary>
 
 ```
 Offset, Abbreviation, and Save @ Tue Aug 14 19:00:00 1945 EPT (America/New_York)
@@ -563,14 +550,13 @@ Offset, Abbreviation, and Save @ Tue Aug 14 19:00:00 1945 EPT (America/New_York)
 ```
 
 </details>
-<br>
 
 ---
 
-Code for this example can be found at `etc/examples/src/vtz_a_guided_tour.cpp`.
+Code for this example can be found at `examples/src/vtz_a_guided_tour.cpp`.
 
 This example can be run as:
 
 ```sh
-env VTZ_TZDATA_PATH=build/data/tzdata build/etc/examples/vtz_a_guided_tour
+env VTZ_TZDATA_PATH=build/data/tzdata build/examples/vtz_a_guided_tour
 ```

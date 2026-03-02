@@ -81,7 +81,7 @@ if(PROJECT_IS_TOP_LEVEL AND UNIX)
 endif()
 
 if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
-    add_subdirectory(etc/examples)
+    add_subdirectory(examples)
 endif()
 
 # (For development) download dependencies

@@ -1,11 +1,11 @@
 output_dir = "docs"
-exe_dir = "build/examples"
+exe_dir = "build/etc/examples"
 env = ["VTZ_TZDATA_PATH=build/data/tzdata"]
 
 format_cmd = "prettier --parser markdown --prose-wrap=always --print-width=80"
 
 [[examples]]
-source = "examples/src/vtz_a_guided_tour.cpp"
+source = "etc/examples/src/vtz_a_guided_tour.cpp"
 title = "Hello VTZ"
 include_output = true
 output_matchers = ["fmt::print", "print_info"]
@@ -19,7 +19,7 @@ library API, please refer to api header files `<vtz/tz.h>`, `<vtz/parse.h>`, and
 thorough documentation of the API and it's constraints."""
 
 [[examples]]
-source = "examples/src/vtz_tldr.cpp"
+source = "etc/examples/src/vtz_tldr.cpp"
 title = "Quick Start"
 include_output = true
 output_matchers = ["fmt::print"]

@@ -160,14 +160,14 @@ def generate_markdown(title, source_text, output_chunks=None,
                 combined = chunks[chunk_idx]
                 chunk_idx += 1
                 output_parts.append('<details>')
-                output_parts.append('<summary>output</summary>')
+                output_parts.append('<summary>Example Output</summary>')
                 output_parts.append('')
                 output_parts.append('```')
                 output_parts.append(combined)
                 output_parts.append('```')
                 output_parts.append('')
                 output_parts.append('</details>')
-                output_parts.append('<br>')
+                # output_parts.append('<br>')
                 output_parts.append('')
         pending_code_lines = None
 
