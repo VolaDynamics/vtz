@@ -283,7 +283,8 @@ namespace vtz {
     /// @param y year
     /// @param m month
     /// @param d day
-    constexpr sysdays_t resolve_civil( i32 y, u32 m, u32 d ) noexcept {
+    template<class IntT>
+    constexpr sysdays_t resolve_civil( IntT y, u32 m, u32 d ) noexcept {
         y -= m <= 2;
 
         auto era_parts = vtz::math::div_floor2<400>( y );
@@ -350,6 +351,27 @@ namespace vtz {
         const u32 d   = doy - ( 153 * mp + 2 ) / 5 + 1;            // [1, 31]
         const u32 m   = mp < 10 ? mp + 3 : mp - 9;                 // [1, 12]
         return civil_ymd{ i32( y + ( m <= 2 ) ), u16( m ), u16( d ) };
+    }
+
+    template<class I1, class Year, class Month, class Day>
+    constexpr void to_civil(
+        I1 days, Year& _year, Month& _mon, Day& _day ) noexcept {
+        days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
+        const auto parts = math::div_floor2<146097>( days );
+        i64        era   = parts.quot;
+        u64        doe   = parts.rem; // Day within era - [0, 146096]
+        const u64  yoe
+            = ( doe - doe / 1460 + doe / 36524 - int( doe >= 146096 ) )
+              / 365; // [0, 399]
+        const i64 y = i64( yoe ) + era * 400;
+        const u32 doy
+            = u32( doe - ( 365 * yoe + yoe / 4 - yoe / 100 ) ); // [0, 365]
+        const u32 mp = ( 5 * doy + 2 ) / 153;                   // [0, 11]
+        const u32 d  = doy - ( 153 * mp + 2 ) / 5 + 1;          // [1, 31]
+        const u32 m  = mp < 10 ? mp + 3 : mp - 9;               // [1, 12]
+        _year        = Year( y + ( m <= 2 ) );
+        _mon         = Month( m );
+        _day         = Day( d );
     }
 
 

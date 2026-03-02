@@ -190,24 +190,24 @@ namespace vtz {
     }
 
     /// Write '%r', which is equivalent to "%I:%M:%S %p"
-    template <class F>
+    template<class F>
     VTZ_INLINE static char* _write_hhmmss_p_12h(
         char* p, int h, int m, int s, F const& writeFrac ) noexcept {
         char a_or_p = h >= 12 ? 'P' : 'A';
 
         if( h >= 12 ) h -= 12; // 13:00 -> 01:00, etc
         if( h == 0 ) h = 12;   // 00:00 -> 12:00
-        p[0]  = char( '0' + h / 10 );
-        p[1]  = char( '0' + h % 10 );
-        p[2]  = ':';
-        p[3]  = char( '0' + m / 10 );
-        p[4]  = char( '0' + m % 10 );
-        p[5]  = ':';
-        p[6]  = char( '0' + s / 10 );
-        p[7]  = char( '0' + s % 10 );
-        p = writeFrac(p + 8);
-        p[0]  = ' ';
-        p[1]  = a_or_p;
+        p[0] = char( '0' + h / 10 );
+        p[1] = char( '0' + h % 10 );
+        p[2] = ':';
+        p[3] = char( '0' + m / 10 );
+        p[4] = char( '0' + m % 10 );
+        p[5] = ':';
+        p[6] = char( '0' + s / 10 );
+        p[7] = char( '0' + s % 10 );
+        p    = writeFrac( p + 8 );
+        p[0] = ' ';
+        p[1] = a_or_p;
         p[2] = 'M';
         return p + 3;
     }
@@ -407,14 +407,19 @@ namespace vtz {
         auto gmtoff         = i32( tz.offset_s( t ) );
         auto t_local        = t + gmtoff;
         auto parts          = vtz::math::div_floor2<86400>( t_local );
-        auto date           = sysdays_t( parts.quot );
+        auto date           = parts.quot;
         auto time_intraday  = u32( parts.rem );
         int  hr             = time_intraday / 3600;
         time_intraday      %= 3600;
         int mi              = time_intraday / 60;
         time_intraday      %= 60;
-        int  sec            = time_intraday;
-        auto ymd            = to_civil( date );
+        int sec             = time_intraday;
+
+        i64 year;
+        u16 month;
+        u16 day;
+
+        to_civil( date, year, month, day );
 
         // We're going to handle as many format specifiers as we can ourselves,
         // so that we can avoid a call to strftime.
@@ -457,16 +462,16 @@ namespace vtz {
             // FORMAT YEAR
 
             // writes year as a decimal number, e.g. 2017
-            case 'Y': p = _write_year( p, ymd.year ); continue;
+            case 'Y': p = _write_year( p, year ); continue;
             // writes last 2 digits of year as a decimal number (range
             // [00,99])
             case 'y':
-                p = _write_year_short( p, ymd.year );
+                p = _write_year_short( p, year );
                 continue;
                 // writes the century (year/100) as a 2-digit decimal number
             case 'C':
                 {
-                    i64 century = ymd.year / 100;
+                    i64 century = year / 100;
                     if( u64( century ) < 100 )
                         p = _write_2_digit( p, u8( century ) );
                     else
@@ -478,28 +483,28 @@ namespace vtz {
             // FORMAT MONTH
 
             // writes month as a decimal number (range [01,12])
-            case 'm': p = _write_mon( p, u8( ymd.month ) ); continue;
+            case 'm': p = _write_mon( p, u8( month ) ); continue;
 
             // Writes abbreviated month name in the C locale:
             case 'b': // %h is equivalent to %b
-            case 'h': p = _write_c_month_abbr( p, ymd.month ); continue;
+            case 'h': p = _write_c_month_abbr( p, month ); continue;
 
             // Writes full month name in the C locale
-            case 'B': p = _write_c_month( p, ymd.month ); continue;
+            case 'B': p = _write_c_month( p, month ); continue;
 
 
             // FORMAT DAY OF THE YEAR/MONTH
 
             // writes day of the month as a decimal number, range [01,31]
-            case 'd': p = _write_dom_d( p, u8( ymd.day ) ); continue;
+            case 'd': p = _write_dom_d( p, u8( day ) ); continue;
 
             // writes day of the month with leading space for single digit
-            case 'e': p = _write_dom_e( p, u8( ymd.day ) ); continue;
+            case 'e': p = _write_dom_e( p, u8( day ) ); continue;
 
             // writes day of the year as a decimal number (range [001,366])
             case 'j':
                 {
-                    auto yday = u16( date - resolve_civil( ymd.year, 1, 1 ) );
+                    auto yday = u16( date - resolve_civil( year, 1, 1 ) );
 
                     p = _write_3_digit( p, 1 + yday );
                     continue;
@@ -620,9 +625,7 @@ namespace vtz {
                 continue;
 
             // equivalent to "%Y-%m-%d" (ISO 8601 date format)
-            case 'F':
-                p = _write_iso_date( p, ymd.year, ymd.month, ymd.day );
-                continue;
+            case 'F': p = _write_iso_date( p, year, month, day ); continue;
 
             // preferred time representation for the current locale
             // For the C locale this is '%T'
@@ -641,13 +644,13 @@ namespace vtz {
                     auto dow = int( dow_from_days( date ) );
                     p        = _write_c_weekday_abbr( p, dow );
                     *p++     = ' ';
-                    p        = _write_c_month_abbr( p, ymd.month );
+                    p        = _write_c_month_abbr( p, month );
                     *p++     = ' ';
-                    p        = _write_dom_e( p, u8( ymd.day ) );
+                    p        = _write_dom_e( p, u8( day ) );
                     *p++     = ' ';
                     p        = write_frac( _write_hhmmss( p, hr, mi, sec ) );
                     *p++     = ' ';
-                    p        = _write_year( p, ymd.year );
+                    p        = _write_year( p, year );
                     continue;
                 }
 
@@ -657,11 +660,11 @@ namespace vtz {
             case 'x':
             // equivalent to "%m/%d/%y"
             case 'D':
-                p    = _write_mon( p, u8( ymd.month ) );
+                p    = _write_mon( p, u8( month ) );
                 *p++ = '/';
-                p    = _write_dom_d( p, u8( ymd.day ) );
+                p    = _write_dom_d( p, u8( day ) );
                 *p++ = '/';
-                p    = _write_year_short( p, ymd.year );
+                p    = _write_year_short( p, year );
                 continue;
 
             default:
@@ -695,14 +698,14 @@ namespace vtz {
             sec,
             mi,
             hr,
-            ymd.day,
-            ymd.month - 1, // the 'tm' struct uses 0-11 for the month
+            day,
+            month - 1, // the 'tm' struct uses 0-11 for the month
             // tm_year stores years since 1900
-            ymd.year - 1900,
+            int( year - 1900 ),
             // days since sunday - 0-6
-            int( dow_from_days( date ) - dow_t::Sun ),
+            int( dow_from_days( date ) ),
             // days since January 1 – [​0​, 365]
-            int( date - resolve_civil( ymd.year, 1, 1 ) ),
+            int( date - resolve_civil( year, 1, 1 ) ),
             // true if daylight savings time is in effect
             is_dst,
         };
