@@ -117,6 +117,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     CPMAddPackage(
         URI gh:google/benchmark@1.9.4
         OPTIONS
+            "BENCHMARK_ENABLE_TESTING OFF"
             "BENCHMARK_ENABLE_GTEST_TESTS OFF"
     )
 endif()
@@ -289,6 +290,9 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     )
 
 
+    enable_testing()
+    include(GoogleTest)
+
     file(GLOB test_files etc/test/*.cpp)
     add_executable(test_vtz ${test_files})
     target_link_libraries(
@@ -300,6 +304,9 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
             date::date
             date::date-tz
     )
+    gtest_discover_tests(
+        test_vtz
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 
     file(GLOB src etc/test_api/*.cpp)
@@ -314,6 +321,9 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
             date::date
             date::date-tz
     )
+    gtest_discover_tests(
+        test_vtz_api
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
     find_program(zic_exe zic)
     if(zic_exe)
