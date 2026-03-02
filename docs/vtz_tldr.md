@@ -1,4 +1,4 @@
-# Quick Start
+# vtz tldr
 
 ## Time Zone Lookup
 

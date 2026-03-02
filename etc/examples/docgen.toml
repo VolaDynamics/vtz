@@ -6,11 +6,9 @@ format_cmd = "prettier --parser markdown --prose-wrap=always --print-width=80"
 
 [[examples]]
 source = "examples/src/vtz_a_guided_tour.cpp"
-title = "Hello VTZ"
+title = "vtz: A Guided Tour"
 include_output = true
 output_matchers = ["fmt::print", "print_info"]
-insert_into = "README.md"
-insert_at = "## A Guided Tour of VTZ"
 example_intro = """
 This document serves as a guided tour of vtz. For a full understanding of the 
 library API, please refer to api header files `<vtz/tz.h>`, `<vtz/parse.h>`, and `<vtz/format.h>`.
@@ -20,6 +18,6 @@ thorough documentation of the API and it's constraints."""
 
 [[examples]]
 source = "examples/src/vtz_tldr.cpp"
-title = "Quick Start"
+title = "vtz tldr"
 include_output = true
 output_matchers = ["fmt::print"]

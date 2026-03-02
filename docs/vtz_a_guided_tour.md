@@ -1,4 +1,4 @@
-# Hello VTZ
+# vtz: A Guided Tour
 
 This document serves as a guided tour of vtz. For a full understanding of the
 library API, please refer to api header files `<vtz/tz.h>`, `<vtz/parse.h>`, and
@@ -64,9 +64,9 @@ fmt::println( "Current Time:\n"
 
 ```
 Current Time:
-  Mon Mar  2 00:16:00 2026 EST
-  Mon Mar  2 00:16:00 2026 EST
-  2026-03-02T05:16:00Z     (UTC Timestamp)
+  Mon Mar  2 12:41:39 2026 EST
+  Mon Mar  2 12:41:39 2026 EST
+  2026-03-02T17:41:39Z     (UTC Timestamp)
 ```
 
 </details>
@@ -105,9 +105,9 @@ fmt::println( "Current Time (full available precision):\n"
 
 ```
 Current Time (full available precision):
-  Mon Mar  2 00:16:00.975896 2026 EST
-  Mon Mar  2 00:16:00.975896 2026 EST
-  2026-03-02T05:16:00.975896Z     (UTC Timestamp)
+  Mon Mar  2 12:41:39.629285 2026 EST
+  Mon Mar  2 12:41:39.629285 2026 EST
+  2026-03-02T17:41:39.629285Z     (UTC Timestamp)
 ```
 
 </details>
