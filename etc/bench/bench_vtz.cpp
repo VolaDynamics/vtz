@@ -692,6 +692,44 @@ BENCH( hinnant_parse_time, state ) {
     }
 }
 
+BENCH( absl_parse_date, state ) {
+    auto dd = random_values( COUNT,
+        vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
+        []( vtz::sec_t t ) { return vtz::format_s( "%F", t ); } );
+
+    absl::Time  t;
+    std::string err;
+    size_t      i = 0;
+    for( auto _ : state )
+    {
+        auto const& entry = dd[i % COUNT];
+        if( !absl::ParseTime( "%F", entry, &t, &err ) )
+            throw std::runtime_error( err );
+        benchmark::DoNotOptimize( t );
+        ++i;
+    }
+}
+
+BENCH( absl_parse_time, state ) {
+    auto dd = random_values( COUNT,
+        vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
+        vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
+        []( vtz::sec_t t ) { return vtz::format_s( "%F %T", t ); } );
+
+    absl::Time  t;
+    std::string err;
+    size_t      i = 0;
+    for( auto _ : state )
+    {
+        auto const& entry = dd[i % COUNT];
+        if( !absl::ParseTime( "%F %T", entry, &t, &err ) )
+            throw std::runtime_error( err );
+        benchmark::DoNotOptimize( t );
+        ++i;
+    }
+}
+
 BENCH( vtz_parse_date, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
