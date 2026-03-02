@@ -445,6 +445,12 @@ namespace vtz {
         return dow_t( ( i64( days_from_epoch ) + 0x80000002ull ) % 7 );
     }
 
+    constexpr dow_t dow_from_days( i64 days_from_epoch ) noexcept {
+        auto result = vtz::math::rem<7>( days_from_epoch ) + 4;
+        auto r2     = result - 7;
+        return dow_t( result >= 7 ? r2 : result );
+    }
+
     /// Given a date (eg, 2025 Oct 11, or 2025-10-11), get the weekday as a
     /// number 0-6 where 0=Sun
 

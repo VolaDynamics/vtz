@@ -6,8 +6,8 @@
 
 #include <vtz/libfmt_compat.h>
 
-#include "vtz_testing.h"
 #include "vtz_debug.h"
+#include "vtz_testing.h"
 
 #include <random>
 using namespace vtz;
@@ -183,6 +183,7 @@ TEST( vtz, resolve_last_dow ) {
                 ASSERT_LE( day, last_day_of_month );
                 ASSERT_LT( last_day_of_month - day, 7 );
                 ASSERT_EQ_QUIET( dow_from_days( day ), dow );
+                ASSERT_EQ_QUIET( dow_from_days( i64( day ) ), dow );
             }
         }
     }
