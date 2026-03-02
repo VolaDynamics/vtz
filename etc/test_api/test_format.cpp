@@ -4,6 +4,7 @@
 #include <string_view>
 #include <vtz/format.h>
 #include <vtz/types.h>
+#include <vtz/tz.h>
 
 #include <date/date.h>
 
@@ -749,4 +750,30 @@ TEST( vtz_format, local_time_unzoned_tz_specifiers ) {
     ASSERT_EQ( vtz::format( "%z", local ), "-00" );
     ASSERT_EQ( vtz::format( "%F %T %Z", local ), "2024-03-01 14:05:09 -00" );
     ASSERT_EQ( vtz::format( "%F %T%z", local ), "2024-03-01 14:05:09-00" );
+}
+
+
+TEST( vtz_format, huge_times ) {
+    ASSERT_EQ( vtz::format_s( "%F %T %Z", INT64_MIN ),
+        "-292277022657-01-27 08:29:52 UTC" );
+    ASSERT_EQ( vtz::format_s( "%F %T %Z", INT64_MAX ),
+        "292277026596-12-04 15:30:07 UTC" );
+
+    ASSERT_EQ(
+        vtz::format_s( "%c", INT64_MIN ), "Sun Jan 27 08:29:52 -292277022657" );
+    ASSERT_EQ(
+        vtz::format_s( "%c", INT64_MAX ), "Sun Dec  4 15:30:07 292277026596" );
+
+    // America/New_York is at UTC-05 in December, so we subtract 5 hours
+    // relative to the UTC time
+    auto ny = vtz::locate_zone( "America/New_York" );
+    ASSERT_EQ( ny->format_s( "%c %Z", INT64_MAX ),
+        "Sun Dec  4 10:30:07 292277026596 EST" );
+
+    // The year -292277022657 is before the introduction of standard time.
+    // So, we use the initial zone stdoff, which is UTC+001730
+    // - it's 17 minutes and 30 seconds ahead of UTC time
+    auto ams = vtz::locate_zone( "Europe/Amsterdam" );
+    ASSERT_EQ( ams->format_s( "%c %Z", INT64_MIN ),
+        "Sun Jan 27 08:47:22 -292277022657 LMT" );
 }
