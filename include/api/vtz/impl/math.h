@@ -30,8 +30,8 @@ namespace vtz::math {
         bool m_neg = m < 0;
 
         return {
-            q - m_neg,
-            m + ( m_neg ? Divisor : 0 ),
+            T( q - m_neg ),
+            T( m + ( m_neg ? Divisor : 0 ) ),
         };
     }
 
