@@ -652,15 +652,18 @@ BENCH( vtz_date_from_civil_year, state ) {
 
 
 BENCH( hinnant_parse_date, state ) {
-    auto   dd = random_values( COUNT,
+    auto               dd = random_values( COUNT,
         vtz::resolve_civil( 1900 ),
         vtz::resolve_civil( 2100 ),
         []( sysdays_t days ) { return vtz::format_d( "%F", days ); } );
-    size_t i  = 0;
+    std::istringstream ss;
+    ss.exceptions( std::ios::failbit );
+    size_t i = 0;
     for( auto _ : state )
     {
-        auto const&          entry = dd[i % COUNT];
-        std::istringstream   ss( entry );
+        auto const& entry = dd[i % COUNT];
+        ss.clear(); // clear flags
+        ss.str( entry );
         date::year_month_day ymd;
         ss >> date::parse( "%F", ymd );
         benchmark::DoNotOptimize( ymd );
@@ -674,12 +677,15 @@ BENCH( hinnant_parse_time, state ) {
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
         []( vtz::sec_t t ) { return vtz::format_s( "%F %T %Z", t ); } );
 
+    std::istringstream ss;
+    ss.exceptions( std::ios::failbit );
     size_t i = 0;
     for( auto _ : state )
     {
-        auto const&        entry = dd[i % COUNT];
-        std::istringstream ss( entry );
-        date::sys_seconds  tp;
+        auto const& entry = dd[i % COUNT];
+        ss.clear(); // clear flags
+        ss.str( entry );
+        date::sys_seconds tp;
         date::from_stream( ss, "%F %T", tp );
         benchmark::DoNotOptimize( tp );
         ++i;
@@ -846,11 +852,14 @@ BENCH( chrono_parse_date, state ) {
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
         []( vtz::sec_t t ) { return vtz::format_s( "%F %T %Z", t ); } );
 
+    std::istringstream ss;
+    ss.exceptions( std::ios::failbit );
     size_t i = 0;
     for( auto _ : state )
     {
-        auto const&                 entry = dd[i % COUNT];
-        std::istringstream          ss( entry );
+        auto const& entry = dd[i % COUNT];
+        ss.clear(); // clear flags
+        ss.str( entry );
         std::chrono::year_month_day ymd;
         ss >> std::chrono::parse( "%F", ymd );
         benchmark::DoNotOptimize( ymd );
@@ -864,11 +873,14 @@ BENCH( chrono_parse_time, state ) {
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
         []( vtz::sec_t t ) { return vtz::format_s( "%F %T %Z", t ); } );
 
+    std::istringstream ss;
+    ss.exceptions( std::ios::failbit );
     size_t i = 0;
     for( auto _ : state )
     {
-        auto const&              entry = dd[i % COUNT];
-        std::istringstream       ss( entry );
+        auto const& entry = dd[i % COUNT];
+        ss.clear(); // clear flags
+        ss.str( entry );
         std::chrono::sys_seconds tp;
         ss >> std::chrono::parse( "%F %T", tp );
         benchmark::DoNotOptimize( tp );
