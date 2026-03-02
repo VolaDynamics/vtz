@@ -1,3 +1,7 @@
+// For the purposes of our example, we want asserts to trip.
+#undef NDEBUG
+#include <cassert>
+
 #include <chrono>
 #include <vtz/format.h>
 #include <vtz/parse.h>
