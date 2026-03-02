@@ -38,6 +38,8 @@ namespace vtz {
     ///
     /// @param fmt format string describing date, eg "%Y-%m-%d"
     /// @param days days since 1970-01-01 (the Unix Epoch)
+    /// @param buff buffer to place output
+    /// @param count size of output buffer
     /// @return number of characters written to the buffer.
     /// @throws if the given format specifier is invalid
 
@@ -72,6 +74,8 @@ namespace vtz {
     ///
     /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
     /// @param t seconds since 1970-01-01 00:00:00 UTC
+    /// @param buff buffer to place output
+    /// @param count size of output buffer
     /// @return number of characters written to the buffer.
     /// @throws if the given format specifier is invalid
 
@@ -143,6 +147,8 @@ namespace vtz {
     /// @param t seconds since 1970-01-01 00:00:00 UTC
     /// @param nanos nanosecond component, in the range `[0, 999999999]`
     /// @param precision number of fractional digits to write (0-9)
+    /// @param buff buffer to place output
+    /// @param count size of output buffer
     /// @return number of characters written to the buffer.
     /// @throws if the given format specifier is invalid
 
@@ -167,6 +173,8 @@ namespace vtz {
     /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
     /// @param t time since 1970-01-01 00:00:00 UTC
     /// @param precision number of fractional digits to write (0-9)
+    /// @param buff buffer to place output
+    /// @param count size of output buffer
     /// @return number of characters written to the buffer.
     /// @throws if the given format specifier is invalid
 
@@ -247,6 +255,8 @@ namespace vtz {
     ///
     /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
     /// @param t time since 1970-01-01 00:00:00 UTC
+    /// @param buff buffer to place output
+    /// @param count size of output buffer
     /// @return number of characters written to the buffer.
     /// @throws if the given format specifier is invalid
 
@@ -348,7 +358,9 @@ namespace vtz {
     /// https://en.cppreference.com/w/cpp/chrono/c/strftime.html
     ///
     /// @param fmt format string describing time, eg "%Y-%m-%d %H:%M:%S"
-    /// @param t time since 1970-01-01 00:00:00 UTC
+    /// @param t a local time
+    /// @param buff buffer to place output
+    /// @param count size of output buffer
     /// @return number of characters written to the buffer.
     /// @throws if the given format specifier is invalid
 
