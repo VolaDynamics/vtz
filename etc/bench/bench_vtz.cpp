@@ -854,6 +854,19 @@ BENCH( chrono_to_sys_earliest_with_lookup, state ) {
 }
 
 
+BENCH( chrono_format, state ) {
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto   tz = std::chrono::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( std::format(
+            "{:%F %T %Z}", std::chrono::zoned_time{ tz, tt[i % COUNT] } ) );
+        ++i;
+    }
+}
+
+
 BENCH( chrono_locate_zone, state ) {
     auto zones = random_zones( COUNT );
 
