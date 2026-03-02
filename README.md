@@ -15,58 +15,181 @@ refer to it simply as the tz database.
 
 ## A Guided Tour of VTZ
 
+### Locating a Timezone
+
 vtz provides two main functions for getting a timezone. These are:
 
-- `vtz::locate_zone( name )`, which finds a timezone based on its
-  name in the IANA timezone database, and
-- `vtz::current_zone()`, which returns the current timezone for the
-  application. This is the system's timezone by default.
+- `vtz::locate_zone( name )`, which finds a timezone based on its name in the
+  IANA timezone database, and
+- `vtz::current_zone()`, which returns the current timezone for the application.
+  This is the system's timezone by default.
 
-Once loaded, timezones are stored in an atomic global cache, so that
-subsequent accesses are very fast.
+Once loaded, timezones are stored in an atomic global cache, so that subsequent
+accesses are very fast.
 
 ```cpp
-auto tz = vtz::locate_zone( "America/New_York" ); // Eastern Time
+auto tz      = vtz::locate_zone( "America/New_York" ); // Eastern Time
+auto tz_here = vtz::current_zone();
 ```
 
-Parse a timestamp. Uses format specifiers for strftime / strptime.
+### Parsing and Formatting Times
 
-Here,
-- `%a` represents a day of the week name
-- `%b` represents the month name
-- `%d` is the day of the month, 1-31
-- `%R` is shorthand for `%H:%M` (`<hours>:<minutes>`) on a 24-hour clock
-- `%Y` is the year
+Let's display the current time, both in America/New_York, and in the current
+timezone.
 
-If you wanted second precision, you could use `%T` instead of `%R`.
+Here, `tz->format()` converts a sys_time (measuring Unix time) to a local time
+in the given zone. It uses the format specifiers for [`strftime`].
 
-See the docs for [`strftime`] for a full list of format specifiers.
+Here, `%c` displays the date and time (eg, `Fri Feb 27 12:09:46 2026`), while
+`%Z` displays the current timezone abbreviation (eg, `EST` or `EDT` for Eastern
+Time, depending on the time of year).
 
-Specifiers `%a` and `%b` also accept full names instead of abbreviations.
-Eg, 'Thursday February 26 ...' would also be accepted here.
+I'm in US Eastern Time, so for me, the output is the same in both cases.
 
-For performance, vtz handles locale-specific format specifiers in the C
-locale. If you need to use an alternative locale, I recommend falling
-back to the standard library.
+If you just want to display UTC time, you can use `vtz::format()`, which formats
+in terms of UTC.
 
 [`strftime`]: https://man7.org/linux/man-pages/man3/strftime.3.html
 
 ```cpp
-// `sys_seconds` is a type alias for `time_point<system_clock, seconds>`
-using std::chrono::sys_seconds;
 using sec = std::chrono::seconds;
+using std::chrono::floor;
+using std::chrono::system_clock;
 
-sys_seconds T
-    = vtz::parse<sec>( "%a %b %d %R %Y", "Thu Feb 26 10:30 2026" );
+auto now = floor<sec>( system_clock::now() );
+
+fmt::println( "Current Time:\n"
+              "  {}\n"
+              "  {}\n"
+              "  {}     (UTC Timestamp)\n",
+    tz->format( "%c %Z", now ),
+    tz_here->format( "%c %Z", now ),
+    vtz::format( "%FT%TZ", now ) );
 ```
 
-Our input time is 10:30 UTC time. Because America/New_York is within
-Standard Time, this corresponds to 5:30 am on the Eastern Seaboard.
+<details>
+<summary>output</summary>
 
-vtz formatting functions are standalone, and vtz does not require libfmt
-as a dependency. tz->format() returns a std::string.
+```
+Current Time:
+  Sun Mar  1 23:47:13 2026 EST
+  Sun Mar  1 23:47:13 2026 EST
+  2026-03-02T04:47:13Z     (UTC Timestamp)
+```
 
-If you wanted to write to a buffer, you could instead use `tz->format_to`
+</details>
+<br>
+
+`system_clock::now()` usually returns time in milliseconds or microseconds
+(depending on the system), se we used `std::chrono::floor()` to get a time in
+seconds in the above snippet.
+
+The format function will display up to 9 digits, but if the input time is less
+precise, it uses fewer digits.
+
+[`std::chrono::high_resolution_clock`] can sometimes provide even more
+precision, however it often uses [`steady_clock`] under the hood, which does not
+necessarily return Unix Time.
+
+For this purpose, you should use [`clock_cast`] to convert it to a `sys_time`.
+
+[`clock_cast`]: https://en.cppreference.com/w/cpp/chrono/clock_cast.html
+[`steady_clock`]: https://en.cppreference.com/w/cpp/chrono/steady_clock.html
+[`std::chrono::high_resolution_clock`]:
+  https://en.cppreference.com/w/cpp/chrono/high_resolution_clock.html
+
+```cpp
+auto now_precise = system_clock::now();
+fmt::println( "Current Time (full available precision):\n"
+              "  {}\n"
+              "  {}\n"
+              "  {}     (UTC Timestamp)\n",
+    tz->format( "%c %Z", now_precise ),
+    tz_here->format( "%c %Z", now_precise ),
+    vtz::format( "%FT%TZ", now_precise ) );
+```
+
+<details>
+<summary>output</summary>
+
+```
+Current Time (full available precision):
+  Sun Mar  1 23:47:13.675987 2026 EST
+  Sun Mar  1 23:47:13.675987 2026 EST
+  2026-03-02T04:47:13.675987Z     (UTC Timestamp)
+```
+
+</details>
+<br>
+
+#### Parsing Timestamps
+
+Let's parse a timestamp. vtz aims to be able to round-trip any format specifiers
+supported by `vtz::format()` and `tz->format()`.
+
+```cpp
+// `sys_seconds` is a type alias for `time_point<system_clock, seconds>`
+using std::chrono::sys_seconds;
+
+sys_seconds T
+    = vtz::parse<sec>( "%a %b %e %R %Y", "Thu Feb 26 10:30 2026" );
+```
+
+Here,
+
+- `%a` represents a day of the week name
+- `%b` represents the month name
+- `%e` is the day of the month, 1-31, permitting a leading space
+- `%R` is shorthand for `%H:%M` (`<hours>:<minutes>`) on a 24-hour clock
+- `%Y` is the year
+
+If you wanted second precision, you could use `%T` instead of `%R`, and then
+this would be equivalent to `%c`:
+
+```cpp
+sys_seconds T2 = vtz::parse<sec>( "%c", "Thu Feb 26 10:30:00 2026" );
+assert( T == T2 );
+```
+
+`vtz::parse` also accepts fractions of a second for any format specifiers which
+handle seconds:
+
+```cpp
+using micros = std::chrono::microseconds;
+auto T_precise
+    = vtz::parse<micros>( "%c", "Thu Feb 26 10:30:00.192873 2026" );
+fmt::println(
+    "Parsed timestamp: {}\n", vtz::format( "%FT%TZ", T_precise ) );
+assert( T_precise == T + micros( 192873 ) );
+```
+
+<details>
+<summary>output</summary>
+
+```
+Parsed timestamp: 2026-02-26T10:30:00.192873Z
+```
+
+</details>
+<br>
+
+See the docs for [`strftime`] for a full list of format specifiers.
+
+Specifiers `%a` and `%b` also accept full names instead of abbreviations. Eg,
+'Thursday February 26 ...' would also be accepted here.
+
+For performance, vtz handles locale-specific format specifiers in the C locale.
+If you need to use an alternative locale, I recommend falling back to the
+standard library.
+
+Our input time is 10:30 UTC time. Because America/New_York is within Standard
+Time, this corresponds to 5:30 am on the Eastern Seaboard.
+
+vtz formatting functions are standalone, and vtz does not require libfmt as a
+dependency. tz->format() returns a std::string.
+
+If you wanted to write to a buffer, you could instead use `tz->format_to()`
+instead.
 
 ```cpp
 fmt::println( "UTC time vs Local Time (America/New_York):\n"
@@ -114,12 +237,15 @@ Time in other zones:
 </details>
 <br>
 
-We can use `tz->offset()` to get the offset from UTC at a particular
-time. This function returns an offset in seconds. In the format string,
-`%z` represents an ISO 8601 standard timezone specification.
+### UTC Offsets & Daylight Savings Time
 
-During Standard Time, America/New_York is 5 hours behind UTC, so this
-prints `UTC offset at T: -18000s (UTC-05)`
+We can use `tz->offset()` to get the offset from UTC at a particular time. This
+function returns an offset in seconds. In the format string, `%z` represents an
+ISO 8601 standard timezone specification - this is the offset expressed as
+`±hh[mm]`
+
+Because `T` does not fall during daylight savings time, the zone is 5 hours
+behind UTC, so this prints `UTC offset at T: -18000s (UTC-05)`
 
 ```cpp
 fmt::println( "UTC offset at T: {} ({})\n",
@@ -137,20 +263,24 @@ UTC offset at T: -18000s (UTC-05)
 </details>
 <br>
 
-Our input time, T, falls during Eastern Standard Time (AKA, not Daylight
-Savings Time).
+Say, when does Daylight Savings Time start, anyways?
 
-When is Eastern Standard Time?
+The answer depends on the timezone, and the rules for that timezone at the given
+input time. And it _also_ determines the current time within the zone, because
+for many time zones, the offset from UTC changes throughout the year. When a
+given input time falls is therefore critical for determining the local time.
 
-The answer to this question depends on the timezone, and the rules for
-that timezone. Different timezones have different rules, and even for a
-specific zone, legislation can change when daylight savings time starts
-and ends; the offset(s) and abbreviation(s) for the zone; and even if
-daylight savings time occurs at all.
+The rules for a timezone are also subject to change due to legislation, and this
+dependence on social convention and governance is the reason the tz database
+(and timezone libraries like vtz) exist at all - you want to be able to answer
+this question reliably, for any time zone, based on a standardized and publicly
+available source of truth.
 
-But for a *specific* time, this is easy to answer with
-`time_zone::get_info()`. This will return the UTC offset, the
-abbreviation, and the save (if during Daylight Savings Time).
+Yeah, ok. So when does it start? And how far off are we from UTC time?
+
+For a _specific_ time, in a _specific_ zone, this is easy to answer with
+`time_zone::get_info()`. This will return the UTC offset, the abbreviation, and
+the save (if during Daylight Savings Time).
 
 It will also return the _range_ of time over which those settings can be
 guaranteed to apply (absent changes by future legislation).
@@ -160,15 +290,17 @@ vtz::sys_info info = tz->get_info( T );
 
 string_view fmt_ = "%a %b %d %T %Y %Z";
 fmt::println( "Offset, Abbreviation, and Save @ {} ({})\n"
-              "- start:  {}\n"
-              "- end:    {}\n"
-              "- offset: {}\n"
-              "- save:   {}\n"
-              "- abbrev: {}\n",
+              "- start:        {}\n"
+              "- end:          {}\n"
+              "- start of dst: {}\n"
+              "- offset:       {}\n"
+              "- save:         {}\n"
+              "- abbrev:       {}\n",
     tz->format( fmt_, T ),
     tz->name(),
     tz->format( fmt_, info.begin ),
     tz->format( fmt_, info.end - 1s ),
+    tz->format( fmt_, info.end ),
     info.offset,
     info.save,
     info.abbrev );
@@ -179,22 +311,56 @@ fmt::println( "Offset, Abbreviation, and Save @ {} ({})\n"
 
 ```
 Offset, Abbreviation, and Save @ Thu Feb 26 05:30:00 2026 EST (America/New_York)
-- start:  Sun Nov 02 01:00:00 2025 EST
-- end:    Sun Mar 08 01:59:59 2026 EST
-- offset: -18000s
-- save:   0min
-- abbrev: EST
+- start:        Sun Nov 02 01:00:00 2025 EST
+- end:          Sun Mar 08 01:59:59 2026 EST
+- start of dst: Sun Mar 08 03:00:00 2026 EDT
+- offset:       -18000s
+- save:         0min
+- abbrev:       EST
 ```
 
 </details>
 <br>
 
-Under the current US rules, Standard Time lasts until 2AM on the second
-Sunday in March. At that point, we move the clocks forward an hour - 2AM
-is skipped entirely, and we jump straight to 3AM local time.
+There we go. The current offset at T is -5h (-18000 seconds), the abbreviation
+is `EST`, the save is 0 minutes (we're not in daylight savings time), and at
+01:59:59 AM EST we move the clocks forwards an hour, and it becomes 03:00:00 AM
+EDT.
 
-The offset changes to UTC-04, the save changes to 1h (60 minutes), and
-the abbreviation changes from 'EST' to 'EDT'.
+That being said, in most cases you probably want a specific piece of
+information, such as the current local time; the offset; or (if you already have
+a local time) the UTC time.
+
+```cpp
+auto T_local = tz->to_local( T );
+auto offset  = tz->offset( T );
+fmt::println( "UTC Time:   {}\n"
+              "Local Time: {}\n"
+              "Offset:     {}\n",
+    vtz::format( "%c", T ),
+    vtz::format( "%c", T_local ),
+    offset );
+```
+
+<details>
+<summary>output</summary>
+
+```
+UTC Time:   Thu Feb 26 10:30:00 2026
+Local Time: Thu Feb 26 05:30:00 2026
+Offset:     -18000s
+```
+
+</details>
+<br>
+
+Updating `T` to be the start of daylight savings time, we see that daylight
+savings time lasts from 3AM EDT on the second Sunday in March, to 1:59:59 AM EDT
+on the first Sunday in November.
+
+If we wanted, we could repeat this process of `info = tz->get_info( info.end )`
+to enumerate all future switches between daylight time and standard time (at
+least until `T` becomes too large to fit in a 64-bit integer).
 
 ```cpp
 // Get next time period following Standard Time
@@ -235,15 +401,92 @@ Offset, Abbreviation, and Save @ Sun Mar 08 03:00:00 2026 EDT (America/New_York)
 </details>
 <br>
 
-Fun fact! During World War II, the US entered into 'War Time', which was
-a permanent, year-round daylight savings time which was intended to
-help conserve fuel.
+### Converting Back to UTC, and ambiguous local times
+
+Converting a local time back to a sys time typically matches the input sys_time,
+however local times are ambiguous whenever the clocks fall back. In zones where
+this happens, this typically occurs for 1 hour, once a year.
+
+Take a look at when daylight savings time ends in the above example. For the US,
+this is currently the first Sunday in November, at what _would_ be 2AM EDT.
+
+When 1:59:59AM EDT ends on that date, clocks fall back to 1AM EST, and times
+between then are ambiguous: 1:30AM could refer to _either_ EDT or EST.
+
+When converting to UTC time, this disambiguation should be made with
+`vtz::choose` - `choose::earliest` returns the earliest system time, and
+`choose::latest` returns the latest system time.
+
+(Most of the time these give the exact same result, but the difference must be
+acknowledged)
+
+```cpp
+auto T_ambig = vtz::parse_local<sec>( "%c", "Sun Nov 01 01:30:00 2026" );
+```
+
+Here, there are two possible offsets: UTC-04 (EDT), and UTC-05 (EST) These
+correspond to 05:30 UTC and 06:30 UTC, respectively.
+
+```cpp
+using enum vtz::choose;
+auto T_early = tz->to_sys( T_ambig, earliest );
+auto T_late  = tz->to_sys( T_ambig, latest );
+fmt::println( "Input:         {}\n"
+              "earliest time: {}\n"
+              "latest time:   {}\n",
+    vtz::format( "%F %T", T_ambig ),
+    vtz::format( "%F %T %Z", T_early ),
+    vtz::format( "%F %T %Z", T_late ) );
+```
+
+<details>
+<summary>output</summary>
+
+```
+Input:         2026-11-01 01:30:00
+earliest time: 2026-11-01 05:30:00 UTC
+latest time:   2026-11-01 06:30:00 UTC
+```
+
+</details>
+<br>
+
+Both of these map to the same local time, but the zone abbreviation and offset
+are different:
+
+```cpp
+assert( tz->to_local( T_early ) == tz->to_local( T_late ) );
+assert( tz->offset( T_early ) != tz->offset( T_late ) );
+assert( tz->abbrev( T_early ) != tz->abbrev( T_late ) );
+
+fmt::println( "T_early: {}\n"
+              "T_late:  {}\n",
+    tz->format( "%c %Z", T_early ),
+    tz->format( "%c %Z", T_late ) );
+```
+
+<details>
+<summary>output</summary>
+
+```
+T_early: Sun Nov  1 01:30:00 2026 EDT
+T_late:  Sun Nov  1 01:30:00 2026 EST
+```
+
+</details>
+<br>
+
+### Conclusion / Historical Errata
+
+Fun fact! During World War II, the US entered into 'War Time', which was a
+permanent, year-round daylight savings time which was intended to help conserve
+fuel.
 
 War Time lasted from February 9th, 1942, to August 14th, 1945, when Japan
 surrendered. At this point, the timezone database records the US as
-transitioning from war time to peace time. Both have the same offset,
-however we have different abbreviations 'EWT' for Eastern War Time, and
-'EPT' for Eastern Peace Time.
+transitioning from war time to peace time. Both have the same offset, however we
+have different abbreviations 'EWT' for Eastern War Time, and 'EPT' for Eastern
+Peace Time.
 
 ```cpp
 // %F is shorthand for '%Y-%m-%d', YYYY-MM-DD
@@ -268,21 +511,20 @@ Offset, Abbreviation, and Save @ Mon Feb 09 20:00:00 1942 EWT (America/New_York)
 </details>
 <br>
 
-If this example gives the wrong dates, your system's timezone files
-exclude historical dates. To get the correct dates, you can set
-`VTZ_TZDATA_PATH` to point vtz to the location of the timezone database.
+If this example gives the wrong dates, your system's timezone files exclude
+historical dates. To get the correct dates, you can set `VTZ_TZDATA_PATH` to
+point vtz to the location of the timezone database.
 
 It's downloaded as part of a standard build, and should be in
-`build/data/tzdata`, but you can place it wherever is convenient on your
-system.
+`build/data/tzdata`, but you can place it wherever is convenient on your system.
 
 ```sh
 env VTZ_TZDATA_PATH=build/data/tzdata build/etc/examples/hello_vtz
 ```
 
-Japan communicated its surrender to the US on August 15th, 1945. At that
-time, it was still August 14th in the US, and Truman announced the
-surrender in a public broadcast at 7pm Eastern Time.
+Japan communicated its surrender to the US on August 15th, 1945. At that time,
+it was still August 14th in the US, and Truman announced the surrender in a
+public broadcast at 7pm Eastern Time.
 
 ```cpp
 auto tokyo = vtz::locate_zone( "Asia/Tokyo" );
@@ -305,9 +547,9 @@ Truman announces Japanese surrender:
 </details>
 <br>
 
-Eastern Peace Time lasted from August 14th until September 30th, when
-Eastern Standard Time resumed as per the daylight savings time rules in
-place at the time.
+Eastern Peace Time lasted from August 14th until September 30th, when Eastern
+Standard Time resumed as per the daylight savings time rules in place at the
+time.
 
 ```cpp
 T    = info.end; // set T to end of EWT;
@@ -341,155 +583,3 @@ This example can be run as:
 env VTZ_TZDATA_PATH=build/data/tzdata build/etc/examples/vtz_a_guided_tour
 ```
 
-## Building the library
-
-You can build the library with:
-
-```sh
-cmake -B build -G Ninja
-cmake --build build
-```
-
-Then, install with `cmake --install`:
-
-```sh
-cmake --install build --prefix /path/to/install
-```
-
-By default, this will build the library, tests, and benchmarks. To build _only_
-the library, use `-DVTZ_ONLY=1`:
-
-```sh
-cmake -B build -G Ninja -DVTZ_ONLY=1
-cmake --build build
-```
-
-## Using the library in your project
-
-The fastest and most convinient way to use `vtz` as a dependency in your project
-is with [cpm][cpm]:
-
-```cmake
-CPMAddPackage("gh:voladynamics/vtz@1.0.0")
-```
-
-If `vtz` is installed on the system, it can also be located with
-[`find_package`][find-package]:
-
-```cmake
-find_package(vtz REQUIRED)
-```
-
-With either method, you can link against `vtz` using
-`target_link_libraries(... vtz::vtz)`:
-
-```cmake
-# use VTZ as private dependency of your application
-target_link_libraries(my_app PRIVATE vtz::vtz)
-```
-
-[cpm]: https://github.com/cpm-cmake/CPM.cmake
-[find-package]: https://cmake.org/cmake/help/latest/command/find_package.html
-
-## API basics - Using vtz
-
-vtz aims to provide an interface which is familiar to people who have used
-either the [Hinnant Date Library][hinnant-date], or who have used the [timezone
-library added in C++20][tz-cpp20].
-
-[hinnant-date]: https://github.com/HowardHinnant/date
-[tz-cpp20]: https://en.cppreference.com/w/cpp/chrono.html#Time_zone
-
-## Looking up a Timezone
-
-You can look up a timezone with `vtz::locate_zone( tzname )`, or you can get the
-current timezone with `vtz::current_zone()`:
-
-```cpp
-// Get the current zone
-auto tz    = vtz::current_zone();
-// Get the timezone representing US Eastern Time
-auto tz_ny = vtz::locate_zone( "America/New_York" );
-```
-
-Because there are some 340 timezones in the tz database, time zones are loaded
-lazily on-request. There is a one-time upfront penalty the first time that a
-zone is loaded, however, subsequent calls to `locate_zone` with a given zone
-should be on the order of 7-10 ns.
-
-
-
-## Getting the current offset from UTC
-
-The most basic question you can ask is probably, "What is the offset from UTC,
-for a given time, in a given zone?"
-
-You can get the answer to this question for a given zone with
-`time_zone::offset( T )`, which takes a time as input, and returns the offset at
-that time:
-
-```cpp
-// Get (and display) the current offset from UTC, Eastern Time
-std::chrono::seconds offset = tz_ny->offset( t_utc );
-fmt::println( "current utc offset: {}s ({}h)",
-    offset.count(),
-    offset.count() / 3600 );
-```
-
-Example output, assuming that daylight savings time is not in effect at `t_utc`:
-
-```
-current utc offset: -18000s (-5h)
-```
-
-This offset is a measure of the number of seconds you add to UTC time, to get
-the current local time. For example, if it's 7pm UTC time, and the offset in the
-current zone at the current time is `-5h`, then it's 2pm local time.
-
-If you prefer working with a raw number of seconds, you can avoid dealing with
-`std::chrono` using the `_s` overloads, which take seconds as input, and return
-seconds as output:
-
-```cpp
-// Get seconds since the unix epoch
-int64_t utc_seconds    = std::time( nullptr );
-
-// Get the current offset, in seconds
-int64_t offset_seconds = tz_ny->offset_s( utc_seconds );
-
-fmt::println( "current utc offset: {}s ({}h)",
-    offset_seconds,
-    offset_seconds / 3600 );
-```
-
-<details>
-<summary>Why is the offset given in seconds?</summary>
-
-The offset is given in seconds because real timezones may have an offset that is
-not a whole number of hours. For example, Nepal (`Asia/Kathmandu`) _currently_
-has an offset of `+5:45`!
-
-Additionally, the IANA timezone database uses _mean solar time_ as the offset
-for dates and times prior to the standardization of time within a given zone.
-For instance, before railway time was introduced in 1883, `America/New_York` had
-an offset of `-4:56:02`.
-
-</details>
-
-## Converting from UTC to local
-
-You can use `time_zone::to_local` to convert a system time to a local time
-within a zone:
-
-```cpp
-auto t_utc   = std::chrono::system_clock::now();
-auto t_local = tz_ny->to_local( t_utc );
-```
-
-```cpp
-
-// Obtain it as a local timestamp.
-int64_t local_seconds = tz->to_local_s( utc_seconds );
-```
-
-## Getting the offset within a zone
