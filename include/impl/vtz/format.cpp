@@ -5,9 +5,38 @@
 #include <vtz/impl/macros.h>
 #include <vtz/tz.h>
 
+#include <vtz/impl/format_impl.h>
+
 #include <charconv>
 
+
 namespace vtz {
+
+    struct dummy_time_zone_utc {
+        /// UTC offset is 0
+        static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
+        static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
+        /// Writes "UTC"
+        static size_t abbrev_to_s( sec_t, char* p ) noexcept {
+            p[0] = 'U';
+            p[1] = 'T';
+            p[2] = 'C';
+            return 3;
+        }
+    };
+
+    struct unzoned_time {
+        /// UTC offset is 0
+        static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
+        static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
+        /// Writes "-00"
+        static size_t abbrev_to_s( sec_t, char* p ) noexcept {
+            p[0] = '-';
+            p[1] = '0';
+            p[2] = '0';
+            return 3;
+        }
+    };
 
     class format_error : public std::exception {
         char const* what_;
@@ -161,8 +190,9 @@ namespace vtz {
     }
 
     /// Write '%r', which is equivalent to "%I:%M:%S %p"
+    template <class F>
     VTZ_INLINE static char* _write_hhmmss_p_12h(
-        char* p, int h, int m, int s ) noexcept {
+        char* p, int h, int m, int s, F const& writeFrac ) noexcept {
         char a_or_p = h >= 12 ? 'P' : 'A';
 
         if( h >= 12 ) h -= 12; // 13:00 -> 01:00, etc
@@ -175,10 +205,11 @@ namespace vtz {
         p[5]  = ':';
         p[6]  = char( '0' + s / 10 );
         p[7]  = char( '0' + s % 10 );
-        p[8]  = ' ';
-        p[9]  = a_or_p;
-        p[10] = 'M';
-        return p + 11;
+        p = writeFrac(p + 8);
+        p[0]  = ' ';
+        p[1]  = a_or_p;
+        p[2] = 'M';
+        return p + 3;
     }
 
     /// equivalent to "%Y-%m-%d" (the ISO 8601 date format)
@@ -549,7 +580,23 @@ namespace vtz {
             // FORMAT TIMEZONE DESIGNATION/OFFSET
 
             // writes offset from UTC in the ISO 8601 format (e.g. -0430)
-            case 'z': p += write_shortest_offset( gmtoff, p ); continue;
+            case 'z':
+                // Use '-00' for %z'; already handled for '%Z' via
+                // tz.abbrev_to_s
+                if constexpr( std::is_same_v<TimeZoneT, unzoned_time> )
+                {
+                    p[0]  = '-';
+                    p[1]  = '0';
+                    p[2]  = '0';
+                    p    += 3;
+                    continue;
+                }
+                else
+                {
+                    p += write_shortest_offset( gmtoff, p );
+                    continue;
+                }
+
             case 'Z': p += tz.abbrev_to_s( t, p ); continue;
 
 
@@ -568,7 +615,9 @@ namespace vtz {
 
             // Writes the 12-hour clock using AM or PM (C Locale)
             // Equivalent to '%I:%M:%S %p'
-            case 'r': p = _write_hhmmss_p_12h( p, hr, mi, sec ); continue;
+            case 'r':
+                p = _write_hhmmss_p_12h( p, hr, mi, sec, write_frac );
+                continue;
 
             // equivalent to "%Y-%m-%d" (ISO 8601 date format)
             case 'F':
@@ -590,15 +639,15 @@ namespace vtz {
             case 'c':
                 {
                     auto dow = int( dow_from_days( date ) );
-                    p    = _write_c_weekday_abbr( p, dow );
-                    *p++ = ' ';
-                    p    = _write_c_month_abbr( p, ymd.month );
-                    *p++ = ' ';
-                    p    = _write_dom_e( p, u8( ymd.day ) );
-                    *p++ = ' ';
-                    p    = _write_hhmmss( p, hr, mi, sec );
-                    *p++ = ' ';
-                    p    = _write_year( p, ymd.year );
+                    p        = _write_c_weekday_abbr( p, dow );
+                    *p++     = ' ';
+                    p        = _write_c_month_abbr( p, ymd.month );
+                    *p++     = ' ';
+                    p        = _write_dom_e( p, u8( ymd.day ) );
+                    *p++     = ' ';
+                    p        = write_frac( _write_hhmmss( p, hr, mi, sec ) );
+                    *p++     = ' ';
+                    p        = _write_year( p, ymd.year );
                     continue;
                 }
 
@@ -681,71 +730,6 @@ namespace vtz {
     }
 
 
-    struct dummy_time_zone {
-        /// NOOP - offset is 0
-        static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
-        static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
-        /// NOOP - no abbreviation to write
-        static size_t abbrev_to_s( sec_t, char* ) noexcept { return 0; }
-    };
-
-    std::string format_d( string_view fmt, sysdays_t days ) {
-        return _do_strformat(
-            dummy_time_zone{},
-            fmt.data(),
-            fmt.size(),
-            days_to_seconds( days ),
-            // There is no fractional component, so write_frac is a noop
-            []( char* s ) noexcept -> char* { return s; },
-            write_to_string{} );
-    }
-
-    struct dummy_time_zone_utc {
-        /// UTC offset is 0
-        static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
-        static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
-        /// Writes "UTC"
-        static size_t abbrev_to_s( sec_t, char* p ) noexcept {
-            p[0] = 'U';
-            p[1] = 'T';
-            p[2] = 'C';
-            return 3;
-        }
-    };
-
-    std::string format_s( string_view fmt, sysseconds_t t ) {
-        return _do_strformat(
-            dummy_time_zone_utc{},
-            fmt.data(),
-            fmt.size(),
-            t,
-            []( char* s ) noexcept -> char* { return s; },
-            write_to_string{} );
-    }
-
-    size_t format_to_s(
-        string_view fmt, sysseconds_t t, char* buff, size_t count ) {
-        return _do_strformat(
-            dummy_time_zone_utc{},
-            fmt.data(),
-            fmt.size(),
-            t,
-            []( char* s ) noexcept -> char* { return s; },
-            write_to_buff{ buff, count } );
-    }
-
-    size_t format_to_d(
-        string_view fmt, sysdays_t days, char* buff, size_t count ) {
-        return _do_strformat(
-            dummy_time_zone{},
-            fmt.data(),
-            fmt.size(),
-            days_to_seconds( days ),
-            // There is no fractional component, so write_frac is a noop
-            []( char* s ) noexcept -> char* { return s; },
-            write_to_buff{ buff, count } );
-    }
-
     auto _write_nanos( u32 nanos, int precision ) noexcept {
         return [nanos, precision]( char* p ) noexcept -> char* {
             // clang-format off
@@ -775,28 +759,49 @@ namespace vtz {
         };
     }
 
-    size_t time_zone::format_precise_to_s( string_view format,
-        sysseconds_t                                   t,
-        u32                                            nanos,
-        int                                            precision,
-        char*                                          buff,
-        size_t                                         count ) const {
-        return _do_strformat( *this,
-            format.data(),
-            format.size(),
+    std::string format_d( string_view fmt, sysdays_t days ) {
+        return _do_strformat(
+            dummy_time_zone_utc{},
+            fmt.data(),
+            fmt.size(),
+            days_to_seconds( days ),
+            // There is no fractional component, so write_frac is a noop
+            []( char* s ) noexcept -> char* { return s; },
+            write_to_string{} );
+    }
+
+
+    std::string format_s( string_view fmt, sysseconds_t t ) {
+        return _do_strformat(
+            dummy_time_zone_utc{},
+            fmt.data(),
+            fmt.size(),
             t,
-            _write_nanos( nanos, precision ),
+            []( char* s ) noexcept -> char* { return s; },
+            write_to_string{} );
+    }
+
+    size_t format_to_s(
+        string_view fmt, sysseconds_t t, char* buff, size_t count ) {
+        return _do_strformat(
+            dummy_time_zone_utc{},
+            fmt.data(),
+            fmt.size(),
+            t,
+            []( char* s ) noexcept -> char* { return s; },
             write_to_buff{ buff, count } );
     }
 
-    std::string time_zone::format_precise_s(
-        string_view format, sysseconds_t t, u32 nanos, int precision ) const {
-        return _do_strformat( *this,
-            format.data(),
-            format.size(),
-            t,
-            _write_nanos( nanos, precision ),
-            write_to_string{} );
+    size_t format_to_d(
+        string_view fmt, sysdays_t days, char* buff, size_t count ) {
+        return _do_strformat(
+            dummy_time_zone_utc{},
+            fmt.data(),
+            fmt.size(),
+            days_to_seconds( days ),
+            // There is no fractional component, so write_frac is a noop
+            []( char* s ) noexcept -> char* { return s; },
+            write_to_buff{ buff, count } );
     }
 
     std::string format_precise_s(
@@ -821,6 +826,103 @@ namespace vtz {
             t,
             _write_nanos( nanos, precision ),
             write_to_buff{ buff, count } );
+    }
+
+    // uuuuuuuuuu suffering,,,,,,
+    namespace _unzoned {
+        std::string format_d( string_view fmt, sysdays_t days ) {
+            return _do_strformat(
+                unzoned_time{},
+                fmt.data(),
+                fmt.size(),
+                days_to_seconds( days ),
+                // There is no fractional component, so write_frac is a noop
+                []( char* s ) noexcept -> char* { return s; },
+                write_to_string{} );
+        }
+
+
+        std::string format_s( string_view fmt, sysseconds_t t ) {
+            return _do_strformat(
+                unzoned_time{},
+                fmt.data(),
+                fmt.size(),
+                t,
+                []( char* s ) noexcept -> char* { return s; },
+                write_to_string{} );
+        }
+
+        size_t format_to_s(
+            string_view fmt, sysseconds_t t, char* buff, size_t count ) {
+            return _do_strformat(
+                unzoned_time{},
+                fmt.data(),
+                fmt.size(),
+                t,
+                []( char* s ) noexcept -> char* { return s; },
+                write_to_buff{ buff, count } );
+        }
+
+        size_t format_to_d(
+            string_view fmt, sysdays_t days, char* buff, size_t count ) {
+            return _do_strformat(
+                unzoned_time{},
+                fmt.data(),
+                fmt.size(),
+                days_to_seconds( days ),
+                // There is no fractional component, so write_frac is a noop
+                []( char* s ) noexcept -> char* { return s; },
+                write_to_buff{ buff, count } );
+        }
+
+        std::string format_precise_s(
+            string_view fmt, sysseconds_t t, u32 nanos, int precision ) {
+            return _do_strformat( unzoned_time{},
+                fmt.data(),
+                fmt.size(),
+                t,
+                _write_nanos( nanos, precision ),
+                write_to_string{} );
+        }
+
+        size_t format_precise_to_s( string_view fmt,
+            sysseconds_t                        t,
+            u32                                 nanos,
+            int                                 precision,
+            char*                               buff,
+            size_t                              count ) {
+            return _do_strformat( unzoned_time{},
+                fmt.data(),
+                fmt.size(),
+                t,
+                _write_nanos( nanos, precision ),
+                write_to_buff{ buff, count } );
+        }
+    } // namespace _unzoned
+
+
+    size_t time_zone::format_precise_to_s( string_view format,
+        sysseconds_t                                   t,
+        u32                                            nanos,
+        int                                            precision,
+        char*                                          buff,
+        size_t                                         count ) const {
+        return _do_strformat( *this,
+            format.data(),
+            format.size(),
+            t,
+            _write_nanos( nanos, precision ),
+            write_to_buff{ buff, count } );
+    }
+
+    std::string time_zone::format_precise_s(
+        string_view format, sysseconds_t t, u32 nanos, int precision ) const {
+        return _do_strformat( *this,
+            format.data(),
+            format.size(),
+            t,
+            _write_nanos( nanos, precision ),
+            write_to_string{} );
     }
 
     string time_zone::format_s(
