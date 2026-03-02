@@ -14,6 +14,9 @@
 #include <vtz/parse.h>
 #include <vtz/tz.h>
 
+#include <fmt/chrono.h>
+#include <fmt/format.h>
+
 #define BENCH( name, state )                                                   \
     void name( benchmark::State& state );                                      \
     BENCHMARK( name );                                                         \
@@ -481,6 +484,30 @@ BENCH( absl_format, state ) {
 }
 
 
+BENCH( libfmt_format_utc, state ) {
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( fmt::format( "{:%F %T %Z}", tt[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( libfmt_format_to_utc, state ) {
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    size_t i  = 0;
+    char   buff[256];
+    for( auto _ : state )
+    {
+        auto result = fmt::format_to( buff, "{:%F %T %Z}", tt[i % COUNT] );
+        benchmark::DoNotOptimize( result );
+        ++i;
+    }
+}
+
+
 BENCH( vtz_format_strftime, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
@@ -518,6 +545,7 @@ BENCH( vtz_format_to_strftime_nanos, state ) {
         ++i;
     }
 }
+
 
 BENCH( vtz_format, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
