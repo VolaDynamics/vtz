@@ -13,7 +13,7 @@ insert_into = "README.md"
 insert_at = "## A Guided Tour of VTZ"
 example_intro = """
 This document serves as a guided tour of vtz. For a full understanding of the 
-library API, please refer to `vtz/tz.h`, which does it's best to provide 
-thorough documentation of the API and it's constraints.
+library API, please refer to api header files `<vtz/tz.h>`, `<vtz/parse.h>`, and `<vtz/format.h>`.
 
----"""
+`<vtz/tz.h>` in particular does it's best to provide 
+thorough documentation of the API and it's constraints."""
