@@ -2,6 +2,8 @@ output_dir = "etc/docs"
 exe_dir = "build/etc/examples"
 env = ["VTZ_TZDATA_PATH=build/data/tzdata"]
 
+format_cmd = "prettier --parser markdown --prose-wrap=always --print-width=80"
+
 [[examples]]
 source = "etc/examples/src/vtz_a_guided_tour.cpp"
 title = "Hello VTZ"
