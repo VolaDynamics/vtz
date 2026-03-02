@@ -650,36 +650,6 @@ BENCH( vtz_date_from_civil_year, state ) {
     }
 }
 
-BENCH( vtz_parse_date, state ) {
-    auto   dd = random_values( COUNT,
-        vtz::resolve_civil( 1900 ),
-        vtz::resolve_civil( 2100 ),
-        []( sysdays_t days ) { return vtz::format_d( "%F", days ); } );
-    size_t i  = 0;
-    for( auto _ : state )
-    {
-        auto const& entry = dd[i % COUNT];
-        benchmark::DoNotOptimize( vtz::parse_d( "%Y-%m-%d", entry ) );
-        ++i;
-    }
-}
-
-
-BENCH( vtz_parse_time, state ) {
-    auto dd = random_values( COUNT,
-        vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
-        vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
-        []( vtz::sec_t t ) { return vtz::format_s( "%F %T %Z", t ); } );
-
-    size_t i = 0;
-    for( auto _ : state )
-    {
-        auto const& entry = dd[i % COUNT];
-        benchmark::DoNotOptimize(
-            vtz::parse_s( "%Y-%m-%d %H:%M:%S", entry ) );
-        ++i;
-    }
-}
 
 BENCH( hinnant_parse_date, state ) {
     auto   dd = random_values( COUNT,
@@ -692,7 +662,7 @@ BENCH( hinnant_parse_date, state ) {
         auto const&          entry = dd[i % COUNT];
         std::istringstream   ss( entry );
         date::year_month_day ymd;
-        ss >> date::parse( "%Y-%m-%d", ymd );
+        ss >> date::parse( "%F", ymd );
         benchmark::DoNotOptimize( ymd );
         ++i;
     }
@@ -710,13 +680,13 @@ BENCH( hinnant_parse_time, state ) {
         auto const&        entry = dd[i % COUNT];
         std::istringstream ss( entry );
         date::sys_seconds  tp;
-        date::from_stream( ss, "%Y-%m-%d %H:%M:%S", tp );
+        date::from_stream( ss, "%F %T", tp );
         benchmark::DoNotOptimize( tp );
         ++i;
     }
 }
 
-BENCH( vtz_parse_date_compact, state ) {
+BENCH( vtz_parse_date, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
@@ -731,7 +701,7 @@ BENCH( vtz_parse_date_compact, state ) {
     }
 }
 
-BENCH( vtz_parse_time_compact, state ) {
+BENCH( vtz_parse_time, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),
