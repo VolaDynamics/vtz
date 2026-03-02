@@ -11,7 +11,7 @@
 #include <date/tz.h>
 
 
-BENCH( hinnant_locate_zone, state ) {
+BENCH( locate_zone_hinnant, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH ) { (void)date::locate_zone( z ); }
@@ -26,7 +26,7 @@ BENCH( hinnant_locate_zone, state ) {
 }
 
 
-BENCH( hinnant_locate_random_zone, state ) {
+BENCH( locate_random_zone_hinnant, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH ) { (void)date::locate_zone( z ); }
@@ -40,7 +40,7 @@ BENCH( hinnant_locate_random_zone, state ) {
 }
 
 
-BENCH( absl_locate_zone, state ) {
+BENCH( locate_zone_absl, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH )
@@ -61,7 +61,7 @@ BENCH( absl_locate_zone, state ) {
 }
 
 
-BENCH( absl_locate_random_zone, state ) {
+BENCH( locate_random_zone_absl, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH )
@@ -83,7 +83,7 @@ BENCH( absl_locate_random_zone, state ) {
 
 
 #if HAS_CHRONO_TIMEZONE
-BENCH( chrono_locate_zone, state ) {
+BENCH( locate_zone_chrono, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH ) { (void)std::chrono::locate_zone( z ); }
@@ -98,7 +98,7 @@ BENCH( chrono_locate_zone, state ) {
 }
 
 
-BENCH( chrono_locate_random_zone, state ) {
+BENCH( locate_random_zone_chrono, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH ) { (void)std::chrono::locate_zone( z ); }
@@ -114,7 +114,7 @@ BENCH( chrono_locate_random_zone, state ) {
 #endif
 
 
-BENCH( vtz_locate_zone, state ) {
+BENCH( locate_zone_vtz, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH ) { (void)vtz::locate_zone( z ); }
@@ -129,7 +129,7 @@ BENCH( vtz_locate_zone, state ) {
 }
 
 
-BENCH( vtz_locate_random_zone, state ) {
+BENCH( locate_random_zone_vtz, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH ) { (void)vtz::locate_zone( z ); }

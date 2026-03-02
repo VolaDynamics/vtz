@@ -6,7 +6,7 @@
 #include <date/tz.h>
 
 
-BENCH( hinnant_to_local_with_lookup, state ) {
+BENCH( to_local_with_lookup_hinnant, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
@@ -18,7 +18,7 @@ BENCH( hinnant_to_local_with_lookup, state ) {
 }
 
 
-BENCH( hinnant_to_sys_latest_with_lookup, state ) {
+BENCH( to_sys_latest_with_lookup_hinnant, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
@@ -31,7 +31,7 @@ BENCH( hinnant_to_sys_latest_with_lookup, state ) {
 }
 
 
-BENCH( hinnant_to_sys_earliest_with_lookup, state ) {
+BENCH( to_sys_earliest_with_lookup_hinnant, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
@@ -44,7 +44,7 @@ BENCH( hinnant_to_sys_earliest_with_lookup, state ) {
 }
 
 
-BENCH( absl_to_local_with_lookup, state ) {
+BENCH( to_local_with_lookup_absl, state ) {
     auto   tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
@@ -58,7 +58,7 @@ BENCH( absl_to_local_with_lookup, state ) {
 
 
 #if HAS_CHRONO_TIMEZONE
-BENCH( chrono_to_local_with_lookup, state ) {
+BENCH( to_local_with_lookup_chrono, state ) {
     using std::chrono::locate_zone;
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
@@ -71,7 +71,7 @@ BENCH( chrono_to_local_with_lookup, state ) {
 }
 
 
-BENCH( chrono_to_sys_latest_with_lookup, state ) {
+BENCH( to_sys_latest_with_lookup_chrono, state ) {
     using std::chrono::choose;
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
@@ -88,7 +88,7 @@ BENCH( chrono_to_sys_latest_with_lookup, state ) {
 }
 
 
-BENCH( chrono_to_sys_earliest_with_lookup, state ) {
+BENCH( to_sys_earliest_with_lookup_chrono, state ) {
     using std::chrono::choose;
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
@@ -105,7 +105,7 @@ BENCH( chrono_to_sys_earliest_with_lookup, state ) {
 #endif
 
 
-BENCH( vtz_to_local_with_lookup, state ) {
+BENCH( to_local_with_lookup_vtz, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
@@ -117,7 +117,7 @@ BENCH( vtz_to_local_with_lookup, state ) {
 }
 
 
-BENCH( vtz_to_sys_latest_with_lookup, state ) {
+BENCH( to_sys_latest_with_lookup_vtz, state ) {
     auto tt
         = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
@@ -130,7 +130,7 @@ BENCH( vtz_to_sys_latest_with_lookup, state ) {
 }
 
 
-BENCH( vtz_to_sys_earliest_with_lookup, state ) {
+BENCH( to_sys_earliest_with_lookup_vtz, state ) {
     auto tt
         = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;

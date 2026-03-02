@@ -18,7 +18,7 @@ static std::vector<std::string> input_times = random_values( COUNT,
     []( vtz::sec_t t ) { return vtz::format_s( "%F %T", t ); } );
 
 
-BENCH( hinnant_parse_date, state ) {
+BENCH( parse_date_hinnant, state ) {
     auto               dd = input_dates;
     std::istringstream ss;
     ss.exceptions( std::ios::failbit );
@@ -36,7 +36,7 @@ BENCH( hinnant_parse_date, state ) {
 }
 
 
-BENCH( hinnant_parse_time, state ) {
+BENCH( parse_time_hinnant, state ) {
     auto dd = input_times;
 
     std::istringstream ss;
@@ -55,7 +55,7 @@ BENCH( hinnant_parse_time, state ) {
 }
 
 
-BENCH( absl_parse_date, state ) {
+BENCH( parse_date_absl, state ) {
     auto dd = input_dates;
 
     absl::Time  t;
@@ -72,7 +72,7 @@ BENCH( absl_parse_date, state ) {
 }
 
 
-BENCH( absl_parse_time, state ) {
+BENCH( parse_time_absl, state ) {
     auto dd = input_times;
 
     absl::Time  t;
@@ -89,7 +89,7 @@ BENCH( absl_parse_time, state ) {
 }
 
 #if HAS_CHRONO_TIMEZONE
-BENCH( chrono_parse_date, state ) {
+BENCH( parse_date_chrono, state ) {
     auto dd = input_dates;
 
     std::istringstream ss;
@@ -107,7 +107,7 @@ BENCH( chrono_parse_date, state ) {
     }
 }
 
-BENCH( chrono_parse_time, state ) {
+BENCH( parse_time_chrono, state ) {
     auto dd = input_times;
 
     std::istringstream ss;
@@ -127,7 +127,7 @@ BENCH( chrono_parse_time, state ) {
 #endif
 
 
-BENCH( vtz_parse_date, state ) {
+BENCH( parse_date_vtz, state ) {
     auto dd = input_dates;
 
     size_t i = 0;
@@ -139,7 +139,7 @@ BENCH( vtz_parse_date, state ) {
     }
 }
 
-BENCH( vtz_parse_time, state ) {
+BENCH( parse_time_vtz, state ) {
     auto dd = input_times;
 
     size_t i = 0;

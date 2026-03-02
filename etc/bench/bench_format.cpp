@@ -10,7 +10,7 @@
 #include <date/tz.h>
 
 
-BENCH( hinnant_format, state ) {
+BENCH( format_hinnant, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -23,7 +23,7 @@ BENCH( hinnant_format, state ) {
 }
 
 
-BENCH( absl_format, state ) {
+BENCH( format_absl, state ) {
     auto           tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
@@ -37,7 +37,7 @@ BENCH( absl_format, state ) {
 }
 
 
-BENCH( libfmt_format_utc, state ) {
+BENCH( format_utc_libfmt, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
@@ -48,7 +48,7 @@ BENCH( libfmt_format_utc, state ) {
 }
 
 
-BENCH( libfmt_format_to_utc, state ) {
+BENCH( format_to_utc_libfmt, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     char   buff[256];
@@ -63,7 +63,7 @@ BENCH( libfmt_format_to_utc, state ) {
 
 #if HAS_CHRONO_TIMEZONE
 
-BENCH( chrono_format, state ) {
+BENCH( format_chrono, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = std::chrono::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -75,7 +75,7 @@ BENCH( chrono_format, state ) {
     }
 }
 
-BENCH( chrono_format_to, state ) {
+BENCH( format_to_chrono, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = std::chrono::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -92,7 +92,7 @@ BENCH( chrono_format_to, state ) {
 #endif
 
 
-BENCH( vtz_format, state ) {
+BENCH( format_vtz, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -104,7 +104,7 @@ BENCH( vtz_format, state ) {
 }
 
 
-BENCH( vtz_format_to_nanos, state ) {
+BENCH( format_to_nanos_vtz, state ) {
     auto tt = to_chrono<nanos>( random_times( COUNT, 1900, 2100, 1000000000 ) );
     auto tz = vtz::locate_zone( "America/New_York" );
     size_t i = 0;
@@ -118,7 +118,7 @@ BENCH( vtz_format_to_nanos, state ) {
 }
 
 
-BENCH( vtz_format_to, state ) {
+BENCH( format_to_vtz, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
