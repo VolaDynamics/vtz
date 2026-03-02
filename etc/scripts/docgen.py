@@ -290,7 +290,7 @@ def main():
     script_dir = pathlib.Path(__file__).resolve().parent
     project_root = script_dir.parent.parent
 
-    config_path = project_root / 'etc' / 'examples' / 'docgen.toml'
+    config_path = project_root / 'examples' / 'docgen.toml'
     if not config_path.exists():
         print(f'error: config not found: {config_path}', file=sys.stderr)
         sys.exit(1)
