@@ -1,4 +1,4 @@
-output_dir = "etc/docs"
+output_dir = "docs"
 exe_dir = "build/etc/examples"
 env = ["VTZ_TZDATA_PATH=build/data/tzdata"]
 

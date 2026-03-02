@@ -72,9 +72,9 @@ fmt::println( "Current Time:\n"
 
 ```
 Current Time:
-  Sun Mar  1 23:47:13 2026 EST
-  Sun Mar  1 23:47:13 2026 EST
-  2026-03-02T04:47:13Z     (UTC Timestamp)
+  Sun Mar  1 23:51:12 2026 EST
+  Sun Mar  1 23:51:12 2026 EST
+  2026-03-02T04:51:12Z     (UTC Timestamp)
 ```
 
 </details>
@@ -114,9 +114,9 @@ fmt::println( "Current Time (full available precision):\n"
 
 ```
 Current Time (full available precision):
-  Sun Mar  1 23:47:13.675987 2026 EST
-  Sun Mar  1 23:47:13.675987 2026 EST
-  2026-03-02T04:47:13.675987Z     (UTC Timestamp)
+  Sun Mar  1 23:51:12.945207 2026 EST
+  Sun Mar  1 23:51:12.945207 2026 EST
+  2026-03-02T04:51:12.945207Z     (UTC Timestamp)
 ```
 
 </details>
