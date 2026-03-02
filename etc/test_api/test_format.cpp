@@ -665,3 +665,68 @@ TEST( vtz_format, gnu_extensions ) {
         _get_time( 2024, 12, 25, 8, 0, 0 ),
         " 8:00 on 2024-12-25" );
 }
+
+
+TEST( vtz_format, fractional_placement ) {
+    // Verify that every compound specifier containing a seconds component
+    // places the fractional digits immediately after the seconds digits,
+    // not at the end of the compound expansion.
+    //
+    // Time: 2024-03-01 14:05:09 UTC  (a Friday)
+    auto    t_sys = _get_time( 2024, 3, 1, 14, 5, 9 );
+    int64_t ts    = t_sys.time_since_epoch().count();
+    u32     nanos = 123456789;
+
+    // precision = 3 -> ".123"
+    check_format_precise( "%S", ts, nanos, 3, "09.123" );
+    check_format_precise( "%T", ts, nanos, 3, "14:05:09.123" );
+    check_format_precise( "%X", ts, nanos, 3, "14:05:09.123" );
+    check_format_precise( "%r", ts, nanos, 3, "02:05:09.123 PM" );
+    check_format_precise( "%c", ts, nanos, 3, "Fri Mar  1 14:05:09.123 2024" );
+    check_format_precise( "%s", ts, nanos, 3, "1709301909.123" );
+
+    // precision = 6 -> ".123456"
+    check_format_precise( "%S", ts, nanos, 6, "09.123456" );
+    check_format_precise( "%T", ts, nanos, 6, "14:05:09.123456" );
+    check_format_precise( "%X", ts, nanos, 6, "14:05:09.123456" );
+    check_format_precise( "%r", ts, nanos, 6, "02:05:09.123456 PM" );
+    check_format_precise(
+        "%c", ts, nanos, 6, "Fri Mar  1 14:05:09.123456 2024" );
+    check_format_precise( "%s", ts, nanos, 6, "1709301909.123456" );
+
+    // precision = 9 -> ".123456789"
+    check_format_precise( "%S", ts, nanos, 9, "09.123456789" );
+    check_format_precise( "%T", ts, nanos, 9, "14:05:09.123456789" );
+    check_format_precise( "%X", ts, nanos, 9, "14:05:09.123456789" );
+    check_format_precise( "%r", ts, nanos, 9, "02:05:09.123456789 PM" );
+    check_format_precise(
+        "%c", ts, nanos, 9, "Fri Mar  1 14:05:09.123456789 2024" );
+    check_format_precise( "%s", ts, nanos, 9, "1709301909.123456789" );
+
+    // Also verify AM (hour < 12):
+    // Time: 2024-03-01 09:30:45 UTC
+    auto    t_am  = _get_time( 2024, 3, 1, 9, 30, 45 );
+    int64_t ts_am = t_am.time_since_epoch().count();
+    check_format_precise( "%r", ts_am, nanos, 3, "09:30:45.123 AM" );
+    check_format_precise( "%r", ts_am, nanos, 9, "09:30:45.123456789 AM" );
+
+    // Check the generic sys_time<milliseconds> template path
+    {
+        using sys_ms = sys_time<milliseconds>;
+        auto tp      = sys_ms{ seconds{ ts } + milliseconds{ 123 } };
+        ASSERT_EQ( vtz::format( "%T", tp ), "14:05:09.123" );
+        ASSERT_EQ( vtz::format( "%r", tp ), "02:05:09.123 PM" );
+        ASSERT_EQ( vtz::format( "%c", tp ), "Fri Mar  1 14:05:09.123 2024" );
+        ASSERT_EQ( vtz::format( "%s", tp ), std::to_string( ts ) + ".123" );
+    }
+
+    // Check the local_time<milliseconds> template path (unzoned)
+    {
+        using local_ms = local_time<milliseconds>;
+        auto tp        = local_ms{ seconds{ ts } + milliseconds{ 123 } };
+        ASSERT_EQ( vtz::format( "%T", tp ), "14:05:09.123" );
+        ASSERT_EQ( vtz::format( "%r", tp ), "02:05:09.123 PM" );
+        ASSERT_EQ( vtz::format( "%c", tp ), "Fri Mar  1 14:05:09.123 2024" );
+        ASSERT_EQ( vtz::format( "%s", tp ), std::to_string( ts ) + ".123" );
+    }
+}
