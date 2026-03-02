@@ -25,7 +25,7 @@ set(
     "VTZ_TZDATA_PATH"
     CACHE
     STRING
-    "List of enviroment variable names to check for timezone source files"
+    "List of environment variable names to check for timezone source files"
 )
 
 option(
@@ -93,7 +93,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
 
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
 
-    # For aquiring ankerl::unordered_dense
+    # For acquiring ankerl::unordered_dense
     #
     # We have provisioned headers for v4.8.1 @ etc/3rd/ankerl
     # CPMAddPackage("gh:martinus/unordered_dense@4.8.1")
