@@ -306,6 +306,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     )
     gtest_discover_tests(
         test_vtz
+        TEST_PREFIX "impl/"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 
@@ -323,6 +324,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     )
     gtest_discover_tests(
         test_vtz_api
+        TEST_PREFIX "api/"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
     find_program(zic_exe zic)
