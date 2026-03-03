@@ -24,7 +24,7 @@ docgen:
 run_bench_groups:
     # Run format benchmarks
     build/bench_vtz --benchmark_filter='to_local_([a-z]+)$'
-    build/bench_vtz --benchmark_filter='to_(sys_(earliest|latest))_([a-z]+)$'
+    build/bench_vtz --benchmark_filter='to_sys(_earliest|_latest)?_([a-z]+)$'
     build/bench_vtz --benchmark_filter='format'
     build/bench_vtz --benchmark_filter='parse'
     build/bench_vtz --benchmark_filter='locate_zone'
