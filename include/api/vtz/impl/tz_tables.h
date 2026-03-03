@@ -264,49 +264,39 @@ namespace vtz {
             /// offset from UTC before transition time
             i64 off_pre = ent.lo();
             /// offset from UTC on or after transition time
-            i64  off_post = ent.hi();
-            auto when1    = ent.t + off_pre;  // eg, 2AM when DST starts
-            auto when2    = ent.t + off_post; // 3am (we saved 1 hour)
-            if( off_post <= off_pre )
-            {
-                // Let's take the end of daylight savings time in
-                // America/New_York as an example.
-                //
-                // At 1:59:59am, rather than changing to 2am, the clock falls
-                // back an hour to 1:00 am, and the offset goes from UTC-04 to
-                // UTC-05
+            i64 off_post = ent.hi();
+            /// If the clock falls back, then `off_post` is the earlier time
+            bool falls_back = off_post < off_pre;
 
-                // `off_post <= off_pre`
-                // -> `ent.t + off_post <= ent.t + off_pre`
-                // -> `when2 <= when1`
-                //
-                // This case occurs if we're dealing with ambiguous times.
+            auto off1 = falls_back ? off_post : off_pre; ///< Earlier offset
+            auto off2 = falls_back ? off_pre : off_post; ///< Later offset
 
-                if( when1 <= t_key ) // eg, the key is 2AM or after
-                {
-                    // We're past the time we could be ambiguous
-                    return t - off_post;
-                }
-                if( t_key < when2 )
-                {
-                    // eg, the key is before 1am
-                    return t - off_pre;
-                }
+            auto when1 = ent.t + off1; ///< Local time when transition starts
+            auto when2 = ent.t + off2; ///< Local time when the transition ends
 
+            /// Time is unique and before ambiguous/nonexistent time period
+            bool unique_before = t_key < when1;
+            /// Time is unique and after ambiguous/nonexistent time period
+            bool unique_after = when2 <= t_key;
+
+            bool is_unique = unique_before || unique_after;
+            auto off       = unique_before ? off_pre : off_post;
+
+            // This is the happy path. The input time is unique, so we just
+            // subtract the offset
+            if( is_unique ) VTZ_LIKELY { return t - off; }
+
+            // If we fall back, we repeat some period of time, so the input
+            // local time must be ambiguous.
+            //
+            // Otherwise, when jumping forward, some period of local time is
+            // non-physical. Eg, 2:30 AM EST on March 8th simply doesn't exist
+            // in America/New_York, because the clock jumps from 1:59:59AM to
+            // 3:00:00AM
+            if( falls_back )
                 throw std::runtime_error( "ambiguous local time" );
-            }
             else
-            {
-                // This case occurs if we're entering Daylight Savings Time (or
-                // otherwise moving the clocks forward). In this case, there
-                // is some chance that we have a nonexistent local time.
-
-                if( t_key >= when2 ) return t - off_post;
-                if( t_key < when1 ) return t - off_pre;
-                // Times between 'when1' and 'when2' are nonexistent.
-
                 throw std::runtime_error( "nonexistent local time" );
-            }
         }
 
         int _lookup_local(
