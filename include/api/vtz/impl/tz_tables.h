@@ -7,6 +7,8 @@
 #include <vtz/impl/zone_abbr.h>
 #include <vtz/types.h>
 
+#include <stdexcept>
+
 namespace vtz {
     using std::string;
 
@@ -257,6 +259,56 @@ namespace vtz {
             }
         }
 
+        VTZ_INLINE sec_t _lookup_utc_or_throw( sec_t t_key, sec_t t ) const {
+            auto ent = tt_utc.get( t_key );
+            /// offset from UTC before transition time
+            i64 off_pre = ent.lo();
+            /// offset from UTC on or after transition time
+            i64  off_post = ent.hi();
+            auto when1    = ent.t + off_pre;  // eg, 2AM when DST starts
+            auto when2    = ent.t + off_post; // 3am (we saved 1 hour)
+            if( off_post <= off_pre )
+            {
+                // Let's take the end of daylight savings time in
+                // America/New_York as an example.
+                //
+                // At 1:59:59am, rather than changing to 2am, the clock falls
+                // back an hour to 1:00 am, and the offset goes from UTC-04 to
+                // UTC-05
+
+                // `off_post <= off_pre`
+                // -> `ent.t + off_post <= ent.t + off_pre`
+                // -> `when2 <= when1`
+                //
+                // This case occurs if we're dealing with ambiguous times.
+
+                if( when1 <= t_key ) // eg, the key is 2AM or after
+                {
+                    // We're past the time we could be ambiguous
+                    return t - off_post;
+                }
+                if( t_key < when2 )
+                {
+                    // eg, the key is before 1am
+                    return t - off_pre;
+                }
+
+                throw std::runtime_error( "ambiguous local time" );
+            }
+            else
+            {
+                // This case occurs if we're entering Daylight Savings Time (or
+                // otherwise moving the clocks forward). In this case, there
+                // is some chance that we have a nonexistent local time.
+
+                if( t_key >= when2 ) return t - off_post;
+                if( t_key < when1 ) return t - off_pre;
+                // Times between 'when1' and 'when2' are nonexistent.
+
+                throw std::runtime_error( "nonexistent local time" );
+            }
+        }
+
         int _lookup_local(
             sec_t t_key, sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
             auto ent = tt_utc.get( t_key );
@@ -407,6 +459,20 @@ namespace vtz {
                 // Return latest UTC time this could refer to
                 return _to_utc<true>( t );
             }
+        }
+
+        /// Converts an input local time to UTC. Throws an exception if the
+        /// given input time is non-existent
+        VTZ_INLINE sec_t to_sys_s( sec_t t ) const {
+            // If the time is in-bounds, we can use the lookup table
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
+                return _lookup_utc_or_throw( t, t );
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return t - tt_utc.initial();
+
+            // use zone symmetry to compute state for equivalent time
+            return _lookup_utc_or_throw( get_cyclic( t, cycle_time ), t );
         }
 
         VTZ_INLINE nanos_t to_sys_ns( nanos_t t, choose which ) const noexcept {

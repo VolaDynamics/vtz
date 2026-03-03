@@ -86,8 +86,8 @@ namespace vtz {
     /// `current_zone()`
     ///
     /// If you expect the timezone to change while the application is running,
-    /// you can use `vtz::reload_current_zone()` to update the timezone returned by
-    /// `current_zone()`
+    /// you can use `vtz::reload_current_zone()` to update the timezone returned
+    /// by `current_zone()`
 
     VTZ_EXPORT time_zone const* current_zone();
 
@@ -209,6 +209,31 @@ namespace vtz {
         inline auto to_sys( local_time<Dur> t, choose z ) const
             -> sys_time<std::common_type_t<Dur, seconds>>;
 
+
+        /// Convert the given time (in seconds) to UTC
+        ///
+        /// For example, if the timezone is America/New_York,  and input time is
+        /// `Wed Feb 25  5:45 PM`, the output time will be `Wed Feb 25 10:45 PM`
+        /// (UTC time)
+        ///
+        /// If the input time is ambiguous, OR the input time is non-existent,
+        /// throws an exception.
+
+        sys_seconds to_sys( local_seconds s ) const {
+            return _sys( to_sys_s( _raw_time( s ) ) );
+        }
+
+
+        /// Convert the given time to UTC. The input duration can be arbitrary
+        /// (minutes, seconds, milliseconds, etc), but the result will always
+        /// have precision of _at least_ seconds.
+        ///
+        /// If the input time is ambiguous, OR the input time is non-existent,
+        /// throws an exception.
+
+        template<class Dur>
+        inline auto to_sys( local_time<Dur> t ) const
+            -> sys_time<std::common_type_t<Dur, seconds>>;
 
         /// Convert a UTC time to local time within the given zone.
         ///
@@ -516,6 +541,28 @@ namespace vtz {
             // seconds)
             sys_seconds sys_t
                 = _sys( to_sys_s( t2.time_since_epoch().count(), z ) );
+
+            // if t2 is less precise than t, we chopped off some unit of time
+            // (eg, some number of nanoseconds)
+            //
+            // We need to add it back.
+            auto delta = t - t2;
+
+            return sys_t + delta;
+        }
+    }
+
+
+    template<class Dur>
+    auto time_zone::to_sys( local_time<Dur> t ) const
+        -> sys_time<std::common_type_t<Dur, seconds>> {
+        {
+            // Time we're looking up (must be seconds)
+            local_seconds t2 = std::chrono::floor<seconds>( t );
+
+            // This is the corresponding system time (with the unit being in
+            // seconds)
+            sys_seconds sys_t = _sys( to_sys_s( _raw_time( t2 ) ) );
 
             // if t2 is less precise than t, we chopped off some unit of time
             // (eg, some number of nanoseconds)
