@@ -19,6 +19,14 @@
 #include "bench_common.h"
 
 
+// Given a zone returns a function which takes an input local time in seconds
+// and returns true if that local time is unique
+static auto is_unique( std::string_view name ) {
+    return [tz = vtz::locate_zone( name )]( i64 sec ) -> bool {
+        return tz->get_info_local_s( sec ).result == vtz::local_info::unique;
+    };
+}
+
 BENCH( to_local_hinnant, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
@@ -54,6 +62,19 @@ BENCH( to_sys_earliest_hinnant, state ) {
     {
         benchmark::DoNotOptimize(
             tz->to_sys( tt[i % COUNT], date::choose::earliest ) );
+        ++i;
+    }
+}
+
+
+BENCH( to_sys_hinnant, state ) {
+    auto tt = to_chrono<date::local_seconds>(
+        random_times( COUNT, 1900, 2100, 1, is_unique( "America/New_York" ) ) );
+    auto   tz = date::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->to_sys( tt[i % COUNT] ) );
         ++i;
     }
 }
@@ -144,11 +165,28 @@ BENCH( to_sys_earliest_chrono, state ) {
         ++i;
     }
 }
+
+
+BENCH( to_sys_chrono, state ) {
+    using std::chrono::local_seconds;
+    using std::chrono::locate_zone;
+
+    auto tt = to_chrono<local_seconds>(
+        random_times( COUNT, 1900, 2100, 1, is_unique( "America/New_York" ) ) );
+    auto   tz = locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->to_sys( tt[i % COUNT] ) );
+        ++i;
+    }
+}
 #endif
 
 
 BENCH( to_local_vtz, state ) {
-    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto tt = to_chrono<sys_seconds>(
+        random_times( COUNT, 1900, 2100, 1, is_unique( "America/New_York" ) ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -182,6 +220,19 @@ BENCH( to_sys_earliest_vtz, state ) {
     {
         benchmark::DoNotOptimize(
             tz->to_sys( tt[i % COUNT], vtz::choose::earliest ) );
+        ++i;
+    }
+}
+
+
+BENCH( to_sys_vtz, state ) {
+    auto tt = to_chrono<vtz::local_seconds>(
+        random_times( COUNT, 1900, 2100, 1, is_unique( "America/New_York" ) ) );
+    auto   tz = vtz::locate_zone( "America/New_York" );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize( tz->to_sys( tt[i % COUNT] ) );
         ++i;
     }
 }

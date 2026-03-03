@@ -47,6 +47,23 @@ auto random_values( size_t count, T start, T end, F func ) {
 }
 
 
+template<class T, class F, class Filter>
+auto random_values( size_t count, T start, T end, F func, Filter filter ) {
+    using value_type = decltype( func( start ) );
+    auto result      = vector<value_type>( count );
+    auto rng         = std::mt19937_64{};
+    auto dist        = std::uniform_int_distribution<T>( start, end );
+
+    for( size_t i = 0; i < count; )
+    {
+        auto value = func( dist( rng ) );
+
+        if( filter( value ) ) { result[i++] = std::move( value ); }
+    }
+    return result;
+}
+
+
 template<class T>
 auto random_values( size_t count, T start, T end ) {
     return random_values( count, start, end, []( auto x ) { return x; } );
@@ -87,6 +104,18 @@ inline vector<i64> random_times(
         vtz::days_to_seconds( vtz::resolve_civil( start_year ) ),
         vtz::days_to_seconds( vtz::resolve_civil( end_year ) ),
         [=]( i64 x ) { return x * mul; } );
+}
+
+
+template<class Filter>
+inline vector<i64> random_times(
+    size_t count, int start_year, int end_year, i64 mul, Filter filter ) {
+    return random_values(
+        count,
+        vtz::days_to_seconds( vtz::resolve_civil( start_year ) ),
+        vtz::days_to_seconds( vtz::resolve_civil( end_year ) ),
+        [=]( i64 x ) { return x * mul; },
+        filter );
 }
 
 
