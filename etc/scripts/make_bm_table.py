@@ -33,6 +33,7 @@ class Config:
     benchmarks: list[BenchmarkConfig]
 
     entry_aliases: dict[str, list[str]] = field(default_factory=dict)
+    rename_entries: dict[str, str] = field(default_factory=dict)
     default_pattern: str = "${name}_${entries}$"
 
     place_units_after_range: bool = False
@@ -40,6 +41,10 @@ class Config:
     separate_speedup_table: bool = False
     benchmark_use_backtick: bool = False
     speedup_column_name: str = "${entry}"
+
+    def display_name(self, entry: str) -> str:
+        """Return the display name for an entry, applying ``rename_entries``."""
+        return self.rename_entries.get(entry, entry)
 
     @classmethod
     def from_toml(cls, path: Path) -> Config:
@@ -59,6 +64,7 @@ class Config:
             basis=raw["basis"],
             benchmarks=benchmarks,
             entry_aliases=raw.get("entry_aliases", {}),
+            rename_entries=raw.get("rename_entries", {}),
             default_pattern=raw.get("default_pattern", cls.default_pattern),
             place_units_after_range=raw.get("place_units_after_range", False),
             times_use_error_bar=raw.get("times_use_error_bar", False),
@@ -272,10 +278,11 @@ def _build_times_table(
     """Build the header and data rows for the times table."""
     fmt_name = _name_formatter(cfg)
 
+    display_entries = [cfg.display_name(e) for e in active_entries]
     if cfg.separate_speedup_table:
-        header = [""] + active_entries
+        header = [""] + display_entries
     else:
-        header = [""] + active_entries + ["speedup"]
+        header = [""] + display_entries + ["speedup"]
 
     table_data: list[list[str]] = []
     for name, entry_times in rows:
@@ -336,8 +343,8 @@ def _build_speedup_table(
 
     header = [""] + [
         cfg.speedup_column_name
-        .replace("${basis}", cfg.basis)
-        .replace("${entry}", e)
+        .replace("${basis}", cfg.display_name(cfg.basis))
+        .replace("${entry}", cfg.display_name(e))
         for e in sp_entries
     ]
 

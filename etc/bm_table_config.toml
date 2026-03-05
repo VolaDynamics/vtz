@@ -2,6 +2,9 @@ entries = ["vtz", "absl", "hinnant", "hinnant_os_tzdb", "chrono", "libfmt"]
 
 entry_aliases = { libfmt = ["utc_libfmt"] }
 
+# Rename columns within the output table
+rename_entries = { libfmt = "fmt", chrono = "stl", hinnant = "date", "hinnant_os_tzdb" = "date/os tzdb" }
+
 # entry to highlight in the speedup column
 basis = "vtz"
 
