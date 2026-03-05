@@ -79,9 +79,7 @@ namespace vtz {
         }
 
         /// if t >= tt[i], return the low 32 bits of bb[i], else obtain the hi
-        /// 32
-        /// bits of
-        /// bb[i], where i = t >> g
+        /// 32 bits of bb[i], where i = t >> g
         ///
         /// Treats the result as a signed integer, and sign-extends it back to
         /// 64 bits.
