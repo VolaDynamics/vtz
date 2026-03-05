@@ -29,3 +29,10 @@ run_bench_groups:
     build/bench_vtz --benchmark_filter='parse'
     build/bench_vtz --benchmark_filter='locate_zone'
     build/bench_vtz --benchmark_filter='locate_random_zone'
+
+
+_current_time := datetime('%FT%T%z')
+
+run_bench: build
+    build/bench_vtz --benchmark_out=etc/data/bench_{{_current_time}}.json
+    uv run --python 3.11 etc/scripts/make_bm_table.py etc/data/bench_{{_current_time}}.json
