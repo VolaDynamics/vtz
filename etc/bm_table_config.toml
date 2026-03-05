@@ -1,0 +1,69 @@
+entries = ["vtz", "absl", "hinnant", "chrono", "libfmt"]
+
+entry_aliases = { libfmt = ["utc_libfmt"] }
+
+# entry to highlight in the speedup column
+basis = "vtz"
+
+# inside a pattern, ${name} expands to the benchmark name and ${entries}
+# expands to a pattern matching any entry or entry alias:
+# (vtz|absl|hinnant|chrono|libfmt|utc_libfmt)
+# This is the default pattern, used if a benchmark doesn't provide one.
+default_pattern = "${name}_${entries}$"
+
+# if set, then units are placed _after_ the range,
+# rather than being attached to both entries in the range.
+#
+# If enabled, a space is added between the range and unit
+#
+# Example (false): 0.845ns - 0.850ns
+# Example (true): 0.845 - 0.850 ns
+place_units_after_range = true
+
+# Times use an error bar instead of a range. Speedups should still use a range.
+#
+# Example (false): 1440ns - 1450ns
+# Example (true): 1445 ± 5ns
+times_use_error_bar = true
+
+# if true, a second table will be emitted for speedups,
+# rather than having a speedup column.
+#
+# The basis should be excluded from the speedup table
+separate_speedup_table = true
+
+# If true, then benchmarks names are surrounded by backticks,
+# so that they're formatted as code
+benchmark_use_backtick = true
+
+# Pattern to use when naming columns.
+#
+# eg, this would expand to "vtz v. absl" or "vtz v. hinnant"
+speedup_column_name = "${basis} v. ${entry}"
+
+[[benchmark]]
+name = "to_local"
+
+[[benchmark]]
+name = "to_sys"
+pattern = "${name}_(earliest_|latest_)?${entries}$"
+
+[[benchmark]]
+name = "format"
+pattern = "${name}_${entries}$"
+
+[[benchmark]]
+name = "format_to"
+pattern = "${name}_${entries}$"
+
+[[benchmark]]
+name = "parse_date"
+
+[[benchmark]]
+name = "parse_time"
+
+[[benchmark]]
+name = "locate_zone"
+
+[[benchmark]]
+name = "locate_random_zone"
