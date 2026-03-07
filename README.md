@@ -164,7 +164,7 @@ Robust and reliable performance is a key focus of vtz.
 
 Timezone conversions themselves are **52-67x** faster than gcc's implementation
 of the [`std::chrono::time_zone`][chrono-timezone], **45-63x** faster than
-Google [abseil][abseil], at some **31x - 1800x** faster than
+Google [abseil][abseil], and some **31x - 1800x** faster than
 [`date::time_zone`][hinnant-date] from the [the Hinnant date
 library][hinnant-date].
 
