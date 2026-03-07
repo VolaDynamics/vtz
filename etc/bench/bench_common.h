@@ -29,10 +29,10 @@ constexpr size_t COUNT = 65536;
 #endif
 
 
-#define BENCH( name, state )                                                   \
-    void name( benchmark::State& state );                                      \
-    BENCHMARK( name );                                                         \
-    void name( benchmark::State& state )
+#define BENCH( name, lib, state )                                              \
+    void name ## _ ## lib( benchmark::State& state );                          \
+    BENCHMARK( name ## _ ## lib )->Name( #name "/" #lib );                     \
+    void name ## _ ## lib( benchmark::State& state )
 
 
 template<class T, class F>

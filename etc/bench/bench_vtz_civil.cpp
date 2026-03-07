@@ -13,7 +13,7 @@ vector<vtz::civil_ymd> random_ymd(
 }
 
 
-BENCH( date_to_civil_vtz, state ) {
+BENCH( date_to_civil, vtz, state ) {
     auto   dd = random_days( COUNT, 1900, 2100 );
     size_t i  = 0;
     for( auto _ : state )
@@ -23,7 +23,7 @@ BENCH( date_to_civil_vtz, state ) {
     }
 }
 
-BENCH( date_from_civil_date_vtz, state ) {
+BENCH( date_from_civil_date, vtz, state ) {
     auto   dd = random_ymd( COUNT, 1900, 2100 );
     size_t i  = 0;
     for( auto _ : state )
@@ -35,7 +35,7 @@ BENCH( date_from_civil_date_vtz, state ) {
     }
 }
 
-BENCH( date_from_civil_year_vtz, state ) {
+BENCH( date_from_civil_year, vtz, state ) {
     auto   dd = random_ymd( COUNT, 1900, 2100 );
     size_t i  = 0;
     for( auto _ : state )

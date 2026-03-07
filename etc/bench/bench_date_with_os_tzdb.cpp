@@ -21,7 +21,7 @@ static auto is_unique( std::string_view name ) {
 }
 
 
-BENCH( to_local_hinnant_os_tzdb, state ) {
+BENCH( to_local, date_os_tzdb, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -33,7 +33,7 @@ BENCH( to_local_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( to_sys_latest_hinnant_os_tzdb, state ) {
+BENCH( to_sys_latest, date_os_tzdb, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
@@ -47,7 +47,7 @@ BENCH( to_sys_latest_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( to_sys_earliest_hinnant_os_tzdb, state ) {
+BENCH( to_sys_earliest, date_os_tzdb, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
@@ -61,7 +61,7 @@ BENCH( to_sys_earliest_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( to_sys_hinnant_os_tzdb, state ) {
+BENCH( to_sys, date_os_tzdb, state ) {
     auto tt = to_chrono<date::local_seconds>(
         random_times( COUNT, 1900, 2100, 1, is_unique( "America/New_York" ) ) );
     auto   tz = date::locate_zone( "America/New_York" );
@@ -74,7 +74,7 @@ BENCH( to_sys_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( to_local_with_lookup_hinnant_os_tzdb, state ) {
+BENCH( to_local_with_lookup, date_os_tzdb, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i  = 0;
     for( auto _ : state )
@@ -86,7 +86,7 @@ BENCH( to_local_with_lookup_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( to_sys_latest_with_lookup_hinnant_os_tzdb, state ) {
+BENCH( to_sys_latest_with_lookup, date_os_tzdb, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
@@ -99,7 +99,7 @@ BENCH( to_sys_latest_with_lookup_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( to_sys_earliest_with_lookup_hinnant_os_tzdb, state ) {
+BENCH( to_sys_earliest_with_lookup, date_os_tzdb, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     size_t i = 0;
@@ -112,7 +112,7 @@ BENCH( to_sys_earliest_with_lookup_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( locate_zone_hinnant_os_tzdb, state ) {
+BENCH( locate_zone, date_os_tzdb, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH ) { (void)date::locate_zone( z ); }
@@ -127,7 +127,7 @@ BENCH( locate_zone_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( locate_random_zone_hinnant_os_tzdb, state ) {
+BENCH( locate_rand, date_os_tzdb, state ) {
     auto zones = random_zones( COUNT );
 
     for( auto z : ZONES_FOR_BENCH ) { (void)date::locate_zone( z ); }
@@ -141,7 +141,7 @@ BENCH( locate_random_zone_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( format_hinnant_os_tzdb, state ) {
+BENCH( format, date_os_tzdb, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -154,7 +154,7 @@ BENCH( format_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( parse_date_hinnant_os_tzdb, state ) {
+BENCH( parse_date, date_os_tzdb, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil( 1900 ),
         vtz::resolve_civil( 2100 ),
@@ -176,7 +176,7 @@ BENCH( parse_date_hinnant_os_tzdb, state ) {
 }
 
 
-BENCH( parse_time_hinnant_os_tzdb, state ) {
+BENCH( parse_time, date_os_tzdb, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),
         vtz::resolve_civil_time( 2100, 1, 1, 0, 0, 0 ),

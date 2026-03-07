@@ -27,7 +27,7 @@ static auto is_unique( std::string_view name ) {
     };
 }
 
-BENCH( to_local_hinnant, state ) {
+BENCH( to_local, date, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -39,7 +39,7 @@ BENCH( to_local_hinnant, state ) {
 }
 
 
-BENCH( to_sys_latest_hinnant, state ) {
+BENCH( to_sys_latest, date, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
@@ -53,7 +53,7 @@ BENCH( to_sys_latest_hinnant, state ) {
 }
 
 
-BENCH( to_sys_earliest_hinnant, state ) {
+BENCH( to_sys_earliest, date, state ) {
     auto tt
         = to_chrono<date::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
@@ -67,7 +67,7 @@ BENCH( to_sys_earliest_hinnant, state ) {
 }
 
 
-BENCH( to_sys_hinnant, state ) {
+BENCH( to_sys, date, state ) {
     auto tt = to_chrono<date::local_seconds>(
         random_times( COUNT, 1900, 2100, 1, is_unique( "America/New_York" ) ) );
     auto   tz = date::locate_zone( "America/New_York" );
@@ -80,7 +80,7 @@ BENCH( to_sys_hinnant, state ) {
 }
 
 
-BENCH( to_local_absl, state ) {
+BENCH( to_local, absl, state ) {
     auto           tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
@@ -93,7 +93,7 @@ BENCH( to_local_absl, state ) {
 }
 
 
-BENCH( to_sys_latest_absl, state ) {
+BENCH( to_sys_latest, absl, state ) {
     auto           cs = to_absl_civil( random_times( COUNT, 1900, 2100 ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
@@ -106,7 +106,7 @@ BENCH( to_sys_latest_absl, state ) {
 }
 
 
-BENCH( to_sys_earliest_absl, state ) {
+BENCH( to_sys_earliest, absl, state ) {
     auto           cs = to_absl_civil( random_times( COUNT, 1900, 2100 ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
@@ -121,7 +121,7 @@ BENCH( to_sys_earliest_absl, state ) {
 
 // if std::chrono::locate_zone is available, benchmark std::chrono::time_zone
 #if HAS_CHRONO_TIMEZONE
-BENCH( to_local_chrono, state ) {
+BENCH( to_local, std, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = std::chrono::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -133,7 +133,7 @@ BENCH( to_local_chrono, state ) {
 }
 
 
-BENCH( to_sys_latest_chrono, state ) {
+BENCH( to_sys_latest, std, state ) {
     using std::chrono::choose;
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
@@ -150,7 +150,7 @@ BENCH( to_sys_latest_chrono, state ) {
 }
 
 
-BENCH( to_sys_earliest_chrono, state ) {
+BENCH( to_sys_earliest, std, state ) {
     using std::chrono::choose;
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
@@ -167,7 +167,7 @@ BENCH( to_sys_earliest_chrono, state ) {
 }
 
 
-BENCH( to_sys_chrono, state ) {
+BENCH( to_sys, std, state ) {
     using std::chrono::local_seconds;
     using std::chrono::locate_zone;
 
@@ -184,7 +184,7 @@ BENCH( to_sys_chrono, state ) {
 #endif
 
 
-BENCH( to_local_vtz, state ) {
+BENCH( to_local, vtz, state ) {
     auto tt = to_chrono<sys_seconds>(
         random_times( COUNT, 1900, 2100, 1, is_unique( "America/New_York" ) ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
@@ -197,7 +197,7 @@ BENCH( to_local_vtz, state ) {
 }
 
 
-BENCH( to_sys_latest_vtz, state ) {
+BENCH( to_sys_latest, vtz, state ) {
     auto tt
         = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
@@ -211,7 +211,7 @@ BENCH( to_sys_latest_vtz, state ) {
 }
 
 
-BENCH( to_sys_earliest_vtz, state ) {
+BENCH( to_sys_earliest, vtz, state ) {
     auto tt
         = to_chrono<vtz::local_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
@@ -225,7 +225,7 @@ BENCH( to_sys_earliest_vtz, state ) {
 }
 
 
-BENCH( to_sys_vtz, state ) {
+BENCH( to_sys, vtz, state ) {
     auto tt = to_chrono<vtz::local_seconds>(
         random_times( COUNT, 1900, 2100, 1, is_unique( "America/New_York" ) ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
@@ -238,7 +238,7 @@ BENCH( to_sys_vtz, state ) {
 }
 
 
-BENCH( to_local_s_vtz, state ) {
+BENCH( to_local_s, vtz, state ) {
     auto   tt = random_times( COUNT, 1900, 2100 );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -250,7 +250,7 @@ BENCH( to_local_s_vtz, state ) {
 }
 
 
-BENCH( to_sys_latest_s_vtz, state ) {
+BENCH( to_sys_latest_s, vtz, state ) {
     auto   tt = random_times( COUNT, 1900, 2100 );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
@@ -263,7 +263,7 @@ BENCH( to_sys_latest_s_vtz, state ) {
 }
 
 
-BENCH( to_sys_earliest_s_vtz, state ) {
+BENCH( to_sys_earliest_s, vtz, state ) {
     auto   tt = random_times( COUNT, 1900, 2100 );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;

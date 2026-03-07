@@ -1,9 +1,10 @@
-entries = ["vtz", "absl", "hinnant", "hinnant_os_tzdb", "chrono", "libfmt"]
+entries = ["vtz", "std", "absl", "date", "date_os_tzdb", "fmt"]
 
-entry_aliases = { libfmt = ["utc_libfmt"] }
+# Benchmarks ending in 'utc_fmt' should be show up in tables as 'fmt'
+entry_aliases = { fmt = ["utc_fmt"] }
 
 # Rename columns within the output table
-rename_entries = { libfmt = "fmt", chrono = "stl", hinnant = "date", "hinnant_os_tzdb" = "date/os tzdb" }
+rename_entries = { date = "date", "date_os_tzdb" = "date/os tzdb" }
 
 # entry to highlight in the speedup column
 basis = "vtz"
@@ -12,7 +13,7 @@ basis = "vtz"
 # expands to a pattern matching any entry or entry alias:
 # (vtz|absl|hinnant|chrono|libfmt|utc_libfmt)
 # This is the default pattern, used if a benchmark doesn't provide one.
-default_pattern = "${name}_${entries}$"
+default_pattern = "${name}/${entries}$"
 
 # if set, then units are placed _after_ the range,
 # rather than being attached to both entries in the range.
@@ -49,15 +50,13 @@ name = "to_local"
 
 [[benchmark]]
 name = "to_sys"
-pattern = "${name}_(earliest_|latest_)?${entries}$"
+pattern = "${name}(_earliest|_latest)?/${entries}$"
 
 [[benchmark]]
 name = "format"
-pattern = "${name}_${entries}$"
 
 [[benchmark]]
 name = "format_to"
-pattern = "${name}_${entries}$"
 
 [[benchmark]]
 name = "parse_date"
@@ -69,4 +68,4 @@ name = "parse_time"
 name = "locate_zone"
 
 [[benchmark]]
-name = "locate_random_zone"
+name = "locate_rand"
