@@ -31,7 +31,7 @@ run_bench_groups:
     build/bench_vtz --benchmark_filter='locate_random_zone'
 
 
-_current_time := datetime('%FT%T%z')
+_current_time := datetime('%FT%H.%M.%S%z')
 
 run_bench: build
     build/bench_vtz --benchmark_out=etc/data/bench_{{_current_time}}.json

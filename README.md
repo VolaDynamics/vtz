@@ -329,7 +329,7 @@ benchmark [--benchmark_list_tests={true|false}]
 Tables were generated with
 
 ```sh
-uv run --python 3.11 etc/scripts/make_bm_table.py etc/data/bench_2026-03-06T17:50:31-0500.json
+uv run --python 3.11 etc/scripts/make_bm_table.py etc/data/bench_2026-03-06T17.50.31-0500.json
 ```
 
 `make_bm_table.py` is a script that processes the benchmark data, and produces
