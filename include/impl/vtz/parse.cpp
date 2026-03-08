@@ -819,12 +819,12 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     while( p != p_end )
                     {
                         char c        = *p;
-                        bool is_zchar = 'A' <= c && c <= 'Z'    //
-                                        || 'a' <= c && c <= 'z' //
-                                        || '0' <= c && c <= '9' //
-                                        || c == '-'             //
-                                        || c == '+'             //
-                                        || c == '_'             //
+                        bool is_zchar = ( 'A' <= c && c <= 'Z' )    //
+                                        || ( 'a' <= c && c <= 'z' ) //
+                                        || ( '0' <= c && c <= '9' ) //
+                                        || c == '-'                 //
+                                        || c == '+'                 //
+                                        || c == '_'                 //
                                         || c == '/';
                         if( !is_zchar ) break;
                         ++p;
