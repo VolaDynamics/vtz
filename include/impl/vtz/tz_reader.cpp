@@ -1234,7 +1234,7 @@ namespace vtz {
             rule_entry const* begin,
             rule_entry const* end ) noexcept {
             rule_entry const* cursor = begin;
-            while( cursor != end && cursor->from == year ) ++cursor;
+            while( cursor != end && size_t( cursor->from ) == year ) ++cursor;
             return cursor;
         }
 
@@ -1869,7 +1869,7 @@ namespace vtz {
         }
 
         static_assert( Y_MAX == -1 );
-        static_assert( next_expiry_year( nullptr, 0 ) == -1 );
+        static_assert( next_expiry_year( nullptr, 0 ) == size_t( -1 ) );
 
         // We want to pull any remaining rules that have a fixed expiry date.
         //
