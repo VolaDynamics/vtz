@@ -1031,9 +1031,9 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
 
         sysdays_t date = bool( doy ) // Check if we have an ordinal date
                                      // use ordinal date
-                             ? date = resolve_civil_ordinal( year, doy )
+                             ? resolve_civil_ordinal( year, doy )
                              // use (year, month, day)
-                             : date = resolve_civil( year, month, dom );
+                             : resolve_civil( year, month, dom );
 
         i32 time_of_day = i32( hr ) * 3600 + i32( mi ) * 60 + i32( se );
 
