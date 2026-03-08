@@ -1209,9 +1209,9 @@ namespace vtz {
         string_view                     until )
 
     : stdoff( stdoff )
+    , until( parse_zone_until( until ) )
     , rules( parse_zone_rule( rules ) )
-    , format( parse_zone_format( format ) )
-    , until( parse_zone_until( until ) ) {}
+    , format( parse_zone_format( format ) ) { }
 
 
     size_t dump_active( rule_entry const* active,
