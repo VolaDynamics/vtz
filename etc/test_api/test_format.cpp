@@ -15,6 +15,7 @@
 using namespace vtz;
 using sv = std::string_view;
 
+using namespace std::string_view_literals;
 
 namespace {
 
@@ -22,14 +23,32 @@ namespace {
 
     auto const& c_locale = std::locale::classic();
 
+    template<class Dur>
+    std::string ref_fmt( char const* fmt, vtz::sys_time<Dur> T ) {
+        // On linux, we encounter a bug in `date` where doesn't correctly handle
+        // years before 1000 CE in the expansion of `%c`
+        //
+        // Eg, if the input is 0001-01-01 00:00:00, date will format `%c` as
+        // `Mon Jan  1 00:00:00 1`, when it should be formatted as `%a %b %e
+        // %H:%M:%S %Y`, per the docs for strftime.
+        //
+        // '%Y' always has at least 4 digits, so using the correct format, this
+        // would result in `Mon Jan  1 00:00:00 0001`
+        //
+        // See: https://man7.org/linux/man-pages/man3/strftime.3.html
+        if( fmt == "%c"sv ) { fmt = "%a %b %e %H:%M:%S %Y"; }
+
+        return date::format( c_locale, fmt, T );
+    }
+
     std::string ref_time( const char* fmt, int64_t t ) {
         auto tp = date::sys_seconds{ std::chrono::seconds{ t } };
-        return date::format( c_locale, fmt, tp );
+        return ref_fmt( fmt, tp );
     }
 
     std::string ref_date( const char* fmt, int32_t d ) {
         auto tp = date::sys_days{ date::days{ d } };
-        return date::format( c_locale, fmt, tp );
+        return ref_fmt( fmt, tp );
     }
 
     // Reference formatter for sub-second precision. Constructs a sys_time
@@ -82,7 +101,7 @@ namespace {
         const char* fmt, int64_t t, const std::string& expected ) {
         auto t_sys = sys_seconds( seconds( t ) );
 
-        ASSERT_EQ( format_s( fmt, t ), expected );
+        ASSERT_EQ( format_s( fmt, t ), expected ) << "fmt='" << fmt << "'";
         ASSERT_EQ( format( fmt, t_sys ), expected );
 
         // format_precise with precision=0 should match
