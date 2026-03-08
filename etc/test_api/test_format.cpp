@@ -90,7 +90,8 @@ namespace {
         case 7: return ref_precise<10000000>( fmt, t, frac );
         case 8: return ref_precise<100000000>( fmt, t, frac );
         case 9: return ref_precise<1000000000>( fmt, t, frac );
-        default: __builtin_unreachable();
+        default:
+            throw std::runtime_error( "ref_time(): precision must be 0..=9" );
         }
     }
 
