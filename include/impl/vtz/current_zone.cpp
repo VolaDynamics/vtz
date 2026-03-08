@@ -116,7 +116,7 @@ namespace vtz::unix {
         if( result < 0 ) throw file_error( errno, link, "reading symlink" );
 
         // returns valid optional if there was no truncation
-        if( result < dest.size() ) return result;
+        if( size_t( result ) < dest.size() ) return size_t( result );
 
         return std::nullopt;
     }
