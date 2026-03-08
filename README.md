@@ -4,14 +4,14 @@ vtz is a timezone library which provides unparalleled performance and a clean
 API for both regular applications, and for data-heavy workflows where scale or
 latency is a concern.
 
-Does your database need to handle timezones correctly? Are you doing modeling
-which depends on local time within a particular region? Does your application
-need to be able to parse or format timestamps en masse?
+Does your database need to handle timezones correctly? Does your application
+need to be able to parse or format timestamps en masse? Are you doing modeling
+which depends on local time within a particular region?
 
 If so, then vtz is the right library for you.
 
-vtz is **30-50x faster** at timezone conversions than the next leading
-competitor. It's faster at looking up offsets, converting UTC to local,
+**vtz is 30-60x faster at timezone conversions than the next leading
+competitor.** It's faster at looking up offsets, converting UTC to local,
 converting local to UTC, parsing timestamps, formatting timestamps, and it's
 faster at looking up a timezone based on a name. Take a look at
 [the performance section](#performance) for a full comparison.
@@ -62,8 +62,6 @@ auto offset = tz->offset( t );
 std::string t_str = tz->format( "%F %T %Z", t );
 ```
 
-[format.h]: include/api/vtz/format.h
-[parse.h]: include/api/vtz/parse.h
 [docs/vtz_tldr.md]: docs/vtz_tldr.md
 [tldr]: docs/vtz_tldr.md
 [tour]: docs/vtz_a_guided_tour.md
@@ -136,8 +134,8 @@ This is a very fast hash map implementation which is used as the KV store for
 
 [ankerl]: https://github.com/martinus/unordered_dense
 
-Because `ankerl::unordered_dense` is header-only, a copy of the headers have
-been provisioned at `etc/3rd/ankerl`.
+Because `ankerl::unordered_dense` is header-only, a copy of the headers has been
+provisioned at `etc/3rd/ankerl`.
 
 If `vtz` is used as a sub-component of another library (eg, with
 `add_subdirectory`, or when included with [CPM]), vtz will not build tests; it
@@ -162,18 +160,18 @@ If installed on a directory searched by CMake, `vtz` can be discovered with
 
 Robust and reliable performance is a key focus of vtz.
 
-Timezone conversions themselves are **52-67x** faster than gcc's implementation
-of the [`std::chrono::time_zone`][chrono-timezone], **45-63x** faster than
-Google [abseil][abseil], and some **31x - 1800x** faster than
+Timezone conversions themselves are **52-67x faster than gcc's implementation of
+the [`std::chrono::time_zone`][chrono-timezone]**, 45-63x faster than Google
+[abseil][abseil], and 31x - 1800x(!!!) faster than
 [`date::time_zone`][hinnant-date] from the [the Hinnant date
 library][hinnant-date].
 
-When parsing timestamps, vtz achieves a 11x speedup over
-[`std::chrono::parse()`], a 7x speedup over abseil, and it's some 16x faster
+When parsing timestamps, vtz achieves an **11x speedup over
+[`std::chrono::parse()`]**, a 7x speedup over abseil, and it's some 16x faster
 than [`date::parse`][hinnant-date].
 
-When formatting timestamps, vtz is **2.6 - 3.1x** faster than
-[`libfmt`][libfmt], 2.9x faster than abseil, and 10 to 50x faster than
+When formatting timestamps, vtz is **2.6 - 3.1x faster than
+[`libfmt`][libfmt]**, 2.9x faster than abseil, and 10 to 50x faster than
 [`date::format`][hinnant-date].
 
 And for Timezone lookups based on a name (eg,
@@ -195,9 +193,19 @@ running `bench_vtz` on a Ryzen 9 7950X, and all libraries were compiled with
 | `locate_zone` | 6.95ns           | 29.5ns        | 20.6ns | 22.8ns       | 23.6ns        |        |
 | `locate_rand` | 9.85ns           | 49.0ns        | 26.4ns | 40.9ns       | 42.6ns        |        |
 
-<br>
+**Benchmark descriptions:**
 
-From the above, we obtain a table measuring vtz's relative speedup:
+- `to_local` measures the time to perform a UTC to Local conversion
+- `to_sys` measures the inverse - a Local Time to UTC conversion
+- `format` measures the time to format a timestamp, returning a `std::string`
+- `format_to` measures the time to format a timestamp to a buffer of `char`
+- `parse_date` measures the time to parse a date
+- `parse_time` measures the time to parse a timestamp
+- `locate_zone` measures the time to get a timezone object, based on the name
+- `locate_rand` measures the time to get a timezone object, with a different
+  random input name each time
+
+From the above benchmarks, we obtain a table measuring vtz's relative speedup:
 
 |               | vtz v. std | vtz v. absl | vtz v. date   | vtz v. date/os tzdb | vtz v. fmt |
 | ------------- | ---------- | ----------- | ------------- | ------------------- | ---------- |
@@ -289,7 +297,7 @@ Benchmarks can be run with:
 build/bench_vtz --benchmark_out=path/to/output.json
 ```
 
-vtz uses google benchmark, and any of Google Benchmark`s cli arguments can be
+vtz uses google benchmark, and any of Google Benchmark's CLI arguments can be
 used here.
 
 <details>
@@ -324,7 +332,7 @@ Tables were generated with
 uv run --python 3.11 etc/scripts/make_bm_table.py etc/data/bench_2026-03-06T17:50:31-0500.json
 ```
 
-`make_bm_table.py` is a script that sucks in the benchmark data, and produces
+`make_bm_table.py` is a script that processes the benchmark data, and produces
 two tables showing the raw performance numbers, as well as vtz's relative
 performance. Settings for the script can be found in `bm_table_config.toml`.
 
@@ -354,7 +362,6 @@ Note that some compilers still lack an implementation for
 [`std::chrono::time_zone`]. If your standard library does not support
 [`std::chrono::time_zone`], then `chrono` will be excluded from the benchmarks.
 
-[heavily tested]: /etc/test/test_versus_hinnant_tz.cpp
 [`std::chrono::time_zone`]:
   https://en.cppreference.com/w/cpp/chrono/time_zone.html
 [chrono-timezone]: https://en.cppreference.com/w/cpp/chrono/time_zone.html
@@ -455,7 +462,7 @@ date_from_civil_date/vtz                       2.56 ns         2.56 ns    272712
 date_from_civil_year/vtz                       2.34 ns         2.34 ns    298706392
 ```
 
-![alt text](images/raw_benchmarks.png)
+![Image showing screenshot of terminal window displaying benchmark output](images/raw_benchmarks.png)
 
 ---
 
@@ -465,8 +472,8 @@ date_from_civil_year/vtz                       2.34 ns         2.34 ns    298706
 
 Clock transitions (such as the transition into or out of daylight savings time)
 have some degree of regularity, but this regularity is imperfect. Many libraries
-resort to a some variant of a binary search across a range of transition times,
-or they attempt to evaluate the rules for when daylight savings time starts/ends
+resort to some variant of a binary search across a range of transition times, or
+they attempt to evaluate the rules for when daylight savings time starts/ends
 directly (Hinnant's date library does this by default, which is why it's so much
 slower).
 
@@ -478,7 +485,7 @@ or a UTC time.
 For each zone, vtz records the block size, $k$, and then indexes into the
 corresponding block by taking the input time and performing a bitshift:
 `input_time >> k`. Most timezones end up with a block size of `k=23`,
-corresponding to 8388608 seconds, or ~97 days.
+corresponding to 8388608 seconds, or roughly 97 days.
 
 Timezones such as UTC, which have no transitions at all, may use a maximally
 large block size so that the whole table only takes up a couple bytes.
@@ -665,7 +672,7 @@ occurs.
 Other information (such as the timezone abbreviation at a particular time) is
 handled in a similarly efficient manner - the primary difference is that, rather
 than holding the UTC offset, the second and third elements of the block are
-indicies into a table of timezone abbreviations.
+indices into a table of timezone abbreviations.
 
 ### Handling dates far in the future, or in the past
 
