@@ -3,6 +3,7 @@
 
 #include <vtz/date_types.h>
 #include <vtz/files.h>
+#include <vtz/known_zones.h>
 #include <vtz/strings.h>
 #include <vtz/tz_reader.h>
 
@@ -12,6 +13,7 @@
 #include <fmt/chrono.h>
 #include <fmt/color.h>
 #include <fmt/format.h>
+#include <iterator>
 
 #include <vtz/civil.h>
 #include <vtz/tz.h>
@@ -113,6 +115,20 @@ DECLARE_STRINGLIKE( rule_letter );
 FMT_ENUM_PLAIN( vtz::zone_rule::kind_t );
 
 namespace {
+    // If the input name is a link, returns the tzdata name. Otherwise
+    // returns the input
+    std::string_view normalize_tzname( std::string_view name ) {
+        static const ankerl::unordered_dense::map<std::string_view, std::string_view> link_to_name(
+            std::begin( KNOWN_LINKS ), std::end( KNOWN_LINKS ) );
+
+        // If the name is a link, return the corresponding tzdata name
+        auto it = link_to_name.find( name );
+        if( it != link_to_name.end() ) return it->second;
+
+        // Not a link - return canonical name
+        return name;
+    }
+
     template<size_t... N>
     std::vector<string_view> vec_sv( char const ( &... arr )[N] ) {
         return std::vector<string_view>{ string_view( arr, N - 1 )... };
@@ -1101,13 +1117,16 @@ namespace vtz {
 } // namespace vtz
 
 TEST( vtz, current_zone ) {
-    ASSERT_EQ( _get_current_zone_name(), date::current_zone()->name() );
+    ASSERT_EQ( normalize_tzname( _get_current_zone_name() ),
+        normalize_tzname( date::current_zone()->name() ) );
     ASSERT_EQ( vtz::current_zone()->name(), date::current_zone()->name() );
 }
 
 
 TEST( vtz, reload_current_zone ) {
-    ASSERT_EQ( _get_current_zone_name(), date::current_zone()->name() );
+    ASSERT_EQ( normalize_tzname( _get_current_zone_name() ),
+        normalize_tzname( date::current_zone()->name() ) );
+
     auto* old_tz = vtz::current_zone();
     ASSERT_EQ( old_tz->name(), date::current_zone()->name() );
 
