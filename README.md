@@ -279,6 +279,144 @@ from the tz database at runtime by setting `VTZ_TZDATA_PATH=/path/to/tzdata`.
 
 </details>
 
+### Benchmarks on MSVC/Windows
+
+vtz intends to be suitable for general use, and that means being cross-platform.
+
+On Windows, vtz is 10x-70x as fast as Abseil at timezone conversions, 550x to
+1300x faster than the Hinnant `date` library, up to **9000x faster than
+Microsoft's implementation of `std::chrono::time_zone`**, depending on the task.
+
+|               | vtz            | std             | absl          | date         | fmt   |
+| ------------- | -------------- | --------------- | ------------- | ------------ | ----- |
+| `to_local`    | 1.34ns         | 3870ns          | 100ns         | 1830ns       |       |
+| `to_sys`      | 2.73 ± 0.28 ns | 24750 ± 2250 ns | 33.2 ± 0.6 ns | 1650 ± 20 ns |       |
+| `format`      | 60.2ns         | 27600ns         | 183ns         | 3000ns       | 135ns |
+| `format_to`   | 33.4ns         | 26900ns         |               |              | 100ns |
+| `parse_date`  | 22.4ns         | 557ns           | 105ns         | 366ns        |       |
+| `parse_time`  | 27.9ns         | 959ns           | 160ns         | 558ns        |       |
+| `locate_zone` | 15.1ns         | 343ns           | 36.8ns        | 52.9ns       |       |
+| `locate_rand` | 34.8ns         | 452ns           | 48.3ns        | 81.3ns       |       |
+
+Table measuring relative speedup in comparison to other libraries:
+
+|               | vtz v. std    | vtz v. absl | vtz v. date | vtz v. fmt |
+| ------------- | ------------- | ----------- | ----------- | ---------- |
+| `to_local`    | 2880x         | 74.7x       | 1364x       |            |
+| `to_sys`      | 8960x - 9173x | 11x - 13x   | 556x - 666x |            |
+| `format`      | 459x          | 3.05x       | 49.9x       | 2.24x      |
+| `format_to`   | 805x          |             |             | 3.01x      |
+| `parse_date`  | 24.8x         | 4.67x       | 16.3x       |            |
+| `parse_time`  | 34.4x         | 5.75x       | 20.0x       |            |
+| `locate_zone` | 22.7x         | 2.43x       | 3.50x       |            |
+| `locate_rand` | 13.0x         | 1.39x       | 2.34x       |            |
+
+All benchmarks ran as part of the same process; everything was compiled in
+Release mode. Tables were generated from `etc/data/bench_2026-03-09T14.52.12-0400.json`.
+
+**Hinnant `date` library:** When compiled for Windows, the Hinnant `date`
+library is slow because Windows does not have compiled tzif files, and so
+`USE_OS_TZDB=1` is not supported. `date` fails to compile on Windows if you try
+to enable this option. See "More information on performance discrepancies with
+the Hinnant date library", above, for more info.
+
+**Microsoft STL:** I do not understand how Microsoft managed to produce such a
+terrible `std::chrono::time_zone` implementation.
+
+Multiple people have filed issues against the STL due to
+`std::chrono::time_zone`'s performance woes, however it is likely that they will
+be unable to fix the issue without an ABI break.
+
+- [\<chrono\>: `time_zone::get_info` code is excessively slow #5304](https://github.com/microsoft/STL/issues/5304)
+- [\<chrono\>: Major performance issues when using zoned_time or time_zone #2842](https://github.com/microsoft/STL/issues/2842)
+
+> Part of the issue has been resolved by #5548, which improved the performance
+> of locate_zone, making it 6.7 times faster (depending on the time zone name).
+> However, the current slow speed of \_\_std_tzdb_get_sys_info cannot be fixed
+> before vNext.
+>
+> [- Commentary on issue #2842 by YexuanXiao)](https://github.com/microsoft/STL/issues/2842#issuecomment-3010881136),
+> the STL contributor who authored
+> [MR #5548](https://github.com/microsoft/STL/pull/5548) to fix a separate
+> performance issue with `std::chrono::locate_zone()`
+
+<details>
+   <summary>Raw Benchmark Output - Windows/MSVC</summary>
+
+```
+build/bench_vtz --benchmark_out=etc/data/bench_2026-03-09T14.52.12-0400.json
+/etc/bash.bashrc: line 13: CYG_SYS_BASHRC: unbound variable
+2026-03-09T14:52:17-04:00
+Running C:\Users\vagrant\vtz\build\bench_vtz.exe
+Run on (6 X 2611 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x6)
+  L1 Instruction 32 KiB (x6)
+  L2 Unified 2048 KiB (x6)
+  L3 Unified 24576 KiB (x6)
+---------------------------------------------------------------------------
+Benchmark                                 Time             CPU   Iterations
+---------------------------------------------------------------------------
+format/date                            2924 ns         2999 ns       224000
+format/absl                             184 ns          183 ns      3237161
+format/fmt                              135 ns          135 ns      4977778
+format_to/fmt                           100 ns          100 ns      7466667
+format/std                            27649 ns        27623 ns        24889
+format_to/std                         27151 ns        26855 ns        20364
+format/vtz                             59.9 ns         60.2 ns     11946667
+format_to_nanos/vtz                    61.2 ns         60.9 ns     10000000
+format_to/vtz                          34.1 ns         33.4 ns     16865882
+locate_zone/date                       53.4 ns         52.9 ns     14757647
+locate_rand/date                       81.5 ns         81.3 ns     11150223
+locate_zone/absl                       37.1 ns         36.8 ns     18245818
+locate_rand/absl                       48.3 ns         48.3 ns     14543769
+locate_zone/std                         340 ns          343 ns      1592889
+locate_rand/std                         451 ns          452 ns      2214665
+locate_zone/vtz                        15.3 ns         15.1 ns     64000000
+locate_rand/vtz                        34.3 ns         34.8 ns     27875556
+parse_date/date                         367 ns          366 ns      2007040
+parse_time/date                         554 ns          558 ns       896000
+parse_date/absl                         106 ns          105 ns      8960000
+parse_time/absl                         157 ns          160 ns      4480000
+parse_date/std                          549 ns          557 ns      1600000
+parse_time/std                          966 ns          959 ns       896000
+parse_date/vtz                         22.1 ns         22.4 ns     31360000
+parse_time/vtz                         28.0 ns         27.9 ns     28000000
+to_local_with_lookup/date              1721 ns         1694 ns       295153
+to_sys_latest_with_lookup/date         1889 ns         1918 ns       358400
+to_sys_earliest_with_lookup/date       1664 ns         1674 ns       373333
+to_local_with_lookup/absl               133 ns          130 ns      4072727
+to_local_with_lookup/std               4666 ns         4743 ns       112000
+to_sys_latest_with_lookup/std         25623 ns        25613 ns        28672
+to_sys_earliest_with_lookup/std       25794 ns        25690 ns        26761
+to_local_with_lookup/vtz               21.9 ns         22.3 ns     25221709
+to_sys_latest_with_lookup/vtz          24.2 ns         24.4 ns     22400000
+to_sys_earliest_with_lookup/vtz        27.8 ns         28.3 ns     29866667
+to_local/date                          1857 ns         1831 ns       298667
+to_sys_latest/date                     1661 ns         1632 ns       373333
+to_sys_earliest/date                   1661 ns         1674 ns       448000
+to_sys/date                            1660 ns         1674 ns       448000
+to_local/absl                          99.8 ns          100 ns      8726261
+to_sys_latest/absl                     33.0 ns         33.7 ns     21333333
+to_sys_earliest/absl                   33.0 ns         32.6 ns     17230769
+to_local/std                           3872 ns         3868 ns       185838
+to_sys_latest/std                     22735 ns        22496 ns        29867
+to_sys_earliest/std                   22918 ns        23019 ns        29867
+to_sys/std                            26593 ns        26995 ns        24889
+to_local/vtz                           1.35 ns         1.34 ns    512000000
+to_sys_latest/vtz                      3.05 ns         3.01 ns    223004444
+to_sys_earliest/vtz                    2.98 ns         2.98 ns    235789474
+to_sys/vtz                             2.49 ns         2.45 ns    267605333
+to_local_s/vtz                         1.52 ns         1.53 ns    448000000
+to_sys_latest_s/vtz                    3.17 ns         3.22 ns    223004445
+to_sys_earliest_s/vtz                  3.11 ns         3.14 ns    224000000
+date_to_civil/vtz                      6.77 ns         6.84 ns    112000000
+date_from_civil_date/vtz               3.20 ns         3.15 ns    213333333
+date_from_civil_year/vtz               2.29 ns         2.30 ns    298666667
+```
+
+</details>
+
 ### Running benchmarks
 
 To reduce variability, benchmarks were run with the frequency governor set to
