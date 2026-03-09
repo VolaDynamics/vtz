@@ -38,6 +38,19 @@ namespace {
         // See: https://man7.org/linux/man-pages/man3/strftime.3.html
         if( fmt == "%c"sv ) { fmt = "%a %b %e %H:%M:%S %Y"; }
 
+        #if _WIN32
+        // date::format() does not support '%r' on windows, so we expand it manually.
+        //
+        // from strftime(3):
+        //
+        //        %r     The time in a.m. or p.m. notation.  (SU) (The specific
+        //               format used in the current locale can be obtained by
+        //               calling nl_langinfo(3) with T_FMT_AMPM as an argument.)
+        //               (In the POSIX locale this is equivalent to %I:%M:%S %p.)
+
+        if( fmt == "%r"sv ) { fmt = "%I:%M:%S %p"; }
+        #endif
+
         return date::format( c_locale, fmt, T );
     }
 
