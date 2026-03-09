@@ -27,42 +27,9 @@
 #include <date/date.h>
 #include <date/tz.h>
 
-#if __cpp_lib_filesystem
-    #include <filesystem>
-    #define HAS_STD_FILESYSTEM 1
-#else
-    #define HAS_STD_FILESYSTEM 0
-#endif
 
 using namespace vtz;
 using _test_vtz::TEST_LOG;
-
-namespace {
-    void try_set_install() {
-        try
-        {
-            // Try setting the install and locating a timezone
-            date::set_install( "build/data/tzdata" );
-            (void)date::locate_zone( "America/New_York" );
-        }
-        catch( std::exception const& ex )
-        {
-#if HAS_STD_FILESYSTEM
-            std::string cwd = std::filesystem::current_path().string();
-#else
-            std::string cwd = "(<missing std::filesystem>)"
-#endif
-            fmt::println( stderr,
-                "Error: set_install() not set up correctly - date::locate_zone() fails with "
-                "message {} (cwd={})",
-                ex.what(),
-                cwd );
-            std::exit( 1 );
-        }
-    }
-
-    int _do_set_install_hinnant = ( try_set_install(), 0 );
-} // namespace
 
 static sys_seconds to_sys( sysseconds_t t ) { return sys_seconds( seconds( t ) ); }
 
