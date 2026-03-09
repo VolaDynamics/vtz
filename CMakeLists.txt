@@ -358,6 +358,16 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
             date::date
             date::date-tz
     )
+
+    if(MSVC)
+        # Test cases make use of shadowing intentionally - we want to disable:
+        #
+        # - C4456: declaration of '_test_context_ptr' hides previous local declaration
+        # - C4459: declaration of '_current_test_context' hides global declaration
+        target_compile_options(test_vtz PRIVATE /wd4456 /wd4459)
+        target_compile_options(test_vtz_api PRIVATE /wd4456 /wd4459)
+    endif()
+
     gtest_discover_tests(
         test_vtz_api
         TEST_PREFIX "api/"
