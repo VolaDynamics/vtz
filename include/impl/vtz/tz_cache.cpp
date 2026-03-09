@@ -3,6 +3,9 @@
 #include <vtz/known_zones.h>
 #include <vtz/tz_cache.h>
 
+// Needed for declarations with VTZ_EXPORT annotation
+#include <vtz/tz.h>
+
 #include <string>
 #include <string_view>
 #include <vtz/util/microfmt.h>
