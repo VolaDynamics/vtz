@@ -312,7 +312,8 @@ Table measuring relative speedup in comparison to other libraries:
 | `locate_rand` | 13.0x         | 1.39x       | 2.34x       |            |
 
 All benchmarks ran as part of the same process; everything was compiled in
-Release mode. Tables were generated from `etc/data/bench_2026-03-09T14.52.12-0400.json`.
+Release mode. Tables were generated from
+`etc/data/bench_2026-03-09T14.52.12-0400.json`.
 
 **Hinnant `date` library:** When compiled for Windows, the Hinnant `date`
 library is slow because Windows does not have compiled tzif files, and so
@@ -320,12 +321,11 @@ library is slow because Windows does not have compiled tzif files, and so
 to enable this option. See "More information on performance discrepancies with
 the Hinnant date library", above, for more info.
 
-**Microsoft STL:** I do not understand how Microsoft managed to produce such a
-terrible `std::chrono::time_zone` implementation.
-
-Multiple people have filed issues against the STL due to
-`std::chrono::time_zone`'s performance woes, however it is likely that they will
-be unable to fix the issue without an ABI break.
+**Microsoft STL:** Microsoft's `std::chrono::time_zone` implementation has
+significant performance issues that are well-documented in the STL issue
+tracker. Some improvements to particular functions such as `locate_zone` have
+been merged. However, it is possible that they will be unable to fix the issue
+in its entirety without an ABI break.
 
 - [\<chrono\>: `time_zone::get_info` code is excessively slow #5304](https://github.com/microsoft/STL/issues/5304)
 - [\<chrono\>: Major performance issues when using zoned_time or time_zone #2842](https://github.com/microsoft/STL/issues/2842)
@@ -335,7 +335,7 @@ be unable to fix the issue without an ABI break.
 > However, the current slow speed of \_\_std_tzdb_get_sys_info cannot be fixed
 > before vNext.
 >
-> [- Commentary on issue #2842 by YexuanXiao)](https://github.com/microsoft/STL/issues/2842#issuecomment-3010881136),
+> [- Commentary on issue #2842 by YexuanXiao](https://github.com/microsoft/STL/issues/2842#issuecomment-3010881136),
 > the STL contributor who authored
 > [MR #5548](https://github.com/microsoft/STL/pull/5548) to fix a separate
 > performance issue with `std::chrono::locate_zone()`
@@ -414,6 +414,8 @@ date_to_civil/vtz                      6.77 ns         6.84 ns    112000000
 date_from_civil_date/vtz               3.20 ns         3.15 ns    213333333
 date_from_civil_year/vtz               2.29 ns         2.30 ns    298666667
 ```
+
+---
 
 </details>
 
