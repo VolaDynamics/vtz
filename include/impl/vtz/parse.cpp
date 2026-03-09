@@ -855,7 +855,7 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     nanos = parse_frac_as_nanos( p, p_end );
 
 
-                    if( f == format.end() ) { return func( sec, nanos ); }
+                    if( f == format.data() + format.size() ) { return func( sec, nanos ); }
 
                     // Check the remainder of the string, but return whatever
                     // was discovered from %s
