@@ -227,32 +227,44 @@ namespace vtz {
             return 1000000000 * to_local_s( parts.quot ) + parts.rem;
         }
 
-        template<bool choose_latest>
-        VTZ_INLINE sec_t _lookup_utc( sec_t t_key, sec_t t ) const noexcept {
+        VTZ_INLINE sec_t _lookup_utc(
+            sec_t t_key, sec_t t, choose which ) const noexcept {
             auto ent = tt_utc.get( t_key );
             /// offset from UTC before transition time
             i64 off_pre = ent.lo();
             /// offset from UTC on or after transition time
-            i64  off_post = ent.hi();
-            auto when1    = ent.t + off_pre;  // eg, 2AM when DST starts
-            auto when2    = ent.t + off_post; // 3am (we saved 1 hour)
-            auto when     = choose_latest ? when2 : when1;
-            if( off_post <= off_pre )
+            i64 off_post = ent.hi();
+            /// If the clock falls back, then `off_post` is the earlier time
+            bool falls_back = off_post < off_pre;
+
+            auto off1 = falls_back ? off_post : off_pre; ///< Earlier offset
+            auto off2 = falls_back ? off_pre : off_post; ///< Later offset
+
+            auto when1 = ent.t + off1; ///< Local time when transition starts
+            auto when2 = ent.t + off2; ///< Local time when the transition ends
+
+            /// Time is unique and before ambiguous/nonexistent time period
+            bool unique_before = t_key < when1;
+            /// Time is unique and after ambiguous/nonexistent time period
+            bool unique_after = when2 <= t_key;
+
+            bool is_unique = unique_before || unique_after;
+            auto off       = unique_before ? off_pre : off_post;
+
+            // This is the happy path. The input time is unique, so we just
+            // subtract the offset
+            if( is_unique ) VTZ_LIKELY { return t - off; }
+
+            if( falls_back )
             {
-                // if latest, select when2, otherwise, select when1
-                auto off = t_key < when ? off_pre : off_post;
+                // It's ambiguous
+                off = which == choose::earliest ? off_pre : off_post;
                 return t - off;
             }
             else
             {
-                // This case occurs if we're entering Daylight Savings Time (or
-                // otherwise moving the clocks forward). In this case, there
-                // is some chance that we have a nonexistent local time.
-
-                if( t_key >= when2 ) return t - off_post;
-                if( t_key <= when1 ) return t - off_pre;
-                // Times between 'when1' and 'when2' are nonexistent.
-                // All of them refer to the same timestamp
+                // It's a nonexistent time. Under to_sys( T, choose ),
+                // nonexistent local times all map to the transition time
                 return ent.t + ( t - t_key );
             }
         }
@@ -386,17 +398,16 @@ namespace vtz {
         }
 
 
-        template<bool choose_latest>
-        sec_t _to_utc( sec_t t ) const noexcept {
+        sec_t _to_utc( sec_t t, choose which ) const noexcept {
             // If the time is in-bounds, we can use the lookup table
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return _lookup_utc<choose_latest>( t, t );
+                return _lookup_utc( t, t, which );
 
             // t is _early_: use initial zone state
             if( t < 0 ) return t - tt_utc.initial();
 
             // use zone symmetry to compute state for equivalent time
-            return _lookup_utc<choose_latest>( get_cyclic( t, cycle_time ), t );
+            return _lookup_utc( get_cyclic( t, cycle_time ), t, which );
         }
 
         /// Returns the UTC time represented by a given input local time.
@@ -437,16 +448,7 @@ namespace vtz {
         /// > time_points, then the two UTC time_points will be the same,
         /// > and that UTC time_point will be returned.
         VTZ_INLINE sec_t to_sys_s( sec_t t, choose which ) const noexcept {
-            if( which == choose::earliest )
-            {
-                // Return earliest UTC time this could refer to
-                return _to_utc<false>( t );
-            }
-            else
-            {
-                // Return latest UTC time this could refer to
-                return _to_utc<true>( t );
-            }
+            return _to_utc( t, which );
         }
 
         /// Converts an input local time to UTC. Throws an exception if the
@@ -465,16 +467,7 @@ namespace vtz {
 
         VTZ_INLINE nanos_t to_sys_ns( nanos_t t, choose which ) const noexcept {
             auto parts = math::div_floor2<1000000000>( t );
-            if( which == choose::earliest )
-            {
-                // Return earliest UTC time this could refer to
-                return 1000000000 * _to_utc<false>( parts.quot ) + parts.rem;
-            }
-            else
-            {
-                // Return latest UTC time this could refer to
-                return 1000000000 * _to_utc<true>( parts.quot ) + parts.rem;
-            }
+            return 1000000000 * _to_utc( parts.quot, which ) + parts.rem;
         }
 
         struct _impl;
