@@ -495,11 +495,11 @@ TEST( vtz_parse, parse_generic_integral ) {
     // Days
     {
         EXPECT_EQ( parse<days>( "%F", "2024-03-15" ),
-            std::chrono::floor<days>( _get_time( 2024, 3, 15 ) ) );
+            _get_days( 2024, 3, 15 ) );
         EXPECT_EQ( parse<days>( "%F", "1970-01-01" ),
-            std::chrono::floor<days>( _get_time( 1970, 1, 1 ) ) );
+            _get_days( 1970, 1, 1 ) );
         EXPECT_EQ( parse<days>( "%F", "9999-12-31" ),
-            std::chrono::floor<days>( _get_time( 9999, 12, 31 ) ) );
+            _get_days( 9999, 12, 31 ) );
     }
 
     // Hours
