@@ -416,6 +416,10 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
     }
 }
 
+
+// Windows does not provide zoneinfo, so we skip these tests on Windows
+#ifndef _WIN32
+
 TEST( vtz, tzdb_vs_tzfile_coherence ) {
     COUNT_ASSERTIONS();
 
@@ -599,3 +603,5 @@ TEST( vtz, tzdb_vs_tzfile_state_coherence ) {
         fmt::println( "\nPass rate: {:.2f}% ({}/{})", pass_rate, zones_passed, zones_tested );
     }
 }
+
+#endif
