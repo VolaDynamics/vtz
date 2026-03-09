@@ -9,9 +9,16 @@
 #include <date/date.h>
 #include <date/tz.h>
 
+#if _WIN32
+// fmt::format fails with 'Error: time_t value out of range'
+// on Windows
+constexpr int start_year = 1970, end_year = 2038;
+#else
+constexpr int start_year = 1900, end_year = 2100;
+#endif
 
 BENCH( format, date, state ) {
-    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, start_year, end_year ) );
     auto   tz = date::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -24,7 +31,7 @@ BENCH( format, date, state ) {
 
 
 BENCH( format, absl, state ) {
-    auto           tt = to_absl_time( random_times( COUNT, 1900, 2100 ) );
+    auto           tt = to_absl_time( random_times( COUNT, start_year, end_year ) );
     absl::TimeZone tz;
     absl::LoadTimeZone( "America/New_York", &tz );
     size_t i = 0;
@@ -38,7 +45,7 @@ BENCH( format, absl, state ) {
 
 
 BENCH( format, fmt, state ) {
-    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, start_year, end_year ) );
     size_t i  = 0;
     for( auto _ : state )
     {
@@ -49,7 +56,7 @@ BENCH( format, fmt, state ) {
 
 
 BENCH( format_to, fmt, state ) {
-    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, start_year, end_year ) );
     size_t i  = 0;
     char   buff[256];
     for( auto _ : state )
@@ -64,7 +71,7 @@ BENCH( format_to, fmt, state ) {
 #if HAS_CHRONO_TIMEZONE
 
 BENCH( format, std, state ) {
-    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, start_year, end_year ) );
     auto   tz = std::chrono::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -76,7 +83,7 @@ BENCH( format, std, state ) {
 }
 
 BENCH( format_to, std, state ) {
-    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, start_year, end_year ) );
     auto   tz = std::chrono::locate_zone( "America/New_York" );
     size_t i  = 0;
     char   buffer[256];
@@ -93,7 +100,7 @@ BENCH( format_to, std, state ) {
 
 
 BENCH( format, vtz, state ) {
-    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, start_year, end_year ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     for( auto _ : state )
@@ -105,7 +112,7 @@ BENCH( format, vtz, state ) {
 
 
 BENCH( format_to_nanos, vtz, state ) {
-    auto tt = to_chrono<nanos>( random_times( COUNT, 1900, 2100, 1000000000 ) );
+    auto tt = to_chrono<nanos>( random_times( COUNT, start_year, end_year, 1000000000 ) );
     auto tz = vtz::locate_zone( "America/New_York" );
     size_t i = 0;
     char   buff[64];
@@ -119,7 +126,7 @@ BENCH( format_to_nanos, vtz, state ) {
 
 
 BENCH( format_to, vtz, state ) {
-    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
+    auto   tt = to_chrono<sys_seconds>( random_times( COUNT, start_year, end_year ) );
     auto   tz = vtz::locate_zone( "America/New_York" );
     size_t i  = 0;
     char   buff[64];
