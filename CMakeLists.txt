@@ -61,6 +61,12 @@ else()
     )
 endif()
 
+option(
+    VTZ_UPDATE_KNOWN_ZONES
+    "Update known_zones.h by extracting timezones from tzdata.zi"
+    OFF
+)
+
 
 # Set up ccache/sccache for the project
 find_program(COMPILER_CACHE sccache ccache)
@@ -301,34 +307,36 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     endif()
 
     # Generate known_zones.h from tzdata.zi
-    set(TZDATA_ZI_FILE "${BUILD}/data/tzdata/tzdata.zi")
-    file(STRINGS "${TZDATA_ZI_FILE}" TZDATA_ZI_LINES REGEX "^Z ")
-    set(KNOWN_ZONES_LIST "")
-    foreach(line IN LISTS TZDATA_ZI_LINES)
-        # Extract zone name (second field after "Z ")
-        string(REGEX REPLACE "^Z ([^ ]+) .*" "\\1" zone_name "${line}")
-        list(APPEND KNOWN_ZONES_LIST "\"${zone_name}\"")
-    endforeach()
-    list(JOIN KNOWN_ZONES_LIST ",\n        " KNOWN_ZONES)
+    if(VTZ_UPDATE_KNOWN_ZONES)
+        set(TZDATA_ZI_FILE "${BUILD}/data/tzdata/tzdata.zi")
+        file(STRINGS "${TZDATA_ZI_FILE}" TZDATA_ZI_LINES REGEX "^Z ")
+        set(KNOWN_ZONES_LIST "")
+        foreach(line IN LISTS TZDATA_ZI_LINES)
+            # Extract zone name (second field after "Z ")
+            string(REGEX REPLACE "^Z ([^ ]+) .*" "\\1" zone_name "${line}")
+            list(APPEND KNOWN_ZONES_LIST "\"${zone_name}\"")
+        endforeach()
+        list(JOIN KNOWN_ZONES_LIST ",\n        " KNOWN_ZONES)
 
 
-    file(STRINGS "${TZDATA_ZI_FILE}" TZDATA_ZI_LINKS REGEX "^L ")
-    set(KNOWN_LINKS_LIST "")
-    foreach(line IN LISTS TZDATA_ZI_LINKS)
-        # Extract Link of form "L <name> <alias>"
-        string(REGEX REPLACE "^L ([^ ]+) ([^ ]+)" "{ \"\\1\", \"\\2\" }" zone_link "${line}")
-        list(APPEND KNOWN_LINKS_LIST "zone_link${zone_link}")
-    endforeach()
-    list(JOIN KNOWN_LINKS_LIST ",\n        " KNOWN_LINKS)
+        file(STRINGS "${TZDATA_ZI_FILE}" TZDATA_ZI_LINKS REGEX "^L ")
+        set(KNOWN_LINKS_LIST "")
+        foreach(line IN LISTS TZDATA_ZI_LINKS)
+            # Extract Link of form "L <name> <alias>"
+            string(REGEX REPLACE "^L ([^ ]+) ([^ ]+)" "{ \"\\1\", \"\\2\" }" zone_link "${line}")
+            list(APPEND KNOWN_LINKS_LIST "zone_link${zone_link}")
+        endforeach()
+        list(JOIN KNOWN_LINKS_LIST ",\n        " KNOWN_LINKS)
 
-    # Configure with KNOWN_ZONES and KNOWN_LINKS
-    configure_file(
-        "${PROJECT_SOURCE_DIR}/include/impl/vtz/known_zones.h.in"
-        "${PROJECT_SOURCE_DIR}/include/impl/vtz/known_zones.h"
-        @ONLY
-        # Always use unix newlines
-        NEWLINE_STYLE UNIX
-    )
+        # Configure with KNOWN_ZONES and KNOWN_LINKS
+        configure_file(
+            "${PROJECT_SOURCE_DIR}/include/impl/vtz/known_zones.h.in"
+            "${PROJECT_SOURCE_DIR}/include/impl/vtz/known_zones.h"
+            @ONLY
+            # Always use unix newlines
+            NEWLINE_STYLE UNIX
+        )
+    endif()
 
 
     enable_testing()
