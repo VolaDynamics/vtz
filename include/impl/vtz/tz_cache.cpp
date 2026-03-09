@@ -147,12 +147,14 @@ namespace vtz {
         return std::string();
     }
 
-    static std::string get_tzdata_path_error( std::string_view what ) {
+    static std::string get_tzdata_path_error(
+        std::string_view what, std::string_view install_path ) {
         std::string msg = //
             util::join( "Unable to load the tz database: ",
                 what,
                 "\n\nChecked the following locations:\n\n" );
 
+        bool env_vars_null = true;
         for( char const* env_var : tzdata_env_vars )
         {
             char const* tzdata = std::getenv( env_var );
@@ -163,6 +165,8 @@ namespace vtz {
                 continue;
             }
 
+            env_vars_null = false;
+
             msg += util::join( "- getenv(",
                 escape_string( env_var ),
                 ") -> ",
@@ -172,9 +176,23 @@ namespace vtz {
             break; // We don't check additional env vars after the first
                    // non-skipped env var
         }
+        if( !install_path.empty() )
+        {
+            msg += util::join(
+                "- get_install() -> ", escape_string( install_path ), '\n' );
+
+            if( env_vars_null )
+            {
+                msg += "\n"
+                       "All env vars are null, so vtz::set_install() must have "
+                       "been called.\n";
+            }
+        }
+
 
         msg += "\n"
-               "Please configure one of the above so that your application "
+               "Please configure one of the above (or call vtz::set_install()) "
+               "so that your application "
                "can find the tz database.\n"
                "\n"
                "The timezone database may be downloaded at "
@@ -242,8 +260,8 @@ namespace vtz {
         if( path.empty() )
         {
 #if REQUIRE_TZDATA
-            throw std::runtime_error(
-                get_tzdata_path_error( "Cannot determine install path." ) );
+            throw std::runtime_error( get_tzdata_path_error(
+                "Cannot determine install path.", path ) );
 #else
             // TODO: do we want to support checking any other directories for
             // zoneinfo?
@@ -267,7 +285,8 @@ namespace vtz {
         catch( std::exception const& ex )
         {
             // Provide helpful context and rethrow
-            throw std::runtime_error( get_tzdata_path_error( ex.what() ) );
+            throw std::runtime_error(
+                get_tzdata_path_error( ex.what(), path ) );
         }
     }
 
