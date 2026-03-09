@@ -188,7 +188,8 @@ target_compile_features(
 if(VTZ_BUILD_SHARED)
     add_library(vtz SHARED $<TARGET_OBJECTS:vtz_objects>)
 else()
-    add_library(vtz $<TARGET_OBJECTS:vtz_objects>)
+    add_library(vtz STATIC $<TARGET_OBJECTS:vtz_objects>)
+    target_compile_definitions(vtz PUBLIC VTZ_STATIC_DEFINE)
 endif()
 add_library(vtz::vtz ALIAS vtz)
 
@@ -210,6 +211,7 @@ target_include_directories(ankerl_unordered_dense INTERFACE etc/3rd/ankerl)
 add_library(unordered_dense::unordered_dense ALIAS ankerl_unordered_dense)
 
 add_library(vtz_impl STATIC $<TARGET_OBJECTS:vtz_objects>)
+target_compile_definitions(vtz_impl PUBLIC VTZ_STATIC_DEFINE)
 add_library(vtz::impl ALIAS vtz_impl)
 
 target_include_directories(
