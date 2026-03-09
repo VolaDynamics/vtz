@@ -326,6 +326,8 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
         "${PROJECT_SOURCE_DIR}/include/impl/vtz/known_zones.h.in"
         "${PROJECT_SOURCE_DIR}/include/impl/vtz/known_zones.h"
         @ONLY
+        # Always use unix newlines
+        NEWLINE_STYLE UNIX
     )
 
 
