@@ -45,16 +45,21 @@ option(
     OFF
 )
 
-option(
-    VTZ_ALSO_BENCH_HINNANT_OS_TZDB
-    "If this option is enabled, benchmarks will also be run against the Hinnant date 
-    library with USE_OS_TZDB=1.
-    
-    This setup is kind of cursed, because it requires linking two separate versions of
-    the date library into the benchmarks, but this is achieved by renaming the `date`
-    namespace to `date_os_tzdb` for the version with os tzdb support."
-    ON
-)
+if(WIN32)
+    # USE_OS_TZDB cannot be used on Windows
+    set(VTZ_ALSO_BENCH_HINNANT_OS_TZDB OFF)
+else()
+    option(
+        VTZ_ALSO_BENCH_HINNANT_OS_TZDB
+        "If this option is enabled, benchmarks will also be run against the Hinnant date 
+        library with USE_OS_TZDB=1.
+        
+        This setup is kind of cursed, because it requires linking two separate versions of
+        the date library into the benchmarks, but this is achieved by renaming the `date`
+        namespace to `date_os_tzdb` for the version with os tzdb support."
+        ON
+    )
+endif()
 
 
 # Set up ccache/sccache for the project
