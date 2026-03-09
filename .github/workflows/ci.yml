@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/ci]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: Linux (GCC)
+          - os: macos-15
+            name: macOS (Clang)
+          - os: windows-latest
+            name: Windows (MSVC)
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        env:
+          CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build -j4 --output-on-failure
