@@ -173,6 +173,7 @@ target_compile_definitions(
         "VTZ_TZDATA_PATH_VARS=\"$<JOIN:${VTZ_TZDATA_PATH_VARS},\"$<COMMA>\">\""
         "$<$<BOOL:${VTZ_CHECK_IN_TZDATA}>:VTZ_CHECK_IN_TZDATA>"
         "$<$<BOOL:${VTZ_REQUIRE_TZDATA}>:VTZ_REQUIRE_TZDATA>"
+        "vtz_EXPORTS"
 )
 target_link_libraries(
     vtz_objects
