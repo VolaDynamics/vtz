@@ -31,6 +31,8 @@
 using namespace vtz;
 using _test_vtz::TEST_LOG;
 
+FMT_ENUM_PLAIN( vtz::local_type );
+
 static sys_seconds to_sys( sysseconds_t t ) { return sys_seconds( seconds( t ) ); }
 
 static vector<sys_seconds> to_sys_vec( span<sysseconds_t> tt ) {
@@ -230,14 +232,18 @@ TEST( vtz, America_NewYork ) {
                 local_info( { local_info::ambiguous, s0, s1 } ) );
             ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 1, 59, 59 ) ),
                 local_info( { local_info::ambiguous, s0, s1 } ) );
+            ASSERT_EQ( tz.local_type( _ctl( 2025, 11, 2, 1, 0, 0 ) ), local_type::ambiguous );
+            ASSERT_EQ( tz.local_type( _ctl( 2025, 11, 2, 1, 59, 59 ) ), local_type::ambiguous );
 
             // 00:59am is not ambiguous
             ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 0, 59, 59 ) ),
                 local_info( { local_info::unique, s0 } ) );
+            ASSERT_EQ( tz.local_type( _ctl( 2025, 11, 2, 0, 59, 59 ) ), local_type::unique );
 
             // 2am is no longer ambiguous
             ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 2, 0, 0 ) ),
                 local_info( { local_info::unique, s1 } ) );
+            ASSERT_EQ( tz.local_type( _ctl( 2025, 11, 2, 2, 0, 0 ) ), local_type::unique );
         }
     }
 
@@ -259,6 +265,16 @@ TEST( vtz, America_NewYork ) {
         ASSERT_EQ( _dt{ tz.to_sys_s( _ct( 2025,  3,  9,  2, 59, 59 ), choose ) }, _dt::civil( 2025,  3,  9,  7,  0,  0 ) );
         // clang-format on
     }
+
+    // local_type for spring-forward boundaries
+
+    // clang-format off
+    ASSERT_EQ( tz.local_type( _ctl( 2025,  3,  9,  1, 59, 59 ) ), local_type::unique );
+    ASSERT_EQ( tz.local_type( _ctl( 2025,  3,  9,  2,  0,  0 ) ), local_type::nonexistent );
+    ASSERT_EQ( tz.local_type( _ctl( 2025,  3,  9,  2, 30,  0 ) ), local_type::nonexistent );
+    ASSERT_EQ( tz.local_type( _ctl( 2025,  3,  9,  2, 59, 59 ) ), local_type::nonexistent );
+    ASSERT_EQ( tz.local_type( _ctl( 2025,  3,  9,  3,  0,  0 ) ), local_type::unique );
+    // clang-format on
 }
 
 
@@ -328,6 +344,11 @@ TEST( vtz, FirstTransition ) {
     // from 12:03:58 local time is unambiguous again
     ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 58 ), E ) }, _dt::civil( 1883, 11, 18, 17,  3, 58 ) );
     ASSERT_EQ( _dt{ NY.to_sys_s( _ct( 1883, 11, 18, 12,  3, 58 ), L ) }, _dt::civil( 1883, 11, 18, 17,  3, 58 ) );
+
+    ASSERT_EQ( NY.local_type( _ctl( 1883, 11, 18, 11, 59, 59 ) ), local_type::unique );
+    ASSERT_EQ( NY.local_type( _ctl( 1883, 11, 18, 12,  0,  0 ) ), local_type::ambiguous );
+    ASSERT_EQ( NY.local_type( _ctl( 1883, 11, 18, 12,  3, 57 ) ), local_type::ambiguous );
+    ASSERT_EQ( NY.local_type( _ctl( 1883, 11, 18, 12,  3, 58 ) ), local_type::unique );
     // clang-format on
 
     // clang-format off
@@ -371,6 +392,11 @@ TEST( vtz, FirstTransition ) {
 
     ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), E ) }, _dt::civil( 1883, 11, 18, 19,  0,  0 ) );
     ASSERT_EQ( _dt{ PH.to_sys_s( _ct( 1883, 11, 18, 12,  0,  0 ), L ) }, _dt::civil( 1883, 11, 18, 19,  0,  0 ) );
+
+    ASSERT_EQ( PH.local_type( _ctl( 1883, 11, 18, 11, 31, 41 ) ), local_type::unique );
+    ASSERT_EQ( PH.local_type( _ctl( 1883, 11, 18, 11, 31, 42 ) ), local_type::nonexistent );
+    ASSERT_EQ( PH.local_type( _ctl( 1883, 11, 18, 11, 59, 59 ) ), local_type::nonexistent );
+    ASSERT_EQ( PH.local_type( _ctl( 1883, 11, 18, 12,  0,  0 ) ), local_type::unique );
     // clang-format on
 }
 
