@@ -246,8 +246,8 @@ namespace vtz {
 
 
     /// Parse the given input as a local time. This is equivalent to parsing a
-    /// sys_time, but the information, but the returned type represents a local
-    /// time rather than a sys_time.
+    /// sys_time, but the returned type represents a local time rather than a
+    /// sys_time.
 
     template<class Dur>
     local_time<Dur> parse_local( string_view fmt, string_view time_str ) {
