@@ -319,11 +319,11 @@ namespace vtz {
         // clang-format off
 
         /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime
-        size_t format_to_s( string_view format, sysseconds_t t, char* buff, size_t count ) const;
+        size_t format_to_s( string_view format, sys_seconds_t t, char* buff, size_t count ) const;
         /// Formats a time to the given buffer. For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime
         size_t format_to(   string_view format, sys_seconds  t, char* buff, size_t count ) const { return format_to_s( format, t.time_since_epoch().count(), buff, count ); }
         /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime
-        string format_s(    string_view format, sysseconds_t t ) const;
+        string format_s(    string_view format, sys_seconds_t t ) const;
         /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime
         string format(      string_view format, sys_seconds  t ) const { return format_s( format, t.time_since_epoch().count() ); }
 
@@ -345,7 +345,7 @@ namespace vtz {
         /// - `"%F %T %Z"` with `t=1762442685`, `nanos=029380000` and `precision=4` would produce "2025-11-06 08:24:45.0293 MST" for America/Denver
         ///
         /// In the latter example, `%T` expands to `%H:%M:%S`.
-        size_t format_precise_to_s( string_view format, sysseconds_t t, u32 nanos, int precision, char* buff, size_t count ) const;
+        size_t format_precise_to_s( string_view format, sys_seconds_t t, u32 nanos, int precision, char* buff, size_t count ) const;
 
         /// Format the given time, with the requested precision (up to 9 digits)
         template<class Dur>
@@ -357,7 +357,7 @@ namespace vtz {
 
         /// Formats a time (expressed as seconds and nanoseconds) to the given buffer. For more information,
         /// see the equivalent version of `format_precise_to_s`.
-        string format_precise_s( string_view format, sysseconds_t t, u32 nanos, int precision ) const;
+        string format_precise_s( string_view format, sys_seconds_t t, u32 nanos, int precision ) const;
 
         /// Format the given time, with the requested precision (up to 9 digits)
         template<class Dur>
@@ -428,7 +428,7 @@ namespace vtz {
 
         /// Returns the date of the given systime within the current zone, as
         /// number of days since the epoch
-        i64 local_date_s( sysseconds_t t ) const noexcept {
+        i64 local_date_s( sys_seconds_t t ) const noexcept {
             return math::div_floor<86400>( to_local_s( t ) );
         }
 
@@ -454,11 +454,11 @@ namespace vtz {
             return sys_seconds( seconds( s ) );
         }
 
-        i32 save_s( sysseconds_t t ) const noexcept {
+        i32 save_s( sys_seconds_t t ) const noexcept {
             return i32( offset_s( t ) - stdoff_s( t ) );
         }
 
-        sys_info get_info_sys_s( sysseconds_t t ) const {
+        sys_info get_info_sys_s( sys_seconds_t t ) const {
             auto range = sys_range_s( t );
 
             auto off  = offset_s( t );
@@ -474,7 +474,7 @@ namespace vtz {
         }
 
         local_info get_info_local_s( sec_t t ) const {
-            sysseconds_t tt[2];
+            sys_seconds_t tt[2];
             int          result = lookup_local( t, tt );
             if( result == local_info::unique )
             {

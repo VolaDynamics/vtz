@@ -5,7 +5,7 @@
 namespace vtz {
 
     struct zone_transition {
-        sysseconds_t when; // UTC time of change
+        sys_seconds_t when; // UTC time of change
         zone_state   state;
 
         zone_transition() = default;

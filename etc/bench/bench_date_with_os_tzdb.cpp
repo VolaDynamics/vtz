@@ -151,7 +151,7 @@ BENCH( parse_date, date_os_tzdb, state ) {
     auto dd = random_values( COUNT,
         vtz::resolve_civil( 1900 ),
         vtz::resolve_civil( 2100 ),
-        []( sysdays_t days ) { return vtz::format_d( "%F", days ); } );
+        []( sys_days_t days ) { return vtz::format_d( "%F", days ); } );
 
     std::istringstream ss;
     ss.exceptions( std::ios::failbit );

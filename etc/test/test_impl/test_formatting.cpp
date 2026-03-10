@@ -178,11 +178,11 @@ TEST( vtz, format_time ) {
         ASSERT_EQ( "+0845", fmt_vtz( Eucla, T, "%Z" ) );
     }
 
-    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
-    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
+    constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
+    constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
 
     auto rng  = std::mt19937_64{};
-    auto dist = std::uniform_int_distribution<sysseconds_t>( start_t, end_t );
+    auto dist = std::uniform_int_distribution<sys_seconds_t>( start_t, end_t );
 
     for( auto const& zone : ALL_ZONES )
     {

@@ -14,12 +14,9 @@ namespace vtz {
     using i32 = int32_t;
     using i64 = int64_t;
 
-    using uint  = unsigned;
-    using usize = size_t;
+    using sec_t         = i64;
+    using sys_seconds_t = i64;
+    using nanos_t       = i64;
 
-    using sec_t        = i64;
-    using sysseconds_t = i64;
-    using nanos_t      = i64;
-
-    using sysdays_t = i32;
+    using sys_days_t = i32;
 } // namespace vtz

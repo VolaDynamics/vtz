@@ -118,8 +118,8 @@ namespace vtz {
     auto _do_parse( string_view format, string_view input, F func )
         -> decltype( func( i32(), i32(), i32(), opt_z() ) );
 
-    /// Consume the input, run parsing logic, but discard anything computed. Just
-    /// return the result.
+    /// Consume the input, run parsing logic, but discard anything computed.
+    /// Just return the result.
     ///
     /// Params `f` and `p` are where parsing left off.
 
@@ -138,7 +138,7 @@ namespace vtz {
             } );
     }
 
-    sysdays_t parse_d( string_view fmt, string_view date_str ) {
+    sys_days_t parse_d( string_view fmt, string_view date_str ) {
         return _do_parse( fmt,
             date_str,
             _finish_parse{
@@ -148,7 +148,7 @@ namespace vtz {
                 },
                 []( i64 sec, i32 nanos ) {
                     (void)nanos;
-                    return sysdays_t( math::div_floor<86400>( sec ) );
+                    return sys_days_t( math::div_floor<86400>( sec ) );
                 },
             } );
     }
@@ -584,7 +584,7 @@ namespace {
         }
     }
 
-    sysdays_t date_from_tm( std::tm const& t ) noexcept {
+    sys_days_t date_from_tm( std::tm const& t ) noexcept {
         int year = 1900 + t.tm_year;
         if( t.tm_mday || t.tm_mon )
         {
@@ -855,7 +855,8 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
                     nanos = parse_frac_as_nanos( p, p_end );
 
 
-                    if( f == format.data() + format.size() ) { return func( sec, nanos ); }
+                    if( f == format.data() + format.size() )
+                    { return func( sec, nanos ); }
 
                     // Check the remainder of the string, but return whatever
                     // was discovered from %s
@@ -1029,11 +1030,11 @@ auto vtz::_do_parse( string_view format, string_view input, F func )
             ++p;
         }
 
-        sysdays_t date = bool( doy ) // Check if we have an ordinal date
-                                     // use ordinal date
-                             ? resolve_civil_ordinal( year, doy )
-                             // use (year, month, day)
-                             : resolve_civil( year, month, dom );
+        sys_days_t date = bool( doy ) // Check if we have an ordinal date
+                                      // use ordinal date
+                              ? resolve_civil_ordinal( year, doy )
+                              // use (year, month, day)
+                              : resolve_civil( year, month, dom );
 
         i32 time_of_day = i32( hr ) * 3600 + i32( mi ) * 60 + i32( se );
 

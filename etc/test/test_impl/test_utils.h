@@ -13,7 +13,7 @@ constexpr sec_t _ct( i32 y, u32 m, u32 d, int h, int min, int sec ) {
 
 
 /// Convert raw time in seconds to sys_seconds
-inline vtz::sys_seconds as_sys( sysseconds_t t ) { return vtz::sys_seconds( vtz::seconds( t ) ); }
+inline vtz::sys_seconds as_sys( sys_seconds_t t ) { return vtz::sys_seconds( vtz::seconds( t ) ); }
 
 /// Convert raw time in seconds to sys_seconds
 inline vtz::local_seconds as_local( sec_t t ) { return vtz::local_seconds( vtz::seconds( t ) ); }

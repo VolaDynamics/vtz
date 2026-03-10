@@ -27,7 +27,7 @@ namespace vtz {
     /// @param days days since 1970-01-01 (the Unix Epoch)
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT std::string format_d( string_view fmt, sysdays_t days );
+    VTZ_EXPORT std::string format_d( string_view fmt, sys_days_t days );
 
 
     /// Formats a date to the given buffer, with date given as days
@@ -44,7 +44,7 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT size_t format_to_d(
-        string_view fmt, sysdays_t days, char* buff, size_t count );
+        string_view fmt, sys_days_t days, char* buff, size_t count );
 
 
     /// Formats a UTC time to a string, with time given as seconds since the
@@ -60,7 +60,7 @@ namespace vtz {
     /// @param t seconds since 1970-01-01 00:00:00 UTC
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT std::string format_s( string_view fmt, sysseconds_t t );
+    VTZ_EXPORT std::string format_s( string_view fmt, sys_seconds_t t );
 
 
     /// Formats a UTC time to the given buffer, with time given as seconds
@@ -80,7 +80,7 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT size_t format_to_s(
-        string_view fmt, sysseconds_t t, char* buff, size_t count );
+        string_view fmt, sys_seconds_t t, char* buff, size_t count );
 
 
     /// Formats a UTC time with sub-second precision to a string.
@@ -102,7 +102,7 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT std::string format_precise_s(
-        string_view fmt, sysseconds_t t, u32 nanos, int precision );
+        string_view fmt, sys_seconds_t t, u32 nanos, int precision );
 
 
     /// Formats a UTC time with sub-second precision to a string, with time
@@ -153,7 +153,7 @@ namespace vtz {
     /// @throws if the given format specifier is invalid
 
     VTZ_EXPORT size_t format_precise_to_s( string_view fmt,
-        sysseconds_t                                   t,
+        sys_seconds_t                                  t,
         u32                                            nanos,
         int                                            precision,
         char*                                          buff,

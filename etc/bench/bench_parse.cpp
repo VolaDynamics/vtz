@@ -10,7 +10,7 @@
 static std::vector<std::string> input_dates = random_values( COUNT,
     vtz::resolve_civil( 1900 ),
     vtz::resolve_civil( 2100 ),
-    []( sysdays_t days ) { return vtz::format_d( "%F", days ); } );
+    []( sys_days_t days ) { return vtz::format_d( "%F", days ); } );
 
 static std::vector<std::string> input_times = random_values( COUNT,
     vtz::resolve_civil_time( 1900, 1, 1, 0, 0, 0 ),

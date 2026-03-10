@@ -34,7 +34,7 @@ inline namespace vtz_test {
                + std::chrono::seconds{ second };
     }
 
-    inline vtz::sys_seconds _to_sys( sysseconds_t s ) {
+    inline vtz::sys_seconds _to_sys( sys_seconds_t s ) {
         return sys_seconds{ std::chrono::seconds{ s } };
     }
 } // namespace vtz_test

@@ -7,15 +7,15 @@
 
 namespace vtz {
     struct zone_until {
-        sysdays_t date;
+        sys_days_t date;
         rule_at   at; ///< Time of day when it ends
 
 
         /// Return the date referred to by this zone_until
-        constexpr sysdays_t resolve_date() const noexcept { return date; }
+        constexpr sys_days_t resolve_date() const noexcept { return date; }
 
         /// Return the time this 'until' refers to
-        constexpr sysseconds_t resolve( zone_time time ) const noexcept {
+        constexpr sys_seconds_t resolve( zone_time time ) const noexcept {
             return at.resolve_at( date, time );
         }
 

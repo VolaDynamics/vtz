@@ -334,8 +334,8 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
     auto const& fp = "build/data/tzdata/tzdata.zi";
 
 
-    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
-    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
+    constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
+    constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
 
 
     fmt::println( "Start time: {}", utc_to_string( start_t ) );
@@ -445,7 +445,7 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
     constexpr auto T0   = _ct( 1850, 1, 1, 0, 0, 0 );
     constexpr auto TMax = _ct( 2100, 1, 1, 0, 0, 0 );
     // Count up in increments of 15 minutes
-    constexpr auto interval = sysseconds_t( 15 * 60 );
+    constexpr auto interval = sys_seconds_t( 15 * 60 );
 
     using C = vtz::choose;
 

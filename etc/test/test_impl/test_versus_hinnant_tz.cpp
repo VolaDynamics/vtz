@@ -33,9 +33,9 @@ using _test_vtz::TEST_LOG;
 
 FMT_ENUM_PLAIN( vtz::local_type );
 
-static sys_seconds to_sys( sysseconds_t t ) { return sys_seconds( seconds( t ) ); }
+static sys_seconds to_sys( sys_seconds_t t ) { return sys_seconds( seconds( t ) ); }
 
-static vector<sys_seconds> to_sys_vec( span<sysseconds_t> tt ) {
+static vector<sys_seconds> to_sys_vec( span<sys_seconds_t> tt ) {
     vector<sys_seconds> result( tt.size() );
     for( size_t i = 0; i < tt.size(); ++i ) { result[i] = sys_seconds( seconds( tt[i] ) ); }
     return result;
@@ -43,11 +43,11 @@ static vector<sys_seconds> to_sys_vec( span<sysseconds_t> tt ) {
 
 
 struct entry {
-    string       abbr;
-    sysseconds_t begin;
-    sysseconds_t end;
-    from_utc     offset;
-    zone_save    save;
+    string        abbr;
+    sys_seconds_t begin;
+    sys_seconds_t end;
+    from_utc      offset;
+    zone_save     save;
 
     template<size_t N>
     zone_abbr fix_abbr() const {
@@ -84,7 +84,8 @@ std::vector<entry> get_entries( string_view name, sys_seconds start, sys_seconds
     return entries;
 }
 
-std::vector<date::sys_info> get_sys_info( string_view name, sysseconds_t start, sysseconds_t end ) {
+std::vector<date::sys_info> get_sys_info(
+    string_view name, sys_seconds_t start, sys_seconds_t end ) {
     auto const* tz      = date::locate_zone( name );
     auto        T       = sys_seconds( seconds( start ) );
     auto        Tend    = sys_seconds( seconds( end ) );
@@ -98,7 +99,7 @@ std::vector<date::sys_info> get_sys_info( string_view name, sysseconds_t start, 
     return entries;
 }
 
-std::vector<entry> get_entries( string_view name, sysseconds_t start, sysseconds_t end ) {
+std::vector<entry> get_entries( string_view name, sys_seconds_t start, sys_seconds_t end ) {
     return get_entries( name, sys_seconds( seconds( start ) ), sys_seconds( seconds( end ) ) );
 }
 
@@ -406,8 +407,8 @@ TEST( vtz, all_timezones ) {
     using sec      = std::chrono::seconds;
     auto const& fp = "build/data/tzdata/tzdata.zi";
 
-    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1600, 1, 1 ) );
-    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2400, 1, 1 ) );
+    constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1600, 1, 1 ) );
+    constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2400, 1, 1 ) );
 
 
     fmt::println( "Start time: {}", utc_to_string( start_t ) );
@@ -475,8 +476,8 @@ TEST( vtz, time_zone ) {
 
     auto const& fp = "build/data/tzdata/tzdata.zi";
 
-    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
-    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
+    constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
+    constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
 
 
     fmt::println( "Start time: {}", utc_to_string( start_t ) );
@@ -678,7 +679,7 @@ TEST( vtz, time_zone ) {
     }
 }
 
-static std::string date_str( sysseconds_t t ) {
+static std::string date_str( sys_seconds_t t ) {
     return fmt::to_string( sys_seconds( seconds( t ) ) );
 }
 namespace date {
@@ -688,7 +689,7 @@ namespace date {
 } // namespace date
 
 struct TimeT {
-    sysseconds_t sec;
+    sys_seconds_t sec;
     TimeT( date::local_seconds t )
     : sec( t.time_since_epoch().count() ) {}
     TimeT( vtz::local_seconds t )
@@ -705,9 +706,9 @@ std::string format_as( TimeT t ) { return date_str( t.sec ); }
 
 TEST( vtz, SelfTest ) {
     COUNT_ASSERTIONS();
-    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
-    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
-    constexpr sysseconds_t _2370   = resolve_civil_time( 2370, 1, 1, 0, 0, 0 );
+    constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
+    constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
+    constexpr sys_seconds_t _2370   = resolve_civil_time( 2370, 1, 1, 0, 0, 0 );
 
     auto const& fp = "build/data/tzdata/tzdata.zi";
 
@@ -772,15 +773,15 @@ TEST( vtz, SelfTest ) {
 }
 TEST( vtz, TimeZoneFuzz ) {
     COUNT_ASSERTIONS();
-    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
-    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
-    auto const&            fp      = "build/data/tzdata/tzdata.zi";
+    constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
+    constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
+    auto const&             fp      = "build/data/tzdata/tzdata.zi";
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );
     auto zones   = file.list_zones();
     auto rng     = std::mt19937_64{};
-    auto dist    = std::uniform_int_distribution<sysseconds_t>( start_t, end_t );
+    auto dist    = std::uniform_int_distribution<sys_seconds_t>( start_t, end_t );
 
     ASSERT_GT( zones.size(), 0 );
 
@@ -916,15 +917,15 @@ TEST( vtz, TimeZoneFuzz ) {
 
 TEST( vtz, TimeZoneToString ) {
     COUNT_ASSERTIONS();
-    constexpr sysseconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
-    constexpr sysseconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
-    auto const&            fp      = "build/data/tzdata/tzdata.zi";
+    constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
+    constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
+    auto const&             fp      = "build/data/tzdata/tzdata.zi";
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );
     auto zones   = file.list_zones();
     auto rng     = std::mt19937_64{};
-    auto dist    = std::uniform_int_distribution<sysseconds_t>( start_t, end_t );
+    auto dist    = std::uniform_int_distribution<sys_seconds_t>( start_t, end_t );
 
     ASSERT_GT( zones.size(), 0 );
 

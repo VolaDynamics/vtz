@@ -71,7 +71,7 @@ namespace vtz::impl {
         };
     }
 
-    int compute_g( span<sysseconds_t const> tt ) {
+    int compute_g( span<sys_seconds_t const> tt ) {
         // If there are no transition times, or only one transition time, return
         // the maximum possible g
         if( tt.size() <= 1 ) return 63;
@@ -150,11 +150,11 @@ namespace vtz::impl {
 
 
     template<class T, class Indexable>
-    s32_table make_table( T      off0,
-        span<sysseconds_t const> tt,
-        Indexable                off,
-        sysseconds_t             min_t,
-        sysseconds_t             max_t ) {
+    s32_table make_table( T       off0,
+        span<sys_seconds_t const> tt,
+        Indexable                 off,
+        sys_seconds_t             min_t,
+        sys_seconds_t             max_t ) {
         int g = compute_g( tt );
 
         i64 min_index = min_t >> g;
@@ -216,10 +216,10 @@ namespace vtz::impl {
     /// containing the relevant transition time.
     template<class T>
     s32_table make_universal_table( T off0,
-        span<sysseconds_t const>      tt,
+        span<sys_seconds_t const>     tt,
         span<T const>                 off,
-        sysseconds_t                  min_t,
-        sysseconds_t                  max_t ) {
+        sys_seconds_t                 min_t,
+        sys_seconds_t                 max_t ) {
         int g = compute_guniversal( off0, tt, off );
 
         i64 min_index = min_t >> g;
@@ -283,11 +283,11 @@ namespace vtz::impl {
     }
 
 
-    trans_table make_trans_table( span<sysseconds_t const> tt,
+    trans_table make_trans_table( span<sys_seconds_t const> tt,
 
-        sec_t        cycle_time,
-        sysseconds_t min_trans_time = INT64_MIN,
-        sysseconds_t max_trans_time = INT64_MAX ) {
+        sec_t         cycle_time,
+        sys_seconds_t min_trans_time = INT64_MIN,
+        sys_seconds_t max_trans_time = INT64_MAX ) {
         if( tt.size() == 0 )
         {
             return {
@@ -295,7 +295,7 @@ namespace vtz::impl {
                 ~u64(),
                 table1( 0 ),
                 cycle_time,
-                _init<sysseconds_t>( min_trans_time, max_trans_time ),
+                _init<sys_seconds_t>( min_trans_time, max_trans_time ),
             };
         }
 
@@ -309,7 +309,7 @@ namespace vtz::impl {
                 // otherwise use index of 1 (corresponding to when[1], when[2])
                 table2( tt[0], 0, 1 ),
                 0, // The cycle time doesn't matter
-                _init<sysseconds_t>( min_trans_time, tt[0], max_trans_time ),
+                _init<sys_seconds_t>( min_trans_time, tt[0], max_trans_time ),
             };
         }
 
@@ -331,7 +331,7 @@ namespace vtz::impl {
             };
         };
 
-        auto times = _new<sysseconds_t>( tt.size() + 2 );
+        auto times = _new<sys_seconds_t>( tt.size() + 2 );
         times[0]   = min_trans_time;
         memcpy( times.get() + 1, tt.data(), tt.size_bytes() );
         times[tt.size() + 1] = max_trans_time;
@@ -347,7 +347,7 @@ namespace vtz::impl {
 
 
     off_tables make_off_tables( i32 off0,
-        span<sysseconds_t const>    tt,
+        span<sys_seconds_t const>   tt,
         span<i32 const>             off,
         sec_t                       cycle_time ) {
         if( tt.size() == 0 )
@@ -406,7 +406,7 @@ namespace vtz::impl {
     }
 
     abbr_table make_abbr_table( abbr_block initial,
-        span<sysseconds_t const>           tt,
+        span<sys_seconds_t const>          tt,
         span<abbr_block const>             abbr,
         sec_t                              cycle_time,
         span<zone_abbr const>              abbr_table ) {
@@ -464,16 +464,16 @@ namespace vtz::impl {
         if( tt.size() == 0 )
         {
             return {
-                std::numeric_limits<sysseconds_t>::min(),
-                std::numeric_limits<sysseconds_t>::max(),
+                std::numeric_limits<sys_seconds_t>::min(),
+                std::numeric_limits<sys_seconds_t>::max(),
                 table1( u32( initial ) ),
             };
         }
         if( tt.size() == 1 )
         {
             return {
-                std::numeric_limits<sysseconds_t>::min(),
-                std::numeric_limits<sysseconds_t>::max(),
+                std::numeric_limits<sys_seconds_t>::min(),
+                std::numeric_limits<sys_seconds_t>::max(),
                 table2( tt[0], u32( initial ), u32( off[0] ) ),
             };
         }
@@ -482,7 +482,7 @@ namespace vtz::impl {
         auto Tmax = tt.back();
         return { Tmin, Tmax, make_table( initial, tt, off, Tmin, Tmax ) };
     }
-}
+} // namespace vtz::impl
 
 namespace vtz {
     using namespace impl;

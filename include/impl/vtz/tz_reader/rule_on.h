@@ -54,12 +54,12 @@ namespace vtz {
             return rule_on( repr );
         }
 
-        constexpr sysdays_t resolve_date(
+        constexpr sys_days_t resolve_date(
             i32 year, month_t mon ) const noexcept {
             return resolve_date( year, u32( mon ) );
         }
 
-        constexpr sysdays_t resolve_date( i32 year, u32 mon ) const noexcept {
+        constexpr sys_days_t resolve_date( i32 year, u32 mon ) const noexcept {
             switch( kind() )
             {
             case DAY: return resolve_civil( year, mon, day() );

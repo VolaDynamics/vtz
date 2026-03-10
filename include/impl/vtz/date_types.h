@@ -32,9 +32,9 @@ namespace vtz {
     /// rhs weekday.
     ///
     /// Eg: Mon - Sun == 1, Sun - Mon == 6
-    constexpr usize operator-( dow_t lhs, dow_t rhs ) noexcept {
-        usize l = usize( lhs );
-        usize r = usize( rhs );
+    constexpr size_t operator-( dow_t lhs, dow_t rhs ) noexcept {
+        size_t l = size_t( lhs );
+        size_t r = size_t( rhs );
         return ( l - r ) + ( l < r ? 7 : 0 );
     }
 

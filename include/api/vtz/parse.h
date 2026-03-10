@@ -27,7 +27,7 @@ namespace vtz {
     /// @return the number of days since the epoch, as an int
     /// @throws if the given format specifier is invalid
 
-    VTZ_EXPORT sysdays_t parse_d( string_view fmt, string_view date_str );
+    VTZ_EXPORT sys_days_t parse_d( string_view fmt, string_view date_str );
 
 
     /// Parse the given input as a datetime, with the time returned as an
@@ -73,7 +73,7 @@ namespace vtz {
 
     struct parse_precise_result {
         /// Seconds since the epoch
-        sysseconds_t seconds;
+        sys_seconds_t seconds;
         /// Nanoseconds component, range [0,999999999]
         u32 nanos;
 

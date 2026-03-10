@@ -51,14 +51,14 @@ namespace vtz {
 
 
     struct rule_trans {
-        sysdays_t   date;
+        sys_days_t  date;
         rule_at     at;
         zone_save   save;
         rule_letter letter;
 
         /// Resolve the time when the rule would take effect, based on the
         /// current state of the zone
-        constexpr sysseconds_t resolve( zone_time time ) const noexcept {
+        constexpr sys_seconds_t resolve( zone_time time ) const noexcept {
             return at.resolve_at( date, time );
         }
 
@@ -126,14 +126,14 @@ namespace vtz {
         zone_save   save;
         rule_letter letter;
 
-        /// Resolve the DateTime (in sysseconds_t)
-        constexpr sysseconds_t resolve_at(
+        /// Resolve the DateTime (in sys_seconds_t)
+        constexpr sys_seconds_t resolve_at(
             i32 year, from_utc stdoff, from_utc walloff ) const noexcept {
             return at.resolve_at(
                 on.resolve_date( year, in ), stdoff, walloff );
         }
 
-        constexpr sysdays_t resolve_date( i32 year ) const noexcept {
+        constexpr sys_days_t resolve_date( i32 year ) const noexcept {
             return on.resolve_date( year, in );
         }
 
@@ -292,8 +292,8 @@ namespace vtz {
     /// if no active rule with a save of 0 is found
     inline rule_entry const* earliest_active_with_save_zero(
         rule_entry const* active, size_t active_count, i32 year ) noexcept {
-        size_t    result        = size_t( -1 );
-        sysdays_t earliest_date = MAX_DAYS;
+        size_t     result        = size_t( -1 );
+        sys_days_t earliest_date = MAX_DAYS;
         for( size_t i = 0; i < active_count; ++i )
         {
             if( active[i].save.save != 0 ) continue;
@@ -447,10 +447,10 @@ namespace vtz {
         ///
         /// Return the current state - the one prescribed by the rule at the
         /// given input time
-        [[nodiscard]] zone_state advance_to( sysseconds_t when,
-            from_utc                                      stdoff,
-            zone_format const&                            format,
-            zone_time                                     old_time ) {
+        [[nodiscard]] zone_state advance_to( sys_seconds_t when,
+            from_utc                                       stdoff,
+            zone_format const&                             format,
+            zone_time                                      old_time ) {
             // We are going to advance until the next state is strictly after
             // 'when'
             for( ;; )
@@ -490,9 +490,9 @@ namespace vtz {
 
         /// Return the next zone_transition, if one exists prior to the
         /// until_time
-        std::optional<zone_transition> next( sysseconds_t until_time,
-            from_utc                                      stdoff,
-            zone_format const&                            format ) {
+        std::optional<zone_transition> next( sys_seconds_t until_time,
+            from_utc                                       stdoff,
+            zone_format const&                             format ) {
             // Record the current walloff. This is needed because the time
             // when the next transition will occur will be in terms of the
             // current walloff.
@@ -554,23 +554,23 @@ namespace vtz {
             return ( it - s.begin() ) - 1;
         }
 
-        sysseconds_t      safe_cycle_time;
+        sys_seconds_t     safe_cycle_time;
         vector<zone_abbr> abbr_table_;
 
         abbr_block abbr_initial_;
         i32        walloff_initial_;
         i32        stdoff_initial_;
 
-        vector<sysseconds_t> abbr_trans_;
-        vector<abbr_block>   abbr_;
+        vector<sys_seconds_t> abbr_trans_;
+        vector<abbr_block>    abbr_;
 
-        vector<sysseconds_t> walloff_trans_;
-        vector<i32>          walloff_;
+        vector<sys_seconds_t> walloff_trans_;
+        vector<i32>           walloff_;
 
-        vector<sysseconds_t> stdoff_trans_;
-        vector<i32>          stdoff_;
+        vector<sys_seconds_t> stdoff_trans_;
+        vector<i32>           stdoff_;
 
-        vector<sysseconds_t> tt_;
+        vector<sys_seconds_t> tt_;
 
         vector<zone_transition> get_transitions() const;
 
@@ -582,17 +582,17 @@ namespace vtz {
             };
         }
 
-        i32 const& stdoff( sysseconds_t t ) const noexcept {
+        i32 const& stdoff( sys_seconds_t t ) const noexcept {
             auto i = _find( stdoff_trans_, t );
             return i >= 0 ? stdoff_[size_t( i )] : stdoff_initial_;
         }
 
-        i32 const& walloff( sysseconds_t t ) const noexcept {
+        i32 const& walloff( sys_seconds_t t ) const noexcept {
             auto i = _find( walloff_trans_, t );
             return i >= 0 ? walloff_[size_t( i )] : walloff_initial_;
         }
 
-        abbr_block const& abbr( sysseconds_t t ) const noexcept {
+        abbr_block const& abbr( sys_seconds_t t ) const noexcept {
             auto i = _find( abbr_trans_, t );
             return i >= 0 ? abbr_[size_t( i )] : abbr_initial_;
         }
@@ -604,7 +604,7 @@ namespace vtz {
         }
 
 
-        zone_state get_state( sysseconds_t t ) const {
+        zone_state get_state( sys_seconds_t t ) const {
             return {
                 from_utc( stdoff( t ) ),
                 from_utc( walloff( t ) ),
@@ -612,7 +612,7 @@ namespace vtz {
             };
         }
 
-        string format_local( sysseconds_t time ) const {
+        string format_local( sys_seconds_t time ) const {
             auto const& state = get_state( time );
             return local_to_string( time, state.walloff, state.abbr );
         }

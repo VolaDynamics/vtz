@@ -15,8 +15,8 @@
 using std::vector;
 using std::chrono::seconds;
 using vtz::i64;
+using vtz::sys_days_t;
 using vtz::sys_seconds;
-using vtz::sysdays_t;
 
 using nanos = vtz::sys_time<std::chrono::nanoseconds>;
 
@@ -32,9 +32,9 @@ constexpr size_t COUNT = 65536;
 
 
 #define BENCH( name, lib, state )                                              \
-    void name ## _ ## lib( benchmark::State& state );                          \
-    BENCHMARK( name ## _ ## lib )->Name( #name "/" #lib );                     \
-    void name ## _ ## lib( benchmark::State& state )
+    void name##_##lib( benchmark::State& state );                              \
+    BENCHMARK( name##_##lib )->Name( #name "/" #lib );                         \
+    void name##_##lib( benchmark::State& state )
 
 
 template<class T, class F>
@@ -96,7 +96,7 @@ inline vector<vtz::sys_days> random_sys_days(
     return random_values( count,
         vtz::resolve_civil( start_year ),
         vtz::resolve_civil( end_year ),
-        []( sysdays_t days ) { return vtz::sys_days( vtz::days( days ) ); } );
+        []( sys_days_t days ) { return vtz::sys_days( vtz::days( days ) ); } );
 }
 
 
@@ -121,7 +121,7 @@ inline vector<i64> random_times(
 }
 
 
-inline vector<sysdays_t> random_days(
+inline vector<sys_days_t> random_days(
     size_t count, int start_year, int end_year ) {
     return random_values( count,
         vtz::resolve_civil( start_year ),

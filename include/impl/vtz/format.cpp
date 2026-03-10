@@ -16,8 +16,8 @@ namespace vtz {
 
     struct dummy_time_zone_utc {
         /// UTC offset is 0
-        static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
-        static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
+        static sec_t offset_s( sys_seconds_t ) noexcept { return 0; }
+        static sec_t stdoff_s( sys_seconds_t ) noexcept { return 0; }
         /// Writes "UTC"
         static size_t abbrev_to_s( sec_t, char* p ) noexcept {
             p[0] = 'U';
@@ -29,8 +29,8 @@ namespace vtz {
 
     struct unzoned_time {
         /// UTC offset is 0
-        static sec_t offset_s( sysseconds_t ) noexcept { return 0; }
-        static sec_t stdoff_s( sysseconds_t ) noexcept { return 0; }
+        static sec_t offset_s( sys_seconds_t ) noexcept { return 0; }
+        static sec_t stdoff_s( sys_seconds_t ) noexcept { return 0; }
         /// Writes "-00"
         static size_t abbrev_to_s( sec_t, char* p ) noexcept {
             p[0] = '-';
@@ -385,7 +385,7 @@ namespace vtz {
     auto _do_strformat( TimeZoneT const& tz,
         char const*                      format,
         size_t                           format_size,
-        sysseconds_t                     t,
+        sys_seconds_t                    t,
         WriteFractional                  write_frac,
         F                                func ) {
         constexpr size_t MAX_SPECIFIERS = 64;
@@ -725,7 +725,7 @@ namespace vtz {
     }
 
     size_t time_zone::format_to_s(
-        string_view format, sysseconds_t t, char* buff, size_t count ) const {
+        string_view format, sys_seconds_t t, char* buff, size_t count ) const {
         return _do_strformat(
             *this,
             format.data(),
@@ -766,7 +766,7 @@ namespace vtz {
         };
     }
 
-    std::string format_d( string_view fmt, sysdays_t days ) {
+    std::string format_d( string_view fmt, sys_days_t days ) {
         return _do_strformat(
             dummy_time_zone_utc{},
             fmt.data(),
@@ -778,7 +778,7 @@ namespace vtz {
     }
 
 
-    std::string format_s( string_view fmt, sysseconds_t t ) {
+    std::string format_s( string_view fmt, sys_seconds_t t ) {
         return _do_strformat(
             dummy_time_zone_utc{},
             fmt.data(),
@@ -789,7 +789,7 @@ namespace vtz {
     }
 
     size_t format_to_s(
-        string_view fmt, sysseconds_t t, char* buff, size_t count ) {
+        string_view fmt, sys_seconds_t t, char* buff, size_t count ) {
         return _do_strformat(
             dummy_time_zone_utc{},
             fmt.data(),
@@ -800,7 +800,7 @@ namespace vtz {
     }
 
     size_t format_to_d(
-        string_view fmt, sysdays_t days, char* buff, size_t count ) {
+        string_view fmt, sys_days_t days, char* buff, size_t count ) {
         return _do_strformat(
             dummy_time_zone_utc{},
             fmt.data(),
@@ -812,7 +812,7 @@ namespace vtz {
     }
 
     std::string format_precise_s(
-        string_view fmt, sysseconds_t t, u32 nanos, int precision ) {
+        string_view fmt, sys_seconds_t t, u32 nanos, int precision ) {
         return _do_strformat( dummy_time_zone_utc{},
             fmt.data(),
             fmt.size(),
@@ -822,7 +822,7 @@ namespace vtz {
     }
 
     size_t format_precise_to_s( string_view fmt,
-        sysseconds_t                        t,
+        sys_seconds_t                       t,
         u32                                 nanos,
         int                                 precision,
         char*                               buff,
@@ -837,7 +837,7 @@ namespace vtz {
 
     // uuuuuuuuuu suffering,,,,,,
     namespace _unzoned {
-        std::string format_d( string_view fmt, sysdays_t days ) {
+        std::string format_d( string_view fmt, sys_days_t days ) {
             return _do_strformat(
                 unzoned_time{},
                 fmt.data(),
@@ -849,7 +849,7 @@ namespace vtz {
         }
 
 
-        std::string format_s( string_view fmt, sysseconds_t t ) {
+        std::string format_s( string_view fmt, sys_seconds_t t ) {
             return _do_strformat(
                 unzoned_time{},
                 fmt.data(),
@@ -860,7 +860,7 @@ namespace vtz {
         }
 
         size_t format_to_s(
-            string_view fmt, sysseconds_t t, char* buff, size_t count ) {
+            string_view fmt, sys_seconds_t t, char* buff, size_t count ) {
             return _do_strformat(
                 unzoned_time{},
                 fmt.data(),
@@ -871,7 +871,7 @@ namespace vtz {
         }
 
         size_t format_to_d(
-            string_view fmt, sysdays_t days, char* buff, size_t count ) {
+            string_view fmt, sys_days_t days, char* buff, size_t count ) {
             return _do_strformat(
                 unzoned_time{},
                 fmt.data(),
@@ -883,7 +883,7 @@ namespace vtz {
         }
 
         std::string format_precise_s(
-            string_view fmt, sysseconds_t t, u32 nanos, int precision ) {
+            string_view fmt, sys_seconds_t t, u32 nanos, int precision ) {
             return _do_strformat( unzoned_time{},
                 fmt.data(),
                 fmt.size(),
@@ -893,7 +893,7 @@ namespace vtz {
         }
 
         size_t format_precise_to_s( string_view fmt,
-            sysseconds_t                        t,
+            sys_seconds_t                       t,
             u32                                 nanos,
             int                                 precision,
             char*                               buff,
@@ -909,7 +909,7 @@ namespace vtz {
 
 
     size_t time_zone::format_precise_to_s( string_view format,
-        sysseconds_t                                   t,
+        sys_seconds_t                                  t,
         u32                                            nanos,
         int                                            precision,
         char*                                          buff,
@@ -923,7 +923,7 @@ namespace vtz {
     }
 
     std::string time_zone::format_precise_s(
-        string_view format, sysseconds_t t, u32 nanos, int precision ) const {
+        string_view format, sys_seconds_t t, u32 nanos, int precision ) const {
         return _do_strformat( *this,
             format.data(),
             format.size(),
@@ -933,7 +933,7 @@ namespace vtz {
     }
 
     string time_zone::format_s(
-        std::string_view format, sysseconds_t t ) const {
+        std::string_view format, sys_seconds_t t ) const {
         return _do_strformat(
             *this,
             format.data(),
@@ -946,7 +946,7 @@ namespace vtz {
 
     /*
     template<bool is_sane, bool is_compact, class FWriteAbbrev, class FAction>
-    auto _format_local_to( sysseconds_t t_local,
+    auto _format_local_to( sys_seconds_t t_local,
         char* const                     p,
         char                            date_sep,
         char                            date_time_sep,
@@ -955,7 +955,7 @@ namespace vtz {
         write_abbrev( p ) ) ) ) {
         // t = utc_t + gmtoff;
         auto parts          = vtz::math::div_floor2<86400>( t_local );
-        auto date           = sysdays_t( parts.quot );
+        auto date           = sys_days_t( parts.quot );
         auto time_intraday  = u32( parts.rem );
         int  hr             = time_intraday / 3600;
         time_intraday      %= 3600;
@@ -1030,7 +1030,7 @@ namespace vtz {
 
     template<bool include_abbr_sep, bool use_stdoff>
     static auto _write_abbrev(
-        time_zone const& tz, sysseconds_t t, i32 gmtoff, char abbrev_sep ) {
+        time_zone const& tz, sys_seconds_t t, i32 gmtoff, char abbrev_sep ) {
         if constexpr( use_stdoff )
         {
             if constexpr( include_abbr_sep )
@@ -1068,7 +1068,7 @@ namespace vtz {
     /*
     template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
     VTZ_INLINE static std::string _do_format( time_zone const& tz,
-        sysseconds_t                                           t,
+        sys_seconds_t                                           t,
         char                                                   date_sep,
         char                                                   date_time_sep,
         char                                                   abbr_sep ) {
@@ -1111,7 +1111,7 @@ namespace vtz {
     /*
     template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
     VTZ_INLINE static size_t _do_format_to( time_zone const& tz,
-        sysseconds_t                                         t,
+        sys_seconds_t                                         t,
         char*                                                p,
         size_t                                               count,
         char                                                 date_sep,

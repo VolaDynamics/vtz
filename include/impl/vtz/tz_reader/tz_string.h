@@ -89,7 +89,7 @@ namespace vtz {
                             | u32( DayOfMonth ) );
         }
 
-        sysdays_t resolve_date( i32 year ) const noexcept {
+        sys_days_t resolve_date( i32 year ) const noexcept {
             switch( kind() )
             {
             case None: return resolve_civil( year );
@@ -166,7 +166,7 @@ namespace vtz {
         using tz_date::week;
         using tz_date::operator bool;
 
-        sysseconds_t resolve( i32 year, from_utc when ) const noexcept {
+        sys_seconds_t resolve( i32 year, from_utc when ) const noexcept {
             return when.to_utc( resolve_date( year ) * 86400ll + time );
         }
 
@@ -195,13 +195,13 @@ namespace vtz {
 
 
         /// Resolve the start of dst within the year
-        sysseconds_t resolve_dst( i32 year ) const noexcept {
+        sys_seconds_t resolve_dst( i32 year ) const noexcept {
             return r1.resolve( year, off1 );
         }
 
 
         /// Resolve the return to standard time within the year
-        sysseconds_t resolve_std( i32 year ) const noexcept {
+        sys_seconds_t resolve_std( i32 year ) const noexcept {
             return r2.resolve( year, off2 );
         }
 
@@ -221,14 +221,14 @@ namespace vtz {
 
         /// Get zone transitions appearing strictly _after_ T
         vector<zone_transition> get_states(
-            sysseconds_t T, sysseconds_t max ) const;
+            sys_seconds_t T, sys_seconds_t max ) const;
     };
 
 
     class tz_string_iter {
         using zt = zone_transition;
 
-        sysseconds_t peek_next_time() const noexcept {
+        sys_seconds_t peek_next_time() const noexcept {
             return dst_next_ ? s.resolve_dst( year_dst )
                              : s.resolve_std( year_std );
         }
@@ -236,7 +236,7 @@ namespace vtz {
       public:
 
         /// Advance until the next transition time is _after_ T
-        void advance_past( sysseconds_t T ) {
+        void advance_past( sys_seconds_t T ) {
             while( peek_next_time() <= T ) { advance(); }
         }
 
@@ -275,8 +275,8 @@ namespace vtz {
         }
 
         static tz_string_iter start_after(
-            tz_string const& s, sysseconds_t T ) {
-            auto date = sysdays_t( vtz::math::div_floor<86400>( T ) );
+            tz_string const& s, sys_seconds_t T ) {
+            auto date = sys_days_t( vtz::math::div_floor<86400>( T ) );
             auto it   = tz_string_iter( s, civil_year( date ) );
             it.advance_past( T );
             return it;

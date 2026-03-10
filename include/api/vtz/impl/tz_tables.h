@@ -309,8 +309,9 @@ namespace vtz::impl {
                 throw std::runtime_error( "nonexistent local time" );
         }
 
-        int _lookup_local(
-            sec_t t_key, sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
+        int _lookup_local( sec_t t_key,
+            sec_t                t,
+            sys_seconds_t ( &result )[2] ) const noexcept {
             auto ent = tt_utc.get( t_key );
             /// offset from UTC before transition time
             i64 off_pre = ent.lo();
@@ -368,7 +369,7 @@ namespace vtz::impl {
                 }
 
                 // Time was nonexistent.
-                sysseconds_t jump_time
+                sys_seconds_t jump_time
                     = ent.t + ( t - t_key ); // Time at which jump occurred (eg,
                                              // 3am (since 2am is nonexistent))
 
@@ -379,7 +380,7 @@ namespace vtz::impl {
         }
 
         int lookup_local(
-            sec_t t, sysseconds_t ( &result )[2] ) const noexcept {
+            sec_t t, sys_seconds_t ( &result )[2] ) const noexcept {
             // If the time is in-bounds, we can use the lookup table
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return _lookup_local( t, t, result );
@@ -388,7 +389,7 @@ namespace vtz::impl {
             // transitions.
             if( t < 0 )
             {
-                sysseconds_t utc_time = t - tt_utc.initial();
+                sys_seconds_t utc_time = t - tt_utc.initial();
                 result[0] = result[1] = utc_time;
                 return local_info::unique;
             }
@@ -534,14 +535,14 @@ namespace vtz::impl {
         s32_table tt_index;
         sec_t     cycle_time;
 
-        std::unique_ptr<sysseconds_t[]> when;
+        std::unique_ptr<sys_seconds_t[]> when;
 
         struct time_range {
-            sysseconds_t begin;
-            sysseconds_t end;
+            sys_seconds_t begin;
+            sys_seconds_t end;
         };
 
-        VTZ_INLINE time_range sys_range_s( sysseconds_t t ) const noexcept {
+        VTZ_INLINE time_range sys_range_s( sys_seconds_t t ) const noexcept {
             if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
                 return sys_range_impl( t );
 
@@ -558,18 +559,18 @@ namespace vtz::impl {
 
       private:
 
-        VTZ_INLINE time_range sys_range_impl( sysseconds_t t ) const noexcept {
+        VTZ_INLINE time_range sys_range_impl( sys_seconds_t t ) const noexcept {
             auto i = tt_index.lookup( t );
             return { when[i], when[i + 1] };
         }
     };
 
     struct stdoff_table {
-        sysseconds_t t_min;
-        sysseconds_t t_max;
-        s32_table    stdoff;
+        sys_seconds_t t_min;
+        sys_seconds_t t_max;
+        s32_table     stdoff;
 
-        VTZ_INLINE i32 stdoff_s( sysseconds_t t ) const noexcept {
+        VTZ_INLINE i32 stdoff_s( sys_seconds_t t ) const noexcept {
             if( t < t_min ) t = t_min;
             if( t > t_max ) t = t_max;
             return stdoff.lookup_i32( t );

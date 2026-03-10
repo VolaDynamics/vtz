@@ -101,10 +101,10 @@ namespace vtz {
     using std::string;
     /// Represents a date as a number of days from the epoch
     ///
-    /// sysdays_t(0) is 1970-01-01, sysdays_t(1) is 1970-01-02, etc
-    using sysdays_t = i32;
+    /// sys_days_t(0) is 1970-01-01, sys_days_t(1) is 1970-01-02, etc
+    using sys_days_t = i32;
     /// Seconds from epoch
-    using sysseconds_t = i64;
+    using sys_seconds_t = i64;
 
     /// Holds seconds (unspecified if it's local or UTC)
     using sec_t = i64;
@@ -112,13 +112,13 @@ namespace vtz {
     /// Holds nanoseconds (unspecified if it's local or UTC)
     using nanos_t = i64;
 
-    constexpr inline sysdays_t MAX_DAYS = INT32_MAX;
+    constexpr inline sys_days_t MAX_DAYS = INT32_MAX;
 
-    constexpr sysseconds_t days_to_seconds( i64 days ) noexcept {
+    constexpr sys_seconds_t days_to_seconds( i64 days ) noexcept {
         return days * 86400;
     }
 
-    constexpr sysseconds_t days_to_seconds(
+    constexpr sys_seconds_t days_to_seconds(
         i64 days, i64 hr, i64 min, i64 sec ) noexcept {
         return days * 86400 + 3600 * hr + 60 * min + sec;
     }
@@ -251,7 +251,7 @@ namespace vtz {
     }
 
     /// Return 0-based year/month/day, so month is 0-11 and day is 0-30
-    constexpr civil_ymd to_civil0( sysdays_t days ) noexcept {
+    constexpr civil_ymd to_civil0( sys_days_t days ) noexcept {
         days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
         const i64 era = ( days >= 0 ? days : days - 146096 ) / 146097;
         const u32 doe = u32( days - era * 146097 ); // [0, 146096]
@@ -265,7 +265,7 @@ namespace vtz {
         return civil_ymd{ i32( y + ( m <= 1 ) ), u16( m ), u16( d ) };
     }
 
-    constexpr sysdays_t resolve_civil0( i32 y, u32 m, u32 d ) noexcept {
+    constexpr sys_days_t resolve_civil0( i32 y, u32 m, u32 d ) noexcept {
         y -= m <= 1;
 
         i32 era = ( y >= 0 ? y : y - 399 ) / 400;
@@ -284,7 +284,7 @@ namespace vtz {
     /// @param m month
     /// @param d day
     template<class IntT>
-    constexpr sysdays_t resolve_civil( IntT y, u32 m, u32 d ) noexcept {
+    constexpr sys_days_t resolve_civil( IntT y, u32 m, u32 d ) noexcept {
         y -= m <= 2;
 
         auto era_parts = vtz::math::div_floor2<400>( y );
@@ -293,26 +293,26 @@ namespace vtz {
         u32  doy
             = ( 153 * ( m > 2 ? m - 3 : m + 9 ) + 2 ) / 5 + d - 1; // [0, 365]
         u32 doe = yoe * 365 + yoe / 4 - yoe / 100 + doy; // [0, 146096]
-        return sysdays_t( era * 146097 + static_cast<i32>( doe ) - 719468 );
+        return sys_days_t( era * 146097 + static_cast<i32>( doe ) - 719468 );
     }
 
     /// Returns a civil date (as days since epoch) based on Jan 1st of the given
     /// year
-    constexpr sysdays_t resolve_civil( i32 y ) noexcept {
+    constexpr sys_days_t resolve_civil( i32 y ) noexcept {
         auto era_parts = vtz::math::div_floor2<400>( y - 1 );
         i64  era       = era_parts.quot;
         i32  yoe       = era_parts.rem;                         // [0, 399]
         i32  doe       = yoe * 365 + yoe / 4 - yoe / 100 + 306; // [0, 146096]
-        return sysdays_t( era * 146097 + doe - 719468 );
+        return sys_days_t( era * 146097 + doe - 719468 );
     }
 
     /// Resolve a civil date, expressed as (year, doy), where doy starts at 1
-    constexpr sysdays_t resolve_civil_ordinal( i32 y, i32 doy ) noexcept {
+    constexpr sys_days_t resolve_civil_ordinal( i32 y, i32 doy ) noexcept {
         return resolve_civil( y ) + doy - 1;
     }
 
 
-    constexpr sysseconds_t resolve_civil_time(
+    constexpr sys_seconds_t resolve_civil_time(
         i32 y, u32 m, u32 d, int h, int min, int sec ) noexcept {
         return i64( resolve_civil( y, m, d ) ) * 86400 + 3600 * h + 60 * min
                + sec;
@@ -326,7 +326,7 @@ namespace vtz {
     /// @param y year
     /// @param m month
     /// @param d day
-    constexpr sysdays_t resolve_civil( i32 y, month_t m, u32 d ) noexcept {
+    constexpr sys_days_t resolve_civil( i32 y, month_t m, u32 d ) noexcept {
         return resolve_civil( y, u32( m ), d );
     }
 
@@ -337,7 +337,7 @@ namespace vtz {
     /// https://howardhinnant.github.io/date_algorithms.html#civil_from_days
     ///
     /// @param days Days since the epoch (The epoch being January 1st, 1970)
-    constexpr civil_ymd to_civil( sysdays_t days ) noexcept {
+    constexpr civil_ymd to_civil( sys_days_t days ) noexcept {
         days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
         const auto parts = math::div_floor2<146097>( days );
         i32        era   = parts.quot;
@@ -376,7 +376,7 @@ namespace vtz {
 
 
     /// Get the year and the day of the year. Jan 1st 2025 -> (2025, 0)
-    constexpr year_doy to_civil_year_doy( sysdays_t days ) noexcept {
+    constexpr year_doy to_civil_year_doy( sys_days_t days ) noexcept {
         days += 719468; // Shift the epoch from 1970-01-01 to 0000-03-01
         const auto parts = math::div_floor2<146097>( days );
         i32        era   = parts.quot;
@@ -393,37 +393,37 @@ namespace vtz {
         return year_doy{ y2, doy2 };
     }
 
-    constexpr i32 civil_year( sysdays_t days ) noexcept {
+    constexpr i32 civil_year( sys_days_t days ) noexcept {
         return to_civil( days ).year;
     }
 
-    constexpr u16 civil_month( sysdays_t days ) noexcept {
+    constexpr u16 civil_month( sys_days_t days ) noexcept {
         return to_civil( days ).month;
     }
-    constexpr u16 civil_day_of_month( sysdays_t days ) noexcept {
+    constexpr u16 civil_day_of_month( sys_days_t days ) noexcept {
         return to_civil( days ).day;
     }
 
     /// Return 0-based month (January -> 0)
-    constexpr u16 civil_month0( sysdays_t days ) noexcept {
+    constexpr u16 civil_month0( sys_days_t days ) noexcept {
         return to_civil0( days ).month;
     }
 
     /// Return the 0-based day of the month (1st of month -> 0).
     /// This is the number of days since the 1st of the month.
-    constexpr u16 civil_day_of_month0( sysdays_t days ) noexcept {
+    constexpr u16 civil_day_of_month0( sys_days_t days ) noexcept {
         return to_civil0( days ).day;
     }
 
     /// Return the date corresponding to the first day of the year
     /// Eg, Dec 13 2025 -> Jan 1st, 2025
-    constexpr sysdays_t civil_boy( sysdays_t days ) noexcept {
+    constexpr sys_days_t civil_boy( sys_days_t days ) noexcept {
         return days - to_civil_year_doy( days ).doy;
     }
 
     /// Return the date corresponding to the last day of the year
     /// Eg, Dec 13 2025 -> Dec 31st, 2025
-    constexpr sysdays_t civil_eoy( sysdays_t days ) noexcept {
+    constexpr sys_days_t civil_eoy( sys_days_t days ) noexcept {
         auto _year_doy = to_civil_year_doy( days );
         // 364 for regular years, 365 for leap years
         auto last_doy = 364 + int( is_leap( _year_doy.year ) );
@@ -432,8 +432,8 @@ namespace vtz {
 
     /// Add months to the date. Eg, (Dec 13 2025) + 3 months becomes
     /// Mar 13 2026
-    constexpr sysdays_t civil_add_months(
-        sysdays_t days, i32 months ) noexcept {
+    constexpr sys_days_t civil_add_months(
+        sys_days_t days, i32 months ) noexcept {
         auto ymd   = to_civil0( days );
         auto m0    = ymd.month;
         auto parts = math::div_floor2<12>( m0 + months );
@@ -443,18 +443,19 @@ namespace vtz {
 
     /// Add years to the date. Eg, (Dec 13 2025) + 3 years becomes
     /// Dec 13 2028
-    constexpr sysdays_t civil_add_years( sysdays_t days, i32 years ) noexcept {
+    constexpr sys_days_t civil_add_years(
+        sys_days_t days, i32 years ) noexcept {
         auto ymd = to_civil0( days );
         return resolve_civil0( ymd.year + years, ymd.month, ymd.day );
     }
 
     /// Get the beginning of the month, as days since the epoch. Eg, Dec 13 2025
     /// -> Dec 1st 2025
-    constexpr sysdays_t civil_bom( sysdays_t days ) noexcept {
+    constexpr sys_days_t civil_bom( sys_days_t days ) noexcept {
         return days - civil_day_of_month0( days );
     }
 
-    constexpr sysdays_t civil_eom( sysdays_t days ) noexcept {
+    constexpr sys_days_t civil_eom( sys_days_t days ) noexcept {
         auto ymd      = to_civil( days );
         auto last_dom = last_day_of_month( ymd.year, ymd.month );
         // Add as many days as needed to get to the last day of the month
@@ -463,7 +464,7 @@ namespace vtz {
 
     /// Returns the weekday for the given date, expressed as a number of days
     /// since the epoch, where 0=Sun, 1=Mon, etc
-    constexpr dow_t dow_from_days( sysdays_t days_from_epoch ) noexcept {
+    constexpr dow_t dow_from_days( sys_days_t days_from_epoch ) noexcept {
         return dow_t( ( i64( days_from_epoch ) + 0x80000002ull ) % 7 );
     }
 
@@ -499,31 +500,31 @@ namespace vtz {
 
     /// Resolve a date such as '1966 Oct Sun>=10' - returns the first Sunday on
     /// or after October 10, 1966
-    constexpr sysdays_t resolve_dow_ge(
+    constexpr sys_days_t resolve_dow_ge(
         i32 year, u32 month, u32 dom, dow_t dow ) noexcept {
-        sysdays_t d = resolve_civil( year, month, dom );
+        sys_days_t d = resolve_civil( year, month, dom );
         // Add as many days as needed to get to the desired weekday
-        d += sysdays_t( dow - dow_from_days( d ) );
+        d += sys_days_t( dow - dow_from_days( d ) );
         return d;
     }
 
     /// Resolve a date such as '2012 Apr Fri<=1' - returns the first Friday on
     /// or before April 1st, 2012
-    constexpr sysdays_t resolve_dow_le(
+    constexpr sys_days_t resolve_dow_le(
         i32 year, u32 month, u32 dom, dow_t dow ) noexcept {
-        sysdays_t d = resolve_civil( year, month, dom );
+        sys_days_t d = resolve_civil( year, month, dom );
         // Subtract as many days as needed to get from the desired weekday
-        d -= sysdays_t( dow_from_days( d ) - dow );
+        d -= sys_days_t( dow_from_days( d ) - dow );
         return d;
     }
 
 
-    constexpr sysdays_t resolve_last_dow(
+    constexpr sys_days_t resolve_last_dow(
         i32 year, u32 month, dow_t dow ) noexcept {
         // Last day of the month
         u32 last_dom = last_day_of_month( year, month );
-        // sysdays_t of that date
-        sysdays_t d = resolve_civil( year, month, last_dom );
+        // sys_days_t of that date
+        sys_days_t d = resolve_civil( year, month, last_dom );
         // Weekday of the last day of the month
         dow_t dow_eom = dow_from_days( d );
 
@@ -579,7 +580,7 @@ namespace vtz {
         return civil_ymd{ year, u16( month ), u16( dom2 ) };
     }
 
-    constexpr sysseconds_t sysseconds( sysdays_t date, i32 offset ) {
+    constexpr sys_seconds_t sysseconds( sys_days_t date, i32 offset ) {
         return i64( date ) * 86400 + offset;
     }
 
@@ -619,13 +620,13 @@ namespace vtz {
     /// Writes a timestamp as `YYYY-MM-DD HH:MM:SS`.
     ///
     /// Writes precisely 19 characters to the given buffer.
-    constexpr void _write_timestamp( sysseconds_t T,
-        char*                                     p,
-        char                                      date_sep      = '-',
-        char                                      date_time_sep = ' ' ) {
+    constexpr void _write_timestamp( sys_seconds_t T,
+        char*                                      p,
+        char                                       date_sep      = '-',
+        char                                       date_time_sep = ' ' ) {
         auto date_and_time = math::div_floor2<86400>( T );
 
-        auto date = sysdays_t( date_and_time.quot );
+        auto date = sys_days_t( date_and_time.quot );
         auto t    = u32( date_and_time.rem );
 
         // Write the date
@@ -639,10 +640,10 @@ namespace vtz {
     ///
     /// Writes precisely 15 characters to the given buffer.
     constexpr void _write_timestamp_compact(
-        sysseconds_t T, char* p, char date_time_sep = ' ' ) {
+        sys_seconds_t T, char* p, char date_time_sep = ' ' ) {
         auto date_and_time = math::div_floor2<86400>( T );
 
-        auto date = sysdays_t( date_and_time.quot );
+        auto date = sys_days_t( date_and_time.quot );
         auto t    = u32( date_and_time.rem );
 
         // Write the date
@@ -652,8 +653,8 @@ namespace vtz {
         _write_hhmmss_6( t, p + 9 );
     }
 
-    constexpr std::string_view write_timestamp_to_sv( sysseconds_t T,
-        char*                                                      p,
+    constexpr std::string_view write_timestamp_to_sv( sys_seconds_t T,
+        char*                                                       p,
         char date_sep      = '-',
         char date_time_sep = ' ' ) {
         _write_timestamp( T, p, date_sep, date_time_sep );
@@ -661,7 +662,7 @@ namespace vtz {
     }
 
     inline std::string utc_to_string(
-        sysseconds_t sec, char date_sep = '-', char date_time_sep = ' ' ) {
+        sys_seconds_t sec, char date_sep = '-', char date_time_sep = ' ' ) {
         char buff[20];
         _write_timestamp( sec, buff, date_sep, date_time_sep );
         buff[19] = 'Z';
@@ -670,7 +671,7 @@ namespace vtz {
 
     template<size_t N>
     inline std::string local_to_string(
-        sysseconds_t sec, from_utc off, fix_str<N> const& abbr ) {
+        sys_seconds_t sec, from_utc off, fix_str<N> const& abbr ) {
         char buff[20 + N];
         _write_timestamp( off.to_local( sec ), buff, '-', ' ' );
         buff[19] = ' ';

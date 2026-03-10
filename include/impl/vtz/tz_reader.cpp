@@ -1317,8 +1317,8 @@ namespace vtz {
     }
 
     struct until_date {
-        sysdays_t    date; ///< Date, as days since epoch
-        sysseconds_t T;    ///< DateTime when current state ends
+        sys_days_t    date; ///< Date, as days since epoch
+        sys_seconds_t T;    ///< DateTime when current state ends
     };
 
     struct zt_agglomerator : zone_states {
@@ -1412,7 +1412,7 @@ namespace vtz {
 
         auto const& last_rule = zone_entries[n - 1].rules;
 
-        sysdays_t last_rule_cycle_date;
+        sys_days_t last_rule_cycle_date;
 
         if( last_rule.is_named() )
         {
@@ -1444,7 +1444,7 @@ namespace vtz {
 
 
     vector<zone_transition> tz_string::get_states(
-        sysseconds_t T, sysseconds_t maxT ) const {
+        sys_seconds_t T, sys_seconds_t maxT ) const {
         // If there are no daylight rules, there are no transitions
         if( !has_daylight_rules() ) return {};
 
@@ -1546,7 +1546,7 @@ namespace vtz {
         map<string_view, zone_trans_iter>                cache,
         i64                                              safe_cycle_time,
         i32                                              end_year ) {
-        sysseconds_t const STOP_TIME
+        sys_seconds_t const STOP_TIME
             = end_year > 0
                   // If the end year is specified, use that as the stop time
                   ? days_to_seconds( resolve_civil( end_year, 1, 1 ) )
@@ -1600,7 +1600,7 @@ namespace vtz {
             return std::move( agg ).get_states( safe_cycle_time );
         }
 
-        sysseconds_t until_t;
+        sys_seconds_t until_t;
         // Handle first rule
 
         {
@@ -1900,8 +1900,8 @@ namespace vtz {
     }
 
     vector<zone_transition> zone_states::get_transitions() const {
-        constexpr static sysseconds_t MAX_TIME
-            = std::numeric_limits<sysseconds_t>::max();
+        constexpr static sys_seconds_t MAX_TIME
+            = std::numeric_limits<sys_seconds_t>::max();
 
         span stt = stdoff_trans_;
         span wtt = walloff_trans_;

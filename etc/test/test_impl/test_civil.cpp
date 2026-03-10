@@ -135,7 +135,7 @@ TEST( vtz, civil ) {
     ASSERT_EQ( resolve_civil( 2024, 2, 29 ), 19782 );
 
     {
-        sysdays_t sysdays = -135140;
+        sys_days_t sysdays = -135140;
         int       y       = 1600;
         u16       m       = 1;
 
@@ -297,7 +297,7 @@ TEST( vtz, resolve_rule ) {
 
 TEST( vtz, civil_big_test ) {
     /// Corresponds to -400-01-01
-    sysdays_t day_counter = -865625;
+    sys_days_t day_counter = -865625;
     unsigned  dow_counter = 6; // -400-01-01 was a Saturday
 
     // Sanity Check - 2025-11-13 is a Thursday
@@ -307,9 +307,9 @@ TEST( vtz, civil_big_test ) {
     for( int year = -400; year < 3000; ++year )
     {
         // Beginning of year, as days since the epoch
-        sysdays_t boy_days = day_counter;
+        sys_days_t boy_days = day_counter;
         // End of year, as days since epoch
-        sysdays_t eoy_days = day_counter + ( is_leap( year ) ? 365 : 364 );
+        sys_days_t eoy_days = day_counter + ( is_leap( year ) ? 365 : 364 );
 
         /// Counts days since the start of the year
         int doy_counter = 0;
@@ -319,8 +319,8 @@ TEST( vtz, civil_big_test ) {
         for( int month = 1; month <= 12; ++month )
         {
             int       days_in_month = days_in_month_reference( year, month );
-            sysdays_t bom_days      = day_counter;
-            sysdays_t eom_days      = day_counter + days_in_month - 1;
+            sys_days_t bom_days      = day_counter;
+            sys_days_t eom_days      = day_counter + days_in_month - 1;
 
             for( int day = 1; day <= days_in_month; ++day )
             {
@@ -377,7 +377,7 @@ TEST( vtz, civil_arithmetic ) {
 
 
     /// Corresponds to 1970-01-01
-    sysdays_t day_counter = 0;
+    sys_days_t day_counter = 0;
 
     // Sanity Check - 2025-11-13 is a Thursday
     ASSERT_EQ_QUIET( dow_from_days( resolve_civil( 2025, 11, 13 ) ), dow_t::Thu );

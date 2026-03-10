@@ -9,7 +9,7 @@ vector<vtz::civil_ymd> random_ymd(
     return random_values( count,
         vtz::resolve_civil( start_year ),
         vtz::resolve_civil( end_year ),
-        []( sysdays_t days ) { return vtz::to_civil( days ); } );
+        []( sys_days_t days ) { return vtz::to_civil( days ); } );
 }
 
 
