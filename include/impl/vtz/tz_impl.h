@@ -14,7 +14,7 @@ namespace vtz {
             if( t < 0 ) return table.tt_utc.first_entry();
 
             // use zone symmetry to compute state for equivalent time
-            return table.tt_utc.get( get_cyclic( t, table.cycle_time ) );
+            return table.tt_utc.get( impl::get_cyclic( t, table.cycle_time ) );
         }
         static auto local_block_s( time_zone const& table, sec_t t ) {
             return local_block_s( static_cast<off_tables const&>( table ), t );

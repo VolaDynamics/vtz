@@ -10,6 +10,10 @@
 #include <stdexcept>
 
 namespace vtz {
+    struct zone_states;
+} // namespace vtz
+
+namespace vtz::impl {
     using std::string;
 
     constexpr u64 _join32( u32 lo, u32 hi ) {
@@ -153,10 +157,6 @@ namespace vtz {
             if( bb ) delete[]( bb + start_ );
         }
     };
-
-    enum class choose : bool { earliest = false, latest = true };
-
-    struct zone_states;
 
     using std::string_view;
 
@@ -645,4 +645,4 @@ namespace vtz {
             return std::string( data, size );
         }
     };
-} // namespace vtz
+} // namespace vtz::impl

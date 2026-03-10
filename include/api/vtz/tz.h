@@ -115,10 +115,10 @@ namespace vtz {
 
 
     class VTZ_EXPORT time_zone
-    : private off_tables
-    , private abbr_table
-    , private stdoff_table
-    , private trans_table {
+    : private impl::off_tables
+    , private impl::abbr_table
+    , private impl::stdoff_table
+    , private impl::trans_table {
       public:
 
 
