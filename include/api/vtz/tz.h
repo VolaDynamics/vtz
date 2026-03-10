@@ -312,37 +312,6 @@ namespace vtz {
         /// Formats a time with std::strftime specifiers. See: https://en.cppreference.com/w/cpp/chrono/c/strftime
         string format(      string_view format, sys_seconds  t ) const { return format_s( format, t.time_since_epoch().count() ); }
 
-
-        /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        size_t format_to_s( sysseconds_t t, char* buff, size_t count, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const noexcept;
-        /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        size_t format_to(   sys_seconds  t, char* buff, size_t count, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_to_s( t.time_since_epoch().count(), buff, count, date_sep, date_time_sep, abbrev_sep ); }
-        /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`
-        string format_s(    sysseconds_t t, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const;
-        /// Formats as `%Y-%m-%d %H:%M:%S %Z`. Example: `2025-11-06 17:50:00 EST`
-        string format(      sys_seconds  t, char date_sep = '-', char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_s( t.time_since_epoch().count(), date_sep, date_time_sep, abbrev_sep ); }
-
-
-        /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        size_t format_compact_to_s( sysseconds_t t, char* p, size_t count, char date_time_sep = ' ', char abbrev_sep = ' ' ) const noexcept;
-        /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        size_t format_compact_to(   sys_seconds  t, char* p, size_t count, char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_compact_to_s( t.time_since_epoch().count(), p, count, date_time_sep, abbrev_sep ); }
-        /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        string format_compact_s(    sysseconds_t t, char date_time_sep = ' ', char abbrev_sep = ' ' ) const;
-        /// Formats as `%Y%m%d %H%M%S %Z`. Example: `20251106 175000 EST`. Writes output to buffer. Returns bytes written. Truncates output if needed.
-        string format_compact(      sys_seconds  t, char date_time_sep = ' ', char abbrev_sep = ' ' ) const { return format_compact_s( t.time_since_epoch().count(), date_time_sep, abbrev_sep ); }
-
-
-        /// Formats as `%Y-%m-%d[date_time_sep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
-        size_t format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char date_sep = '-', char date_time_sep = 'T' ) const noexcept;
-        /// Formats as `%Y-%m-%d[date_time_sep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
-        size_t format_iso8601_to(   sys_seconds  t, char* buff, size_t count, char date_sep = '-', char date_time_sep = 'T' ) const { return format_iso8601_to_s( t.time_since_epoch().count(), buff, count, date_sep, date_time_sep );}
-        /// Formats as `%Y-%m-%d[date_time_sep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
-        string format_iso8601_s(    sysseconds_t t, char date_sep = '-', char date_time_sep = 'T' ) const;
-        /// Formats as `%Y-%m-%d[date_time_sep]%H:%M:%S%z`, with the option to use an alternative date separator. Example: 2025-11-06T17:50:00-05
-        string format_iso8601(      sys_seconds  t, char date_sep = '-', char date_time_sep = 'T' ) const { return format_iso8601_s( t.time_since_epoch().count(), date_sep, date_time_sep );}
-
-
         /// Formats a time (expressed as seconds and nanoseconds) to the given buffer.
         /// For format specifiers, see: https://en.cppreference.com/w/cpp/chrono/c/strftime
         ///

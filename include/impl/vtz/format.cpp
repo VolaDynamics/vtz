@@ -1183,30 +1183,4 @@ namespace vtz {
             }
         }
     }
-
-    // clang-format off
-    string time_zone::format_iso8601_s( sysseconds_t t, char date_sep, char date_time_sep ) const {
-        return _do_format<false, true, false>( *this, t, date_sep, date_time_sep, '\0' );
-    }
-
-    size_t time_zone::format_iso8601_to_s( sysseconds_t t, char* buff, size_t count, char date_sep, char date_time_sep ) const noexcept {
-        return _do_format_to<false, true, false>( *this, t, buff, count, date_sep, date_time_sep, '\0' );
-    }
-
-    string time_zone::format_s( sysseconds_t t, char date_sep, char date_time_sep, char abbrev_sep ) const {
-        return _do_format<false, false, true>( *this, t, date_sep, date_time_sep, abbrev_sep );
-    }
-
-    size_t time_zone::format_to_s( sysseconds_t t, char* buff, size_t count, char date_sep, char date_time_sep, char abbrev_sep ) const noexcept {
-        return _do_format_to<false, false, true>( *this, t, buff, count, date_sep, date_time_sep, abbrev_sep );
-    }
-
-    string time_zone::format_compact_s( sysseconds_t t, char date_time_sep, char abbrev_sep ) const {
-        return _do_format<true, false, true>( *this, t, '\0', date_time_sep, abbrev_sep );
-    }
-
-    size_t time_zone::format_compact_to_s( sysseconds_t t, char* p, size_t count, char date_time_sep, char abbrev_sep ) const noexcept {
-        return _do_format_to<true, false, true>( *this, t, p, count, '\0', date_time_sep, abbrev_sep );
-    }
-    // clang-format on
 } // namespace vtz

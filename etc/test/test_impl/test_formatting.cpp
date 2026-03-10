@@ -68,7 +68,7 @@ TEST( vtz, format_time ) {
         ASSERT_EQ( fmt_vtz( NY_V, T, "%Y%m%d %H:%M:%Sx" ), "20251106 10:24:45x" );
         ASSERT_EQ( fmt_vtz( NY_V, T, "%Y%m%d %H:%M:%Sxyz" ), "20251106 10:24:45xyz" );
 
-        ASSERT_EQ( NY_V->format( T ), "2025-11-06 10:24:45 EST" );
+        ASSERT_EQ( NY_V->format( "%F %T %Z", T ), "2025-11-06 10:24:45 EST" );
 
         auto t         = T.time_since_epoch().count();
         using _25th    = duration<int, std::ratio<1, 25>>;
