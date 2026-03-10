@@ -11,7 +11,7 @@
 #include <initializer_list>
 #include <limits>
 
-namespace vtz {
+namespace vtz::impl {
     template<class T>
     std::unique_ptr<T[]> _copy_unique( T const* data, size_t count ) {
         // We use memcpy here, so we expect the input to be trivially copyable
@@ -482,6 +482,11 @@ namespace vtz {
         auto Tmax = tt.back();
         return { Tmin, Tmax, make_table( initial, tt, off, Tmin, Tmax ) };
     }
+}
+
+namespace vtz {
+    using namespace impl;
+
     time_zone::time_zone( string_view name, zone_states const& states )
     : off_tables( make_off_tables( states ) )
     , abbr_table( make_abbr_table( states.abbr_initial_,

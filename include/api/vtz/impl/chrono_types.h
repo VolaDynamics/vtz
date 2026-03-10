@@ -28,6 +28,9 @@ namespace vtz {
     using local_days    = local_time<days>;
 
 
+    enum class choose : bool { earliest = false, latest = true };
+
+
     struct sys_info {
         sys_seconds begin;
         sys_seconds end;
