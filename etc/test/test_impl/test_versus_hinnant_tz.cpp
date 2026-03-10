@@ -199,10 +199,10 @@ TEST( vtz, America_NewYork ) {
         auto t2 = _ct( 2026, 3, 8, 7, 0, 0 );
 
         ADD_CONTEXT( "Checking get_info",
-            tz.format_s( t0 ),
-            tz.format_s( t1 - 1 ),
-            tz.format_s( t1 ),
-            tz.format_s( t2 ) );
+            tz.format_s( "%F %T", t0 ),
+            tz.format_s( "%F %T", t1 - 1 ),
+            tz.format_s( "%F %T", t1 ),
+            tz.format_s( "%F %T", t2 ) );
 
         auto s0 = tz.get_info_sys_s( t1 - 1 );
         auto s1 = tz.get_info_sys_s( t1 );
@@ -878,10 +878,8 @@ TEST( vtz, TimeZoneFuzz ) {
         for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )
         {
             auto T = sys_seconds( seconds( dist( rng ) ) );
-            ASSERT_EQ_QUIET( tz.format_compact( T ),
+            ASSERT_EQ_QUIET( tz.format( "%Y%m%d %H%M%S %Z", T ),
                 date::format( "%Y%m%d %H%M%S %Z", date::make_zoned( tz_hinnant, T ) ) );
-            ASSERT_EQ_QUIET( tz.format( T, '/', 'T', ' ' ),
-                date::format( "%Y/%m/%dT%H:%M:%S %Z", date::make_zoned( tz_hinnant, T ) ) );
         }
     }
 }
@@ -917,10 +915,8 @@ TEST( vtz, TimeZoneToString ) {
         for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )
         {
             auto T = sys_seconds( seconds( dist( rng ) ) );
-            ASSERT_EQ_QUIET( tz.format_compact( T ),
+            ASSERT_EQ_QUIET( tz.format( "%Y%m%d %H%M%S %Z", T ),
                 date::format( "%Y%m%d %H%M%S %Z", date::make_zoned( tz_hinnant, T ) ) );
-            ASSERT_EQ_QUIET( tz.format( T, '/', 'T', '-' ),
-                date::format( "%Y/%m/%dT%H:%M:%S-%Z", date::make_zoned( tz_hinnant, T ) ) );
         }
     }
 }
