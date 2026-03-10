@@ -24,8 +24,19 @@ namespace vtz {
             time_zone const& tz ) noexcept {
             return tz;
         }
+
         static decltype( auto ) get_tt( time_zone const& tz ) noexcept {
             return ( tz.tt_utc );
+        }
+
+        template<class TZ>
+        static auto stdoff_s( TZ const& tz, sec_t t ) noexcept {
+            return tz.stdoff_s( t );
+        }
+
+        template<class TZ>
+        static auto save_s( TZ const& tz, sec_t t ) noexcept {
+            return tz.save_s( t );
         }
     };
 } // namespace vtz

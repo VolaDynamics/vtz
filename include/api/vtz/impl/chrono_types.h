@@ -77,6 +77,33 @@ namespace vtz {
                    && second == rhs.second;
         }
     };
+
+
+    /// Holds the type of the local time - either `unique`, `ambiguous`, or
+    /// `nonexistent`
+
+    enum class local_type {
+        /// The given local time uniquely refers to a UTC time, in the given
+        /// zone. This is the case for the vast majority of input times
+        unique = 0,
+
+        /// The given local time is nonexistent within the given zone. This
+        /// occurs when the clocks spring forward.
+        ///
+        /// Eg, 2:30 AM on Sunday, March 8th is nonexistent in America/New_York
+        /// because the clocks spring forward from 1:59:59AM to 3AM when
+        /// daylight savings time starts.
+        nonexistent = 1,
+
+        /// The given local time is ambiguous within the given zone. This occurs
+        /// when the clocks fall back.
+        ///
+        /// Eg, 1:30 AM on Sunday, November 1st is ambiguous in America/New_York
+        /// because at 2 AM the clocks fall back to 1 AM upon leaving Daylight
+        /// Savings Time, so the whole hour between 1AM and 1:59:59AM is
+        /// repeated.
+        ambiguous = 2,
+    };
 } // namespace vtz
 #ifdef VTZ_DATE_COMPAT
 namespace date = vtz;

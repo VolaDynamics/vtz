@@ -19,14 +19,6 @@
 #include "bench_common.h"
 
 
-// Given a zone returns a function which takes an input local time in seconds
-// and returns true if that local time is unique
-static auto is_unique( std::string_view name ) {
-    return [tz = vtz::locate_zone( name )]( i64 sec ) -> bool {
-        return tz->get_info_local_s( sec ).result == vtz::local_info::unique;
-    };
-}
-
 BENCH( to_local, date, state ) {
     auto   tt = to_chrono<sys_seconds>( random_times( COUNT, 1900, 2100 ) );
     auto   tz = date::locate_zone( "America/New_York" );
