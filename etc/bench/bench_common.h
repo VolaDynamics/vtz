@@ -10,6 +10,8 @@
 #include <vtz/impl/chrono_types.h>
 #include <vtz/types.h>
 
+#include <vtz/tz.h>
+
 using std::vector;
 using std::chrono::seconds;
 using vtz::i64;
@@ -124,4 +126,14 @@ inline vector<sysdays_t> random_days(
     return random_values( count,
         vtz::resolve_civil( start_year ),
         vtz::resolve_civil( end_year ) );
+}
+
+
+// Given a zone returns a function which takes an input local time in seconds
+// and returns true if that local time is unique
+inline auto is_unique( std::string_view name ) {
+    return [tz = vtz::locate_zone( name )]( i64 sec ) -> bool {
+        return tz->local_type( vtz::local_seconds( vtz::seconds( sec ) ) )
+               == vtz::local_type::unique;
+    };
 }

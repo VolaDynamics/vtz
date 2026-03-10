@@ -465,6 +465,61 @@ namespace vtz {
             return _lookup_utc_or_throw( get_cyclic( t, cycle_time ), t );
         }
 
+        VTZ_INLINE local_type _lookup_local_type_s(
+            sec_t t_key ) const noexcept {
+            auto ent = tt_utc.get( t_key );
+            /// offset from UTC before transition time
+            i64 off_pre = ent.lo();
+            /// offset from UTC on or after transition time
+            i64 off_post = ent.hi();
+            /// If the clock falls back, then `off_post` is the earlier time
+            bool falls_back = off_post < off_pre;
+
+            auto off1 = falls_back ? off_post : off_pre; ///< Earlier offset
+            auto off2 = falls_back ? off_pre : off_post; ///< Later offset
+
+            auto when1 = ent.t + off1; ///< Local time when transition starts
+            auto when2 = ent.t + off2; ///< Local time when the transition ends
+
+            /// Time is unique and before ambiguous/nonexistent time period
+            bool unique_before = t_key < when1;
+            /// Time is unique and after ambiguous/nonexistent time period
+            bool unique_after = when2 <= t_key;
+
+            bool is_unique = unique_before || unique_after;
+
+            // This is the happy path. The input time is unique, so we just
+            // subtract the offset
+            if( is_unique ) VTZ_LIKELY { return local_type::unique; }
+
+            // If we fall back, we repeat some period of time, so the input
+            // local time must be ambiguous.
+            //
+            // Otherwise, when jumping forward, some period of local time is
+            // non-physical. Eg, 2:30 AM EST on March 8th simply doesn't exist
+            // in America/New_York, because the clock jumps from 1:59:59AM to
+            // 3:00:00AM
+            return falls_back ? local_type::ambiguous : local_type::nonexistent;
+        }
+
+        /// Returns:
+        ///
+        /// - `local_type::unique` if the input local time is unique
+        /// - `local_type::ambiguous` if the input local time is ambiguous
+        /// - `local_type::nonexistent` if the input local time is nonexistent
+
+        VTZ_INLINE local_type local_type_s( sec_t t ) const noexcept {
+            // If the time is in-bounds, we can use the lookup table
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
+                return _lookup_local_type_s( t );
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return local_type::unique;
+
+            // use zone symmetry to compute state for equivalent time
+            return _lookup_local_type_s( get_cyclic( t, cycle_time ) );
+        }
+
         VTZ_INLINE nanos_t to_sys_ns( nanos_t t, choose which ) const noexcept {
             auto parts = math::div_floor2<1000000000>( t );
             return 1000000000 * _to_utc( parts.quot, which ) + parts.rem;

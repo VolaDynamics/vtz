@@ -204,8 +204,8 @@ TEST( vtz, America_NewYork ) {
             tz.format_s( "%F %T", t1 ),
             tz.format_s( "%F %T", t2 ) );
 
-        auto s0 = tz.get_info_sys_s( t1 - 1 );
-        auto s1 = tz.get_info_sys_s( t1 );
+        auto s0 = tz.get_info( as_sys( t1 - 1 ) );
+        auto s1 = tz.get_info( as_sys( t1 ) );
         ASSERT_EQ( s0,
             ( sys_info{
                 to_sys( t0 ),
@@ -226,17 +226,17 @@ TEST( vtz, America_NewYork ) {
         {
             // 1am is the first time that is ambiguous, 1:59:59am is the last time
             // that is ambiguous
-            ASSERT_EQ( tz.get_info_local_s( _ct( 2025, 11, 2, 1, 0, 0 ) ),
+            ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 1, 0, 0 ) ),
                 local_info( { local_info::ambiguous, s0, s1 } ) );
-            ASSERT_EQ( tz.get_info_local_s( _ct( 2025, 11, 2, 1, 59, 59 ) ),
+            ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 1, 59, 59 ) ),
                 local_info( { local_info::ambiguous, s0, s1 } ) );
 
             // 00:59am is not ambiguous
-            ASSERT_EQ( tz.get_info_local_s( _ct( 2025, 11, 2, 0, 59, 59 ) ),
+            ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 0, 59, 59 ) ),
                 local_info( { local_info::unique, s0 } ) );
 
             // 2am is no longer ambiguous
-            ASSERT_EQ( tz.get_info_local_s( _ct( 2025, 11, 2, 2, 0, 0 ) ),
+            ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 2, 0, 0 ) ),
                 local_info( { local_info::unique, s1 } ) );
         }
     }
@@ -807,12 +807,15 @@ TEST( vtz, TimeZoneFuzz ) {
             ASSERT_EQ_QUIET( tz.abbrev_s( Tbegin ), info.abbrev );
             ASSERT_EQ_QUIET( tz.abbrev_s( Tmid ), info.abbrev );
             ASSERT_EQ_QUIET( tz.abbrev_s( Tend - 1 ), info.abbrev );
-            ASSERT_EQ_QUIET( tz.stdoff_s( Tbegin ), zone_stdoff );
-            ASSERT_EQ_QUIET( tz.stdoff_s( Tmid ), zone_stdoff );
-            ASSERT_EQ_QUIET( tz.stdoff_s( Tend - 1 ), zone_stdoff );
-            ASSERT_EQ_QUIET( seconds( tz.save_s( Tbegin ) ), seconds( info.save ) );
-            ASSERT_EQ_QUIET( seconds( tz.save_s( Tmid ) ), seconds( info.save ) );
-            ASSERT_EQ_QUIET( seconds( tz.save_s( Tend - 1 ) ), seconds( info.save ) );
+            ASSERT_EQ_QUIET( time_zone::_impl::stdoff_s( tz, Tbegin ), zone_stdoff );
+            ASSERT_EQ_QUIET( time_zone::_impl::stdoff_s( tz, Tmid ), zone_stdoff );
+            ASSERT_EQ_QUIET( time_zone::_impl::stdoff_s( tz, Tend - 1 ), zone_stdoff );
+            ASSERT_EQ_QUIET(
+                seconds( time_zone::_impl::save_s( tz, Tbegin ) ), seconds( info.save ) );
+            ASSERT_EQ_QUIET(
+                seconds( time_zone::_impl::save_s( tz, Tmid ) ), seconds( info.save ) );
+            ASSERT_EQ_QUIET(
+                seconds( time_zone::_impl::save_s( tz, Tend - 1 ) ), seconds( info.save ) );
         }
 
         for( size_t zi = 1; zi < zone_info.size(); zi++ )
@@ -872,7 +875,7 @@ TEST( vtz, TimeZoneFuzz ) {
             ASSERT_EQ_QUIET( tz.to_sys( ll_tv, E ), tz_hinnant->to_sys( ll_th, DE ) );
             ASSERT_EQ_QUIET( tz.to_sys( ll_tv, L ), tz_hinnant->to_sys( ll_th, DL ) );
             ASSERT_EQ_QUIET( tz.abbrev_s( T ), sys_info.abbrev );
-            ASSERT_EQ_QUIET( tz.save_s( T ), seconds( sys_info.save ).count() );
+            ASSERT_EQ_QUIET( time_zone::_impl::save_s( tz, T ), seconds( sys_info.save ).count() );
         }
 
         for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )

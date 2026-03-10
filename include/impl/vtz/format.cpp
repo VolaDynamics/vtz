@@ -5,6 +5,8 @@
 #include <vtz/impl/macros.h>
 #include <vtz/tz.h>
 
+#include <vtz/tz_impl.h>
+
 #include <vtz/impl/format_impl.h>
 
 #include <charconv>
@@ -127,6 +129,7 @@ namespace vtz {
     }
 
     /// equivalent to "%H%M%S" (the ISO 8601 time format)
+    /*
     VTZ_INLINE static char* _write_hhmmsscompact(
         char* p, int h, int m, int s ) noexcept {
         p[0] = char( '0' + h / 10 );
@@ -137,6 +140,7 @@ namespace vtz {
         p[5] = char( '0' + s % 10 );
         return p + 6;
     }
+    */
 
     /// equivalent to "%H:%M:%S" (the ISO 8601 time format)
     VTZ_INLINE static char* _write_hhmmss(
@@ -691,7 +695,7 @@ namespace vtz {
         // Add null terminator to format string
         *p = '\0';
 
-        auto stdoff = tz.stdoff_s( t );
+        auto stdoff = time_zone::_impl::stdoff_s( tz, t );
         bool is_dst = gmtoff != stdoff;
 
         auto tm_value = std::tm{
@@ -940,6 +944,7 @@ namespace vtz {
             write_to_string{} );
     }
 
+    /*
     template<bool is_sane, bool is_compact, class FWriteAbbrev, class FAction>
     auto _format_local_to( sysseconds_t t_local,
         char* const                     p,
@@ -1021,6 +1026,7 @@ namespace vtz {
                 p, year_len + stamp_end + write_abbrev( q + stamp_end ) );
         }
     }
+        */
 
     template<bool include_abbr_sep, bool use_stdoff>
     static auto _write_abbrev(
@@ -1059,6 +1065,7 @@ namespace vtz {
         }
     }
 
+    /*
     template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
     VTZ_INLINE static std::string _do_format( time_zone const& tz,
         sysseconds_t                                           t,
@@ -1093,6 +1100,7 @@ namespace vtz {
                 write_to_string{} );
         }
     }
+    */
 
     /// Fast formatting - format as:
     ///
@@ -1100,6 +1108,7 @@ namespace vtz {
     ///
     /// The various flags control if the separators actually appear
 
+    /*
     template<bool is_compact, bool use_stdoff, bool include_abbr_sep>
     VTZ_INLINE static size_t _do_format_to( time_zone const& tz,
         sysseconds_t                                         t,
@@ -1183,4 +1192,5 @@ namespace vtz {
             }
         }
     }
+    */
 } // namespace vtz

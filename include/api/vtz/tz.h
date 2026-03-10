@@ -286,6 +286,21 @@ namespace vtz {
         }
 
 
+        /// Returns:
+        ///
+        /// - `local_type::unique` if the input local time is unique (most local
+        ///   times are unique)
+        /// - `local_type::ambiguous` if the input local time is ambiguous
+        ///   (occurs when the clock falls back)
+        /// - `local_type::nonexistent` if the input local time is nonexistent
+        ///   (occurs when the clock springs forwards)
+
+        template<class Dur>
+        vtz::local_type local_type( local_time<Dur> t ) const {
+            return local_type_s( _raw_time( t ) );
+        }
+
+
         /// Returns the date of the given time, within the current timezone.
         ///
         /// For example - suppose the input time is Saturday, Feb 28th at 1
@@ -397,18 +412,47 @@ namespace vtz {
 
         // clang-format on
 
-
         using abbr_table::abbrev_s;
-        using abbr_table::abbrev_string_s;
         using abbr_table::abbrev_to_s;
         using off_tables::offset_s;
         using off_tables::to_local_ns;
         using off_tables::to_local_s;
         using off_tables::to_sys_ns;
         using off_tables::to_sys_s;
-        using stdoff_table::stdoff_s;
 
-        /// Return the current save, in seconds
+        struct _impl;
+
+        time_zone( string_view name, zone_states const& states );
+
+      private:
+
+        /// Returns the date of the given systime within the current zone, as
+        /// number of days since the epoch
+        i64 local_date_s( sysseconds_t t ) const noexcept {
+            return math::div_floor<86400>( to_local_s( t ) );
+        }
+
+        VTZ_INLINE static sec_t _raw_time( local_seconds s ) {
+            return s.time_since_epoch().count();
+        }
+        VTZ_INLINE static sec_t _raw_time( sys_seconds s ) {
+            return s.time_since_epoch().count();
+        }
+        template<class Dur>
+        static sec_t _raw_time( local_time<Dur> s ) {
+            return std::chrono::floor<seconds>( s ).time_since_epoch().count();
+        }
+        template<class Dur>
+        static sec_t _raw_time( sys_time<Dur> s ) {
+            return std::chrono::floor<seconds>( s ).time_since_epoch().count();
+        }
+
+        static local_seconds _local( sec_t s ) {
+            return local_seconds( seconds( s ) );
+        }
+        static sys_seconds _sys( sec_t s ) {
+            return sys_seconds( seconds( s ) );
+        }
 
         i32 save_s( sysseconds_t t ) const noexcept {
             return i32( offset_s( t ) - stdoff_s( t ) );
@@ -445,54 +489,6 @@ namespace vtz {
                 get_info_sys_s( tt[0] ),
                 get_info_sys_s( tt[1] ),
             };
-        }
-
-
-        /// Returns a number [0,86400) representing the current time of day
-        /// (local time)
-        u32 local_time_of_day_s( sysseconds_t s ) const noexcept {
-            return u32( math::rem<86400>( to_local_s( s ) ) );
-        }
-
-        /// Returns the date of the given systime within the current zone, as
-        /// number of days since the epoch
-        i64 local_date_s( sysseconds_t t ) const noexcept {
-            return math::div_floor<86400>( to_local_s( t ) );
-        }
-
-        /// Given nanoseconds since the epoch, return the current date (as days
-        /// since the epoch)
-        i64 local_date_ns( nanos_t nanos ) const noexcept {
-            return math::div_floor<86400000000000ll>( to_local_ns( nanos ) );
-        }
-
-
-        struct _impl;
-
-        time_zone( string_view name, zone_states const& states );
-
-      private:
-
-        VTZ_INLINE static sec_t _raw_time( local_seconds s ) {
-            return s.time_since_epoch().count();
-        }
-        VTZ_INLINE static sec_t _raw_time( sys_seconds s ) {
-            return s.time_since_epoch().count();
-        }
-        template<class Dur>
-        static sec_t _raw_time( local_time<Dur> s ) {
-            return std::chrono::floor<seconds>( s ).time_since_epoch().count();
-        }
-        template<class Dur>
-        static sec_t _raw_time( sys_time<Dur> s ) {
-            return std::chrono::floor<seconds>( s ).time_since_epoch().count();
-        }
-
-        static local_seconds _local( sec_t s ) {
-            return local_seconds( seconds( s ) );
-        }
-        static sys_seconds _sys( sec_t s ) {
-            return sys_seconds( seconds( s ) );
         }
 
         string name_;
