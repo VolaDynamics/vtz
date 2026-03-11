@@ -3,18 +3,18 @@
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
-#include <string>
 #include <limits>
+#include <string>
 #include <vtz/impl/macros.h>
 
 namespace vtz::util {
     template<class T>
-    struct fmt_traits {};
+    struct fmt_traits { };
 
     template<class IntT>
     struct fmt_traits_int {
         constexpr static size_t _max_space
-            = 1 + std::numeric_limits<IntT>::digits10 + std::is_signed<IntT>{};
+            = 1 + std::numeric_limits<IntT>::digits10 + std::is_signed<IntT>{ };
 
         static size_t max_space( IntT ) noexcept { return _max_space; }
 
@@ -105,7 +105,7 @@ namespace vtz::util {
             if( it == end ) return 0;
 
             char* p  = dest;
-            p        += _elem_traits::dump( p, *it );
+            p       += _elem_traits::dump( p, *it );
             for( ++it; it != end; ++it )
             {
                 _vtz_memcpy( p, j.sep.data(), j.sep.size() );
@@ -132,7 +132,8 @@ namespace vtz::util {
 
         size_t space = ( max_space( tt ) + ... + 0 );
 
-        if( space <= BUFF_SIZE )
+        if constexpr( sizeof...( T ) == 0 ) { return std::string(); }
+        else if( space <= BUFF_SIZE )
         {
             char  stack_buff[BUFF_SIZE];
             char* p = stack_buff;
