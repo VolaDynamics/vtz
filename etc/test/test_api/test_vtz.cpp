@@ -123,6 +123,12 @@ TEST_P( zones, tz_api ) {
         _get_time( 1800, 1, 1 ),
         _get_time( 2900, 1, 1 ) );
 
+
+    /// The initial state has a very, very early value for sys_info::begin.
+    /// But doing addition on that value causes overflow. So we instead just use
+    /// a more reasonable cutoff here, using the date 0000-01-01
+    auto early_cutoff = _get_time( 0, 1, 1 );
+
     std::vector<sys_seconds> TT;
 
     // Check that expected properties for state transitions hold
@@ -132,6 +138,8 @@ TEST_P( zones, tz_api ) {
         auto const& s1    = states[i];
         auto        first = s0.begin;
         auto        last  = s0.end - 1s;
+
+        if( first < early_cutoff ) first = early_cutoff;
 
         auto ctx = _ctx{ [&] {
             return fmt::format( "i      = {}\n"
@@ -271,8 +279,8 @@ TEST_P( zones, tz_api ) {
 
             // Range of time covered by vtz::sys_info returned by get_info
             // should match or exceed that returned by `date`
-            ASSERT_LE( info.begin, state.begin ) << ctx;
-            ASSERT_GE( info.end, state.end ) << ctx;
+            ASSERT_EQ( info.begin, state.begin ) << ctx;
+            ASSERT_EQ( info.end, state.end ) << ctx;
         }
     }
 }
