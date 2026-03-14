@@ -29,6 +29,15 @@ set(
     "List of environment variable names to check for timezone source files"
 )
 
+set(
+    VTZ_TZDB_VERSION
+    "2026a"
+    CACHE
+    STRING
+    "Version of the IANA tzdb to use. See: https://www.iana.org/time-zones to
+    see the current version of the latest release."
+)
+
 option(
     VTZ_CHECK_IN_TZDATA
     "If this option is enabled, vtz will look for the timezone source
@@ -270,7 +279,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     )
     add_library(vtz::extras ALIAS vtz_extras)
 
-    set(tzdb_file tzdb-2026a.tar.lz)
+    set(tzdb_file tzdb-${VTZ_TZDB_VERSION}.tar.lz)
     cmake_path(GET tzdb_file STEM tzdb_stem)
 
     file(
