@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdint>
 #include <date/date.h>
+#include <fmt/format.h>
 #include <vtz/format.h>
 #include <vtz/impl/chrono_types.h>
 
@@ -60,6 +61,25 @@ std::string _fmt( vtz::sys_time<Dur> T ) {
     return vtz::format( "%F %T time_t=%s", T );
 }
 
+template<class Repr, intmax_t num>
+std::string _to_str( std::chrono::duration<Repr, std::ratio<num, 1>> T ) {
+    auto seconds = T.count() * num;
+    bool is_neg  = seconds < 0;
+    if( is_neg ) seconds = -seconds;
+
+    auto hr  = seconds / 3600;
+    seconds %= 3600;
+    auto mi  = seconds / 60;
+    seconds %= 60;
+    auto se  = seconds;
+
+    if( is_neg )
+        return fmt::format( "-{:02}:{:02}:{:02}", hr, mi, se );
+    else
+        return fmt::format( "{:02}:{:02}:{:02}", hr, mi, se );
+}
+
+
 #include <gtest/gtest-printers.h>
 #include <gtest/gtest.h>
 // Add Print support for printing sys_time objects
@@ -81,6 +101,18 @@ namespace testing::internal {
         static void Print( vtz::local_time<Dur> const& T, Sink* os ) {
             *os << vtz::format(
                 "%F %T (time since epoch=%ss) [local time]", T );
+        }
+    };
+
+    template<class Repr, intmax_t num>
+    class UniversalPrinter<std::chrono::duration<Repr, std::ratio<num, 1>>> {
+      public:
+
+        template<class Sink>
+        static void Print(
+            std::chrono::duration<Repr, std::ratio<num, 1>> const& T,
+            Sink*                                                  os ) {
+            *os << _to_str( T );
         }
     };
 } // namespace testing::internal
