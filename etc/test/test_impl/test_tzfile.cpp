@@ -8,6 +8,8 @@
 
 #include <vtz/libfmt_compat.h>
 
+#include <test_vtz/paths.h>
+
 #include "test_utils.h"
 #include "test_zones.h"
 #include "vtz_debug.h"
@@ -152,7 +154,6 @@ TEST( vtz, tz_string ) {
 
 
 TEST( vtz, tz_string_get_states ) {
-
     {
         ADD_CONTEXT( "Testing tz_string::get_states with no daylight rules" );
         auto tz     = parse_tz_string( "KST-9" );
@@ -171,7 +172,8 @@ TEST( vtz, tz_string_get_states ) {
         ASSERT_EQ( states.size(), 4 );
 
         // Verify the 2024 transitions
-        ASSERT_EQ( format_s( "%F %T %Z", states[0].when ), "2024-03-10 07:00:00 UTC" ); // Spring forward
+        ASSERT_EQ( format_s( "%F %T %Z", states[0].when ),
+                   "2024-03-10 07:00:00 UTC" ); // Spring forward
         ASSERT_EQ( states[0].state.abbr.sv(), "EDT" );
         ASSERT_EQ( states[0].state.walloff, from_utc::hhmmss( -4 ) );
 
@@ -180,7 +182,8 @@ TEST( vtz, tz_string_get_states ) {
         ASSERT_EQ( states[1].state.walloff, from_utc::hhmmss( -5 ) );
 
         // Verify the 2025 transitions
-        ASSERT_EQ( format_s( "%F %T %Z", states[2].when ), "2025-03-09 07:00:00 UTC" ); // Spring forward
+        ASSERT_EQ( format_s( "%F %T %Z", states[2].when ),
+                   "2025-03-09 07:00:00 UTC" ); // Spring forward
         ASSERT_EQ( states[2].state.abbr.sv(), "EDT" );
 
         ASSERT_EQ( format_s( "%F %T %Z", states[3].when ), "2025-11-02 06:00:00 UTC" ); // Fall back
@@ -192,7 +195,7 @@ TEST( vtz, tz_string_get_states ) {
             ASSERT_EQ( states[i].state.stdoff, from_utc::hhmmss( -5 ) );
             bool inside_standard_time = bool( i % 2 );
             ASSERT_EQ( states[i].state.walloff,
-                inside_standard_time ? from_utc::hhmmss( -5 ) : from_utc::hhmmss( -4 ) );
+                       inside_standard_time ? from_utc::hhmmss( -5 ) : from_utc::hhmmss( -4 ) );
         }
     }
 
@@ -324,14 +327,14 @@ TEST( vtz, endian ) {
     ASSERT_EQ( ss.begin() - ss.end(), -4 );
 
     ASSERT_EQ( ( std::vector<u16>{ 0xdead, 0xbeef, 0x0102, 0x0304 } ),
-        std::vector<u16>( ss.begin(), ss.end() ) );
+               std::vector<u16>( ss.begin(), ss.end() ) );
 }
 
 
 TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
     COUNT_ASSERTIONS();
 
-    auto const& fp = "build/data/tzdata/tzdata.zi";
+    auto const& fp = _join_fp( paths.tzdata, "tzdata.zi" );
 
 
     constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
@@ -375,7 +378,7 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
         auto tt1  = ny_1.get_transitions();
 
 
-        auto ny_2 = load_zone_states_tzfile( join_path( "etc/testdata", zone.tzfile_name ) );
+        auto ny_2 = load_zone_states_tzfile( _join_fp( paths.testdata, zone.tzfile_name ) );
         auto tt2  = ny_2.get_transitions();
 
         fmt::println(
@@ -402,11 +405,11 @@ TEST( vtz, tzdb_vs_tzfile_America_New_York ) {
         for( size_t i = 0; i < count; ++i )
         {
             ADD_CONTEXT( "Checking that zone_state matches",
-                i,
-                format_s( "%F %T %Z", tt1[i].when ),
-                format_s( "%F %T %Z", tt2[i].when ),
-                tt1[i].state,
-                tt2[i].state );
+                         i,
+                         format_s( "%F %T %Z", tt1[i].when ),
+                         format_s( "%F %T %Z", tt2[i].when ),
+                         tt1[i].state,
+                         tt2[i].state );
 
             ASSERT_EQ_QUIET( tt1[i].when, tt2[i].when );
             ASSERT_EQ_QUIET( tt1[i].state.abbr.sv(), tt2[i].state.abbr.sv() );
@@ -424,11 +427,10 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
     COUNT_ASSERTIONS();
 
 
-    auto tzcache = time_zone_cache( load_zone_info_from_dir( "build/data/tzdata" ) );
+    auto tzcache = time_zone_cache( load_zone_info_from_dir( paths.tzdata ) );
     auto zones   = tzcache.zones();
 
-    auto tzcache_tzfile
-        = time_zone_cache( "build/data/zoneinfo", tzcache.zones(), tzcache.links() );
+    auto tzcache_tzfile = time_zone_cache( paths.zoneinfo, tzcache.zones(), tzcache.links() );
 
     // For the tzcache loaded from source, we should NOT have a null set of zones, or a null set of
     // rules
@@ -453,7 +455,7 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
     {
         ADD_CONTEXT( "Testing zone", zone_name );
         // Construct system tzfile path
-        std::string tzfile_path = join_path( "build/data/zoneinfo", zone_name );
+        std::string tzfile_path = _join_fp( paths.zoneinfo, zone_name );
         fmt::println( "Testing {} (os version loaded from {})", zone_name, tzfile_path );
 
         /// Timezone loaded from the time_zone_cache - used as reference implementation
@@ -477,7 +479,7 @@ TEST( vtz, tzdb_vs_tzfile_coherence ) {
 TEST( vtz, tzdb_vs_tzfile_state_coherence ) {
     COUNT_ASSERTIONS();
 
-    auto const& fp = "build/data/tzdata/tzdata.zi";
+    auto const& fp = _join_fp( paths.tzdata, "tzdata.zi" );
 
 
     fmt::println( "=== Comprehensive System Tzfile Test ===" );
@@ -505,7 +507,7 @@ TEST( vtz, tzdb_vs_tzfile_state_coherence ) {
         total_zones++;
 
         // Construct system tzfile path
-        std::string tzfile_path = join_path( "build/data/zoneinfo", zone_name );
+        std::string tzfile_path = _join_fp( paths.zoneinfo, zone_name );
 
         // Try to load the system tzfile
         try
@@ -525,10 +527,10 @@ TEST( vtz, tzdb_vs_tzfile_state_coherence ) {
             if( tzdata_states.initial() != tzfile_states.initial() )
             {
                 fmt::println( "  {} - Initial state mismatch", zone_name );
-                fmt::println(
-                    "    tzdata: {}", _test_vtz::debug_to_string( tzdata_states.initial() ) );
-                fmt::println(
-                    "    tzfile: {}", _test_vtz::debug_to_string( tzfile_states.initial() ) );
+                fmt::println( "    tzdata: {}",
+                              _test_vtz::debug_to_string( tzdata_states.initial() ) );
+                fmt::println( "    tzfile: {}",
+                              _test_vtz::debug_to_string( tzfile_states.initial() ) );
                 zone_passed = false;
             }
 
@@ -542,15 +544,15 @@ TEST( vtz, tzdb_vs_tzfile_state_coherence ) {
                     || tt1[i].state.walloff != tt2[i].state.walloff )
                 {
                     fmt::println( "  {} - Mismatch at transition {} ({})",
-                        zone_name,
-                        i,
-                        format_s( "%F %T %Z", tt1[i].when ) );
+                                  zone_name,
+                                  i,
+                                  format_s( "%F %T %Z", tt1[i].when ) );
                     fmt::println( "    tzdata: [when={}] {}",
-                        format_s( "%F %T %Z", tt1[i].when ),
-                        _test_vtz::debug_to_string( tt1[i].state ) );
+                                  format_s( "%F %T %Z", tt1[i].when ),
+                                  _test_vtz::debug_to_string( tt1[i].state ) );
                     fmt::println( "    tzfile: [when={}] {}",
-                        format_s( "%F %T %Z", tt2[i].when ),
-                        _test_vtz::debug_to_string( tt2[i].state ) );
+                                  format_s( "%F %T %Z", tt2[i].when ),
+                                  _test_vtz::debug_to_string( tt2[i].state ) );
                     zone_passed = false;
                     break;
                 }

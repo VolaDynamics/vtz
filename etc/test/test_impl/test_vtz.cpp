@@ -20,6 +20,8 @@
 
 #include <vtz/libfmt_compat.h>
 
+#include <test_vtz/paths.h>
+
 #include "vtz_debug.h"
 #include "vtz_testing.h"
 
@@ -81,7 +83,7 @@ static_assert( _impl::_parse_dow( "W", 1 ).value() == dow_t::Wed );
 static_assert( _impl::_parse_dow( "F", 1 ).value() == dow_t::Fri );
 
 
-static_assert( !opt_mon{}.has_value() );
+static_assert( !opt_mon{ }.has_value() );
 static_assert( !opt_mon( none ).has_value() );
 static_assert( opt_mon{ month_t::Jan }.has_value() );
 static_assert( opt_mon{ month_t::Feb }.has_value() );
@@ -96,7 +98,7 @@ static_assert( opt_mon{ month_t::Oct }.has_value() );
 static_assert( opt_mon{ month_t::Nov }.has_value() );
 static_assert( opt_mon{ month_t::Dec }.has_value() );
 
-static_assert( !opt_dow{}.has_value() );
+static_assert( !opt_dow{ }.has_value() );
 static_assert( !opt_dow( none ).has_value() );
 static_assert( opt_dow{ dow_t::Sun }.has_value() );
 static_assert( opt_dow{ dow_t::Mon }.has_value() );
@@ -214,19 +216,19 @@ TEST( vtz_parser, lines ) {
                             "\n"
                             "The quick brown fox jumps over the lazy dogs.\n"
                             "End.\n" ),
-        4 );
+               4 );
     ASSERT_EQ( count_lines( "hello\n"
                             "\n"
                             "The quick brown fox jumps over the lazy dogs.\n"
                             "End." ),
-        4 );
+               4 );
 
     ASSERT_EQ( count_lines( "hello\n"
                             "\n"
                             "\n"
                             "\n"
                             "\n" ),
-        5 );
+               5 );
 
     check_lines( "", vec_sv() );
     check_lines( "\n", vec_sv( "" ) );
@@ -245,20 +247,20 @@ TEST( vtz_parser, lines ) {
                  "\n"
                  "The quick brown fox jumps over the lazy dogs.\n"
                  "End.\n",
-        vec_sv( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
+                 vec_sv( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
 
     check_lines( "hello\n"
                  "\n"
                  "The quick brown fox jumps over the lazy dogs.\n"
                  "End.",
-        vec_sv( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
+                 vec_sv( "hello", "", "The quick brown fox jumps over the lazy dogs.", "End." ) );
 
     check_lines( "hello\n"
                  "\n"
                  "\n"
                  "\n"
                  "\n",
-        vec_sv( "hello", "", "", "", "" ) );
+                 vec_sv( "hello", "", "", "", "" ) );
 }
 
 
@@ -296,21 +298,21 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 
 # Arizona mostly uses MST.
 )" ),
-        ( tz_data_file{
-            {},
-            {
-                {
-                    "Pacific/Honolulu",
-                    {
-                        ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
-                        ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
-                        ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
-                        ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
-                        ze{ "-10:00", "-", "HST" },
-                    },
-                },
-            },
-        } ) );
+               ( tz_data_file{
+                   { },
+                   {
+                       {
+                           "Pacific/Honolulu",
+                           {
+                               ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
+                               ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
+                               ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
+                               ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
+                               ze{ "-10:00", "-", "HST" },
+                           },
+                       },
+                   },
+               } ) );
 
 
     /// Test rules immediately before or after zone declaration
@@ -336,33 +338,33 @@ Rule	US	1974	only	-	Jan	6	2:00	1:00	D
 
 # Arizona mostly uses MST.
 )" ),
-        ( tz_data_file{
-            { {
-                "US",
-                vector<rule_entry>{
-                    { 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
-                    { 1918, 1919, M::Oct, lastSun, "2:00", "0", "S" },
-                    { 1942, 1942, M::Feb, on( 9 ), "2:00", "1:00", "W" },
-                    { 1945, 1945, M::Aug, on( 14 ), "23:00u", "1:00", "P" },
-                    { 1945, 1945, M::Sep, on( 30 ), "2:00", "0", "S" },
-                    { 1967, 2006, M::Oct, lastSun, "2:00", "0", "S" },
-                    { 1967, 1973, M::Apr, lastSun, "2:00", "1:00", "D" },
-                    { 1974, 1974, M::Jan, on( 6 ), "2:00", "1:00", "D" },
-                },
-            } },
-            {
-                {
-                    "Pacific/Honolulu",
-                    {
-                        ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
-                        ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
-                        ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
-                        ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
-                        ze{ "-10:00", "-", "HST" },
-                    },
-                },
-            },
-        } ) );
+               ( tz_data_file{
+                   { {
+                       "US",
+                       vector<rule_entry>{
+                           { 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" },
+                           { 1918, 1919, M::Oct, lastSun, "2:00", "0", "S" },
+                           { 1942, 1942, M::Feb, on( 9 ), "2:00", "1:00", "W" },
+                           { 1945, 1945, M::Aug, on( 14 ), "23:00u", "1:00", "P" },
+                           { 1945, 1945, M::Sep, on( 30 ), "2:00", "0", "S" },
+                           { 1967, 2006, M::Oct, lastSun, "2:00", "0", "S" },
+                           { 1967, 1973, M::Apr, lastSun, "2:00", "1:00", "D" },
+                           { 1974, 1974, M::Jan, on( 6 ), "2:00", "1:00", "D" },
+                       },
+                   } },
+                   {
+                       {
+                           "Pacific/Honolulu",
+                           {
+                               ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
+                               ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
+                               ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
+                               ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
+                               ze{ "-10:00", "-", "HST" },
+                           },
+                       },
+                   },
+               } ) );
 
 
     ASSERT_EQ( parse_tzdata(
@@ -380,33 +382,33 @@ Link	Africa/Abidjan	Africa/Banjul
 Link	Africa/Abidjan	Africa/Conakry
 Link	Africa/Abidjan	Africa/Dakar
 )" ),
-        ( tz_data_file{
-            { {
-                {
-                    "US",
-                    { { 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" } },
-                },
-            } },
-            {
-                {
-                    "Pacific/Honolulu",
-                    {
-                        ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
-                        ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
-                        ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
-                        ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
-                        ze{ "-10:00", "-", "HST" },
-                    },
-                },
-            },
-            {
-                { "Africa/Accra", "Africa/Abidjan" },
-                { "Africa/Bamako", "Africa/Abidjan" },
-                { "Africa/Banjul", "Africa/Abidjan" },
-                { "Africa/Conakry", "Africa/Abidjan" },
-                { "Africa/Dakar", "Africa/Abidjan" },
-            },
-        } ) );
+               ( tz_data_file{
+                   { {
+                       {
+                           "US",
+                           { { 1918, 1919, M::Mar, lastSun, "2:00", "1:00", "D" } },
+                       },
+                   } },
+                   {
+                       {
+                           "Pacific/Honolulu",
+                           {
+                               ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
+                               ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
+                               ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
+                               ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
+                               ze{ "-10:00", "-", "HST" },
+                           },
+                       },
+                   },
+                   {
+                       { "Africa/Accra", "Africa/Abidjan" },
+                       { "Africa/Bamako", "Africa/Abidjan" },
+                       { "Africa/Banjul", "Africa/Abidjan" },
+                       { "Africa/Conakry", "Africa/Abidjan" },
+                       { "Africa/Dakar", "Africa/Abidjan" },
+                   },
+               } ) );
 
 
     /// Test comments within zone declaration
@@ -426,21 +428,21 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 
 # Arizona mostly uses MST.
 )" ),
-        ( tz_data_file{
-            {},
-            {
-                {
-                    "Pacific/Honolulu",
-                    {
-                        ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
-                        ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
-                        ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
-                        ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
-                        ze{ "-10:00", "-", "HST" },
-                    },
-                },
-            },
-        } ) );
+               ( tz_data_file{
+                   { },
+                   {
+                       {
+                           "Pacific/Honolulu",
+                           {
+                               ze{ "-10:31:26", "-", "LMT", "1896 Jan 13 12:00" },
+                               ze{ "-10:30", "-", "HST", "1933 Apr 30  2:00" },
+                               ze{ "-10:30", "1:00", "HDT", "1933 May 21 12:00" },
+                               ze{ "-10:30", "US", "H%sT", "1947 Jun  8  2:00" },
+                               ze{ "-10:00", "-", "HST" },
+                           },
+                       },
+                   },
+               } ) );
 
     /// Test consecutive Zone declarations, with no spacing
     ASSERT_EQ( parse_tzdata(
@@ -461,30 +463,30 @@ Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
 			 -8:00	US	P%sT	1983 Oct 30  2:00
 			 -9:00	US	Y%sT	1983 Nov 30
 			 -9:00	US	AK%sT)" ),
-        ( tz_data_file{
-            {},
-            {
-                { "America/Juneau",
-                    {
-                        ze{ "15:02:19", "-", "LMT", "1867 Oct 19 15:33:32" },
-                        ze{ "-8:57:41", "-", "LMT", "1900 Aug 20 12:00" },
-                        ze{ "-9:00", "US", "AK%sT" },
-                    } },
-                {
-                    "America/Sitka",
-                    {
-                        ze{ "14:58:47", "-", "LMT", "1867 Oct 19 15:30" },
-                        ze{ "-9:01:13", "-", "LMT", "1900 Aug 20 12:00" },
-                        ze{ "-8:00", "-", "PST", "1942" },
-                        ze{ "-8:00", "US", "P%sT", "1946" },
-                        ze{ "-8:00", "-", "PST", "1969" },
-                        ze{ "-8:00", "US", "P%sT", "1983 Oct 30  2:00" },
-                        ze{ "-9:00", "US", "Y%sT", "1983 Nov 30" },
-                        ze{ "-9:00", "US", "AK%sT" },
-                    },
-                },
-            },
-        } ) );
+               ( tz_data_file{
+                   { },
+                   {
+                       { "America/Juneau",
+                         {
+                             ze{ "15:02:19", "-", "LMT", "1867 Oct 19 15:33:32" },
+                             ze{ "-8:57:41", "-", "LMT", "1900 Aug 20 12:00" },
+                             ze{ "-9:00", "US", "AK%sT" },
+                         } },
+                       {
+                           "America/Sitka",
+                           {
+                               ze{ "14:58:47", "-", "LMT", "1867 Oct 19 15:30" },
+                               ze{ "-9:01:13", "-", "LMT", "1900 Aug 20 12:00" },
+                               ze{ "-8:00", "-", "PST", "1942" },
+                               ze{ "-8:00", "US", "P%sT", "1946" },
+                               ze{ "-8:00", "-", "PST", "1969" },
+                               ze{ "-8:00", "US", "P%sT", "1983 Oct 30  2:00" },
+                               ze{ "-9:00", "US", "Y%sT", "1983 Nov 30" },
+                               ze{ "-9:00", "US", "AK%sT" },
+                           },
+                       },
+                   },
+               } ) );
 }
 
 
@@ -526,20 +528,20 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
     ASSERT_EQ( "3:6", location::where( body2, body2.find( "Pacific/Honolulu" ) ).str() );
 
     ASSERT_EQ( "18446744073709551615:18446744073709551615",
-        location( 18446744073709551615ul, 18446744073709551615ul ).str() );
+               location( 18446744073709551615ul, 18446744073709551615ul ).str() );
 }
 
 
 TEST( vtz_io, read_file ) {
     using namespace std::literals;
     // Check that we can read a text file
-    ASSERT_EQ( read_file( "etc/testdata/hello.txt" ), "hello" );
+    ASSERT_EQ( read_file( _join_fp( paths.testdata, "hello.txt" ) ), "hello" );
 
     // Check that we can read a binary file
-    ASSERT_EQ( read_file( "etc/testdata/test_file.bin" ),
-        "z!\xFB;rh\x9F\xEB"
-        "f\x84\xB8\xE5\xA6\xBC"
-        "d\x9F\0\xD3\b\xE5"s );
+    ASSERT_EQ( read_file( _join_fp( paths.testdata, "test_file.bin" ) ),
+               "z!\xFB;rh\x9F\xEB"
+               "f\x84\xB8\xE5\xA6\xBC"
+               "d\x9F\0\xD3\b\xE5"s );
 
     EXPECT_THROW(
         try {
@@ -726,7 +728,7 @@ TEST( vtz_parser, parse_errors ) {
 
 
 namespace {
-    std::pair<string, tz_data_file> test_load_file( char const* fp ) {
+    std::pair<string, tz_data_file> test_load_file( std::string const& fp ) {
         using HRC = std::chrono::high_resolution_clock;
         using std::chrono::duration_cast;
 
@@ -752,7 +754,8 @@ namespace {
 
         if( !longest_rule_name.empty() )
         {
-            TEST_LOG.log_good( "  longest rule name",
+            TEST_LOG.log_good(
+                "  longest rule name",
                 fmt::format( "{} (length={})", longest_rule_name, longest_rule_name.size() ) );
         }
 
@@ -762,18 +765,18 @@ namespace {
 
 
 TEST( vtz_io, load_all ) {
-    test_load_file( "build/data/tzdata/africa" );
-    test_load_file( "build/data/tzdata/antarctica" );
-    test_load_file( "build/data/tzdata/asia" );
-    test_load_file( "build/data/tzdata/australasia" );
-    test_load_file( "build/data/tzdata/backward" );
-    test_load_file( "build/data/tzdata/backzone" );
-    test_load_file( "build/data/tzdata/etcetera" );
-    test_load_file( "build/data/tzdata/europe" );
-    test_load_file( "build/data/tzdata/factory" );
-    test_load_file( "build/data/tzdata/northamerica" );
-    test_load_file( "build/data/tzdata/southamerica" );
-    auto [file, all_zones] = test_load_file( "build/data/tzdata/tzdata.zi" );
+    test_load_file( _join_fp( paths.tzdata, "africa" ) );
+    test_load_file( _join_fp( paths.tzdata, "antarctica" ) );
+    test_load_file( _join_fp( paths.tzdata, "asia" ) );
+    test_load_file( _join_fp( paths.tzdata, "australasia" ) );
+    test_load_file( _join_fp( paths.tzdata, "backward" ) );
+    test_load_file( _join_fp( paths.tzdata, "backzone" ) );
+    test_load_file( _join_fp( paths.tzdata, "etcetera" ) );
+    test_load_file( _join_fp( paths.tzdata, "europe" ) );
+    test_load_file( _join_fp( paths.tzdata, "factory" ) );
+    test_load_file( _join_fp( paths.tzdata, "northamerica" ) );
+    test_load_file( _join_fp( paths.tzdata, "southamerica" ) );
+    auto [file, all_zones] = test_load_file( _join_fp( paths.tzdata, "tzdata.zi" ) );
 
     ASSERT_EQ( all_zones.links["GMT"], "Etc/GMT" );
     ASSERT_EQ( all_zones.links["EST5EDT"], "America/New_York" );
@@ -781,7 +784,7 @@ TEST( vtz_io, load_all ) {
 
 
 TEST( vtz_tz, US_rules ) {
-    auto [content, zones] = test_load_file( "build/data/tzdata/northamerica" );
+    auto [content, zones] = test_load_file( _join_fp( paths.tzdata, "northamerica" ) );
 
     auto US = zones.evaluate_rules( "US" );
 
@@ -820,16 +823,18 @@ TEST( vtz_tz, US_rules ) {
     ASSERT_EQ( US.historical[n - 2], RT::from_civil( 2006, 4, 2, "2:00", "1:00", "D" ) );
     ASSERT_EQ( US.historical[n - 1], RT::from_civil( 2006, 10, 29, "2:00", "0", "S" ) );
 
-    ASSERT_EQ( US.active.at( 0 ),
+    ASSERT_EQ(
+        US.active.at( 0 ),
         ( RE{ 2007, Y_MAX, month_t::Mar, rule_on::ge( dow_t::Sun, 8 ), "2:00", "1:00", "D" } ) );
-    ASSERT_EQ( US.active.at( 1 ),
+    ASSERT_EQ(
+        US.active.at( 1 ),
         ( RE{ 2007, Y_MAX, month_t::Nov, rule_on::ge( dow_t::Sun, 1 ), "2:00", "0", "S" } ) );
 }
 
 
 TEST( vtz_tz, America_NewYork ) {
     using HRC             = std::chrono::high_resolution_clock;
-    auto [content, zones] = test_load_file( "build/data/tzdata/northamerica" );
+    auto [content, zones] = test_load_file( _join_fp( paths.tzdata, "northamerica" ) );
     auto t0               = HRC::now();
 
     auto times = zones.get_zone_states( "America/New_York", 2050 );
@@ -841,16 +846,17 @@ TEST( vtz_tz, America_NewYork ) {
     TEST_LOG.log_good( "time get_zone_states()", std::chrono::duration_cast<ms_r>( t1 - t0 ) );
 
     fmt::println( "Initial state: stdoff={} save={} abbr={}",
-        times.initial().stdoff,
-        times.initial().save(),
-        times.initial().abbr.sv() );
+                  times.initial().stdoff,
+                  times.initial().save(),
+                  times.initial().abbr.sv() );
 
     for( auto const& trans : times.get_transitions() )
     {
-        fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
+        fmt::println(
+            "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
             fmt::styled( utc_to_string( trans.when ), FAINT_GRAY ),
-            fmt::styled(
-                local_to_string( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
+            fmt::styled( local_to_string( trans.when, trans.state.walloff, trans.state.abbr ),
+                         BOLD_GREEN ),
             trans.state.stdoff,
             trans.state.save(),
             trans.state.abbr.sv() );
@@ -860,7 +866,7 @@ TEST( vtz_tz, America_NewYork ) {
 
 TEST( vtz_tz, Asia_Singapore ) {
     using HRC             = std::chrono::high_resolution_clock;
-    auto [content, zones] = test_load_file( "build/data/tzdata/asia" );
+    auto [content, zones] = test_load_file( _join_fp( paths.tzdata, "asia" ) );
     auto t0               = HRC::now();
     auto times            = zones.get_zone_states( "Asia/Singapore", 2050 );
 
@@ -871,16 +877,17 @@ TEST( vtz_tz, Asia_Singapore ) {
     TEST_LOG.log_good( "time get_zone_states()", std::chrono::duration_cast<ms_r>( t1 - t0 ) );
 
     fmt::println( "Initial state: stdoff={} save={} abbr={}",
-        times.initial().stdoff,
-        times.initial().save(),
-        times.initial().abbr.sv() );
+                  times.initial().stdoff,
+                  times.initial().save(),
+                  times.initial().abbr.sv() );
 
     for( auto const& trans : times.get_transitions() )
     {
-        fmt::println( "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
+        fmt::println(
+            "NEW STATE @ utc={} local={} stdoff={} save={} abbr={}",
             fmt::styled( utc_to_string( trans.when ), FAINT_GRAY ),
-            fmt::styled(
-                local_to_string( trans.when, trans.state.walloff, trans.state.abbr ), BOLD_GREEN ),
+            fmt::styled( local_to_string( trans.when, trans.state.walloff, trans.state.abbr ),
+                         BOLD_GREEN ),
             trans.state.stdoff,
             trans.state.save(),
             trans.state.abbr.sv() );
@@ -1001,30 +1008,30 @@ TEST( vtz_parser, zone_format ) {
     ASSERT_EQ( parse_zone_format( "AE%sST" ), ZF{ "AEST" }.with( ZF::FMT_S, 2, 2 ) );
 
     // === FMT_Z (%z numeric offset) tests ===
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 0, false, "" ).sv() == "+00" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3600, false, "" ).sv() == "+01" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3600, false, "" ).sv() == "-01" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3660, false, "" ).sv() == "+0101" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3660, false, "" ).sv() == "-0101" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3697, false, "" ).sv() == "+010137" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3697, false, "" ).sv() == "-010137" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 5025, false, "" ).sv() == "+012345" );
-    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -5025, false, "" ).sv() == "-012345" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 0, false, "" ).sv() == "+00" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 3600, false, "" ).sv() == "+01" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( -3600, false, "" ).sv() == "-01" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 3660, false, "" ).sv() == "+0101" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( -3660, false, "" ).sv() == "-0101" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 3697, false, "" ).sv() == "+010137" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( -3697, false, "" ).sv() == "-010137" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 5025, false, "" ).sv() == "+012345" );
+    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( -5025, false, "" ).sv() == "-012345" );
 
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 3, 0 ).format( 0, false, "" ).sv() == "xyz+00" );
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 2, 1 ).format( 0, false, "" ).sv() == "xy+00z" );
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 1, 2 ).format( 0, false, "" ).sv() == "x+00yz" );
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 0, 3 ).format( 0, false, "" ).sv() == "+00xyz" );
 
-    static_assert(
-        ZF{ "he" }.with( ZF::FMT_Z, 2, 0 ).format( 5025, false, "" ).sv() == "he+012345" );
-    static_assert(
-        ZF{ "hello" }.with( ZF::FMT_Z, 5, 0 ).format( 5025, false, "" ).sv() == "hello+012345" );
-    static_assert(
-        ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv() == "h+012345ello" );
+    static_assert( ZF{ "he" }.with( ZF::FMT_Z, 2, 0 ).format( 5025, false, "" ).sv()
+                   == "he+012345" );
+    static_assert( ZF{ "hello" }.with( ZF::FMT_Z, 5, 0 ).format( 5025, false, "" ).sv()
+                   == "hello+012345" );
+    static_assert( ZF{ "hello" }.with( ZF::FMT_Z, 1, 4 ).format( 5025, false, "" ).sv()
+                   == "h+012345ello" );
 
     ASSERT_EQ( parse_zone_format( "E%zT" ), ZF{ "ET" }.with( ZF::FMT_Z, 1, 1 ) );
-    ASSERT_EQ( parse_zone_format( "%z" ), ZF{}.with( ZF::FMT_Z ) );
+    ASSERT_EQ( parse_zone_format( "%z" ), ZF{ }.with( ZF::FMT_Z ) );
 
     // %z with prefixes
     ASSERT_EQ( parse_zone_format( "GMT%z" ), ZF{ "GMT" }.with( ZF::FMT_Z, 3, 0 ) );
@@ -1118,14 +1125,14 @@ namespace vtz {
 
 TEST( vtz, current_zone ) {
     ASSERT_EQ( normalize_tzname( _get_current_zone_name() ),
-        normalize_tzname( date::current_zone()->name() ) );
+               normalize_tzname( date::current_zone()->name() ) );
     ASSERT_EQ( vtz::current_zone()->name(), date::current_zone()->name() );
 }
 
 
 TEST( vtz, reload_current_zone ) {
     ASSERT_EQ( normalize_tzname( _get_current_zone_name() ),
-        normalize_tzname( date::current_zone()->name() ) );
+               normalize_tzname( date::current_zone()->name() ) );
 
     auto* old_tz = vtz::current_zone();
     ASSERT_EQ( old_tz->name(), date::current_zone()->name() );

@@ -12,12 +12,6 @@
 #include <random>
 using namespace vtz;
 
-using _test_vtz::TEST_LOG;
-
-namespace {
-    int _do_set_install = ( set_install( "build/data/tzdata" ), 0 );
-} // namespace
-
 TEST( vtz_math, div_floor ) {
     using vtz::math::div_floor;
     using vtz::math::div_floor2;

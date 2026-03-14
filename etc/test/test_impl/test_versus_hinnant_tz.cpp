@@ -8,6 +8,8 @@
 #include <vtz/tz_impl.h>
 #include <vtz/tz_reader.h>
 
+#include <test_vtz/paths.h>
+
 #include <chrono>
 #include <fmt/chrono.h>
 #include <fmt/color.h>
@@ -160,7 +162,7 @@ constexpr auto DL = date::choose::latest;
 TEST( vtz, America_NewYork ) {
     COUNT_ASSERTIONS();
 
-    auto const& fp = "build/data/tzdata/tzdata.zi";
+    auto const& fp = _join_fp( paths.tzdata, "tzdata.zi" );
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );
@@ -283,7 +285,7 @@ TEST( vtz, FirstTransition ) {
     COUNT_ASSERTIONS();
 
 
-    auto const& fp = "build/data/tzdata/tzdata.zi";
+    auto const& fp = _join_fp( paths.tzdata, "tzdata.zi" );
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );
@@ -405,7 +407,7 @@ TEST( vtz, all_timezones ) {
     COUNT_ASSERTIONS();
 
     using sec      = std::chrono::seconds;
-    auto const& fp = "build/data/tzdata/tzdata.zi";
+    auto const& fp = _join_fp( paths.tzdata, "tzdata.zi" );
 
     constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1600, 1, 1 ) );
     constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2400, 1, 1 ) );
@@ -474,7 +476,7 @@ TEST( vtz, all_timezones ) {
 TEST( vtz, time_zone ) {
     COUNT_ASSERTIONS();
 
-    auto const& fp = "build/data/tzdata/tzdata.zi";
+    auto const& fp = _join_fp( paths.tzdata, "tzdata.zi" );
 
     constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
     constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
@@ -710,7 +712,7 @@ TEST( vtz, SelfTest ) {
     constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
     constexpr sys_seconds_t _2370   = resolve_civil_time( 2370, 1, 1, 0, 0, 0 );
 
-    auto const& fp = "build/data/tzdata/tzdata.zi";
+    auto const& fp = _join_fp( paths.tzdata, "tzdata.zi" );
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );
@@ -775,7 +777,7 @@ TEST( vtz, TimeZoneFuzz ) {
     COUNT_ASSERTIONS();
     constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
     constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
-    auto const&             fp      = "build/data/tzdata/tzdata.zi";
+    auto const&             fp      = _join_fp( paths.tzdata, "tzdata.zi" );
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );
@@ -919,7 +921,7 @@ TEST( vtz, TimeZoneToString ) {
     COUNT_ASSERTIONS();
     constexpr sys_seconds_t start_t = days_to_seconds( resolve_civil( 1800, 1, 1 ) );
     constexpr sys_seconds_t end_t   = days_to_seconds( resolve_civil( 2900, 1, 1 ) );
-    auto const&             fp      = "build/data/tzdata/tzdata.zi";
+    auto const&             fp      = _join_fp( paths.tzdata, "tzdata.zi" );
 
     auto content = read_file( fp );
     auto file    = parse_tzdata( content, fp );

@@ -22,35 +22,32 @@ target_link_libraries(
         date::date-tz
         GTest::gtest
         GTest::gmock
+        fmt::fmt
 )
 
 
 file(GLOB test_files test_impl/*.cpp)
-add_executable(test_vtz ${test_files} test_main.cpp)
+add_executable(test_vtz ${test_files})
 target_link_libraries(
     test_vtz
     PRIVATE
         vtz::testing
         vtz::extras # vtz::impl + Formatting code
-        fmt::fmt
 )
 gtest_discover_tests(
     test_vtz
     TEST_PREFIX "impl/"
-    EXTRA_ARGS --vtz_set_install "${BUILD}/data/tzdata"
-    WORKING_DIRECTORY "${VTZ_ROOT}")
+    EXTRA_ARGS --build "${BUILD}" --testdata "${VTZ_ROOT}/etc/testdata"
+    WORKING_DIRECTORY "${BUILD}")
 
 
 file(GLOB src test_api/*.cpp)
-add_executable(test_vtz_api ${src} test_main.cpp)
+add_executable(test_vtz_api ${src})
 target_link_libraries(
     test_vtz_api
     PRIVATE
         vtz::testing
         vtz::vtz
-        fmt::fmt
-        date::date
-        date::date-tz
 )
 
 set_target_properties(
@@ -73,5 +70,5 @@ endif()
 gtest_discover_tests(
     test_vtz_api
     TEST_PREFIX "api/"
-    EXTRA_ARGS --vtz_set_install "${BUILD}/data/tzdata"
-    WORKING_DIRECTORY "${VTZ_ROOT}")
+    EXTRA_ARGS --build "${BUILD}" --testdata "${VTZ_ROOT}/etc/testdata"
+    WORKING_DIRECTORY "${BUILD}")

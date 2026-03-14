@@ -4,6 +4,9 @@
 #include <gtest/gtest.h>
 #include <vtz/tz.h>
 
+#include <test_vtz/paths.h>
+
+
 #if __cpp_lib_filesystem
     #include <filesystem>
     #define HAS_STD_FILESYSTEM 1
@@ -12,7 +15,7 @@
 #endif
 
 
-void set_date_install( std::string path = "build/data/tzdata" ) {
+void set_date_install( std::string path ) {
     try
     {
         // Try setting the install and locating a timezone
@@ -29,13 +32,13 @@ void set_date_install( std::string path = "build/data/tzdata" ) {
         fmt::println( stderr,
             "Error when running tests @ cwd={}: date::locate_zone() "
             "fails with the following error:\n\n{}",
-            ex.what(),
-            cwd );
+            cwd,
+            ex.what() );
         std::exit( 1 );
     }
 }
 
-void set_vtz_install( std::string path = "build/data/tzdata" ) {
+void set_vtz_install( std::string path ) {
     try
     {
         // Try setting the install and locating a timezone
@@ -68,24 +71,49 @@ namespace {
     }
 } // namespace
 
+
 int main( int argc, char** argv ) {
     // Initialize GoogleTest, parses command line arguments and removes all
     // recognized flags
     testing::InitGoogleTest( &argc, argv );
 
-    set_date_install();
+    // If we just listed tests, we don't need to do anything else
+    if( ::testing::GTEST_FLAG( list_tests ) )
+    {
+        // Exit early - don't try loading the tzdb. Because the 'list_tests'
+        // flag is set, this doesn't actually run all tests, it just lists
+        // tests.
+        return RUN_ALL_TESTS();
+    }
+
+
+    bool vtz_use_os_tzdb = false;
 
     int i = 1;
     while( i < argc )
     {
         std::string_view arg = argv[i++];
-        if( arg == "--vtz_set_install" )
+        if( arg == "--build" )
         {
-            auto arg = pop_arg( i,
+            auto build     = pop_arg( i,
                 argc,
                 argv,
-                "Expected install path after --vtz_set_install" );
-            set_vtz_install( std::string( arg ) );
+                "Expected path to build dir following '--build' flag, eg "
+                "./build" );
+            paths.tzdata   = _join_fp( build, "data/tzdata" );
+            paths.zoneinfo = _join_fp( build, "data/zoneinfo" );
+            continue;
+        }
+        if( arg == "--testdata" )
+        {
+            auto testdata = pop_arg(
+                i, argc, argv, "Expected path to testdata, eg etc/testdata" );
+            paths.testdata = std::string( testdata );
+            continue;
+        }
+        if( arg == "--vtz_use_os_tzdb" )
+        {
+            vtz_use_os_tzdb = true;
             continue;
         }
 
@@ -93,6 +121,8 @@ int main( int argc, char** argv ) {
         std::exit( 1 );
     }
 
+    set_date_install( paths.tzdata );
+    if( !vtz_use_os_tzdb ) { set_vtz_install( paths.tzdata ); }
 
     // Run all tests
     return RUN_ALL_TESTS();
