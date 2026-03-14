@@ -134,6 +134,7 @@ SpacesInAngles: false
 SpacesInCStyleCastParentheses: false
 SpacesInConditionalStatement: true
 SpacesInContainerLiterals: true
+SpaceInEmptyBraces: Never
 # SpacesInLineCommentPrefix: # TODO not clear how to specify min and max here ??
 SpacesInParentheses: true
 SpacesInSquareBrackets: false

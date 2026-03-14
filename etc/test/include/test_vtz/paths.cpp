@@ -1,5 +1,5 @@
-#include <test_vtz/paths.h>
 #include <string>
+#include <test_vtz/paths.h>
 
 path_settings paths = path_settings();
 

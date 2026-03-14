@@ -10,7 +10,8 @@
 inline namespace vtz_test {
     using namespace vtz;
 
-    constexpr vtz::sys_days _get_days( int year, unsigned month, unsigned day ) {
+    constexpr vtz::sys_days _get_days(
+        int year, unsigned month, unsigned day ) {
         return date::sys_days( date::year_month_day{
             date::year{ year },
             date::month{ month },
@@ -37,11 +38,11 @@ inline namespace vtz_test {
     }
 
     constexpr int64_t _get_time_t( int year,
-        unsigned                    month,
-        unsigned                    day,
-        int                         hour   = 0,
-        int                         minute = 0,
-        int                         second = 0 ) {
+        unsigned                       month,
+        unsigned                       day,
+        int                            hour   = 0,
+        int                            minute = 0,
+        int                            second = 0 ) {
         return _get_time( year, month, day, hour, minute, second )
             .time_since_epoch()
             .count();

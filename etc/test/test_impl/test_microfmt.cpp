@@ -113,5 +113,5 @@ TEST( microfmt, join ) {
 
     std::vector<std::string> files = { "a.txt", "b.txt", "c.txt" };
     ASSERT_EQ( join( "files: [", joined{ files, ", " }, "]" ),
-        std::string( "files: [a.txt, b.txt, c.txt]" ) );
+               std::string( "files: [a.txt, b.txt, c.txt]" ) );
 }

@@ -124,8 +124,8 @@ TEST( vtz, blog2 ) {
         ASSERT_EQ_QUIET( _blog2( input ), 63 - i );
     }
 
-    auto rng       = std::mt19937_64();
-    auto dist      = std::uniform_int_distribution<u64>( 0 );
+    auto rng        = std::mt19937_64();
+    auto dist       = std::uniform_int_distribution<u64>( 0 );
     auto shift_dist = std::uniform_int_distribution<int>( 0, 63 );
 
     // Check random inputs

@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-const std::string_view ALL_ZONES[] {
+const std::string_view ALL_ZONES[]{
     "America/New_York",
     "Africa/Algiers",
     "Africa/Bissau",

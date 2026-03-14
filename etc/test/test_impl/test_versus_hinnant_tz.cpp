@@ -86,8 +86,8 @@ std::vector<entry> get_entries( string_view name, sys_seconds start, sys_seconds
     return entries;
 }
 
-std::vector<date::sys_info> get_sys_info(
-    string_view name, sys_seconds_t start, sys_seconds_t end ) {
+std::vector<date::sys_info>
+get_sys_info( string_view name, sys_seconds_t start, sys_seconds_t end ) {
     auto const* tz      = date::locate_zone( name );
     auto        T       = sys_seconds( seconds( start ) );
     auto        Tend    = sys_seconds( seconds( end ) );
@@ -204,48 +204,48 @@ TEST( vtz, America_NewYork ) {
         auto t2 = _ct( 2026, 3, 8, 7, 0, 0 );
 
         ADD_CONTEXT( "Checking get_info",
-            tz.format_s( "%F %T", t0 ),
-            tz.format_s( "%F %T", t1 - 1 ),
-            tz.format_s( "%F %T", t1 ),
-            tz.format_s( "%F %T", t2 ) );
+                     tz.format_s( "%F %T", t0 ),
+                     tz.format_s( "%F %T", t1 - 1 ),
+                     tz.format_s( "%F %T", t1 ),
+                     tz.format_s( "%F %T", t2 ) );
 
         auto s0 = tz.get_info( as_sys( t1 - 1 ) );
         auto s1 = tz.get_info( as_sys( t1 ) );
         ASSERT_EQ( s0,
-            ( sys_info{
-                to_sys( t0 ),
-                to_sys( t1 ),
-                hours( -4 ),
-                minutes( 60 ),
-                "EDT",
-            } ) );
+                   ( sys_info{
+                       to_sys( t0 ),
+                       to_sys( t1 ),
+                       hours( -4 ),
+                       minutes( 60 ),
+                       "EDT",
+                   } ) );
         ASSERT_EQ( s1,
-            ( sys_info{
-                to_sys( t1 ),
-                to_sys( t2 ),
-                hours( -5 ),
-                minutes( 0 ),
-                "EST",
-            } ) );
+                   ( sys_info{
+                       to_sys( t1 ),
+                       to_sys( t2 ),
+                       hours( -5 ),
+                       minutes( 0 ),
+                       "EST",
+                   } ) );
 
         {
             // 1am is the first time that is ambiguous, 1:59:59am is the last time
             // that is ambiguous
             ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 1, 0, 0 ) ),
-                local_info( { local_info::ambiguous, s0, s1 } ) );
+                       local_info( { local_info::ambiguous, s0, s1 } ) );
             ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 1, 59, 59 ) ),
-                local_info( { local_info::ambiguous, s0, s1 } ) );
+                       local_info( { local_info::ambiguous, s0, s1 } ) );
             ASSERT_EQ( tz.local_type( _ctl( 2025, 11, 2, 1, 0, 0 ) ), local_type::ambiguous );
             ASSERT_EQ( tz.local_type( _ctl( 2025, 11, 2, 1, 59, 59 ) ), local_type::ambiguous );
 
             // 00:59am is not ambiguous
             ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 0, 59, 59 ) ),
-                local_info( { local_info::unique, s0 } ) );
+                       local_info( { local_info::unique, s0 } ) );
             ASSERT_EQ( tz.local_type( _ctl( 2025, 11, 2, 0, 59, 59 ) ), local_type::unique );
 
             // 2am is no longer ambiguous
             ASSERT_EQ( tz.get_info( _ctl( 2025, 11, 2, 2, 0, 0 ) ),
-                local_info( { local_info::unique, s1 } ) );
+                       local_info( { local_info::unique, s1 } ) );
             ASSERT_EQ( tz.local_type( _ctl( 2025, 11, 2, 2, 0, 0 ) ), local_type::unique );
         }
     }
@@ -440,9 +440,9 @@ TEST( vtz, all_timezones ) {
             auto const& e = entries[i];
 
             ADD_CONTEXT( "Checking time period within zone",
-                i,
-                local_to_string( e.begin, e.offset, e.fix_abbr<15>() ),
-                local_to_string( e.end - 1, e.offset, e.fix_abbr<15>() ) );
+                         i,
+                         local_to_string( e.begin, e.offset, e.fix_abbr<15>() ),
+                         local_to_string( e.end - 1, e.offset, e.fix_abbr<15>() ) );
 
             // Check that the zone matches from begin to end-1
             auto const& s1 = zone_states.get_state( e.begin );
@@ -540,14 +540,14 @@ TEST( vtz, time_zone ) {
             auto delta = off - off0;
 
             ADD_CONTEXT( "Checking transition",
-                _dt{ t - 1 },
-                _dt{ t },
-                _dt{ local_time_pre },
-                _dt{ local_time_post },
-                off0,
-                off,
-                delta,
-                zi );
+                         _dt{ t - 1 },
+                         _dt{ t },
+                         _dt{ local_time_pre },
+                         _dt{ local_time_post },
+                         off0,
+                         off,
+                         delta,
+                         zi );
 
 
             ASSERT_EQ_QUIET( tz.offset_s( t - 1 ), off0 );
@@ -604,22 +604,22 @@ TEST( vtz, time_zone ) {
 
 
                 ADD_CONTEXT( "Checking ambiguous local times resulting from moving the clock back",
-                    _dt{ ambig_start_local },
-                    _dt{ ambig_end_local },
-                    _dt{ ambig_start_utc },
-                    _dt{ ambig_end_utc } );
+                             _dt{ ambig_start_local },
+                             _dt{ ambig_end_local },
+                             _dt{ ambig_start_utc },
+                             _dt{ ambig_end_utc } );
 
                 // We moved the clocks back, resulting in an ambiguous time
 
                 // These times right before and after should not be ambiguous
-                ASSERT_EQ_QUIET(
-                    _dt{ tz.to_sys_s( prev_unambiguous_time, E ) }, _dt{ ambig_start_utc - 1 } );
-                ASSERT_EQ_QUIET(
-                    _dt{ tz.to_sys_s( prev_unambiguous_time, L ) }, _dt{ ambig_start_utc - 1 } );
-                ASSERT_EQ_QUIET(
-                    _dt{ tz.to_sys_s( next_unambiguous_time, E ) }, _dt{ ambig_end_utc } );
-                ASSERT_EQ_QUIET(
-                    _dt{ tz.to_sys_s( next_unambiguous_time, L ) }, _dt{ ambig_end_utc } );
+                ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( prev_unambiguous_time, E ) },
+                                 _dt{ ambig_start_utc - 1 } );
+                ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( prev_unambiguous_time, L ) },
+                                 _dt{ ambig_start_utc - 1 } );
+                ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( next_unambiguous_time, E ) },
+                                 _dt{ ambig_end_utc } );
+                ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( next_unambiguous_time, L ) },
+                                 _dt{ ambig_end_utc } );
 
                 // Recall that we have established that local_time_post < local_time_pre -
                 // right now we're testing the scenario where we move the clocks back
@@ -638,19 +638,19 @@ TEST( vtz, time_zone ) {
                     auto block      = time_zone::_impl::local_block_s( tz, local_t );
 
                     ADD_CONTEXT( "Check local -> UTC, choosing earliest",
-                        _dt{ local_t },
-                        block.t,
-                        _dt{ block.t },
-                        prev_block.t,
-                        _dt{ prev_block.t },
-                        block.hi(),
-                        block.lo(),
-                        local_t,
-                        time_zone::_impl::get_tt( tz ).block_size(),
-                        time_zone::_impl::get_tt( tz ).block_start_t( local_t ),
-                        time_zone::_impl::get_tt( tz ).block_end_t( local_t ),
-                        _dt{ time_zone::_impl::get_tt( tz ).block_start_t( local_t ) },
-                        _dt{ time_zone::_impl::get_tt( tz ).block_end_t( local_t ) } );
+                                 _dt{ local_t },
+                                 block.t,
+                                 _dt{ block.t },
+                                 prev_block.t,
+                                 _dt{ prev_block.t },
+                                 block.hi(),
+                                 block.lo(),
+                                 local_t,
+                                 time_zone::_impl::get_tt( tz ).block_size(),
+                                 time_zone::_impl::get_tt( tz ).block_start_t( local_t ),
+                                 time_zone::_impl::get_tt( tz ).block_end_t( local_t ),
+                                 _dt{ time_zone::_impl::get_tt( tz ).block_start_t( local_t ) },
+                                 _dt{ time_zone::_impl::get_tt( tz ).block_end_t( local_t ) } );
                     ASSERT_EQ_QUIET( _dt{ tz.to_sys_s( local_t, E ) }, _dt{ t + i + delta } );
                 }
             }
@@ -760,11 +760,11 @@ TEST( vtz, SelfTest ) {
         while( t0 < end_t )
         {
             ADD_CONTEXT( "Testing time",
-                to_sys( t0 ),
-                to_sys( tz.to_sys_s( t0, E ) ),
-                to_sys( tz2.to_sys_s( t0, E ) ),
-                to_sys( tz.to_sys_s( t0, L ) ),
-                to_sys( tz2.to_sys_s( t0, L ) ) );
+                         to_sys( t0 ),
+                         to_sys( tz.to_sys_s( t0, E ) ),
+                         to_sys( tz2.to_sys_s( t0, E ) ),
+                         to_sys( tz.to_sys_s( t0, L ) ),
+                         to_sys( tz2.to_sys_s( t0, L ) ) );
             ASSERT_EQ_QUIET( tz.offset_s( t0 ), tz2.offset_s( t0 ) );
             ASSERT_EQ_QUIET( tz.to_local_s( t0 ), tz2.to_local_s( t0 ) );
             ASSERT_EQ_QUIET( tz.to_sys_s( t0, E ), tz2.to_sys_s( t0, E ) );
@@ -802,10 +802,10 @@ TEST( vtz, TimeZoneFuzz ) {
         fmt::println( "Testing {:>5} sys_info entries from {}", zone_info.size(), zone );
 
         ADD_CONTEXT( "Zone information",
-            zone,
-            states.stdoff_initial_,
-            states.stdoff_,
-            to_sys_vec( states.stdoff_trans_ ) );
+                     zone,
+                     states.stdoff_initial_,
+                     states.stdoff_,
+                     to_sys_vec( states.stdoff_trans_ ) );
 
         for( date::sys_info const& info : zone_info )
         {
@@ -816,13 +816,13 @@ TEST( vtz, TimeZoneFuzz ) {
             auto zone_stdoff = seconds( info.offset - info.save ).count();
 
             ADD_CONTEXT( "Times",
-                info.begin,
-                info.end,
-                info.abbrev,
-                info.save,
-                info.offset,
-                sys_seconds( seconds( Tmid ) ),
-                zone_stdoff );
+                         info.begin,
+                         info.end,
+                         info.abbrev,
+                         info.save,
+                         info.offset,
+                         sys_seconds( seconds( Tmid ) ),
+                         zone_stdoff );
 
             ASSERT_LT( Tbegin, Tend );
             ASSERT_LT( Tbegin, Tmid );
@@ -839,12 +839,12 @@ TEST( vtz, TimeZoneFuzz ) {
             ASSERT_EQ_QUIET( time_zone::_impl::stdoff_s( tz, Tbegin ), zone_stdoff );
             ASSERT_EQ_QUIET( time_zone::_impl::stdoff_s( tz, Tmid ), zone_stdoff );
             ASSERT_EQ_QUIET( time_zone::_impl::stdoff_s( tz, Tend - 1 ), zone_stdoff );
-            ASSERT_EQ_QUIET(
-                seconds( time_zone::_impl::save_s( tz, Tbegin ) ), seconds( info.save ) );
-            ASSERT_EQ_QUIET(
-                seconds( time_zone::_impl::save_s( tz, Tmid ) ), seconds( info.save ) );
-            ASSERT_EQ_QUIET(
-                seconds( time_zone::_impl::save_s( tz, Tend - 1 ) ), seconds( info.save ) );
+            ASSERT_EQ_QUIET( seconds( time_zone::_impl::save_s( tz, Tbegin ) ),
+                             seconds( info.save ) );
+            ASSERT_EQ_QUIET( seconds( time_zone::_impl::save_s( tz, Tmid ) ),
+                             seconds( info.save ) );
+            ASSERT_EQ_QUIET( seconds( time_zone::_impl::save_s( tz, Tend - 1 ) ),
+                             seconds( info.save ) );
         }
 
         for( size_t zi = 1; zi < zone_info.size(); zi++ )
@@ -863,16 +863,16 @@ TEST( vtz, TimeZoneFuzz ) {
             auto local_t    = sys_t + offset;
 
             ADD_CONTEXT( "Testing local -> UTC",
-                date_str( sys_t ),
-                date_str( sys_t0 ),
-                offset,
-                prev_offset,
-                date_str( local_prev ),
-                date_str( local_t ),
-                date_str( tz.to_local_s( sys_t - 1 ) ),
-                tz_hinnant->to_local( to_sys( sys_t - 1 ) ),
-                date_str( tz.to_local_s( sys_t ) ),
-                tz_hinnant->to_local( to_sys( sys_t ) ) );
+                         date_str( sys_t ),
+                         date_str( sys_t0 ),
+                         offset,
+                         prev_offset,
+                         date_str( local_prev ),
+                         date_str( local_t ),
+                         date_str( tz.to_local_s( sys_t - 1 ) ),
+                         tz_hinnant->to_local( to_sys( sys_t - 1 ) ),
+                         date_str( tz.to_local_s( sys_t ) ),
+                         tz_hinnant->to_local( to_sys( sys_t ) ) );
 
             if( local_prev < local_t )
             {
@@ -910,7 +910,8 @@ TEST( vtz, TimeZoneFuzz ) {
         for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )
         {
             auto T = sys_seconds( seconds( dist( rng ) ) );
-            ASSERT_EQ_QUIET( tz.format( "%Y%m%d %H%M%S %Z", T ),
+            ASSERT_EQ_QUIET(
+                tz.format( "%Y%m%d %H%M%S %Z", T ),
                 date::format( "%Y%m%d %H%M%S %Z", date::make_zoned( tz_hinnant, T ) ) );
         }
     }
@@ -947,7 +948,8 @@ TEST( vtz, TimeZoneToString ) {
         for( size_t i = 0; i < NUM_RANDOM_SAMPLES_STR; ++i )
         {
             auto T = sys_seconds( seconds( dist( rng ) ) );
-            ASSERT_EQ_QUIET( tz.format( "%Y%m%d %H%M%S %Z", T ),
+            ASSERT_EQ_QUIET(
+                tz.format( "%Y%m%d %H%M%S %Z", T ),
                 date::format( "%Y%m%d %H%M%S %Z", date::make_zoned( tz_hinnant, T ) ) );
         }
     }

@@ -83,7 +83,7 @@ static_assert( _impl::_parse_dow( "W", 1 ).value() == dow_t::Wed );
 static_assert( _impl::_parse_dow( "F", 1 ).value() == dow_t::Fri );
 
 
-static_assert( !opt_mon{ }.has_value() );
+static_assert( !opt_mon{}.has_value() );
 static_assert( !opt_mon( none ).has_value() );
 static_assert( opt_mon{ month_t::Jan }.has_value() );
 static_assert( opt_mon{ month_t::Feb }.has_value() );
@@ -98,7 +98,7 @@ static_assert( opt_mon{ month_t::Oct }.has_value() );
 static_assert( opt_mon{ month_t::Nov }.has_value() );
 static_assert( opt_mon{ month_t::Dec }.has_value() );
 
-static_assert( !opt_dow{ }.has_value() );
+static_assert( !opt_dow{}.has_value() );
 static_assert( !opt_dow( none ).has_value() );
 static_assert( opt_dow{ dow_t::Sun }.has_value() );
 static_assert( opt_dow{ dow_t::Mon }.has_value() );
@@ -299,7 +299,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 # Arizona mostly uses MST.
 )" ),
                ( tz_data_file{
-                   { },
+                   {},
                    {
                        {
                            "Pacific/Honolulu",
@@ -429,7 +429,7 @@ Zone Pacific/Honolulu	-10:31:26 -	LMT	1896 Jan 13 12:00
 # Arizona mostly uses MST.
 )" ),
                ( tz_data_file{
-                   { },
+                   {},
                    {
                        {
                            "Pacific/Honolulu",
@@ -464,7 +464,7 @@ Zone America/Sitka	 14:58:47 -	LMT	1867 Oct 19 15:30
 			 -9:00	US	Y%sT	1983 Nov 30
 			 -9:00	US	AK%sT)" ),
                ( tz_data_file{
-                   { },
+                   {},
                    {
                        { "America/Juneau",
                          {
@@ -1008,15 +1008,15 @@ TEST( vtz_parser, zone_format ) {
     ASSERT_EQ( parse_zone_format( "AE%sST" ), ZF{ "AEST" }.with( ZF::FMT_S, 2, 2 ) );
 
     // === FMT_Z (%z numeric offset) tests ===
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 0, false, "" ).sv() == "+00" );
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 3600, false, "" ).sv() == "+01" );
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( -3600, false, "" ).sv() == "-01" );
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 3660, false, "" ).sv() == "+0101" );
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( -3660, false, "" ).sv() == "-0101" );
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 3697, false, "" ).sv() == "+010137" );
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( -3697, false, "" ).sv() == "-010137" );
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( 5025, false, "" ).sv() == "+012345" );
-    static_assert( ZF{ }.with( ZF::FMT_Z, 0, 0 ).format( -5025, false, "" ).sv() == "-012345" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 0, false, "" ).sv() == "+00" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3600, false, "" ).sv() == "+01" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3600, false, "" ).sv() == "-01" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3660, false, "" ).sv() == "+0101" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3660, false, "" ).sv() == "-0101" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 3697, false, "" ).sv() == "+010137" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -3697, false, "" ).sv() == "-010137" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( 5025, false, "" ).sv() == "+012345" );
+    static_assert( ZF{}.with( ZF::FMT_Z, 0, 0 ).format( -5025, false, "" ).sv() == "-012345" );
 
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 3, 0 ).format( 0, false, "" ).sv() == "xyz+00" );
     static_assert( ZF{ "xyz" }.with( ZF::FMT_Z, 2, 1 ).format( 0, false, "" ).sv() == "xy+00z" );
@@ -1031,7 +1031,7 @@ TEST( vtz_parser, zone_format ) {
                    == "h+012345ello" );
 
     ASSERT_EQ( parse_zone_format( "E%zT" ), ZF{ "ET" }.with( ZF::FMT_Z, 1, 1 ) );
-    ASSERT_EQ( parse_zone_format( "%z" ), ZF{ }.with( ZF::FMT_Z ) );
+    ASSERT_EQ( parse_zone_format( "%z" ), ZF{}.with( ZF::FMT_Z ) );
 
     // %z with prefixes
     ASSERT_EQ( parse_zone_format( "GMT%z" ), ZF{ "GMT" }.with( ZF::FMT_Z, 3, 0 ) );

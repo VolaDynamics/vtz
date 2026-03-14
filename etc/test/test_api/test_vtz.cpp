@@ -1,6 +1,5 @@
-#include <test_vtz/zones.h>
 #include <test_vtz/utils.h>
-
+#include <test_vtz/zones.h>
 
 
 #include <vtz/parse.h>

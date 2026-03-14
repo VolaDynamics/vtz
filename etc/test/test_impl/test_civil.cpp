@@ -130,8 +130,8 @@ TEST( vtz, civil ) {
 
     {
         sys_days_t sysdays = -135140;
-        int       y       = 1600;
-        u16       m       = 1;
+        int        y       = 1600;
+        u16        m       = 1;
 
         while( y < 2401 )
         {
@@ -164,7 +164,7 @@ TEST( vtz, resolve_last_dow ) {
     ASSERT_EQ( to_civil( resolve_last_dow( 2025, 10, dow_t::Sat ) ), ymd( 2025, 10, 25 ) );
 
     for( auto dow :
-        { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
+         { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
     {
         for( int y = 1900; y <= 2100; y++ )
         {
@@ -192,7 +192,7 @@ TEST( vtz, resolve_dow_ge ) {
     ASSERT_EQ( to_civil( resolve_dow_ge( 2025, 9, 30, dow_t::Tue ) ), ymd( 2025, 9, 30 ) );
 
     for( auto dow :
-        { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
+         { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
     {
         for( int y = 1900; y <= 2100; y++ )
         {
@@ -222,7 +222,7 @@ TEST( vtz, resolve_dow_le ) {
     ASSERT_EQ( to_civil( resolve_dow_le( 2025, 4, 1, dow_t::Tue ) ), ymd( 2025, 4, 1 ) );
 
     for( auto dow :
-        { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
+         { dow_t::Sun, dow_t::Mon, dow_t::Tue, dow_t::Wed, dow_t::Thu, dow_t::Fri, dow_t::Sat } )
     {
         for( int y = 1900; y <= 2100; y++ )
         {
@@ -265,13 +265,7 @@ TEST( vtz, resolve_rule ) {
         "S",
     };
     auto US_Peace_Time = rule_entry{
-        1945,
-        1945,
-        month_t::Aug,
-        rule_on::on( 14 ),
-        rule_at( "23:00u" ),
-        "1:00",
-        "P",
+        1945, 1945, month_t::Aug, rule_on::on( 14 ), rule_at( "23:00u" ), "1:00", "P",
     };
 
     ASSERT_EQ(
@@ -279,7 +273,7 @@ TEST( vtz, resolve_rule ) {
         "2025-03-09 07:00:00Z" );
     // Only WallOff should be used, STDOFF is ignored
     ASSERT_EQ( utc_to_string( US_DST_Start.resolve_at( 2025, from_utc(), from_utc( "-5:00" ) ) ),
-        "2025-03-09 07:00:00Z" );
+               "2025-03-09 07:00:00Z" );
     ASSERT_EQ(
         utc_to_string( US_DST_End.resolve_at( 2025, from_utc( "-5:00" ), from_utc( "-4:00" ) ) ),
         "2025-11-02 06:00:00Z" );
@@ -292,7 +286,7 @@ TEST( vtz, resolve_rule ) {
 TEST( vtz, civil_big_test ) {
     /// Corresponds to -400-01-01
     sys_days_t day_counter = -865625;
-    unsigned  dow_counter = 6; // -400-01-01 was a Saturday
+    unsigned   dow_counter = 6; // -400-01-01 was a Saturday
 
     // Sanity Check - 2025-11-13 is a Thursday
     ASSERT_EQ_QUIET( dow_from_days( resolve_civil( 2025, 11, 13 ) ), dow_t::Thu );
@@ -312,7 +306,7 @@ TEST( vtz, civil_big_test ) {
 
         for( int month = 1; month <= 12; ++month )
         {
-            int       days_in_month = days_in_month_reference( year, month );
+            int        days_in_month = days_in_month_reference( year, month );
             sys_days_t bom_days      = day_counter;
             sys_days_t eom_days      = day_counter + days_in_month - 1;
 
@@ -327,13 +321,13 @@ TEST( vtz, civil_big_test ) {
 
 
                 ADD_CONTEXT( "Testing date",
-                    year,
-                    month,
-                    day,
-                    dse,
-                    doy,
-                    to_civil( dse ),
-                    to_civil_year_doy( dse ) );
+                             year,
+                             month,
+                             day,
+                             dse,
+                             doy,
+                             to_civil( dse ),
+                             to_civil_year_doy( dse ) );
 
                 auto ymd  = civil_ymd{ year, u16( month ), u16( day ) };
                 auto ymd0 = civil_ymd{ year, u16( month - 1 ), u16( day - 1 ) };
@@ -388,12 +382,12 @@ TEST( vtz, civil_arithmetic ) {
                 auto dse = day_counter++;
                 for( int k = -60; k <= 60; ++k )
                 {
-                    ASSERT_EQ_QUIET(
-                        civil_add_years( dse, k ), resolve_civil( year + k, month, day ) );
+                    ASSERT_EQ_QUIET( civil_add_years( dse, k ),
+                                     resolve_civil( year + k, month, day ) );
 
                     auto parts = math::div_floor2<12>( month + k - 1 );
                     ASSERT_EQ_QUIET( civil_add_months( dse, k ),
-                        resolve_civil( year + parts.quot, parts.rem + 1, day ) );
+                                     resolve_civil( year + parts.quot, parts.rem + 1, day ) );
                 }
             }
         }

@@ -131,7 +131,8 @@ namespace _test_vtz {
         ~CountAssertions() {
             if( failed )
             {
-                fmt::println( "{}\n└── {} Assertions Checked - {}",
+                fmt::println(
+                    "{}\n└── {} Assertions Checked - {}",
                     fmt::styled( context, FAINT_GRAY ),
                     count,
                     fmt::styled( fmt::format( "{} assertions failed", failed ), BOLD_RED ) );
@@ -139,8 +140,8 @@ namespace _test_vtz {
             else
             {
                 fmt::println( "{}\n└── {} Assertions Checked! (0 failed)",
-                    fmt::styled( context, FAINT_GRAY ),
-                    fmt::styled( count, BOLD_GREEN ) );
+                              fmt::styled( context, FAINT_GRAY ),
+                              fmt::styled( count, BOLD_GREEN ) );
             }
         }
     };
@@ -172,8 +173,8 @@ namespace _test_vtz {
     void debug_print( std::string& s, std::vector<T> const& values, size_t indent = 0 );
 
     template<class K, class V>
-    void debug_print(
-        std::string& s, ankerl::unordered_dense::map<K, V> const& values, size_t indent );
+    void
+    debug_print( std::string& s, ankerl::unordered_dense::map<K, V> const& values, size_t indent );
 
 
     inline void debug_print( std::string& dest, std::string const& s, size_t indent = 0 ) {
@@ -223,8 +224,8 @@ namespace _test_vtz {
 
 
     template<class K, class V>
-    void debug_print(
-        std::string& s, ankerl::unordered_dense::map<K, V> const& values, size_t indent ) {
+    void
+    debug_print( std::string& s, ankerl::unordered_dense::map<K, V> const& values, size_t indent ) {
         auto begin = values.begin();
         auto end   = values.end();
         if( begin == end )
@@ -281,33 +282,33 @@ namespace _test_vtz {
         template<class T>
         void log_good( string_view what, T const& value ) {
             fmt::println( "{} {}: {}",
-                fmt::styled( "[info]", FAINT_GRAY ),
-                fmt::styled( what, BOLD ),
-                fmt::styled( debug_to_string( value ), BOLD_GREEN ) );
+                          fmt::styled( "[info]", FAINT_GRAY ),
+                          fmt::styled( what, BOLD ),
+                          fmt::styled( debug_to_string( value ), BOLD_GREEN ) );
         }
 
         template<class A, class B>
         void print( char const* lhs_expr,
-            char const*         rhs_expr,
-            A const&            lhs,
-            B const&            rhs,
-            char const*         filename,
-            int                 line ) {
+                    char const* rhs_expr,
+                    A const&    lhs,
+                    B const&    rhs,
+                    char const* filename,
+                    int         line ) {
             if( print_expr )
             {
                 auto expr_style = fmt::emphasis::faint | fmt::fg( fmt::color::light_gray );
                 fmt::print( "{} == {}\n{}",
-                    fmt::styled( lhs_expr, expr_style ),
-                    fmt::styled( rhs_expr, expr_style ),
-                    fmt::styled( "└── ", expr_style ) );
+                            fmt::styled( lhs_expr, expr_style ),
+                            fmt::styled( rhs_expr, expr_style ),
+                            fmt::styled( "└── ", expr_style ) );
             }
 
             if( print_location ) { fmt::print( "({}:{}) ", filename, line ); }
             fmt::println( "{} == {}",
-                fmt::styled(
-                    debug_to_string( lhs ), fmt::emphasis::bold | fmt::fg( fmt::color::green ) ),
-                fmt::styled(
-                    debug_to_string( rhs ), fmt::emphasis::bold | fmt::fg( fmt::color::green ) ) );
+                          fmt::styled( debug_to_string( lhs ),
+                                       fmt::emphasis::bold | fmt::fg( fmt::color::green ) ),
+                          fmt::styled( debug_to_string( rhs ),
+                                       fmt::emphasis::bold | fmt::fg( fmt::color::green ) ) );
         }
     };
 
@@ -384,17 +385,17 @@ namespace _test_vtz {
     }
 
     template<class First, class... T>
-    std::string print_values(
-        size_t indent, string_view macro_args, First&& first, T&&... values ) {
+    std::string
+    print_values( size_t indent, string_view macro_args, First&& first, T&&... values ) {
         auto args = split_macro_args( macro_args );
         if( args.size() != sizeof...( values ) + 1 )
         {
             throw std::runtime_error(
                 fmt::format( "print_values(): '{}' contained too many or too few arguments "
                              "(expected {} args), split was [{}]",
-                    macro_args,
-                    sizeof...( values ),
-                    fmt::join( args, ", " ) ) );
+                             macro_args,
+                             sizeof...( values ),
+                             fmt::join( args, ", " ) ) );
         }
 
         size_t max_len = 0;
@@ -455,12 +456,12 @@ namespace _test_vtz {
         } {}
 
         template<class A, class B>
-        CmpEq( A const& a,
-            B const&    b,
-            char const* lhs_expr,
-            char const* rhs_expr,
-            char const* filename,
-            int         lineno )
+        CmpEq( A const&    a,
+               B const&    b,
+               char const* lhs_expr,
+               char const* rhs_expr,
+               char const* filename,
+               int         lineno )
         : CmpEq{ a, b } {
             if( _test_vtz::TEST_LOG.print_on_success )
                 _test_vtz::TEST_LOG.print( lhs_expr, rhs_expr, a, b, filename, lineno );
@@ -488,8 +489,8 @@ constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
     template<>                                                                                     \
     struct fmt::formatter<type> : fmt::formatter<std::string> {                                    \
         auto format( type const& value, format_context& ctx ) const {                              \
-            return fmt::formatter<std::string>::format(                                            \
-                _test_vtz::enum_to_string( #type, value ), ctx );                                  \
+            return fmt::formatter<std::string>::format( _test_vtz::enum_to_string( #type, value ), \
+                                                        ctx );                                     \
         }                                                                                          \
     }
 
@@ -523,11 +524,12 @@ constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
 #undef ASSERT_EQ
 #define ASSERT_EQ( lhs, rhs )                                                                      \
     if( auto _compare_result = ( (void)_test_count_assertions.inc(),                               \
-            _test_vtz::CmpEq{ lhs, rhs, #lhs, #rhs, __FILE__, __LINE__ } ) )                       \
+                                 _test_vtz::CmpEq{ lhs, rhs, #lhs, #rhs, __FILE__, __LINE__ } ) )  \
         ;                                                                                          \
     else                                                                                           \
         return (void)_test_count_assertions.inc_failed(),                                          \
-               ::testing::internal::AssertHelper( ::testing::TestPartResult::kFatalFailure,        \
+               ::testing::internal::AssertHelper(                                                  \
+                   ::testing::TestPartResult::kFatalFailure,                                       \
                    __FILE__,                                                                       \
                    __LINE__,                                                                       \
                    _test_vtz::_eq_fail( #lhs, #rhs, *_compare_result.info ).failure_message() )    \
@@ -539,7 +541,8 @@ constexpr inline _test_vtz::CountAssertionsNOOP _test_count_assertions{};
         ;                                                                                          \
     else                                                                                           \
         return (void)_test_count_assertions.inc_failed(),                                          \
-               ::testing::internal::AssertHelper( ::testing::TestPartResult::kFatalFailure,        \
+               ::testing::internal::AssertHelper(                                                  \
+                   ::testing::TestPartResult::kFatalFailure,                                       \
                    __FILE__,                                                                       \
                    __LINE__,                                                                       \
                    _test_vtz::_eq_fail( #lhs, #rhs, *_compare_result.info ).failure_message() )    \
