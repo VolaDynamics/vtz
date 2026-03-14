@@ -5,3 +5,7 @@ install/
 /tzdata/
 .idea/
 .vscode/
+
+# There appears to be a bug in the new version of CMake, where the tests
+# are dumped in the test working directory
+cmake_test_discovery*.json
