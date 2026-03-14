@@ -1,15 +1,38 @@
 include(GoogleTest)
 
+file(GLOB src include/test_vtz/*.cpp)
+
+add_library(vtz_testing STATIC ${src})
+add_library(vtz::testing ALIAS vtz_testing)
+# Add this as an include directory to the test lib, so that
+# we can access known_zones.h
+target_include_directories(
+    vtz_testing
+    PUBLIC
+        include
+    PRIVATE
+        "${VTZ_ROOT}/include/api"
+        "${VTZ_ROOT}/include/impl")
+target_link_libraries(
+    vtz_testing
+    PUBLIC
+        # date::date and date::date-tz are used as a reference implementation
+        # we test against it
+        date::date
+        date::date-tz
+        GTest::gtest
+        GTest::gmock
+)
+
+
 file(GLOB test_files test_impl/*.cpp)
 add_executable(test_vtz ${test_files} test_main.cpp)
 target_link_libraries(
     test_vtz
     PRIVATE
-        GTest::gtest
+        vtz::testing
         vtz::extras # vtz::impl + Formatting code
         fmt::fmt
-        date::date
-        date::date-tz
 )
 gtest_discover_tests(
     test_vtz
@@ -23,7 +46,7 @@ add_executable(test_vtz_api ${src} test_main.cpp)
 target_link_libraries(
     test_vtz_api
     PRIVATE
-        GTest::gmock
+        vtz::testing
         vtz::vtz
         fmt::fmt
         date::date
@@ -36,6 +59,7 @@ set_target_properties(
     PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${BUILD}"
 )
+
 
 if(MSVC)
     # Test cases make use of shadowing intentionally - we want to disable:
