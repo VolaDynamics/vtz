@@ -88,24 +88,35 @@ TEST_P( zones, tz_api ) {
         auto        first = s0.begin;
         auto        last  = s0.end - 1s;
 
+        auto ctx = _ctx{ [&] {
+            return fmt::format( "i      = {}\n"
+                                "first  = {}\n"
+                                "last   = {}\n"
+                                "offset = {}s\n",
+                i,
+                _fmt( first ),
+                _fmt( last ),
+                _to_str( s0.offset ) );
+        } };
 
-        ASSERT_EQ( tz->offset( first ), s0.offset );
-        ASSERT_EQ( tz->to_local( first ), s0.to_local( first ) );
-        ASSERT_EQ( tz->abbrev( first ), s0.abbrev );
 
-        ASSERT_EQ( tz->offset( last ), s0.offset );
-        ASSERT_EQ( tz->to_local( last ), s0.to_local( last ) );
-        ASSERT_EQ( tz->abbrev( last ), s0.abbrev );
+        ASSERT_EQ( tz->offset( first ), s0.offset ) << ctx;
+        ASSERT_EQ( tz->to_local( first ), s0.to_local( first ) ) << ctx;
+        ASSERT_EQ( tz->abbrev( first ), s0.abbrev ) << ctx;
 
-        ASSERT_EQ( tz->offset( s0.end ), s1.offset );
-        ASSERT_EQ( tz->to_local( s0.end ), s1.to_local( s0.end ) );
-        ASSERT_EQ( tz->abbrev( s0.end ), s1.abbrev );
+        ASSERT_EQ( tz->offset( last ), s0.offset ) << ctx;
+        ASSERT_EQ( tz->to_local( last ), s0.to_local( last ) ) << ctx;
+        ASSERT_EQ( tz->abbrev( last ), s0.abbrev ) << ctx;
+
+        ASSERT_EQ( tz->offset( s0.end ), s1.offset ) << ctx;
+        ASSERT_EQ( tz->to_local( s0.end ), s1.to_local( s0.end ) ) << ctx;
+        ASSERT_EQ( tz->abbrev( s0.end ), s1.abbrev ) << ctx;
 
         auto first_local = s0.to_local( first );
         auto last_local  = s0.to_local( last );
 
-        ASSERT_EQ( tz->to_sys( first_local, choose::latest ), first );
-        ASSERT_EQ( tz->to_sys( last_local, choose::earliest ), last );
+        ASSERT_EQ( tz->to_sys( first_local, choose::latest ), first ) << ctx;
+        ASSERT_EQ( tz->to_sys( last_local, choose::earliest ), last ) << ctx;
 
         auto delta = s1.offset - s0.offset;
         // Sanity check - delta should be smaller than ~30h in either direction
