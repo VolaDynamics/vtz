@@ -263,10 +263,26 @@ namespace vtz {
             throw std::runtime_error( get_tzdata_path_error(
                 "Cannot determine install path.", path ) );
 #else
-            // TODO: do we want to support checking any other directories for
-            // zoneinfo?
+
+            std::string zoneinfo_dir;
+            if( char const* tzdir = std::getenv( "TZDIR" ) )
+            {
+                // if the TZDIR environment variable is set, we want to use that
+                // as the location for our zoneinfo files
+                zoneinfo_dir = tzdir;
+            }
+            else
+            {
+                // if the TZDIR env var is *not* set, use /usr/share/zoneinfo,
+                // as per usual
+
+                // TODO: do we want to support checking any other directories
+                // for zoneinfo?
+                zoneinfo_dir = "/usr/share/zoneinfo";
+            }
+
             auto result = time_zone_cache(
-                "/usr/share/zoneinfo", KNOWN_ZONES, KNOWN_LINKS );
+                std::move( zoneinfo_dir ), KNOWN_ZONES, KNOWN_LINKS );
 
             TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
 
