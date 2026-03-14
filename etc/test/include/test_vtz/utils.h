@@ -47,8 +47,18 @@ inline namespace vtz_test {
             .time_since_epoch()
             .count();
     }
+
+    inline vtz::local_seconds _to_local(
+        vtz::sys_seconds T, vtz::seconds offset ) {
+        return vtz::local_seconds( T.time_since_epoch() + offset );
+    }
 } // namespace vtz_test
 
+
+template<class Dur>
+std::string _fmt( vtz::sys_time<Dur> T ) {
+    return vtz::format( "%F %T time_t=%s", T );
+}
 
 #include <gtest/gtest-printers.h>
 #include <gtest/gtest.h>
