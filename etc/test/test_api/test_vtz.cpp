@@ -76,7 +76,7 @@ TEST_P( zones, tz_api ) {
 
     auto states = extract_states( date::locate_zone( tz_name ),
         _get_time( 1800, 1, 1 ),
-        _get_time( 2500, 1, 1 ) );
+        _get_time( 2900, 1, 1 ) );
 
     std::vector<sys_seconds> TT;
 
