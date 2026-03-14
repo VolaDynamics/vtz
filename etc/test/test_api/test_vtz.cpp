@@ -191,6 +191,45 @@ TEST_P( zones, tz_api ) {
                 tz->to_sys( last_ambig, choose::latest ), s0.end - 1s - delta );
         }
     }
+
+
+    for( auto const& state : states )
+    {
+        TT.clear();
+        TT.push_back( state.begin );
+        TT.push_back( state.end - 1s );
+        for( auto T : TT )
+        {
+            auto ctx = _ctx{ [&] {
+                return fmt::format( "T           = {}\n"
+                                    "state.begin = {}\n"
+                                    "state.end   = {}\n",
+                    _fmt( T ),
+                    _fmt( state.begin ),
+                    _fmt( state.end ) );
+            } };
+
+            auto Tlocal = local_seconds( T.time_since_epoch() + state.offset );
+
+            ASSERT_EQ( tz->offset( T ), state.offset );
+            ASSERT_EQ( tz->to_local( T ), Tlocal );
+            ASSERT_EQ( tz->abbrev( T ), state.abbrev );
+
+            auto info = tz->get_info( T );
+
+            // We know that the interval itself must be sane
+            ASSERT_LT( info.begin, info.end ) << ctx;
+
+            // We know that info.begin <= T < info.end
+            ASSERT_LE( info.begin, T ) << ctx;
+            ASSERT_LT( T, info.end ) << ctx;
+
+            // Range of time covered by vtz::sys_info returned by get_info
+            // should match or exceed that returned by `date`
+            ASSERT_LE( info.begin, state.begin ) << ctx;
+            ASSERT_GE( info.end, state.end ) << ctx;
+        }
+    }
 }
 
 
