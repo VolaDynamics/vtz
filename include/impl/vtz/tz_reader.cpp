@@ -44,6 +44,11 @@ namespace vtz {
         /// so each 400 year period is the same length.
         constexpr i64 SECS_400_YEARS = DAYS_400_YEARS * 86400ll;
 
+        /// Number of seconds in 2 years. When generating tables, we need to
+        /// extend 2 years past the cycle date, specifically so that we can
+        /// compute get_info() correctly
+        constexpr i64 SECS_2_YEARS = SECS_400_YEARS / 200;
+
         constexpr char const* no_token    = "no token was given";
         constexpr char const* empty_input = "input was empty";
         constexpr char const* bad_save
@@ -1211,7 +1216,7 @@ namespace vtz {
     : stdoff( stdoff )
     , until( parse_zone_until( until ) )
     , rules( parse_zone_rule( rules ) )
-    , format( parse_zone_format( format ) ) { }
+    , format( parse_zone_format( format ) ) {}
 
 
     size_t dump_active( rule_entry const* active,
@@ -1519,7 +1524,7 @@ namespace vtz {
                 tz_string posix_tz = parse_tz_string( file.tz_string() );
 
                 auto states = posix_tz.get_states(
-                    T, safe_cycle_time + SECS_400_YEARS );
+                    T, safe_cycle_time + SECS_400_YEARS + SECS_2_YEARS );
 
                 for( auto st : states ) { agg.add( st ); }
             }
@@ -1546,13 +1551,20 @@ namespace vtz {
         map<string_view, zone_trans_iter>                cache,
         i64                                              safe_cycle_time,
         i32                                              end_year ) {
+        // Holds the 'STOP TIME' - the time we can stop calculating transitions.
+        //
+        // It needs to be at least 400 years past the safe cycle time for
+        // correct calculation of offsets, and then we add 2 extra years of
+        // transitions, so that `get_info() -> sys_info` has correct begin and
+        // end times for each period
         sys_seconds_t const STOP_TIME
-            = end_year > 0
-                  // If the end year is specified, use that as the stop time
-                  ? days_to_seconds( resolve_civil( end_year, 1, 1 ) )
-                  // Otherwise, use the time the rule becomes cyclic, plus 400
-                  // years
-                  : safe_cycle_time + SECS_400_YEARS;
+            = SECS_2_YEARS
+              + ( end_year > 0
+                      // If the end year is specified, use that as the stop time
+                      ? days_to_seconds( resolve_civil( end_year, 1, 1 ) )
+                      // Otherwise, use the time the rule becomes cyclic, plus
+                      // 400 years
+                      : safe_cycle_time + SECS_400_YEARS );
 
         if( entries.size() == 0 )
             return zone_states::make_static(

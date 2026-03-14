@@ -284,8 +284,7 @@ namespace vtz::impl {
 
 
     trans_table make_trans_table( span<sys_seconds_t const> tt,
-
-        sec_t         cycle_time,
+        sec_t                                               cycle_time,
         sys_seconds_t min_trans_time = INT64_MIN,
         sys_seconds_t max_trans_time = INT64_MAX ) {
         if( tt.size() == 0 )
@@ -319,7 +318,17 @@ namespace vtz::impl {
             sec_t( 0 ), // if min time would be smaller than 0, set to 0
         } );
 
-        cycle_time  = std::max( { cycle_time, min_t, sec_t( 0 ) } );
+        cycle_time = std::max( { cycle_time, min_t, sec_t( 0 ) } );
+
+
+        // Move the cycle time out by a year. This is necessary for obtaining
+        // accurate begin/end times for transitions at the very boundary of the
+        // cycle, because at the boundary calls to get_info may still be using
+        // begin/end times from the previous year (prior to a rule change),
+        // rather than the current one.
+        cycle_time += 366ll * 86400;
+
+
         sec_t max_t = cycle_time + 12622780800;
 
         auto tz0_    = -u64( min_t );

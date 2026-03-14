@@ -548,8 +548,13 @@ namespace vtz::impl {
 
             if( t < 0 ) { return time_range{ when[0], when[1] }; }
 
-            auto t2    = get_cyclic( t, cycle_time );
-            auto r     = sys_range_impl( t2 );
+            auto t2 = get_cyclic( t, cycle_time );
+            auto r  = sys_range_impl( t2 );
+            // This occurs if the zone is not truly cyclic, but instead adopts a
+            // permanent offset at some point after the cycle time. In this
+            // case, adding a delta is incorrect.
+            if( r.end > t ) { return r; }
+
             auto delta = t - t2;
             return {
                 r.begin + delta,
