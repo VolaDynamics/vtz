@@ -31,16 +31,16 @@ set(
 
 option(
     VTZ_CHECK_IN_TZDATA
-    "If this option is enabled, vtz will look for the timezone source 
-    files inside ${VTZ_TZDATA_PATH}/tzdata/. Otherwise, it will look 
+    "If this option is enabled, vtz will look for the timezone source
+    files inside ${VTZ_TZDATA_PATH}/tzdata/. Otherwise, it will look
     directly inside ${VTZ_TZDATA_PATH}/"
     OFF
 )
 
 option(
     VTZ_REQUIRE_TZDATA
-    "If this option is enabled, vtz will ONLY check for tz database 
-    source files. vtz will not attempt to load compiled tzif files from 
+    "If this option is enabled, vtz will ONLY check for tz database
+    source files. vtz will not attempt to load compiled tzif files from
     /usr/share/zoneinfo. Note: windows does not have compiled tzif files
     so vtz acts as if this option is always enabled on that platform."
     OFF
@@ -52,9 +52,9 @@ if(WIN32)
 else()
     option(
         VTZ_ALSO_BENCH_HINNANT_OS_TZDB
-        "If this option is enabled, benchmarks will also be run against the Hinnant date 
+        "If this option is enabled, benchmarks will also be run against the Hinnant date
         library with USE_OS_TZDB=1.
-        
+
         This setup is kind of cursed, because it requires linking two separate versions of
         the date library into the benchmarks, but this is achieved by renaming the `date`
         namespace to `date_os_tzdb` for the version with os tzdb support."
@@ -270,7 +270,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     )
     add_library(vtz::extras ALIAS vtz_extras)
 
-    set(tzdb_file tzdb-2025b.tar.lz)
+    set(tzdb_file tzdb-2026a.tar.lz)
     cmake_path(GET tzdb_file STEM tzdb_stem)
 
     file(
