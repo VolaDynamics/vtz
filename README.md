@@ -74,7 +74,7 @@ If you use CMake, the fastest way to use `vtz` in your own project is with
 [CPM]:
 
 ```cmake
-CPMAddPackage("gh:voladynamics/vtz@1.0.0")
+CPMAddPackage("gh:voladynamics/vtz@1.1.0")
 
 target_link_libraries(your_app PRIVATE vtz::vtz)
 ```
