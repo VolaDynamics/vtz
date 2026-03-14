@@ -24,6 +24,10 @@ target_link_libraries(
         GTest::gmock
         fmt::fmt
 )
+if(WIN32 AND NOT VTZ_BUILD_SHARED)
+    # Needed to fix export logic
+    target_compile_definitions(vtz_testing PRIVATE VTZ_STATIC_DEFINE)
+endif()
 
 
 file(GLOB test_files test_impl/*.cpp)
