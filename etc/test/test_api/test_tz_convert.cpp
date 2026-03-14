@@ -1,3 +1,5 @@
+#include <test_vtz/utils.h>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <vtz/parse.h>
@@ -13,9 +15,7 @@ static local_seconds _pl( string_view s ) {
 }
 
 /// Parse a "%F %T" datetime string as a sys_seconds
-static sys_seconds _ps( string_view s ) {
-    return parse<seconds>( "%F %T", s );
-}
+static sys_seconds _ps( string_view s ) { return parse<seconds>( "%F %T", s ); }
 
 
 TEST( vtz_to_sys, sanity ) {
@@ -46,8 +46,8 @@ TEST( vtz_to_sys, sanity ) {
     // occurs twice.
     {
         auto lt       = _pl( "2025-11-02 01:30:00" );
-        auto earliest = _ps( "2025-11-02 05:30:00" );  // EDT (UTC-4)
-        auto latest   = _ps( "2025-11-02 06:30:00" );  // EST (UTC-5)
+        auto earliest = _ps( "2025-11-02 05:30:00" ); // EDT (UTC-4)
+        auto latest   = _ps( "2025-11-02 06:30:00" ); // EST (UTC-5)
 
         EXPECT_EQ( ny->to_sys( lt, choose::earliest ), earliest );
         EXPECT_EQ( ny->to_sys( lt, choose::latest ), latest );
@@ -59,9 +59,7 @@ TEST( vtz_to_sys, sanity ) {
             ADD_FAILURE() << "expected exception for ambiguous time";
         }
         catch( std::exception const& e )
-        {
-            EXPECT_THAT( e.what(), HasSubstr( "ambiguous" ) );
-        }
+        { EXPECT_THAT( e.what(), HasSubstr( "ambiguous" ) ); }
     }
 
     // Nonexistent time (spring-forward): 2025-03-09 02:30 AM
@@ -82,9 +80,7 @@ TEST( vtz_to_sys, sanity ) {
             ADD_FAILURE() << "expected exception for nonexistent time";
         }
         catch( std::exception const& e )
-        {
-            EXPECT_THAT( e.what(), HasSubstr( "nonexistent" ) );
-        }
+        { EXPECT_THAT( e.what(), HasSubstr( "nonexistent" ) ); }
     }
 
     // Round-trip: to_sys(to_local(t)) == t for unambiguous times
@@ -170,8 +166,8 @@ TEST( vtz_to_sys, ambiguity ) {
 
         // Verify get_info contents for a nonexistent time
         auto info = ny->get_info( _pl( "2025-03-09 02:30:00" ) );
-        EXPECT_EQ( info.first.offset, seconds( -5 * 3600 ) );   // EST
-        EXPECT_EQ( info.second.offset, seconds( -4 * 3600 ) );  // EDT
+        EXPECT_EQ( info.first.offset, seconds( -5 * 3600 ) );  // EST
+        EXPECT_EQ( info.second.offset, seconds( -4 * 3600 ) ); // EDT
     }
 
     // Fall back 2025-11-02: clocks fall from 2:00 AM EDT to 1:00 AM EST.
@@ -206,8 +202,8 @@ TEST( vtz_to_sys, ambiguity ) {
 
         // Verify get_info contents for an ambiguous time
         auto info = ny->get_info( _pl( "2025-11-02 01:30:00" ) );
-        EXPECT_EQ( info.first.offset, seconds( -4 * 3600 ) );   // EDT (earlier)
-        EXPECT_EQ( info.second.offset, seconds( -5 * 3600 ) );  // EST (later)
+        EXPECT_EQ( info.first.offset, seconds( -4 * 3600 ) );  // EDT (earlier)
+        EXPECT_EQ( info.second.offset, seconds( -5 * 3600 ) ); // EST (later)
     }
 }
 

@@ -1,6 +1,6 @@
-#include "test_helper.h"
+#include <test_vtz/zones.h>
+#include <test_vtz/utils.h>
 
-#include <gtest/gtest.h>
 
 
 #include <vtz/parse.h>
