@@ -55,6 +55,13 @@ option(
     OFF
 )
 
+option(
+    VTZ_EMBED_TZDB
+    "If this option is enabled, a copy of the tz database will be embedded inside vtz.
+    This removes the need to have an external copy of the tz database."
+    ON
+)
+
 if(WIN32)
     # USE_OS_TZDB cannot be used on Windows
     set(VTZ_ALSO_BENCH_HINNANT_OS_TZDB OFF)
@@ -72,7 +79,7 @@ else()
 endif()
 
 option(
-    VTZ_UPDATE_KNOWN_ZONES
+    VTZ_REFRESH_TZDATA
     "Update known_zones.h by extracting timezones from tzdata.zi"
     OFF
 )
@@ -143,6 +150,53 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     )
 endif()
 
+if(PROJECT_IS_TOP_LEVEL OR VTZ_REFRESH_TZDATA)
+    set(tzdb_file tzdb-${VTZ_TZDB_VERSION}.tar.lz)
+    cmake_path(GET tzdb_file STEM tzdb_stem)
+
+    file(
+        DOWNLOAD
+            "https://data.iana.org/time-zones/releases/${tzdb_file}"
+            "${BUILD}/${tzdb_file}"
+        STATUS tzdb_download_status
+    )
+    list(GET tzdb_download_status 0 download_errc)
+    if(NOT (download_errc STREQUAL "0") )
+        list(GET tzdb_download_status 1 tz_download_err_msg)
+        message(WARNING "Could not download the tz database!
+    URL: https://data.iana.org/time-zones/releases/${tzdb_file}
+    Error: ${tz_download_err_msg}")
+        if(VTZ_REFRESH_TZDATA)
+            message(FATAL_ERROR
+            "VTZ_REFRESH_TZDATA was enabled, but vtz was not able to
+download a copy of the tz database. What: ${tz_download_err_msg}.
+
+As a result, entities like `known_zones.h` and `tzdata_embedded_content.h`
+cannot be updated.
+
+In order to build VTZ without internet, disable `VTZ_REFRESH_TZDATA`.")
+        endif()
+    else()
+        set(HAS_TZDATA_ZI_FILE ON)
+        set(TZDATA_ZI_FILE "${BUILD}/data/tzdata/tzdata.zi")
+    endif()
+
+    file(
+        ARCHIVE_EXTRACT
+        INPUT
+            "${BUILD}/${tzdb_file}"
+        DESTINATION
+            "${BUILD}/data"
+    )
+
+    file(
+        CREATE_LINK
+            "${BUILD}/data/${tzdb_stem}"
+            "${BUILD}/data/tzdata"
+        SYMBOLIC
+    )
+endif()
+
 file(GLOB_RECURSE src include/api/*.cpp include/impl/*.cpp)
 add_library(vtz_objects OBJECT ${src})
 target_include_directories(
@@ -151,6 +205,13 @@ target_include_directories(
         include/impl
         include/api
 )
+
+set_source_files_properties(
+    include/impl/vtz/embedded_tzdb.cpp
+    PROPERTIES COMPILE_DEFINITIONS
+        "VTZ_EMBED_TZDB=$<BOOL:${VTZ_EMBED_TZDB}>"
+)
+
 target_compile_definitions(
     vtz_objects
     PRIVATE
@@ -234,6 +295,14 @@ install(FILES "${PROJECT_BINARY_DIR}/vtzConfig.cmake"
             #   "${PROJECT_BINARY_DIR}/vtzConfigVersion.cmake"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/vtz)
 
+
+if(VTZ_REFRESH_TZDATA)
+    file(READ "${TZDATA_ZI_FILE}" TZDATA_ZI)
+    string(REPLACE "\n" "\\n\"\n\"" tzdata_embedded_content "${TZDATA_ZI}")
+    file(WRITE include/impl/vtz/embedded_tzdb_content.h "\"${tzdata_embedded_content}\"")
+endif()
+
+
 # Add tests and benchmarks
 if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     file(GLOB_RECURSE src include/extras/*.cpp)
@@ -247,29 +316,6 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     )
     add_library(vtz::extras ALIAS vtz_extras)
 
-    set(tzdb_file tzdb-${VTZ_TZDB_VERSION}.tar.lz)
-    cmake_path(GET tzdb_file STEM tzdb_stem)
-
-    file(
-        DOWNLOAD
-            "https://data.iana.org/time-zones/releases/${tzdb_file}"
-            "${BUILD}/${tzdb_file}"
-    )
-
-    file(
-        ARCHIVE_EXTRACT
-        INPUT
-            "${BUILD}/${tzdb_file}"
-        DESTINATION
-            "${BUILD}/data"
-    )
-
-    file(
-        CREATE_LINK
-            "${BUILD}/data/${tzdb_stem}"
-            "${BUILD}/data/tzdata"
-        SYMBOLIC
-    )
 
     # This is required by the Hinnant date library, which is used for tests and benchmarks
     file(
@@ -285,8 +331,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     endif()
 
     # Generate known_zones.h from tzdata.zi
-    if(VTZ_UPDATE_KNOWN_ZONES)
-        set(TZDATA_ZI_FILE "${BUILD}/data/tzdata/tzdata.zi")
+    if(VTZ_REFRESH_TZDATA)
         file(STRINGS "${TZDATA_ZI_FILE}" TZDATA_ZI_LINES REGEX "^Z ")
         set(KNOWN_ZONES_LIST "")
         foreach(line IN LISTS TZDATA_ZI_LINES)
