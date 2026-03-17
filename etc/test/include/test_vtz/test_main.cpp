@@ -87,7 +87,7 @@ int main( int argc, char** argv ) {
     }
 
 
-    bool vtz_use_os_tzdb = false;
+    bool no_set_install = false;
 
     int i = 1;
     while( i < argc )
@@ -111,9 +111,13 @@ int main( int argc, char** argv ) {
             paths.testdata = std::string( testdata );
             continue;
         }
-        if( arg == "--vtz_use_os_tzdb" )
+
+        // If this argument is set, then `set_vtz_install` will be disabled
+        // This is useful for testing against the system's os tzdb files,
+        // or for testing the embedded tz database
+        if( arg == "--no_set_install" )
         {
-            vtz_use_os_tzdb = true;
+            no_set_install = true;
             continue;
         }
 
@@ -122,7 +126,7 @@ int main( int argc, char** argv ) {
     }
 
     set_date_install( paths.tzdata );
-    if( !vtz_use_os_tzdb ) { set_vtz_install( paths.tzdata ); }
+    if( !no_set_install ) { set_vtz_install( paths.tzdata ); }
 
     // Run all tests
     return RUN_ALL_TESTS();
