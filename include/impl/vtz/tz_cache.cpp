@@ -1,5 +1,6 @@
 #include <mutex>
 #include <vtz/date_types.h>
+#include <vtz/embedded_tzdb.h>
 #include <vtz/known_zones.h>
 #include <vtz/tz_cache.h>
 
@@ -180,20 +181,36 @@ namespace vtz {
         {
             msg += util::join(
                 "- get_install() -> ", escape_string( install_path ), '\n' );
-
-            if( env_vars_null )
-            {
-                msg += "\n"
-                       "All env vars are null, so vtz::set_install() must have "
-                       "been called.\n";
-            }
         }
 
+        std::string_view embedded_tzdata     = impl::get_embedded_tzdata();
+        bool             has_embedded_tzdata = !embedded_tzdata.empty();
+
+        if( !has_embedded_tzdata )
+            msg += "- get_embedded_tzdata() -> None\n";
+        else
+            msg += util::join( "- get_embedded_tzdata() -> \"...\" (size=",
+                embedded_tzdata.size(),
+                " bytes)\n" );
+
+        if( !install_path.empty() && env_vars_null )
+        {
+            msg += "\n"
+                   "All env vars are null, so vtz::set_install() must have "
+                   "been called.\n";
+        }
+
+        if( has_embedded_tzdata )
+        {
+            msg += "\n"
+                   "Note: env variables and the install path take precedence "
+                   "over embedded tzdata, so if either of those are set, "
+                   "embedded tzdata will not be used.";
+        }
 
         msg += "\n"
                "Please configure one of the above (or call vtz::set_install()) "
-               "so that your application "
-               "can find the tz database.\n"
+               "so that your application can find the tz database.\n"
                "\n"
                "The timezone database may be downloaded at "
                "https://www.iana.org/time-zones\n"
@@ -218,6 +235,15 @@ namespace vtz {
 
     static std::atomic_bool TIMEZONE_DATABASE_HAS_BEEN_LOADED = false;
     static std::mutex       INSTALL_PATH_MUTEX{};
+
+    bool disable_embedded_tzdb() {
+        const static bool is_disabled = [] {
+            char const* disallow_embed
+                = std::getenv( "VTZ_DISALLOW_EMBEDDED_TZDB" );
+            return disallow_embed && disallow_embed == std::string_view( "1" );
+        }();
+        return is_disabled;
+    }
 
     /// Return a reference to the install path. The first time this function is
     /// called, the _install path is initialized.
@@ -259,6 +285,19 @@ namespace vtz {
 
         if( path.empty() )
         {
+            // Attempt to get the embedded tzdata. If tzdata has not been
+            // embedded, `get_embedded_tzdata()` returns an empty string_view
+            std::string_view tzdata = impl::get_embedded_tzdata();
+            if( !tzdata.empty() && !disable_embedded_tzdb() )
+            {
+                auto result = time_zone_cache(
+                    load_zone_info_from_sv( tzdata, "(embedded tzdata.zi)" ) );
+
+                TIMEZONE_DATABASE_HAS_BEEN_LOADED = true;
+
+                return result;
+            }
+
 #if REQUIRE_TZDATA
             throw std::runtime_error( get_tzdata_path_error(
                 "Cannot determine install path.", path ) );
