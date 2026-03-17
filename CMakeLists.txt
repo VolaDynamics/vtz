@@ -77,6 +77,12 @@ option(
     OFF
 )
 
+option(
+    VTZ_BUILD_BENCH
+    "Build vtz benchmarks"
+    ON
+)
+
 
 # Set up ccache/sccache for the project
 find_program(COMPILER_CACHE sccache ccache)
@@ -125,17 +131,6 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
 
     CPMAddPackage("gh:fmtlib/fmt#11.2.0")
 
-    # For acquiring ankerl::unordered_dense
-    #
-    # We have provisioned headers for v4.8.1 @ etc/3rd/ankerl
-    # CPMAddPackage("gh:martinus/unordered_dense@4.8.1")
-
-
-    CPMAddPackage(
-        URI "gh:abseil/abseil-cpp#20260107.1"
-        OPTIONS
-            "ABSL_INTERNAL_AT_LEAST_CXX20 ON")
-
     # Test dependencies
     CPMAddPackage("gh:google/googletest@1.17.0")
     CPMAddPackage(
@@ -146,34 +141,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
             # for testing purposes
             "MANUAL_TZ_DB ON"
     )
-    CPMAddPackage(
-        URI gh:google/benchmark@1.9.4
-        OPTIONS
-            "BENCHMARK_ENABLE_TESTING OFF"
-            "BENCHMARK_ENABLE_GTEST_TESTS OFF"
-    )
-
-    if(VTZ_ALSO_BENCH_HINNANT_OS_TZDB)
-        add_library(date_os_tzdb_tz STATIC "${date_SOURCE_DIR}/src/tz.cpp")
-        target_include_directories(date_os_tzdb_tz
-            PUBLIC "${date_SOURCE_DIR}/include")
-        target_compile_definitions(date_os_tzdb_tz
-            PRIVATE
-                date=date_os_tzdb
-                BUILD_TZ_LIB=1
-                AUTO_DOWNLOAD=0
-                HAS_REMOTE_API=0
-                USE_OS_TZDB=1
-                INSTALL=.
-                ONLY_C_LOCALE=0
-                HAS_STRING_VIEW=1
-        )
-        target_compile_features(date_os_tzdb_tz PRIVATE cxx_std_17)
-        find_package(Threads)
-        target_link_libraries(date_os_tzdb_tz PRIVATE Threads::Threads)
-    endif()
 endif()
-
 
 file(GLOB_RECURSE src include/api/*.cpp include/impl/*.cpp)
 add_library(vtz_objects OBJECT ${src})
@@ -370,30 +338,6 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
         message(WARNING "Cannot find zic.exe - unable to compile zoneinfo files for testing purposes")
     endif()
 
-    file(GLOB bench_files etc/bench/*.cpp)
-    if(VTZ_ALSO_BENCH_HINNANT_OS_TZDB)
-        set_source_files_properties(
-            etc/bench/bench_date_with_os_tzdb.cpp
-            PROPERTIES COMPILE_OPTIONS
-                "-UUSE_OS_TZDB;-DUSE_OS_TZDB=1;-Ddate=date_os_tzdb"
-        )
-    else()
-        list(REMOVE_ITEM bench_files
-            "${CMAKE_CURRENT_SOURCE_DIR}/etc/bench/bench_date_with_os_tzdb.cpp")
-    endif()
-    add_executable(bench_vtz ${bench_files})
-    target_compile_features(bench_vtz PRIVATE cxx_std_20)
-    target_link_libraries(
-        bench_vtz
-        PRIVATE
-            vtz::impl
-            benchmark::benchmark
-            fmt::fmt
-            date::date-tz
-            absl::time
-            absl::time_zone
-            $<$<BOOL:${VTZ_ALSO_BENCH_HINNANT_OS_TZDB}>:date_os_tzdb_tz>
-    )
 
     file(GLOB tools etc/tools/*.cpp)
     foreach(file IN LISTS tools)
@@ -402,3 +346,9 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
         target_link_libraries(${exe} PRIVATE vtz::extras fmt::fmt)
     endforeach()
 endif()
+
+
+if(PROJECT_IS_TOP_LEVEL AND VTZ_BUILD_BENCH)
+    add_subdirectory(etc/bench)
+endif()
+
