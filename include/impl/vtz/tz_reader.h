@@ -703,6 +703,12 @@ namespace vtz {
     // `rg -o_ni '^L [^ ]+' build/data/tzdata/tzdata.zi | sort -u | wc -l`
     constexpr size_t LINK_BUCKETS = 111 * 2;
 
+    /// Load zone info from a string_view holding some content. `fp` is the
+    /// filepath given to the parser for the purpose of emitting useful error
+    /// messages
+    tz_data load_zone_info_from_sv(
+        std::string_view content, std::string_view fp );
+
     tz_data load_zone_info_from_file( string file );
 
     /// Load zone info from a directory, eg build/data/tzdata
