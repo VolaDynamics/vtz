@@ -2,8 +2,7 @@
 #include <test_vtz/context.h>
 #include <test_vtz/utils.h>
 #include <test_vtz/zones.h>
-
-#include <random>
+#include <test_vtz/zones_test_suite.h>
 
 #include <vtz/impl/chrono_types.h>
 #include <vtz/parse.h>
@@ -32,7 +31,6 @@ TEST( vtz_api, locate_zone_sanity ) {
     ASSERT_EQ( tz->format( "%F %T %Z", T2 ), "2025-06-25 14:12:00 EDT" );
 }
 
-class zones : public testing::TestWithParam<std::string_view> {};
 
 static_assert( std::is_same_v<vtz::sys_seconds, date::sys_seconds> );
 
@@ -286,10 +284,5 @@ TEST_P( zones, tz_api ) {
 }
 
 
-auto name = []( testing::TestParamInfo<std::string_view> const& info ) {
-    return esc_zone_name( info.param );
-};
-
-
 INSTANTIATE_TEST_SUITE_P(
-    vtz, zones, testing::ValuesIn( get_test_zones() ), name );
+    vtz, zones, testing::ValuesIn( get_test_zones() ), pull_zone_name );
