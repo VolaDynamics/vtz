@@ -76,3 +76,11 @@ gtest_discover_tests(
     TEST_PREFIX "api/"
     EXTRA_ARGS --build "${BUILD}" --testdata "${VTZ_ROOT}/etc/testdata"
     WORKING_DIRECTORY "${BUILD}")
+
+if(VTZ_EMBED_TZDB)
+    gtest_discover_tests(
+        test_vtz_api
+        TEST_PREFIX "api_embed/"
+        EXTRA_ARGS --no_set_install --build "${BUILD}" --testdata "${VTZ_ROOT}/etc/testdata"
+        WORKING_DIRECTORY "${BUILD}")
+endif()
