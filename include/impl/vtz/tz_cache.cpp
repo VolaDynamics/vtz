@@ -17,7 +17,7 @@
 #endif
 
 
-#if defined( _WIN32 ) || defined( VTZ_REQUIRE_TZDATA )
+#if defined( VTZ_REQUIRE_TZDATA )
     #define REQUIRE_TZDATA 1
 #else
     #define REQUIRE_TZDATA 0
@@ -148,6 +148,15 @@ namespace vtz {
         return std::string();
     }
 
+    bool disable_embedded_tzdb() {
+        const static bool is_disabled = [] {
+            char const* disallow_embed
+                = std::getenv( "VTZ_DISALLOW_EMBEDDED_TZDB" );
+            return disallow_embed && disallow_embed == std::string_view( "1" );
+        }();
+        return is_disabled;
+    }
+
     static std::string get_tzdata_path_error(
         std::string_view what, std::string_view install_path ) {
         std::string msg = //
@@ -189,9 +198,18 @@ namespace vtz {
         if( !has_embedded_tzdata )
             msg += "- get_embedded_tzdata() -> None\n";
         else
+        {
             msg += util::join( "- get_embedded_tzdata() -> \"...\" (size=",
                 embedded_tzdata.size(),
                 " bytes)\n" );
+
+            if( disable_embedded_tzdb() )
+            {
+                msg += "  (embedded tzdata is present, but disabled due to "
+                       "environment settings)";
+            }
+        }
+
 
         if( !install_path.empty() && env_vars_null )
         {
@@ -235,15 +253,6 @@ namespace vtz {
 
     static std::atomic_bool TIMEZONE_DATABASE_HAS_BEEN_LOADED = false;
     static std::mutex       INSTALL_PATH_MUTEX{};
-
-    bool disable_embedded_tzdb() {
-        const static bool is_disabled = [] {
-            char const* disallow_embed
-                = std::getenv( "VTZ_DISALLOW_EMBEDDED_TZDB" );
-            return disallow_embed && disallow_embed == std::string_view( "1" );
-        }();
-        return is_disabled;
-    }
 
     /// Return a reference to the install path. The first time this function is
     /// called, the _install path is initialized.
@@ -312,12 +321,19 @@ namespace vtz {
             }
             else
             {
+    #if _WIN32
+                throw std::runtime_error(
+                    "Unable to load tz database (no install path is set; "
+                    "embedded tz data is missing or disabled; TZDIR is not "
+                    "set)" );
+    #else
                 // if the TZDIR env var is *not* set, use /usr/share/zoneinfo,
                 // as per usual
 
                 // TODO: do we want to support checking any other directories
                 // for zoneinfo?
                 zoneinfo_dir = "/usr/share/zoneinfo";
+    #endif
             }
 
             auto result = time_zone_cache(
