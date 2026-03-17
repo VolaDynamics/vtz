@@ -1088,6 +1088,23 @@ namespace vtz {
         return result;
     }
 
+    tz_data load_zone_info_from_sv(
+        std::string_view content, std::string_view fp ) {
+        tz_data result{
+            rule_map( RULE_BUCKETS ),
+            zone_map( ZONE_BUCKETS ),
+            link_map( LINK_BUCKETS ),
+        };
+
+        auto version = load_version_from_tzdata_file( content ).value_or(
+            "(unknown version)" );
+
+        result.version = std::string( version );
+
+        append_tzdata( result, content, fp );
+
+        return result;
+    }
 
     tz_data load_zone_info_from_dir( string dir ) {
         tz_data result{
@@ -1102,19 +1119,14 @@ namespace vtz {
             auto fp = join_path( dir, "tzdata.zi" );
             if( auto file = std::fopen( fp.c_str(), "rb" ) )
             {
-                auto content = read_file_bytes( file, fp.c_str() );
-                auto content_view
-                    = string_view( content.data(), content.size() );
+                auto bytes   = read_file_bytes( file, fp.c_str() );
+                auto content = string_view( bytes.data(), bytes.size() );
 
-                auto version = load_version_from_tzdata_file( content_view )
-                                   .value_or( "(unknown version)" );
+                auto result = load_zone_info_from_sv( content, fp );
 
-                result.version = std::string( version );
-
-                append_tzdata( result, content_view, fp );
-
-                result.data.emplace_back(
-                    std::move( fp ), std::move( content ) );
+                // Transfer ownership of the fp and the bytes into the data
+                // vector
+                result.data.emplace_back( std::move( fp ), std::move( bytes ) );
 
                 return result;
             }
