@@ -97,7 +97,7 @@ namespace vtz {
         };
 
         vector<_ent> values( m.size() );
-        size_t      i = 0;
+        size_t       i = 0;
         for( auto const& [k, _] : m ) { values[i++] = _ent{ k }; }
 
         return result_t(
@@ -244,8 +244,8 @@ namespace vtz {
     /// Provides a cache for lookup of time_zone objects.
     ///
     /// If timezone source files were provided to the cache (in the form of a
-    /// `tz_data` object), then the time_zone_cache will construct zones from the
-    /// source files.
+    /// `tz_data` object), then the time_zone_cache will construct zones from
+    /// the source files.
     ///
     /// If a zone cannot be found within the provided source files, but
     /// `zoneinfo_dir` is set, the time_zone_cache will attempt to load
@@ -273,19 +273,19 @@ namespace vtz {
         /// On MacOS and Linux this path is typically `/usr/share/zoneinfo`, but
         /// it may differ on older systems.
         ///
-        /// If this path is not set, then the time_zone_cache will not attempt to
-        /// load os tzfiles.
+        /// If this path is not set, then the time_zone_cache will not attempt
+        /// to load os tzfiles.
         std::string zoneinfo_dir;
 
         /// Provides a fallback cache, which will be used in the event that a
         /// zone can't be found in the primary zone cache. This is very rare.
         ///
-        /// See the documentation for `zone_fallback_cache` for a full description
-        /// of when this occurs.
+        /// See the documentation for `zone_fallback_cache` for a full
+        /// description of when this occurs.
         zone_fallback_cache fallback_cache;
 
-        /// Initialize the time_zone_cache. By default, no `zoneinfo_dir` is set,
-        /// but one may be provided to the constructor.
+        /// Initialize the time_zone_cache. By default, no `zoneinfo_dir` is
+        /// set, but one may be provided to the constructor.
         ///
         /// In the case that a `zoneinfo_dir` is provided, the `time_zone_cache`
         /// will check there for `tzfile` objects if a timezone cannot be found
@@ -394,4 +394,9 @@ namespace vtz {
     tz_data load_zone_info_from_dir( string dir );
 
     time_zone_cache const& tzdb_cache();
+
+
+    /// Reloads the timezone database. If the install path is empty, uses the
+    /// current install path.
+    void reload_tzdb( std::string_view install_path = {} );
 } // namespace vtz

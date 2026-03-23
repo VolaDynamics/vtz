@@ -1,3 +1,4 @@
+#include <atomic>
 #include <mutex>
 #include <vtz/date_types.h>
 #include <vtz/embedded_tzdb.h>
@@ -361,15 +362,66 @@ namespace vtz {
         }
     }
 
-    time_zone_cache const& tzdb_cache() {
-        static const time_zone_cache cache( do_load_cache() );
-        return cache;
-    }
+
+    class tzdb_cache_pool {
+        struct node {
+            time_zone_cache             tz_cache;
+            std::unique_ptr<node const> next;
+        };
+
+      public:
+
+        tzdb_cache_pool() = default;
+
+        tzdb_cache_pool( tzdb_cache_pool const& ) = delete;
+        tzdb_cache_pool( tzdb_cache_pool&& )      = delete;
+
+        VTZ_INLINE time_zone_cache const& cache() {
+            if( auto* p = head.load( std::memory_order_relaxed ) ) VTZ_LIKELY
+                return p->tz_cache;
+
+            // Load the time zone cache
+            std::call_once( once, [this] { reload(); } );
+
+            return head.load( std::memory_order_relaxed )->tz_cache;
+        }
+
+
+        time_zone_cache const& reload() {
+            auto new_head  = new node{ do_load_cache(), nullptr };
+            auto old_head  = head.exchange( new_head );
+            new_head->next = std::unique_ptr<node const>( old_head );
+            return new_head->tz_cache;
+        }
+
+        ~tzdb_cache_pool() { delete head.load( std::memory_order_relaxed ); }
+
+      private:
+
+        std::atomic<node const*> head = nullptr;
+        std::once_flag           once{};
+    };
+
+    static tzdb_cache_pool _tzdb_cache;
+
+    time_zone_cache const& tzdb_cache() { return _tzdb_cache.cache(); }
 
     std::string tzdb_version() { return tzdb_cache().data.version; }
 
+    void reload_tzdb( std::string_view path ) {
+        // If the install path is given, update the install path.
+        if( !path.empty() )
+        {
+            auto _lock = std::scoped_lock( INSTALL_PATH_MUTEX );
+
+            install_path( false ) = std::string( path );
+        }
+
+        _tzdb_cache.reload();
+    }
+
     time_zone const* locate_zone( string_view name ) {
-        auto const& cache = tzdb_cache();
+        auto const& cache = _tzdb_cache.cache();
 
         try
         {
