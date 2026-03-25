@@ -212,6 +212,11 @@ set_source_files_properties(
         "VTZ_EMBED_TZDB=$<BOOL:${VTZ_EMBED_TZDB}>"
 )
 
+# Enable -Wall and -Wextra when building vtz itself
+if(PROJECT_IS_TOP_LEVEL AND UNIX)
+    target_compile_options(vtz_objects PRIVATE -Wall -Wextra)
+endif()
+
 target_compile_definitions(
     vtz_objects
     PRIVATE
