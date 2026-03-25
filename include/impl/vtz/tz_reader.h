@@ -41,9 +41,9 @@ namespace vtz {
     constexpr i32 OFFSET_NPOS = INT32_MIN;
 
     struct parse_error {
-        char const* expected; ///< What was expected
-        char const* but;      ///< Reason why input was bad
-        opt_token   token;    ///< token where failure occurred
+        char const* expected;   ///< What was expected
+        char const* but;        ///< Reason why input was bad
+        opt_token   token = {}; ///< token where failure occurred
 
         std::string get_error_message(
             string_view input, string_view filename ) const;
@@ -561,16 +561,17 @@ namespace vtz {
         i32        walloff_initial_;
         i32        stdoff_initial_;
 
-        vector<sys_seconds_t> abbr_trans_;
-        vector<abbr_block>    abbr_;
+        // Default-initialize all of these to avoid a
+        // -Wmissing-field-initializers warning
 
-        vector<sys_seconds_t> walloff_trans_;
-        vector<i32>           walloff_;
 
-        vector<sys_seconds_t> stdoff_trans_;
-        vector<i32>           stdoff_;
-
-        vector<sys_seconds_t> tt_;
+        vector<sys_seconds_t> abbr_trans_    = {};
+        vector<abbr_block>    abbr_          = {};
+        vector<sys_seconds_t> walloff_trans_ = {};
+        vector<i32>           walloff_       = {};
+        vector<sys_seconds_t> stdoff_trans_  = {};
+        vector<i32>           stdoff_        = {};
+        vector<sys_seconds_t> tt_            = {};
 
         vector<zone_transition> get_transitions() const;
 
@@ -652,9 +653,12 @@ namespace vtz {
     };
 
     struct tz_data : tz_data_file {
-        vector<std::pair<string, file_bytes>> data;
+        // Default-initialize these to avoid -Wmissing-field-initializers
+        // warning:
 
-        std::string version;
+
+        vector<std::pair<string, file_bytes>> data    = {};
+        std::string                           version = {};
 
         /// Get a list of the source files that make up the timezone database
         vector<string> source_files() const {
