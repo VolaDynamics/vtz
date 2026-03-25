@@ -698,6 +698,22 @@ namespace vtz {
         auto stdoff = time_zone::_impl::stdoff_s( tz, t );
         bool is_dst = gmtoff != stdoff;
 
+        // std::tm _may_ contain additional fields such as tm_gmtoff and
+        // tm_zone.
+        //
+        // We don't care about these fields, so we are going to let
+        // value-initialization value-initialize these to 0/null, respectively.
+        //
+        // However, this causes a warning on gcc with
+        // -Wmissing-field-initializers (kms)
+        //
+        // So, we are silencing this warning on for gcc/clang.
+
+#ifdef __GNUC__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
+
         auto tm_value = std::tm{
             sec,
             mi,
@@ -713,6 +729,10 @@ namespace vtz {
             // true if daylight savings time is in effect
             is_dst,
         };
+
+#ifdef __GNUC__
+    #pragma GCC diagnostic pop
+#endif
 
         // Fill in any remaining format specifiers with strftime.
         // We will use this if there are any locale-dependent format specifiers
