@@ -1,10 +1,13 @@
 #pragma once
 
-// For older compilers:
-// If we don't have __has_builtin, assume that the builtin
-// is missing/not present
-#ifndef __has_builtin
-    #define __has_builtin( ... ) 0
+// Not all compilers have __has_builtin. We use _vtz_has_builtin to
+// check for builtins. On compilers that do have it, _vtz_has_builtin
+// Will return __has_builtin, and on compilers that don't have it,
+// by default we assume that the builtin is missing.
+#ifdef __has_builtin
+    #define _vtz_has_builtin( x ) __has_builtin( x )
+#else
+    #define _vtz_has_builtin( x ) 0
 #endif
 
 #if _MSC_VER
@@ -12,7 +15,7 @@
     #define _vtz_memcpy memcpy
 #else
     // Compilers conforming to __GNUC__ should have __builtin_memcpy
-    #if defined( __GNUC__ ) || __has_builtin( __builtin_memcpy )
+    #if defined( __GNUC__ ) || _vtz_has_builtin( __builtin_memcpy )
         #define _vtz_memcpy __builtin_memcpy
     #else
         #include <cstring>

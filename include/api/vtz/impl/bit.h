@@ -34,7 +34,7 @@ namespace vtz {
 #if _MSC_VER
         return _blog2_fallback( x );
 #else
-    #if __has_builtin( __builtin_clzll )
+    #if _vtz_has_builtin( __builtin_clzll )
         return 63 - __builtin_clzll( x );
     #else
         return _blog2_fallback( x );
