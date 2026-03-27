@@ -33,6 +33,12 @@ namespace vtz {
     VTZ_EXPORT void set_install( std::string path );
 
 
+    /// Returns true if the timezone database has been loaded, and false
+    /// otherwise.
+
+    VTZ_EXPORT bool is_tzdb_loaded() noexcept;
+
+
     /// Returns the path to the timezone database. By default, this is read from
     /// the `VTZ_TZDATA_PATH` environment variable, but if `set_install` is
     /// called before the library is loaded, it will be read from that instead.
@@ -475,7 +481,7 @@ namespace vtz {
 
         local_info get_info_local_s( sec_t t ) const {
             sys_seconds_t tt[2];
-            int          result = lookup_local( t, tt );
+            int           result = lookup_local( t, tt );
             if( result == local_info::unique )
             {
                 return local_info{
