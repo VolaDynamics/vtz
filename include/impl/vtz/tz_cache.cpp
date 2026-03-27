@@ -394,6 +394,8 @@ namespace vtz {
             return new_head->tz_cache;
         }
 
+        bool is_tzdb_loaded() const noexcept { return head != nullptr; }
+
         ~tzdb_cache_pool() { delete head.load( std::memory_order_relaxed ); }
 
       private:
@@ -403,6 +405,8 @@ namespace vtz {
     };
 
     static tzdb_cache_pool _tzdb_cache;
+
+    bool is_tzdb_loaded() noexcept { return _tzdb_cache.is_tzdb_loaded(); }
 
     time_zone_cache const& tzdb_cache() { return _tzdb_cache.cache(); }
 
