@@ -21,6 +21,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 option(VTZ_ONLY "Only build the vtz library. Don't build tests or benchmarks" OFF)
 option(VTZ_CREATE_ANKERL_TARGET "Define target 'unordered_dense::unordered_dense' for ankerl. Disable this option if using vtz with add_subdirectory(), if ankerl is defined elsewhere." ON)
 option(VTZ_BUILD_SHARED "Build vtz as a shared library" OFF)
+option(VTZ_DATE_COMPAT "[EXPERIMENTAL] Alias 'namespace date = vtz' (Experimental! Many parts of the 'date' API have not been implemented)" OFF)
 set(
     VTZ_TZDATA_PATH_VARS
     "VTZ_TZDATA_PATH"
@@ -240,6 +241,9 @@ if(VTZ_BUILD_SHARED)
 else()
     add_library(vtz STATIC $<TARGET_OBJECTS:vtz_objects>)
     target_compile_definitions(vtz PUBLIC VTZ_STATIC_DEFINE)
+endif()
+if(VTZ_DATE_COMPAT)
+    target_compile_definitions(vtz PUBLIC VTZ_DATE_COMPAT)
 endif()
 add_library(vtz::vtz ALIAS vtz)
 
