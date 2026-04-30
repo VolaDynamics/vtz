@@ -19,7 +19,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 option(VTZ_ONLY "Only build the vtz library. Don't build tests or benchmarks" OFF)
-
+option(VTZ_CREATE_ANKERL_TARGET "Define target 'unordered_dense::unordered_dense' for ankerl. Disable this option if using vtz with add_subdirectory(), if ankerl is defined elsewhere." ON)
 option(VTZ_BUILD_SHARED "Build vtz as a shared library" OFF)
 set(
     VTZ_TZDATA_PATH_VARS
@@ -256,9 +256,12 @@ target_sources(
 
 set_target_properties(vtz PROPERTIES VERIFY_INTERFACE_HEADER_SETS ON)
 
-add_library(ankerl_unordered_dense INTERFACE)
-target_include_directories(ankerl_unordered_dense INTERFACE etc/3rd/ankerl)
-add_library(unordered_dense::unordered_dense ALIAS ankerl_unordered_dense)
+# If unordered_dense::unordered_dense doesn't exist, create the target
+if(VTZ_CREATE_ANKERL_TARGET AND NOT (TARGET unordered_dense::unordered_dense))
+    add_library(ankerl_unordered_dense INTERFACE)
+    target_include_directories(ankerl_unordered_dense INTERFACE etc/3rd/ankerl)
+    add_library(unordered_dense::unordered_dense ALIAS ankerl_unordered_dense)
+endif()
 
 add_library(vtz_impl STATIC $<TARGET_OBJECTS:vtz_objects>)
 target_compile_definitions(vtz_impl PUBLIC VTZ_STATIC_DEFINE)
