@@ -242,9 +242,6 @@ else()
     add_library(vtz STATIC $<TARGET_OBJECTS:vtz_objects>)
     target_compile_definitions(vtz PUBLIC VTZ_STATIC_DEFINE)
 endif()
-if(VTZ_DATE_COMPAT)
-    target_compile_definitions(vtz PUBLIC VTZ_DATE_COMPAT)
-endif()
 add_library(vtz::vtz ALIAS vtz)
 
 
@@ -282,7 +279,10 @@ target_link_libraries(
     PUBLIC
         unordered_dense::unordered_dense)
 
-
+if(VTZ_DATE_COMPAT)
+    target_compile_definitions(vtz PUBLIC VTZ_DATE_COMPAT)
+    target_compile_definitions(vtz_impl PUBLIC VTZ_DATE_COMPAT)
+endif()
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
