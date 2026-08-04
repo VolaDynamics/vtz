@@ -1,0 +1,16 @@
+include/impl/vtz/tz_reader.cpp
+  h_72614bc0299347 1078-1082,1096-1100,1115-1119
+include/impl/vtz/format.cpp
+  h_72614bc0299347 288-299,328-334
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "d3cc5193f1880144dab04ee4366d9e96a92e5fa1",
+  "prompts": {},
+  "humans": {
+    "h_72614bc0299347": {
+      "author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
