@@ -527,6 +527,131 @@ namespace vtz::impl {
         }
 
         struct _impl;
+
+        /// Counts "ticks" of a daily event that occurs at a fixed local time
+        /// of day within this zone.
+        ///
+        /// `time_of_day` is the local time at which the tick occurs, given as
+        /// seconds since the start of the local day: 0 is 00:00:00, 34200 is
+        /// 09:30:00, 86399 is 23:59:59. It must be within `[0, 86400)`.
+        ///
+        /// Each local calendar day has exactly one tick. Because of daylight
+        /// savings time (and other clock changes), a local time of day may be
+        /// displayed twice on a given day, or not at all. Ticks follow the
+        /// convention that the tick occurs at the *latest* possible system
+        /// time the local time could refer to:
+        ///
+        /// - If the local time is unique, the tick occurs when the clock
+        ///   displays it.
+        /// - If the local time is ambiguous (the clock fell back over it), the
+        ///   tick occurs on the *second* pass.
+        /// - If the local time is nonexistent (the clock jumped over it), the
+        ///   tick occurs at the moment of the jump. This matches the
+        ///   convention `to_sys` uses for nonexistent times.
+        ///
+        /// `count_ticks_s( T, time_of_day )` returns a cumulative tick count:
+        /// the number of ticks that occurred in `[E0, T)`, where `E0` is the
+        /// tick of local day 1970-01-01. (For `T` before `E0`, the result is
+        /// the negated number of ticks in `[T, E0)`.) Equivalently, the result
+        /// is the local-day index of the next tick at or after `T`, as days
+        /// since 1970-01-01 in this zone's local calendar.
+        ///
+        /// A tick at exactly `T` is *not* counted (intervals are half-open),
+        /// so for any `T0 <= T1`:
+        ///
+        ///     count_ticks_s( T1, tod ) - count_ticks_s( T0, tod )
+        ///
+        /// is the number of ticks in `[T0, T1)`. See `count_ticks_between_s`.
+
+        VTZ_INLINE i64 count_ticks_s(
+            sys_seconds_t T, sec_t time_of_day ) const noexcept {
+            // If the time is in-bounds, use the lookup tables
+            if( u64( T ) + tz0_ <= tz_max_ ) VTZ_LIKELY
+                return count_ticks_impl( T, time_of_day );
+
+            // tp is _early_: the offset is constant there, but the first
+            // table transition may still be close enough ahead to clamp, so
+            // use the transition walk rather than assuming a fixed offset
+            if( T < 0 )
+            {
+                auto ent = tt_utc.first_entry();
+                /// offset from UTC before transition time
+                i64 off_pre = ent.lo();
+                /// offset from UTC on or after transition time
+                i64 off_post = ent.hi();
+
+                return count_ticks_impl1(
+                    T, time_of_day, ent.t, off_pre, off_post );
+            }
+            // return count_ticks_walk( tp, time_of_day, tt_utc.initial() );
+
+            // use zone symmetry to compute the count for an equivalent time.
+            // Every 400-year cycle contains exactly 146097 local days, and
+            // therefore exactly 146097 ticks.
+            sec_t t2     = impl::get_cyclic( T, impl::off_tables::cycle_time );
+            i64   cycles = ( T - t2 ) / 12622780800;
+            return count_ticks_impl( t2, time_of_day ) + cycles * 146097;
+        }
+
+      private:
+
+        /// Core of `count_ticks_s` for an in-range time T
+        ///
+        /// HOW IT WORKS
+        ///
+        /// Check if we're after the transition time. Also compute the local
+        /// time of transition - the local time when the clock jumps back,
+        /// according to the pre-transition convention.
+        ///
+        /// We select the offset based on whether we're *before* or *after*
+        /// the transition time, and from there we compute the local time
+        /// as <input time t> + offset.
+        ///
+        /// Now - there's a special case we need to handle: we're *after*
+        /// the transition time in absolute terms, but the local time ended
+        /// up _prior_ to the time of transition (in local terms).
+        ///
+        /// This occurs when the clock falls back (eg, it falls back for
+        /// America/New_York in the fall).
+        ///
+        /// If this happens, clamp the time to the time of transition.
+        ///
+        /// This ensures that when we're counting ticks, the tick occurs
+        /// at the earliest local time corresponding to the given time of day
+
+
+        VTZ_INLINE i64 count_ticks_impl( sec_t T, sec_t tod ) const noexcept {
+            auto ent = tt_utc.get( T );
+            /// Transition time
+            auto tt = ent.t;
+            /// offset from UTC before transition time
+            i64 off_pre = ent.lo();
+            /// offset from UTC on or after transition time
+            i64 off_post = ent.hi();
+
+            return count_ticks_impl1( T, tod, tt, off_pre, off_post );
+        }
+
+        VTZ_INLINE static i64 count_ticks_impl1(
+            sec_t T, sec_t tod, sec_t tt, i64 off_pre, i64 off_post ) noexcept {
+            /// True if the input time is after the transition time
+            bool is_pre_trans = T < tt;
+            /// Last local time prior to the transition time which isn't
+            /// ambiguous
+            auto tt_local   = tt + off_post - 1;
+            auto utc_offset = is_pre_trans ? off_pre : off_post;
+            auto t_local    = T + utc_offset; ///< Input time as local time
+
+            /// True if we're within the fallback period - the time period
+            /// after the clocks fall back, when local time is ambiguous
+            bool is_ambiguous_early = is_pre_trans && t_local > tt_local;
+
+            /// Ensure ticks are monotonic by clamping t_local to tt_local
+            // if we're within the fallback period
+            if( is_ambiguous_early ) t_local = tt_local;
+
+            return vtz::math::div_floor<86400>( t_local - tod );
+        }
     };
 
     struct trans_table {

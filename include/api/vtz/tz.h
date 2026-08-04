@@ -418,8 +418,18 @@ namespace vtz {
 
         // clang-format on
 
+
+        /// Counts ticks of a daily event occurring at local time
+        /// `time_of_day`. See `count_ticks_s`.
+
+        template<class Dur>
+        i64 count_ticks( sys_time<Dur> t, seconds time_of_day ) const noexcept {
+            return count_ticks_s( _raw_time( t ), time_of_day.count() );
+        }
+
         using abbr_table::abbrev_s;
         using abbr_table::abbrev_to_s;
+        using off_tables::count_ticks_s;
         using off_tables::offset_s;
         using off_tables::to_local_ns;
         using off_tables::to_local_s;
