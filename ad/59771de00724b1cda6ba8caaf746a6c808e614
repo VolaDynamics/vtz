@@ -1,0 +1,18 @@
+etc/bench/src/bench_count_ticks.cpp
+  h_72614bc0299347 1-158
+etc/test/test_api/test_count_ticks.cpp
+  h_72614bc0299347 1-303
+include/api/vtz/tz.h
+  h_72614bc0299347 421-514,561-632
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "ad59771de00724b1cda6ba8caaf746a6c808e614",
+  "prompts": {},
+  "humans": {
+    "h_72614bc0299347": {
+      "author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
