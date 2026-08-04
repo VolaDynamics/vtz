@@ -285,18 +285,18 @@ namespace vtz {
         };
 
         constexpr static _name months[]{
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
+            { "January" },
+            { "February" },
+            { "March" },
+            { "April" },
+            { "May" },
+            { "June" },
+            { "July" },
+            { "August" },
+            { "September" },
+            { "October" },
+            { "November" },
+            { "December" },
         };
 
         constexpr static size_t month_lens[]{
@@ -325,13 +325,13 @@ namespace vtz {
         };
 
         constexpr static _name weekdays[]{
-            "Sunday",
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
+            { "Sunday" },
+            { "Monday" },
+            { "Tuesday" },
+            { "Wednesday" },
+            { "Thursday" },
+            { "Friday" },
+            { "Saturday" },
         };
 
         constexpr static size_t weekday_lens[]{

@@ -1075,9 +1075,11 @@ namespace vtz {
         auto content = read_file_bytes( fp.c_str() );
 
         tz_data result{
-            rule_map( RULE_BUCKETS ),
-            zone_map( ZONE_BUCKETS ),
-            link_map( LINK_BUCKETS ),
+            tz_data_file{
+                rule_map( RULE_BUCKETS ),
+                zone_map( ZONE_BUCKETS ),
+                link_map( LINK_BUCKETS ),
+            },
         };
 
         append_tzdata(
@@ -1091,9 +1093,11 @@ namespace vtz {
     tz_data load_zone_info_from_sv(
         std::string_view content, std::string_view fp ) {
         tz_data result{
-            rule_map( RULE_BUCKETS ),
-            zone_map( ZONE_BUCKETS ),
-            link_map( LINK_BUCKETS ),
+            tz_data_file{
+                rule_map( RULE_BUCKETS ),
+                zone_map( ZONE_BUCKETS ),
+                link_map( LINK_BUCKETS ),
+            },
         };
 
         auto version = load_version_from_tzdata_file( content ).value_or(
@@ -1108,9 +1112,11 @@ namespace vtz {
 
     tz_data load_zone_info_from_dir( string dir ) {
         tz_data result{
-            rule_map( RULE_BUCKETS ),
-            zone_map( ZONE_BUCKETS ),
-            link_map( LINK_BUCKETS ),
+            tz_data_file{
+                rule_map( RULE_BUCKETS ),
+                zone_map( ZONE_BUCKETS ),
+                link_map( LINK_BUCKETS ),
+            },
         };
 
         // Attempt to open tzdata.zi. If present, we'll use that, and we don't
