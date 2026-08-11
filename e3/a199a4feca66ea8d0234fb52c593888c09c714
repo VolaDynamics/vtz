@@ -1,0 +1,38 @@
+include/api/vtz/tz.h
+  h_72614bc0299347 421-429
+  h_72614bc0299347 432
+etc/test/test_api/test_count_ticks.cpp
+  s_c521b135f4101d::t_b181bad06ae0b8 17-28,61,65-70
+  h_72614bc0299347 2-16,29-56,64,71-80,83-104,107-119,123-124,126,128,130,143-146
+  h_72614bc0299347 1,57-60,62-63,81-82,105-106,120-122,125,127,129,131-142,147-170
+etc/bench/src/bench_count_ticks.cpp
+  h_72614bc0299347 1-15,17-159
+  h_72614bc0299347 16
+etc/test/test_api/test_api_util.h
+  h_72614bc0299347 1-79
+etc/test/test_api/test_vtz.cpp
+  h_72614bc0299347 6
+include/api/vtz/impl/tz_tables.h
+  h_72614bc0299347 530-654
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "e3a199a4feca66ea8d0234fb52c593888c09c714",
+  "prompts": {},
+  "humans": {
+    "h_72614bc0299347": {
+      "author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  },
+  "sessions": {
+    "s_c521b135f4101d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "62e5c181-6985-4b05-a773-7735b84c9fb8",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}
