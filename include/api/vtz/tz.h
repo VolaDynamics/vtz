@@ -430,6 +430,21 @@ namespace vtz {
 
         time_zone( string_view name, zone_states const& states );
 
+
+        /// Get the raw table containing all of the timezone transition blocks
+        ///
+        /// This function provides an escape hatch to do fast computations
+        /// using the underlying table, when such methods are not otherwise
+        /// available on the public API.
+        ///
+        /// The lifetime of the offset table is identical to that of the
+        /// `time_zone` which holds it.
+
+        auto get_raw_implementation_offset_table() const noexcept
+            -> impl::off_tables const& {
+            return static_cast<impl::off_tables const&>( *this );
+        }
+
       private:
 
         /// Returns the date of the given systime within the current zone, as
