@@ -1,0 +1,14 @@
+include/api/vtz/impl/tz_tables.h
+  h_72614bc0299347 9-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "8d6ea8f35ed18fb72b9796a1d9a843df0529baf0",
+  "prompts": {},
+  "humans": {
+    "h_72614bc0299347": {
+      "author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
