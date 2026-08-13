@@ -28,10 +28,12 @@ namespace vtz::impl {
 
             /// Return the low 32 bits as a signed integer. Sign-extend to 64
             /// bits
-            i64 lo() const noexcept { return i64( block << 32 ) >> 32; }
+            VTZ_INLINE i64 lo() const noexcept {
+                return i64( block << 32 ) >> 32;
+            }
             /// Return the high 32 bits as a signed integer. Sign-extend to 64
             /// bits
-            i64 hi() const noexcept { return i64( block ) >> 32; }
+            VTZ_INLINE i64 hi() const noexcept { return i64( block ) >> 32; }
         };
 
         int  g;
@@ -40,8 +42,12 @@ namespace vtz::impl {
         i32  start_;
         u32  size_;
 
-        constexpr i64 const* data_tt() const noexcept { return tt + start_; }
-        constexpr u64 const* data_bb() const noexcept { return bb + start_; }
+        VTZ_INLINE constexpr i64 const* data_tt() const noexcept {
+            return tt + start_;
+        }
+        VTZ_INLINE constexpr u64 const* data_bb() const noexcept {
+            return bb + start_;
+        }
 
         VTZ_INLINE constexpr void swap( s32_table_view& rhs ) noexcept {
             auto tmp = *this;
@@ -49,26 +55,28 @@ namespace vtz::impl {
             rhs      = tmp;
         }
 
-        constexpr u64 block_size() const noexcept { return u64( 1 ) << g; }
-        constexpr i64 block_start_t( i64 t ) const noexcept {
+        VTZ_INLINE constexpr u64 block_size() const noexcept {
+            return u64( 1 ) << g;
+        }
+        VTZ_INLINE constexpr i64 block_start_t( i64 t ) const noexcept {
             return i64( ( u64( t ) >> g ) << g );
         }
-        constexpr i64 block_end_t( i64 t ) const noexcept {
+        VTZ_INLINE constexpr i64 block_end_t( i64 t ) const noexcept {
             return i64( u64( block_start_t( t ) ) + block_size() );
         }
 
         /// Return the first value in the table
-        constexpr i64 initial() const noexcept {
+        VTZ_INLINE constexpr i64 initial() const noexcept {
             u64 block = *data_bb();
             return i64( block << 32 ) >> 32;
         }
 
-        constexpr i32 initial_i32() const noexcept {
+        VTZ_INLINE constexpr i32 initial_i32() const noexcept {
             u64 block = *data_bb();
             return i32( i64( block << 32 ) >> 32 );
         }
 
-        constexpr u32 initial_u32() const noexcept {
+        VTZ_INLINE constexpr u32 initial_u32() const noexcept {
             u64 block = *data_bb();
             return u32( i64( block << 32 ) >> 32 );
         }
@@ -178,7 +186,8 @@ namespace vtz::impl {
     /// will _also_ be the same in 400 years, at least based on all
     /// the rules currently supported by the timezone database source
     /// files.
-    constexpr sec_t get_cyclic( sec_t t, sec_t cycle_time ) noexcept {
+    VTZ_INLINE constexpr sec_t get_cyclic(
+        sec_t t, sec_t cycle_time ) noexcept {
         // 12622780800 is the number of seconds in 400 years.
         //
         // There are _always_ 97 leap days in _any_ given 400 year period
@@ -399,18 +408,6 @@ namespace vtz::impl {
         }
 
 
-        sec_t _to_utc( sec_t t, choose which ) const noexcept {
-            // If the time is in-bounds, we can use the lookup table
-            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
-                return _lookup_utc( t, t, which );
-
-            // t is _early_: use initial zone state
-            if( t < 0 ) return t - tt_utc.initial();
-
-            // use zone symmetry to compute state for equivalent time
-            return _lookup_utc( get_cyclic( t, cycle_time ), t, which );
-        }
-
         /// Returns the UTC time represented by a given input local time.
         ///
         /// If the local time is ambiguous (referring to potentially two system
@@ -449,7 +446,15 @@ namespace vtz::impl {
         /// > time_points, then the two UTC time_points will be the same,
         /// > and that UTC time_point will be returned.
         VTZ_INLINE sec_t to_sys_s( sec_t t, choose which ) const noexcept {
-            return _to_utc( t, which );
+            // If the time is in-bounds, we can use the lookup table
+            if( u64( t ) + tz0_ <= tz_max_ ) VTZ_LIKELY
+                return _lookup_utc( t, t, which );
+
+            // t is _early_: use initial zone state
+            if( t < 0 ) return t - tt_utc.initial();
+
+            // use zone symmetry to compute state for equivalent time
+            return _lookup_utc( get_cyclic( t, cycle_time ), t, which );
         }
 
         /// Converts an input local time to UTC. Throws an exception if the
@@ -523,7 +528,7 @@ namespace vtz::impl {
 
         VTZ_INLINE nanos_t to_sys_ns( nanos_t t, choose which ) const noexcept {
             auto parts = math::div_floor2<1000000000>( t );
-            return 1000000000 * _to_utc( parts.quot, which ) + parts.rem;
+            return 1000000000 * to_sys_s( parts.quot, which ) + parts.rem;
         }
 
         struct _impl;
