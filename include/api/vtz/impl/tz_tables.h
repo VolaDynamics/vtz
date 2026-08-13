@@ -1,12 +1,13 @@
 #pragma once
 
-#include <string>
 #include <vtz/impl/chrono_types.h>
 #include <vtz/impl/macros.h>
 #include <vtz/impl/math.h>
 #include <vtz/impl/zone_abbr.h>
 #include <vtz/types.h>
 
+#include <memory>
+#include <string>
 #include <stdexcept>
 
 namespace vtz {
