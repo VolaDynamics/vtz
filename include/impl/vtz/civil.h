@@ -430,14 +430,102 @@ namespace vtz {
         return days + last_doy - _year_doy.doy;
     }
 
+    /// Returns the number of days from March 1st to the first day of the given
+    /// month, where the month is 0-based and March-based (0 = March, 11 = Feb).
+    ///
+    /// In a March-based year the months follow a regular pattern that repeats
+    /// every 5 months (153 days), which is what makes this a closed form. This
+    /// is the same expression used by to_civil0/resolve_civil0.
+    VTZ_INLINE constexpr u32 _civil_month_start( u32 mp ) noexcept {
+        return ( 153 * mp + 2 ) / 5;
+    }
+
+    /// Shared implementation of civil_add_months and civil_add_months_clamped.
+    ///
+    /// As with _civil_add_years_impl, this computes the number of days to shift
+    /// by directly, instead of decoding the date to a (year, month, day)
+    /// triplet and re-encoding it.
+    ///
+    /// Month lengths look too irregular for this to work, but in a March-based
+    /// year the start of each month is exactly `_civil_month_start` days into
+    /// the year. Shifting by whole months is then just the difference between
+    /// two of those terms, plus the leap days between the two years.
+    ///
+    /// February needs no special handling either, since it is the *last* month
+    /// of a March-based year - a leap day is only ever appended to the end of a
+    /// year, never inserted into the middle of one.
+    ///
+    /// @tparam Clamp if true, the day of the month is clamped to the last day
+    ///               of the target month, so Jan 31st + 1 month becomes Feb
+    ///               28th. If false, it rolls over into the following month.
+    template<bool Clamp>
+    VTZ_INLINE constexpr sys_days_t _civil_add_months_impl(
+        sys_days_t days, i32 months ) noexcept {
+        // Shift the epoch from 1970-01-01 to 0000-03-01
+        i32 z = days + 719468;
+        // The era is a 400 year period, over which the calendar repeats
+        // exactly. Every era holds exactly 146097 days.
+        auto era_parts = math::div_floor2<146097>( z );
+        i32  era       = era_parts.quot;
+        u32  doe       = era_parts.rem; // Day within era - [0, 146096]
+        // Year of era - [0, 399]
+        u32 yoe = ( doe - doe / 1460 + doe / 36524 - doe / 146096 ) / 365;
+        // Leap days elapsed within the era before the current year
+        u32 leaps = yoe / 4 - yoe / 100;
+        // Day of the (March-based) year - [0, 365]
+        u32 doy = doe - ( 365 * yoe + leaps );
+        // Month of the March-based year - [0, 11], where 0 is March
+        u32 mp    = ( 5 * doy + 2 ) / 153;
+        u32 start = _civil_month_start( mp );
+
+        // Advance the month, carrying any whole years into the year count
+        auto month_parts = math::div_floor2<12>( i32( mp ) + months );
+        i32  years       = month_parts.quot;
+        u32  mp2         = u32( month_parts.rem ); // [0, 11]
+        u32  start2      = _civil_month_start( mp2 );
+
+        // Move to the target year. This may cross an era boundary, in which
+        // case every whole era crossed contributes 97 leap days.
+        auto target = math::div_floor2<400>( i32( yoe ) + years );
+        u32  yoe2   = u32( target.rem ); // [0, 399]
+        u32  leaps2 = yoe2 / 4 - yoe2 / 100;
+
+        // 365 days per year, plus 97 leap days per era crossed, plus the
+        // difference in leap days elapsed within the era, plus the offset
+        // between the start of the source month and the start of the target
+        i32 delta = 365 * years + 97 * target.quot + i32( leaps2 )
+                    - i32( leaps ) + i32( start2 ) - i32( start );
+
+        if constexpr( Clamp )
+        {
+            // Where the target month ends. February is the last month of a
+            // March-based year, so it ends when the year does - which is the
+            // only place the length depends on whether it's a leap year.
+            u32 end2 = mp2 == 11
+                           ? 365
+                                 + u32( is_leap( ( era + target.quot ) * 400
+                                                 + i32( yoe2 ) + 1 ) )
+                           : _civil_month_start( mp2 + 1 );
+            // The last day of the target month, 0-based
+            u32 last = end2 - start2 - 1;
+            // The 0-based day of the month we started on
+            u32 dom = doy - start;
+            // Step back, so that eg Jan 31st + 1 month lands on Feb 28th
+            delta -= dom > last ? i32( dom - last ) : 0;
+        }
+
+        return days + delta;
+    }
+
     /// Add months to the date. Eg, (Dec 13 2025) + 3 months becomes
     /// Mar 13 2026
+    ///
+    /// Note that the day of the month rolls over when the target month is too
+    /// short: Jan 31st + 1 month becomes Mar 3rd. Use civil_add_months_clamped
+    /// to get Feb 28th instead.
     constexpr sys_days_t civil_add_months(
         sys_days_t days, i32 months ) noexcept {
-        auto ymd   = to_civil0( days );
-        auto m0    = ymd.month;
-        auto parts = math::div_floor2<12>( m0 + months );
-        return resolve_civil0( ymd.year + parts.quot, parts.rem, ymd.day );
+        return _civil_add_months_impl<false>( days, months );
     }
 
 
@@ -516,10 +604,7 @@ namespace vtz {
     /// Jan 31st + 1 month becomes Feb 28th (or Feb 29th, in leap years)
     constexpr sys_days_t civil_add_months_clamped(
         sys_days_t days, i32 months ) noexcept {
-        auto ymd   = to_civil0( days );
-        auto m0    = ymd.month;
-        auto parts = math::div_floor2<12>( m0 + months );
-        return resolve_civil0( ymd.year + parts.quot, parts.rem, ymd.day );
+        return _civil_add_months_impl<true>( days, months );
     }
 
 
