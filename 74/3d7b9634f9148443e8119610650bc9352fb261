@@ -1,0 +1,33 @@
+etc/bench/meta_agent8/bench_clock.cpp
+  s_ac241310b22047::t_b9a5a7450bdc34 1-73
+etc/bench/meta_agent8/bench_inline.cpp
+  s_ac241310b22047::t_8195e3b6c2b086 1-80
+etc/bench/meta_agent8/bench_meta2.cpp
+  s_ac241310b22047::t_7953c7f52f61ec 1-335
+etc/bench/meta_agent8/bench_meta3.cpp
+  s_ac241310b22047::t_6ed482a927fdad 1-160
+etc/bench/meta_agent8/bench_meta4.cpp
+  s_ac241310b22047::t_39b8c456408a81 1-85
+etc/bench/meta_agent8/bench_meta5.cpp
+  s_ac241310b22047::t_5894264e9a814e 1-191
+etc/bench/meta_agent8/inline_fragility.sh
+  s_ac241310b22047::t_ceacbb7c82830c 1-45
+etc/bench/meta_agent8/instrument.cpp
+  s_ac241310b22047::t_d21a594f23133c 1-256
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "743d7b9634f9148443e8119610650bc9352fb261",
+  "prompts": {},
+  "sessions": {
+    "s_ac241310b22047": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee1b419c-0472-4325-952b-20f557c00f93",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
