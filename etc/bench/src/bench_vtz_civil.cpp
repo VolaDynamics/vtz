@@ -23,6 +23,33 @@ BENCH( date_to_civil, vtz, state ) {
     }
 }
 
+
+BENCH( date_civil_add_months, vtz, state ) {
+    auto   dd = random_days( COUNT, 1900, 2100 );
+    auto   nn = random_values( COUNT, -60, 50 );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            vtz::civil_add_months( dd[i % COUNT], nn[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
+BENCH( date_civil_add_years, vtz, state ) {
+    auto   dd = random_days( COUNT, 1900, 2100 );
+    auto   nn = random_values( COUNT, -60, 50 );
+    size_t i  = 0;
+    for( auto _ : state )
+    {
+        benchmark::DoNotOptimize(
+            vtz::civil_add_years( dd[i % COUNT], nn[i % COUNT] ) );
+        ++i;
+    }
+}
+
+
 BENCH( date_from_civil_date, vtz, state ) {
     auto   dd = random_ymd( COUNT, 1900, 2100 );
     size_t i  = 0;
