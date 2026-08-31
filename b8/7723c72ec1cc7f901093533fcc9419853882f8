@@ -1,0 +1,23 @@
+etc/test/test_impl/test_civil.cpp
+  s_ac241310b22047::t_e9d4dcafb49e82 478-486
+  s_ac241310b22047::t_ec670d18b4178c 74-93
+  s_ac241310b22047::t_d9799a08adc9b9 419-421,444-474,476-477,487-490,497-499,506
+  s_ac241310b22047::t_90c314a191f661 417-418,422-443,475,491-496,500-505,507-527
+  s_ac241310b22047::t_1216a774875012 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "b87723c72ec1cc7f901093533fcc9419853882f8",
+  "prompts": {},
+  "sessions": {
+    "s_ac241310b22047": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee1b419c-0472-4325-952b-20f557c00f93",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
