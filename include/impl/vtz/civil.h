@@ -449,6 +449,31 @@ namespace vtz {
         return resolve_civil0( ymd.year + years, ymd.month, ymd.day );
     }
 
+    /// Add months to the date. Eg, (Dec 13 2025) + 3 months becomes
+    /// Mar 13 2026.
+    ///
+    /// Clamps the day of the month, so that we don't have rollover:
+    /// Jan 31st + 1 month becomes Feb 28th (or Feb 29th, in leap years)
+    constexpr sys_days_t civil_add_months_clamped(
+        sys_days_t days, i32 months ) noexcept {
+        auto ymd   = to_civil0( days );
+        auto m0    = ymd.month;
+        auto parts = math::div_floor2<12>( m0 + months );
+        return resolve_civil0( ymd.year + parts.quot, parts.rem, ymd.day );
+    }
+
+
+    /// Add years to the date. Eg, (Dec 13 2025) + 3 years becomes
+    /// Dec 13 2028
+    ///
+    /// Clamps the day of the month, so that we don't have rollover:
+    /// Feb 29st + 1 year becomes Feb 28th
+    constexpr sys_days_t civil_add_years_clamped(
+        sys_days_t days, i32 years ) noexcept {
+        auto ymd = to_civil0( days );
+        return resolve_civil0( ymd.year + years, ymd.month, ymd.day );
+    }
+
     /// Get the beginning of the month, as days since the epoch. Eg, Dec 13 2025
     /// -> Dec 1st 2025
     constexpr sys_days_t civil_bom( sys_days_t days ) noexcept {
