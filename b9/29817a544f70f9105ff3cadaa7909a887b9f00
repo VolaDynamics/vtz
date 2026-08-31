@@ -1,0 +1,16 @@
+etc/bench/src/bench_vtz_civil.cpp
+  h_72614bc0299347 53-78
+include/impl/vtz/civil.h
+  h_72614bc0299347 449-473
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "b929817a544f70f9105ff3cadaa7909a887b9f00",
+  "prompts": {},
+  "humans": {
+    "h_72614bc0299347": {
+      "author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
