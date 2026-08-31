@@ -9,6 +9,7 @@
 #include "vtz_debug.h"
 #include "vtz_testing.h"
 
+#include <algorithm>
 #include <random>
 using namespace vtz;
 
@@ -69,6 +70,26 @@ namespace {
 
     constexpr civil_ymd ymd( i32 year, i32 mon, i32 day ) noexcept {
         return { year, u16( mon ), u16( day ) };
+    }
+
+    /// Reference implementation of clamped month addition. Shift the year and
+    /// month, then clamp the day of the month to the last day of the target
+    /// month, so that Jan 31st + 1 month is Feb 28th rather than Mar 3rd.
+    sys_days_t add_months_clamped_reference( int year, int month, int day, int k ) {
+        auto parts    = math::div_floor2<12>( month + k - 1 );
+        int  year2    = year + parts.quot;
+        int  month2   = parts.rem + 1;
+        int  last_dom = days_in_month_reference( year2, u8( month2 ) );
+        return resolve_civil( year2, u32( month2 ), u32( std::min( day, last_dom ) ) );
+    }
+
+    /// Reference implementation of clamped year addition. Shift the year, then
+    /// clamp the day of the month, so that Feb 29th + 1 year is Feb 28th
+    /// rather than Mar 1st.
+    sys_days_t add_years_clamped_reference( int year, int month, int day, int k ) {
+        int year2    = year + k;
+        int last_dom = days_in_month_reference( year2, u8( month ) );
+        return resolve_civil( year2, u32( month ), u32( std::min( day, last_dom ) ) );
     }
 } // namespace
 
@@ -388,6 +409,117 @@ TEST( vtz, civil_arithmetic ) {
                     auto parts = math::div_floor2<12>( month + k - 1 );
                     ASSERT_EQ_QUIET( civil_add_months( dse, k ),
                                      resolve_civil( year + parts.quot, parts.rem + 1, day ) );
+                }
+            }
+        }
+    }
+}
+
+
+TEST( vtz, civil_add_months_clamped ) {
+    /// Check that civil_add_months_clamped clamps the day of the month, instead
+    /// of rolling over into the following month
+
+    COUNT_ASSERTIONS();
+
+    // Spot checks, so that a failure names a specific date. The dates are
+    // printed as strings, since that is much easier to read on failure than
+    // days since the epoch.
+    auto add_months = []( int y, int m, int d, int k ) {
+        return to_civil( civil_add_months_clamped( resolve_civil( y, m, d ), k ) ).str();
+    };
+
+    // Jan 31st + 1 month clamps to the end of February
+    ASSERT_EQ( add_months( 2025, 1, 31, 1 ), "2025-02-28" );
+    // ...and February has 29 days in a leap year
+    ASSERT_EQ( add_months( 2024, 1, 31, 1 ), "2024-02-29" );
+    // Clamping to a 30 day month
+    ASSERT_EQ( add_months( 2025, 5, 31, 1 ), "2025-06-30" );
+    // Clamping applies when going backwards, too
+    ASSERT_EQ( add_months( 2025, 3, 31, -1 ), "2025-02-28" );
+    // Clamping across a year boundary
+    ASSERT_EQ( add_months( 2025, 12, 31, 2 ), "2026-02-28" );
+    // No clamping needed - the day of the month is valid in the target month
+    ASSERT_EQ( add_months( 2025, 12, 13, 3 ), "2026-03-13" );
+
+    /// Corresponds to 1970-01-01
+    sys_days_t day_counter = 0;
+
+    // Test this function over a huge span of time
+    for( int year = 1970; year < 2060; ++year )
+    {
+        for( int month = 1; month <= 12; ++month )
+        {
+            int days_in_month = days_in_month_reference( year, month );
+
+            for( int day = 1; day <= days_in_month; ++day )
+            {
+                auto dse = day_counter++;
+
+                ADD_CONTEXT( "Testing date", year, month, day, dse, to_civil( dse ) );
+
+                for( int k = -60; k <= 60; ++k )
+                {
+                    ASSERT_EQ_QUIET( civil_add_months_clamped( dse, k ),
+                                     add_months_clamped_reference( year, month, day, k ) );
+                }
+            }
+        }
+    }
+}
+
+
+TEST( vtz, civil_add_years_clamped ) {
+    /// Check that civil_add_years_clamped clamps Feb 29th back to Feb 28th,
+    /// instead of rolling over into March
+
+    COUNT_ASSERTIONS();
+
+    // Check that the clamping works at compile time, too
+    static_assert( civil_add_years_clamped( resolve_civil( 2024, 2, 29 ), 1 )
+                   == resolve_civil( 2025, 2, 28 ) );
+    static_assert( civil_add_years_clamped( resolve_civil( 2024, 2, 29 ), 4 )
+                   == resolve_civil( 2028, 2, 29 ) );
+    // ...while the unclamped version rolls over into March
+    static_assert( civil_add_years( resolve_civil( 2024, 2, 29 ), 1 )
+                   == resolve_civil( 2025, 3, 1 ) );
+
+    auto add_years = []( int y, int m, int d, int k ) {
+        return to_civil( civil_add_years_clamped( resolve_civil( y, m, d ), k ) ).str();
+    };
+
+    // Feb 29th + 1 year clamps to Feb 28th
+    ASSERT_EQ( add_years( 2024, 2, 29, 1 ), "2025-02-28" );
+    ASSERT_EQ( add_years( 2024, 2, 29, -1 ), "2023-02-28" );
+    // 2100 is not a leap year, but 2000 and 2104 are
+    ASSERT_EQ( add_years( 2000, 2, 29, 100 ), "2100-02-28" );
+    ASSERT_EQ( add_years( 2000, 2, 29, 104 ), "2104-02-29" );
+    // Feb 28th is never clamped, and Mar 1st is unaffected
+    ASSERT_EQ( add_years( 2024, 2, 28, 1 ), "2025-02-28" );
+    ASSERT_EQ( add_years( 2024, 3, 1, 1 ), "2025-03-01" );
+    // No clamping needed
+    ASSERT_EQ( add_years( 2025, 12, 13, 3 ), "2028-12-13" );
+
+    /// Corresponds to 1970-01-01
+    sys_days_t day_counter = 0;
+
+    // Test this function over a huge span of time
+    for( int year = 1970; year < 2060; ++year )
+    {
+        for( int month = 1; month <= 12; ++month )
+        {
+            int days_in_month = days_in_month_reference( year, month );
+
+            for( int day = 1; day <= days_in_month; ++day )
+            {
+                auto dse = day_counter++;
+
+                ADD_CONTEXT( "Testing date", year, month, day, dse, to_civil( dse ) );
+
+                for( int k = -60; k <= 60; ++k )
+                {
+                    ASSERT_EQ_QUIET( civil_add_years_clamped( dse, k ),
+                                     add_years_clamped_reference( year, month, day, k ) );
                 }
             }
         }
