@@ -1,0 +1,445 @@
+include/impl/vtz/civil.h
+  s_ac241310b22047::t_e1fd32b8d5cf57 436-439,441-450,452-454
+  s_ac241310b22047::t_018d9d1f91f440 455,468-472,475-485,487-488
+  s_ac241310b22047::t_ca6378ca6f8c3f 523-525
+  s_ac241310b22047::t_5d00091c72ac9e 552-561
+  s_ac241310b22047::t_22795380199c58 634-637,639
+  s_ac241310b22047::t_f1bf68fccefd3f 457-458,460-467
+  s_ac241310b22047::t_c8c0dc8c26a098 456,459,473-474,526,562,638,640
+build2/.ninja_log
+  s_ac241310b22047::t_43fdf737ae9166 1-101
+build2/CMakeCache.txt
+  s_ac241310b22047::t_7b89938539b175 1-1052
+build2/CMakeFiles/4.4.2/CMakeCCompiler.cmake
+  s_ac241310b22047::t_bf70bfab7b9e0b 1-86
+build2/CMakeFiles/4.4.2/CMakeCXXCompiler.cmake
+  s_ac241310b22047::t_805ede4582e2db 1-103
+build2/CMakeFiles/4.4.2/CMakeSystem.cmake
+  s_ac241310b22047::t_1b93f09d2d4872 1-15
+build2/CMakeFiles/4.4.2/CompilerIdC/CMakeCCompilerId.c
+  s_ac241310b22047::t_9bdc15ab5e89a9 1-945
+build2/CMakeFiles/4.4.2/CompilerIdC/apple-sdk.c
+  s_ac241310b22047::t_87b969a84d6df1 1
+build2/CMakeFiles/4.4.2/CompilerIdCXX/CMakeCXXCompilerId.cpp
+  s_ac241310b22047::t_3e165d86ff1d8d 1-954
+build2/CMakeFiles/4.4.2/CompilerIdCXX/apple-sdk.cpp
+  s_ac241310b22047::t_4a5393de67b956 1
+build2/CMakeFiles/CMakeConfigureLog.yaml
+  s_ac241310b22047::t_ae748d404e69ac 1-4874
+build2/CMakeFiles/Export/e96bc8801b5d8e62de36634461adfcfe/vtz-release.cmake
+  s_ac241310b22047::t_0f1fe8fcc5a90a 1-19
+build2/CMakeFiles/Export/e96bc8801b5d8e62de36634461adfcfe/vtz.cmake
+  s_ac241310b22047::t_521c0f4a1fc70d 1-118
+build2/CMakeFiles/InstallScripts.json
+  s_ac241310b22047::t_b03c570ee41416 1-40
+build2/CMakeFiles/TargetDirectories.txt
+  s_ac241310b22047::t_8147f00fb9c9fd 1-384
+build2/CMakeFiles/cmake.check_cache
+  s_ac241310b22047::t_b7555e14a08767 1
+build2/CMakeFiles/pkgRedirects/abseil-cpp-config-version.cmake
+  s_ac241310b22047::t_3bd504baf5ce62 1-2
+build2/CMakeFiles/pkgRedirects/abseil-cpp-config.cmake
+  s_ac241310b22047::t_f7786c03e38196 1-2
+build2/CMakeFiles/pkgRedirects/benchmark-config-version.cmake
+  s_ac241310b22047::t_fcd429a82bc2a7 1-2
+build2/CMakeFiles/pkgRedirects/benchmark-config.cmake
+  s_ac241310b22047::t_d7c413b768a5ef 1-2
+build2/CMakeFiles/pkgRedirects/date-config-version.cmake
+  s_ac241310b22047::t_25767b0ae7bbb7 1-2
+build2/CMakeFiles/pkgRedirects/date-config.cmake
+  s_ac241310b22047::t_7218dd93b11c15 1-2
+build2/CMakeFiles/pkgRedirects/fmt-config-version.cmake
+  s_ac241310b22047::t_9cb1a89ca816c9 1-2
+build2/CMakeFiles/pkgRedirects/fmt-config.cmake
+  s_ac241310b22047::t_73f38439f066ac 1-2
+build2/CMakeFiles/pkgRedirects/googletest-config-version.cmake
+  s_ac241310b22047::t_116b15386a4669 1-2
+build2/CMakeFiles/pkgRedirects/googletest-config.cmake
+  s_ac241310b22047::t_eaad2e771ae4db 1-2
+build2/CMakeFiles/rules.ninja
+  s_ac241310b22047::t_f02c767d7210a3 1-2192
+build2/CTestTestfile.cmake
+  s_ac241310b22047::t_f6da4c4ea6e750 1-12
+build2/_deps/abseil-cpp-build/CMakeFiles/CTestScript.cmake
+  s_ac241310b22047::t_5761a11f6ec9fc 1-168
+build2/_deps/abseil-cpp-build/CTestTestfile.cmake
+  s_ac241310b22047::t_c2aabd75d0a734 1-7
+build2/_deps/abseil-cpp-build/DartConfiguration.tcl
+  s_ac241310b22047::t_149d5de05b50ca 1-114
+build2/_deps/abseil-cpp-build/absl/CTestTestfile.cmake
+  s_ac241310b22047::t_b9fc18a290fcbe 1-27
+build2/_deps/abseil-cpp-build/absl/algorithm/CTestTestfile.cmake
+  s_ac241310b22047::t_eadcf8e74fd96a 1-6
+build2/_deps/abseil-cpp-build/absl/algorithm/cmake_install.cmake
+  s_ac241310b22047::t_663c47d4a85e49 1-45
+build2/_deps/abseil-cpp-build/absl/base/CTestTestfile.cmake
+  s_ac241310b22047::t_08d914b1da8602 1-6
+build2/_deps/abseil-cpp-build/absl/base/cmake_install.cmake
+  s_ac241310b22047::t_ff7be33f57275a 1-45
+build2/_deps/abseil-cpp-build/absl/cleanup/CTestTestfile.cmake
+  s_ac241310b22047::t_56b900179b5b43 1-6
+build2/_deps/abseil-cpp-build/absl/cleanup/cmake_install.cmake
+  s_ac241310b22047::t_b7b4677e5b171f 1-45
+build2/_deps/abseil-cpp-build/absl/cmake_install.cmake
+  s_ac241310b22047::t_bc70d686c08d38 1-150
+build2/_deps/abseil-cpp-build/absl/container/CTestTestfile.cmake
+  s_ac241310b22047::t_7bbaa554d15cac 1-6
+build2/_deps/abseil-cpp-build/absl/container/cmake_install.cmake
+  s_ac241310b22047::t_ec02e0922f1d51 1-45
+build2/_deps/abseil-cpp-build/absl/crc/CTestTestfile.cmake
+  s_ac241310b22047::t_8544849f5e256c 1-6
+build2/_deps/abseil-cpp-build/absl/crc/cmake_install.cmake
+  s_ac241310b22047::t_98c383850a075b 1-45
+build2/_deps/abseil-cpp-build/absl/debugging/CTestTestfile.cmake
+  s_ac241310b22047::t_7c9c3adbcf098e 1-6
+build2/_deps/abseil-cpp-build/absl/debugging/cmake_install.cmake
+  s_ac241310b22047::t_58016a06404a28 1-45
+build2/_deps/abseil-cpp-build/absl/flags/CTestTestfile.cmake
+  s_ac241310b22047::t_fa8ced10bf0733 1-6
+build2/_deps/abseil-cpp-build/absl/flags/cmake_install.cmake
+  s_ac241310b22047::t_234960753fb0bd 1-45
+build2/_deps/abseil-cpp-build/absl/functional/CTestTestfile.cmake
+  s_ac241310b22047::t_1725cff711a0b3 1-6
+build2/_deps/abseil-cpp-build/absl/functional/cmake_install.cmake
+  s_ac241310b22047::t_085c70b5e3b018 1-45
+build2/_deps/abseil-cpp-build/absl/hash/CTestTestfile.cmake
+  s_ac241310b22047::t_d1967c27b417e6 1-6
+build2/_deps/abseil-cpp-build/absl/hash/cmake_install.cmake
+  s_ac241310b22047::t_0ee5fb3ad2260f 1-45
+build2/_deps/abseil-cpp-build/absl/log/CTestTestfile.cmake
+  s_ac241310b22047::t_a350d7a9884d00 1-6
+build2/_deps/abseil-cpp-build/absl/log/cmake_install.cmake
+  s_ac241310b22047::t_db231fe592da62 1-45
+build2/_deps/abseil-cpp-build/absl/memory/CTestTestfile.cmake
+  s_ac241310b22047::t_2310e30581c9da 1-6
+build2/_deps/abseil-cpp-build/absl/memory/cmake_install.cmake
+  s_ac241310b22047::t_431065f0902dea 1-45
+build2/_deps/abseil-cpp-build/absl/meta/CTestTestfile.cmake
+  s_ac241310b22047::t_d5fb037c91ebd0 1-6
+build2/_deps/abseil-cpp-build/absl/meta/cmake_install.cmake
+  s_ac241310b22047::t_50a3a81ecb7279 1-45
+build2/_deps/abseil-cpp-build/absl/numeric/CTestTestfile.cmake
+  s_ac241310b22047::t_df36cc8171f8fb 1-6
+build2/_deps/abseil-cpp-build/absl/numeric/cmake_install.cmake
+  s_ac241310b22047::t_cd3f13eb2907b2 1-45
+build2/_deps/abseil-cpp-build/absl/profiling/CTestTestfile.cmake
+  s_ac241310b22047::t_b90a56b8b320fd 1-6
+build2/_deps/abseil-cpp-build/absl/profiling/cmake_install.cmake
+  s_ac241310b22047::t_eb4d2f45db77d0 1-45
+build2/_deps/abseil-cpp-build/absl/random/CTestTestfile.cmake
+  s_ac241310b22047::t_56ce82a0b2ddd0 1-6
+build2/_deps/abseil-cpp-build/absl/random/cmake_install.cmake
+  s_ac241310b22047::t_62ab868279ae14 1-45
+build2/_deps/abseil-cpp-build/absl/status/CTestTestfile.cmake
+  s_ac241310b22047::t_43a65e0d2457e6 1-6
+build2/_deps/abseil-cpp-build/absl/status/cmake_install.cmake
+  s_ac241310b22047::t_9b35cd6e7a3723 1-45
+build2/_deps/abseil-cpp-build/absl/strings/CTestTestfile.cmake
+  s_ac241310b22047::t_5938250fb97e98 1-6
+build2/_deps/abseil-cpp-build/absl/strings/cmake_install.cmake
+  s_ac241310b22047::t_6824dd39ac344d 1-45
+build2/_deps/abseil-cpp-build/absl/synchronization/CTestTestfile.cmake
+  s_ac241310b22047::t_13dfc13350a2e2 1-6
+build2/_deps/abseil-cpp-build/absl/synchronization/cmake_install.cmake
+  s_ac241310b22047::t_42679b05a9fc4c 1-45
+build2/_deps/abseil-cpp-build/absl/time/CTestTestfile.cmake
+  s_ac241310b22047::t_ef80b1dd006cbb 1-6
+build2/_deps/abseil-cpp-build/absl/time/cmake_install.cmake
+  s_ac241310b22047::t_f2ab32fe1507ec 1-45
+build2/_deps/abseil-cpp-build/absl/types/CTestTestfile.cmake
+  s_ac241310b22047::t_35678b23796bc4 1-6
+build2/_deps/abseil-cpp-build/absl/types/cmake_install.cmake
+  s_ac241310b22047::t_d562ffe3757236 1-45
+build2/_deps/abseil-cpp-build/absl/utility/CTestTestfile.cmake
+  s_ac241310b22047::t_dd8d9aa944db0e 1-6
+build2/_deps/abseil-cpp-build/absl/utility/cmake_install.cmake
+  s_ac241310b22047::t_4839acb4678840 1-45
+build2/_deps/abseil-cpp-build/cmake_install.cmake
+  s_ac241310b22047::t_f32db338060e48 1-50
+build2/_deps/benchmark-build/CTestTestfile.cmake
+  s_ac241310b22047::t_667b1105c311ca 1-7
+build2/_deps/benchmark-build/benchmark.pc
+  s_ac241310b22047::t_7c36667493e98a 1-12
+build2/_deps/benchmark-build/benchmarkConfig.cmake
+  s_ac241310b22047::t_404cdcb0d3b5a8 1-19
+build2/_deps/benchmark-build/benchmarkConfigVersion.cmake
+  s_ac241310b22047::t_2d0e396d66b1ef 1-65
+build2/_deps/benchmark-build/benchmarkTargets.cmake
+  s_ac241310b22047::t_048dfd6c0a34a4 1-84
+build2/_deps/benchmark-build/benchmark_main.pc
+  s_ac241310b22047::t_64191137870285 1-7
+build2/_deps/benchmark-build/cmake_install.cmake
+  s_ac241310b22047::t_c0215622df50a6 1-50
+build2/_deps/benchmark-build/src/CMakeFiles/Export/d56d27b88fbb159d81f220d5e4f5f598/benchmarkTargets-release.cmake
+  s_ac241310b22047::t_4e225fc5e64201 1-29
+build2/_deps/benchmark-build/src/CMakeFiles/Export/d56d27b88fbb159d81f220d5e4f5f598/benchmarkTargets.cmake
+  s_ac241310b22047::t_066e289b2a75ef 1-116
+build2/_deps/benchmark-build/src/CTestTestfile.cmake
+  s_ac241310b22047::t_abdd2a74439dc2 1-6
+build2/_deps/benchmark-build/src/cmake_install.cmake
+  s_ac241310b22047::t_11d07c683c4ca8 1-109
+build2/_deps/date-build/CMakeFiles/Export/a52b05f964b070ee926bcad51d3288af/dateTargets-release.cmake
+  s_ac241310b22047::t_4c3dbcc9cb3ada 1-19
+build2/_deps/date-build/CMakeFiles/Export/a52b05f964b070ee926bcad51d3288af/dateTargets.cmake
+  s_ac241310b22047::t_14b47a32805537 1-118
+build2/_deps/date-build/cmake_install.cmake
+  s_ac241310b22047::t_a3beee9aa9471b 1-97
+build2/_deps/date-build/dateConfigVersion.cmake
+  s_ac241310b22047::t_238e3386c5366b 1-65
+build2/_deps/date-build/dateTargets.cmake
+  s_ac241310b22047::t_b703480c9cf547 1-80
+build2/_deps/fmt-build/CMakeFiles/Export/b834597d9b1628ff12ae4314c3a2e4b8/fmt-targets-release.cmake
+  s_ac241310b22047::t_e7bbedac2e10fc 1-19
+build2/_deps/fmt-build/CMakeFiles/Export/b834597d9b1628ff12ae4314c3a2e4b8/fmt-targets.cmake
+  s_ac241310b22047::t_c14f4b326c68bf 1-116
+build2/_deps/fmt-build/cmake_install.cmake
+  s_ac241310b22047::t_8663945e9d5472 1-112
+build2/_deps/fmt-build/fmt-config-version.cmake
+  s_ac241310b22047::t_79d7da98884923 1-43
+build2/_deps/fmt-build/fmt-config.cmake
+  s_ac241310b22047::t_23de9bcba21672 1-31
+build2/_deps/fmt-build/fmt-targets.cmake
+  s_ac241310b22047::t_749710e0df6ac8 1-78
+build2/_deps/fmt-build/fmt.pc
+  s_ac241310b22047::t_81862931ac75a4 1-11
+build2/_deps/googletest-build/CTestTestfile.cmake
+  s_ac241310b22047::t_ab89ac97074ac5 1-7
+build2/_deps/googletest-build/cmake_install.cmake
+  s_ac241310b22047::t_5ade786970f8f5 1-50
+build2/_deps/googletest-build/googlemock/CTestTestfile.cmake
+  s_ac241310b22047::t_991d9b59729959 1-7
+build2/_deps/googletest-build/googlemock/cmake_install.cmake
+  s_ac241310b22047::t_56836b3307d976 1-79
+build2/_deps/googletest-build/googletest/CMakeFiles/Export/0c08b8e77dd885bfe55a19a9659d9fc1/GTestTargets-release.cmake
+  s_ac241310b22047::t_322beb166300d0 1-49
+build2/_deps/googletest-build/googletest/CMakeFiles/Export/0c08b8e77dd885bfe55a19a9659d9fc1/GTestTargets.cmake
+  s_ac241310b22047::t_3817b3b56eee51 1-139
+build2/_deps/googletest-build/googletest/CTestTestfile.cmake
+  s_ac241310b22047::t_08fa66e5bda905 1-6
+build2/_deps/googletest-build/googletest/cmake_install.cmake
+  s_ac241310b22047::t_168a79dec362b9 1-103
+build2/_deps/googletest-build/googletest/generated/GTestConfig.cmake
+  s_ac241310b22047::t_10df22b7147a8d 1-37
+build2/_deps/googletest-build/googletest/generated/GTestConfigVersion.cmake
+  s_ac241310b22047::t_dbe3d45241c090 1-43
+build2/_deps/googletest-build/googletest/generated/gmock.pc
+  s_ac241310b22047::t_0934734c1785e6 1-10
+build2/_deps/googletest-build/googletest/generated/gmock_main.pc
+  s_ac241310b22047::t_060c3843def628 1-10
+build2/_deps/googletest-build/googletest/generated/gtest.pc
+  s_ac241310b22047::t_45ef23e05d04c1 1-9
+build2/_deps/googletest-build/googletest/generated/gtest_main.pc
+  s_ac241310b22047::t_cba53be754567c 1-10
+build2/build.ninja
+  s_ac241310b22047::t_fe4747a5a55a47 1-10272
+build2/cmake_install.cmake
+  s_ac241310b22047::t_6ac3c0d95dd94f 1-137
+build2/compile_commands.json
+  s_ac241310b22047::t_06f9b60f790a50 1-1430
+build2/cpm-package-lock.cmake
+  s_ac241310b22047::t_da23f86b31be2e 1-3
+build2/data/tzdata
+  s_ac241310b22047::t_f2d609c6c4f8a2 1
+build2/data/tzdb-2026a/CONTRIBUTING
+  s_ac241310b22047::t_edb97cb961aa68 1-105
+build2/data/tzdb-2026a/LICENSE
+  s_ac241310b22047::t_e0e9dce54dfffc 1-5
+build2/data/tzdb-2026a/Makefile
+  s_ac241310b22047::t_494651235fa0ca 1-1447
+build2/data/tzdb-2026a/NEWS
+  s_ac241310b22047::t_e939a2f9c3bdc2 1-6645
+build2/data/tzdb-2026a/README
+  s_ac241310b22047::t_0ee4b28dc869be 1-55
+build2/data/tzdb-2026a/SECURITY
+  s_ac241310b22047::t_232fe7d75ec618 1-15
+build2/data/tzdb-2026a/africa
+  s_ac241310b22047::t_9198e8f29c00ae 1-1460
+build2/data/tzdb-2026a/antarctica
+  s_ac241310b22047::t_ef349877211671 1-362
+build2/data/tzdb-2026a/asctime.c
+  s_ac241310b22047::t_6205079d00ace1 1-158
+build2/data/tzdb-2026a/asia
+  s_ac241310b22047::t_70b5b822d3a5f2 1-4238
+build2/data/tzdb-2026a/australasia
+  s_ac241310b22047::t_cef32bdb2eff55 1-2237
+build2/data/tzdb-2026a/backward
+  s_ac241310b22047::t_02054df7060cc5 1-331
+build2/data/tzdb-2026a/backzone
+  s_ac241310b22047::t_9489b43b6c5578 1-1852
+build2/data/tzdb-2026a/calendars
+  s_ac241310b22047::t_765cf00ca89ac4 1-152
+build2/data/tzdb-2026a/checklinks.awk
+  s_ac241310b22047::t_f46ebe8ea0765f 1-70
+build2/data/tzdb-2026a/checknow.awk
+  s_ac241310b22047::t_70c2d873d2a410 1-59
+build2/data/tzdb-2026a/checktab.awk
+  s_ac241310b22047::t_47823d2d409d7f 1-228
+build2/data/tzdb-2026a/date.1
+  s_ac241310b22047::t_266439a1c19869 1-82
+build2/data/tzdb-2026a/date.1.txt
+  s_ac241310b22047::t_e527ac8bc6eca0 1-45
+build2/data/tzdb-2026a/date.c
+  s_ac241310b22047::t_e08ff1d73fca32 1-212
+build2/data/tzdb-2026a/difftime.c
+  s_ac241310b22047::t_95a95449fb9b0e 1-60
+build2/data/tzdb-2026a/etcetera
+  s_ac241310b22047::t_3e1b482b0c94d1 1-84
+build2/data/tzdb-2026a/europe
+  s_ac241310b22047::t_31da767c31ac49 1-4183
+build2/data/tzdb-2026a/factory
+  s_ac241310b22047::t_e76bba59c49db2 1-22
+build2/data/tzdb-2026a/iso3166.tab
+  s_ac241310b22047::t_0e40db645dc0b4 1-279
+build2/data/tzdb-2026a/leap-seconds.list
+  s_ac241310b22047::t_87d6ef78017801 1-120
+build2/data/tzdb-2026a/leapseconds
+  s_ac241310b22047::t_0fd61e788004ee 1-86
+build2/data/tzdb-2026a/leapseconds.awk
+  s_ac241310b22047::t_007c57be214b6c 1-256
+build2/data/tzdb-2026a/localtime.c
+  s_ac241310b22047::t_b7d1cdced252ac 1-3153
+build2/data/tzdb-2026a/newctime.3
+  s_ac241310b22047::t_1604238ba30374 1-358
+build2/data/tzdb-2026a/newctime.3.txt
+  s_ac241310b22047::t_457a716e296e17 1-172
+build2/data/tzdb-2026a/newstrftime.3
+  s_ac241310b22047::t_6850429251b304 1-444
+build2/data/tzdb-2026a/newstrftime.3.txt
+  s_ac241310b22047::t_9af42ae1492be1 1-206
+build2/data/tzdb-2026a/newtzset.3
+  s_ac241310b22047::t_1493cbde4a437f 1-426
+build2/data/tzdb-2026a/newtzset.3.txt
+  s_ac241310b22047::t_e30983b241fdcf 1-234
+build2/data/tzdb-2026a/northamerica
+  s_ac241310b22047::t_57a2e188b09cd8 1-3733
+build2/data/tzdb-2026a/private.h
+  s_ac241310b22047::t_839fb95d7aa82d 1-1176
+build2/data/tzdb-2026a/southamerica
+  s_ac241310b22047::t_46f24b8b0e5a1f 1-2094
+build2/data/tzdb-2026a/strftime.c
+  s_ac241310b22047::t_d49be46790d1b1 1-712
+build2/data/tzdb-2026a/theory.html
+  s_ac241310b22047::t_ea62d5a119a41d 1-1599
+build2/data/tzdb-2026a/time2posix.3
+  s_ac241310b22047::t_9823e3e916bb5a 1-175
+build2/data/tzdb-2026a/time2posix.3.txt
+  s_ac241310b22047::t_24bb9a376aad23 1-91
+build2/data/tzdb-2026a/to2050.tzs
+  s_ac241310b22047::t_ac99e7c5f08075 1-26681
+build2/data/tzdb-2026a/tz-art.html
+  s_ac241310b22047::t_4bddec4b681c24 1-630
+build2/data/tzdb-2026a/tz-how-to.html
+  s_ac241310b22047::t_4ce8ba6516995b 1-673
+build2/data/tzdb-2026a/tz-link.html
+  s_ac241310b22047::t_445acc59e17a19 1-1264
+build2/data/tzdb-2026a/tzdata.zi
+  s_ac241310b22047::t_992b0b8cec76b2 1-4300
+build2/data/tzdb-2026a/tzfile.5
+  s_ac241310b22047::t_ee4b67b4e5164d 1-538
+build2/data/tzdb-2026a/tzfile.5.txt
+  s_ac241310b22047::t_571548be478ea4 1-407
+build2/data/tzdb-2026a/tzfile.h
+  s_ac241310b22047::t_77f528b8d5feac 1-115
+build2/data/tzdb-2026a/tzselect.8
+  s_ac241310b22047::t_4aa78ad18b7d0d 1-123
+build2/data/tzdb-2026a/tzselect.8.txt
+  s_ac241310b22047::t_354eff2140b5d0 1-77
+build2/data/tzdb-2026a/tzselect.ksh
+  s_ac241310b22047::t_3b8942db98108e 1-801
+build2/data/tzdb-2026a/version
+  s_ac241310b22047::t_9e358e46bac0e4 1
+build2/data/tzdb-2026a/windowsZones.xml
+  s_ac241310b22047::t_eed6f36acf8d9b 1-794
+build2/data/tzdb-2026a/workman.sh
+  s_ac241310b22047::t_d768a90b853b5c 1-56
+build2/data/tzdb-2026a/zdump.8
+  s_ac241310b22047::t_435e7bbffae7b6 1-236
+build2/data/tzdb-2026a/zdump.8.txt
+  s_ac241310b22047::t_9567e92df71c9e 1-145
+build2/data/tzdb-2026a/zdump.c
+  s_ac241310b22047::t_d6beb6d83fe044 1-1254
+build2/data/tzdb-2026a/zic.8
+  s_ac241310b22047::t_f978918d82ef22 1-947
+build2/data/tzdb-2026a/zic.8.txt
+  s_ac241310b22047::t_01db9b23b04e92 1-548
+build2/data/tzdb-2026a/zic.c
+  s_ac241310b22047::t_c96ea20814c19a 1-4261
+build2/data/tzdb-2026a/ziguard.awk
+  s_ac241310b22047::t_905769855e8e64 1-382
+build2/data/tzdb-2026a/zishrink.awk
+  s_ac241310b22047::t_ed0063d16f2c55 1-388
+build2/data/tzdb-2026a/zone.tab
+  s_ac241310b22047::t_05a7f9d8719c9a 1-448
+build2/data/tzdb-2026a/zone1970.tab
+  s_ac241310b22047::t_fa9f4d960330b3 1-375
+build2/data/tzdb-2026a/zonenow.tab
+  s_ac241310b22047::t_b0cfc0ff848bc2 1-293
+build2/etc/bench/CTestTestfile.cmake
+  s_ac241310b22047::t_af51b2335acbac 1-8
+build2/etc/bench/cmake_install.cmake
+  s_ac241310b22047::t_05ca2243b7c992 1-45
+build2/etc/test/CTestTestfile.cmake
+  s_ac241310b22047::t_87a446363fd3b1 1-17
+build2/etc/test/cmake_install.cmake
+  s_ac241310b22047::t_80f2c12cb9eead 1-45
+build2/etc/test/test_vtz_a41222af_discovery.cmake
+  s_ac241310b22047::t_086c30b1b5a573 1-20
+build2/etc/test/test_vtz_a41222af_include.cmake
+  s_ac241310b22047::t_4d938fd46dcf3f 1-5
+build2/etc/test/test_vtz_api_11d8be8a_discovery.cmake
+  s_ac241310b22047::t_72a64c5786823e 1-20
+build2/etc/test/test_vtz_api_11d8be8a_include.cmake
+  s_ac241310b22047::t_e6913cc891b3a8 1-5
+build2/etc/test/test_vtz_api_450b689b_discovery.cmake
+  s_ac241310b22047::t_6a31a63f03ee2e 1-20
+build2/etc/test/test_vtz_api_450b689b_include.cmake
+  s_ac241310b22047::t_53d77c5348a0fd 1-5
+build2/examples/cmake_install.cmake
+  s_ac241310b22047::t_571f04f785ba33 1-45
+build2/vtzConfig.cmake
+  s_ac241310b22047::t_bf2669c3163166 1-28
+build2/vtz_verify_interface_header_sets/vtz/format.h.cxx
+  s_ac241310b22047::t_a5b2d9d50fb28c 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/bit.h.cxx
+  s_ac241310b22047::t_e28757360ca725 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/chrono_types.h.cxx
+  s_ac241310b22047::t_e5ef92bff33c18 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/export.h.cxx
+  s_ac241310b22047::t_4cc062ea464c1b 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/fix_str.h.cxx
+  s_ac241310b22047::t_0adf7d0204c220 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/format_impl.h.cxx
+  s_ac241310b22047::t_33c0c1e1994c05 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/macros.h.cxx
+  s_ac241310b22047::t_6170cd9d72ccd4 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/math.h.cxx
+  s_ac241310b22047::t_c97eef665dfe5e 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/tz_impl.h.cxx
+  s_ac241310b22047::t_e9e62cc0e7374c 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/tz_tables.h.cxx
+  s_ac241310b22047::t_b87f3b80af8c53 1-2
+build2/vtz_verify_interface_header_sets/vtz/impl/zone_abbr.h.cxx
+  s_ac241310b22047::t_39c348d0116548 1-2
+build2/vtz_verify_interface_header_sets/vtz/parse.h.cxx
+  s_ac241310b22047::t_2de636e81996f5 1-2
+build2/vtz_verify_interface_header_sets/vtz/types.h.cxx
+  s_ac241310b22047::t_e0fdba583cf8f7 1-2
+build2/vtz_verify_interface_header_sets/vtz/tz.h.cxx
+  s_ac241310b22047::t_e8f0f169e107f4 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "364f8348d82c9d416b01cd7c78ff7af9f190c8a9",
+  "prompts": {},
+  "sessions": {
+    "s_ac241310b22047": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee1b419c-0472-4325-952b-20f557c00f93",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
