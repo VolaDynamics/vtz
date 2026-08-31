@@ -441,12 +441,72 @@ namespace vtz {
     }
 
 
+    /// Shared implementation of civil_add_years and civil_add_years_clamped.
+    ///
+    /// Rather than decoding the date to a (year, month, day) triplet and
+    /// re-encoding it, this computes the number of days to shift by directly.
+    /// Adding N years moves the date forward by `365 * N`, plus one day for
+    /// every leap day in the interval, so we only need to count leap days.
+    ///
+    /// This works because we count from March 1st (the same epoch shift used
+    /// by to_civil0/resolve_civil0). In a March-based year, Feb 29th is the
+    /// *last* day of the year, so a leap day is never inserted in the middle
+    /// of a year - every date keeps the same offset from its year's March 1st.
+    /// Feb 29th is the sole exception, which is what @p Clamp handles.
+    ///
+    /// @tparam Clamp if true, Feb 29th + N years clamps back to Feb 28th when
+    ///               the target year is not a leap year. If false, it rolls
+    ///               over to Mar 1st.
+    template<bool Clamp>
+    VTZ_INLINE constexpr sys_days_t _civil_add_years_impl(
+        sys_days_t days, i32 years ) noexcept {
+        // Shift the epoch from 1970-01-01 to 0000-03-01
+        i32 z = days + 719468;
+        // The era is a 400 year period, over which the calendar repeats
+        // exactly. Every era holds exactly 146097 days.
+        auto era_parts = math::div_floor2<146097>( z );
+        i32  era       = era_parts.quot;
+        u32  doe       = era_parts.rem; // Day within era - [0, 146096]
+        // Year of era - [0, 399]
+        u32 yoe = ( doe - doe / 1460 + doe / 36524 - doe / 146096 ) / 365;
+        // Leap days elapsed within the era before the current year
+        u32 leaps = yoe / 4 - yoe / 100;
+
+        // Move to the target year. This may cross an era boundary, in which
+        // case every whole era crossed contributes 97 leap days.
+        auto target = math::div_floor2<400>( i32( yoe ) + years );
+        u32  yoe2   = u32( target.rem ); // [0, 399]
+        u32  leaps2 = yoe2 / 4 - yoe2 / 100;
+
+        // 365 days per year, plus 97 leap days per era crossed, plus the
+        // difference in leap days elapsed within the era
+        i32 delta
+            = 365 * years + 97 * target.quot + i32( leaps2 ) - i32( leaps );
+
+        if constexpr( Clamp )
+        {
+            // Day of the (March-based) year - [0, 365]. doy == 365 happens
+            // only on Feb 29th, since it is the last day of a March-based
+            // year.
+            u32 doy = doe - ( 365 * yoe + leaps );
+            // yoe2 is the March-based year, so the Feb 29th we would land on
+            // belongs to the *following* calendar year
+            i32 next_year = ( era + target.quot ) * 400 + i32( yoe2 ) + 1;
+            // Step back a day, so that we land on Feb 28th instead of Mar 1st
+            delta -= doy == 365 && !is_leap( next_year );
+        }
+
+        return days + delta;
+    }
+
     /// Add years to the date. Eg, (Dec 13 2025) + 3 years becomes
     /// Dec 13 2028
+    ///
+    /// Note that Feb 29th + N years rolls over to Mar 1st when the target year
+    /// is not a leap year. Use civil_add_years_clamped to get Feb 28th instead.
     constexpr sys_days_t civil_add_years(
         sys_days_t days, i32 years ) noexcept {
-        auto ymd = to_civil0( days );
-        return resolve_civil0( ymd.year + years, ymd.month, ymd.day );
+        return _civil_add_years_impl<false>( days, years );
     }
 
     /// Add months to the date. Eg, (Dec 13 2025) + 3 months becomes
@@ -470,8 +530,7 @@ namespace vtz {
     /// Feb 29st + 1 year becomes Feb 28th
     constexpr sys_days_t civil_add_years_clamped(
         sys_days_t days, i32 years ) noexcept {
-        auto ymd = to_civil0( days );
-        return resolve_civil0( ymd.year + years, ymd.month, ymd.day );
+        return _civil_add_years_impl<true>( days, years );
     }
 
     /// Get the beginning of the month, as days since the epoch. Eg, Dec 13 2025
