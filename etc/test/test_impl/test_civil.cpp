@@ -91,6 +91,106 @@ namespace {
         int last_dom = days_in_month_reference( year2, u8( month ) );
         return resolve_civil( year2, u32( month ), u32( std::min( day, last_dom ) ) );
     }
+
+    /// The reference implementations below work entirely in i64 and are
+    /// independent of anything in civil.h, so they stay valid however the
+    /// implementation is rewritten, and cannot themselves overflow at the edges
+    /// of the i32 day range that the fuzzing tests reach.
+    namespace ref {
+        constexpr bool is_leap( i64 y ) noexcept {
+            return y % 4 == 0 && ( y % 100 != 0 || y % 400 == 0 );
+        }
+
+        constexpr int days_in_month( i64 y, int m /* 1-based */ ) noexcept {
+            return m == 2 ? ( is_leap( y ) ? 29 : 28 ) : int( DAYS_IN_EACH_MONTH[m] );
+        }
+
+        /// Floor division, so negative years behave the same way the
+        /// implementation does
+        constexpr i64 fdiv( i64 a, i64 b ) noexcept {
+            i64 q = a / b;
+            return ( a % b != 0 && ( ( a < 0 ) != ( b < 0 ) ) ) ? q - 1 : q;
+        }
+        constexpr i64 fmod( i64 a, i64 b ) noexcept { return a - b * fdiv( a, b ); }
+
+        struct ymd {
+            i64 year;
+            int month, day; // both 1-based
+        };
+
+        /// days since 1970-01-01 -> (year, month, day)
+        constexpr ymd to_civil( i64 z ) noexcept {
+            z       += 719468;
+            i64 era  = fdiv( z, 146097 );
+            i64 doe  = z - era * 146097;
+            i64 yoe  = ( doe - doe / 1460 + doe / 36524 - doe / 146096 ) / 365;
+            i64 y    = yoe + era * 400;
+            i64 doy  = doe - ( 365 * yoe + yoe / 4 - yoe / 100 );
+            i64 mp   = ( 5 * doy + 2 ) / 153;
+            i64 d    = doy - ( 153 * mp + 2 ) / 5 + 1;
+            i64 m    = mp < 10 ? mp + 3 : mp - 9;
+            return ymd{ y + ( m <= 2 ), int( m ), int( d ) };
+        }
+
+        /// (year, month, day) -> days since 1970-01-01
+        constexpr i64 resolve_civil( i64 y, int m, int d ) noexcept {
+            y       -= m <= 2;
+            i64 era  = fdiv( y, 400 );
+            i64 yoe  = y - era * 400;
+            i64 doy  = ( 153 * ( m > 2 ? m - 3 : m + 9 ) + 2 ) / 5 + d - 1;
+            i64 doe  = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+            return era * 146097 + doe - 719468;
+        }
+
+        /// Add months. @p clamp selects whether the day of the month is clamped
+        /// to the target month's last day, or allowed to roll over.
+        constexpr i64 add_months( i64 days, int months, bool clamp ) noexcept {
+            ymd t  = to_civil( days );
+            i64 m0 = i64( t.month ) - 1 + months; // 0-based
+            i64 y2 = t.year + fdiv( m0, 12 );
+            int m2 = int( fmod( m0, 12 ) ) + 1;
+            int d  = t.day;
+            if( clamp )
+            {
+                int last = days_in_month( y2, m2 );
+                if( d > last ) d = last;
+            }
+            return resolve_civil( y2, m2, d );
+        }
+
+        /// Add years, with the same clamping choice as add_months
+        constexpr i64 add_years( i64 days, int years, bool clamp ) noexcept {
+            ymd t  = to_civil( days );
+            i64 y2 = t.year + years;
+            int d  = t.day;
+            if( clamp )
+            {
+                int last = days_in_month( y2, t.month );
+                if( d > last ) d = last;
+            }
+            return resolve_civil( y2, t.month, d );
+        }
+    } // namespace ref
+
+    /// Days in 100 Gregorian years, rounded up. The fuzzing tests shift by at
+    /// most this much, so both the input and the result have to stay inside the
+    /// usable range with this much headroom.
+    constexpr i64 MAX_SHIFT_DAYS = 36600;
+
+    /// Largest date the decoders accept without signed overflow. to_civil and
+    /// friends compute `days + 719468` in i32, so anything above this overflows
+    /// before the calendar arithmetic even starts.
+    ///
+    /// This is a property of the current implementation, not of the calendar -
+    /// widening that shift would remove the limit, but that is out of scope
+    /// here, so the tests stay below it.
+    constexpr i64 MAX_SAFE_DSE = i64( INT32_MAX ) - 719468;
+
+    /// Usable input range for the fuzzing tests, with room for the shift at
+    /// both ends. The low end is bounded by i32 itself rather than by the
+    /// implementation.
+    constexpr i64 FUZZ_LO = i64( INT32_MIN ) + MAX_SHIFT_DAYS;
+    constexpr i64 FUZZ_HI = MAX_SAFE_DSE - MAX_SHIFT_DAYS;
 } // namespace
 
 
@@ -382,17 +482,23 @@ TEST( vtz, civil_big_test ) {
 
 
 TEST( vtz, civil_arithmetic ) {
-    /// Check that adding years or months does the correct thing
+    /// Check that adding years or months does the correct thing, for every day
+    /// of an 800 year span centred on the epoch, shifted by up to +/-100 years
+    /// or months in either direction.
+    ///
+    /// 1570..2370 is +/-400 years around 1970, so it covers two whole centuries
+    /// either side of the epoch and both kinds of century boundary: 1600 and
+    /// 2000 are leap years, 1700/1800/1900/2100/2200/2300 are not.
 
+    COUNT_ASSERTIONS();
 
-    /// Corresponds to 1970-01-01
-    sys_days_t day_counter = 0;
+    /// Corresponds to 1570-01-01
+    sys_days_t day_counter = resolve_civil( 1570, 1, 1 );
 
     // Sanity Check - 2025-11-13 is a Thursday
     ASSERT_EQ_QUIET( dow_from_days( resolve_civil( 2025, 11, 13 ) ), dow_t::Thu );
 
-    // Test these functions over a huge span of time
-    for( int year = 1970; year < 2060; ++year )
+    for( int year = 1570; year <= 2370; ++year )
     {
         for( int month = 1; month <= 12; ++month )
         {
@@ -401,7 +507,10 @@ TEST( vtz, civil_arithmetic ) {
             for( int day = 1; day <= days_in_month; ++day )
             {
                 auto dse = day_counter++;
-                for( int k = -60; k <= 60; ++k )
+
+                ADD_CONTEXT( "Testing date", year, month, day, dse );
+
+                for( int k = -100; k <= 100; ++k )
                 {
                     ASSERT_EQ_QUIET( civil_add_years( dse, k ),
                                      resolve_civil( year + k, month, day ) );
@@ -413,6 +522,9 @@ TEST( vtz, civil_arithmetic ) {
             }
         }
     }
+
+    // The loop should have walked exactly to the end of 2370
+    ASSERT_EQ( day_counter, resolve_civil( 2371, 1, 1 ) );
 }
 
 
@@ -442,11 +554,10 @@ TEST( vtz, civil_add_months_clamped ) {
     // No clamping needed - the day of the month is valid in the target month
     ASSERT_EQ( add_months( 2025, 12, 13, 3 ), "2026-03-13" );
 
-    /// Corresponds to 1970-01-01
-    sys_days_t day_counter = 0;
+    /// Corresponds to 1570-01-01. See civil_arithmetic for why this span.
+    sys_days_t day_counter = resolve_civil( 1570, 1, 1 );
 
-    // Test this function over a huge span of time
-    for( int year = 1970; year < 2060; ++year )
+    for( int year = 1570; year <= 2370; ++year )
     {
         for( int month = 1; month <= 12; ++month )
         {
@@ -458,7 +569,7 @@ TEST( vtz, civil_add_months_clamped ) {
 
                 ADD_CONTEXT( "Testing date", year, month, day, dse, to_civil( dse ) );
 
-                for( int k = -60; k <= 60; ++k )
+                for( int k = -100; k <= 100; ++k )
                 {
                     ASSERT_EQ_QUIET( civil_add_months_clamped( dse, k ),
                                      add_months_clamped_reference( year, month, day, k ) );
@@ -466,6 +577,8 @@ TEST( vtz, civil_add_months_clamped ) {
             }
         }
     }
+
+    ASSERT_EQ( day_counter, resolve_civil( 2371, 1, 1 ) );
 }
 
 
@@ -500,11 +613,10 @@ TEST( vtz, civil_add_years_clamped ) {
     // No clamping needed
     ASSERT_EQ( add_years( 2025, 12, 13, 3 ), "2028-12-13" );
 
-    /// Corresponds to 1970-01-01
-    sys_days_t day_counter = 0;
+    /// Corresponds to 1570-01-01. See civil_arithmetic for why this span.
+    sys_days_t day_counter = resolve_civil( 1570, 1, 1 );
 
-    // Test this function over a huge span of time
-    for( int year = 1970; year < 2060; ++year )
+    for( int year = 1570; year <= 2370; ++year )
     {
         for( int month = 1; month <= 12; ++month )
         {
@@ -516,12 +628,109 @@ TEST( vtz, civil_add_years_clamped ) {
 
                 ADD_CONTEXT( "Testing date", year, month, day, dse, to_civil( dse ) );
 
-                for( int k = -60; k <= 60; ++k )
+                for( int k = -100; k <= 100; ++k )
                 {
                     ASSERT_EQ_QUIET( civil_add_years_clamped( dse, k ),
                                      add_years_clamped_reference( year, month, day, k ) );
                 }
             }
+        }
+    }
+
+    ASSERT_EQ( day_counter, resolve_civil( 2371, 1, 1 ) );
+}
+
+
+TEST( vtz, civil_arithmetic_fuzz ) {
+    /// Fuzz all four add functions over the whole usable day range, well
+    /// outside the dense spans the tests above cover.
+    ///
+    /// Checked against reference implementations that work in i64 and call
+    /// nothing from civil.h, so they stay valid however the implementation is
+    /// rewritten.
+    ///
+    /// The generator is seeded with a fixed value, so a failure reproduces.
+
+    COUNT_ASSERTIONS();
+
+    std::mt19937_64 rng( 0x5eed15702370ull );
+
+    // Uniform over the usable range - mostly far-flung dates, which is where an
+    // era or century boundary bug shows up.
+    {
+        std::uniform_int_distribution<i64> day_dist( FUZZ_LO, FUZZ_HI );
+        std::uniform_int_distribution<int> off_dist( -100, 100 );
+
+        for( int i = 0; i < 1000000; ++i )
+        {
+            auto dse = sys_days_t( day_dist( rng ) );
+            int  k   = off_dist( rng );
+
+            ADD_CONTEXT( "Fuzz (uniform)", i, dse, k );
+
+            ASSERT_EQ_QUIET( i64( civil_add_months( dse, k ) ), ref::add_months( dse, k, false ) );
+            ASSERT_EQ_QUIET( i64( civil_add_months_clamped( dse, k ) ),
+                             ref::add_months( dse, k, true ) );
+            ASSERT_EQ_QUIET( i64( civil_add_years( dse, k ) ), ref::add_years( dse, k, false ) );
+            ASSERT_EQ_QUIET( i64( civil_add_years_clamped( dse, k ) ),
+                             ref::add_years( dse, k, true ) );
+        }
+    }
+
+    // Biased towards the inputs most likely to be wrong: month ends (where
+    // clamping bites), February, and years sitting on a century or era
+    // boundary. The year is drawn from the whole usable range, then snapped to
+    // one of those interesting cases.
+    {
+        i64 year_lo = ref::to_civil( FUZZ_LO ).year + 1;
+        i64 year_hi = ref::to_civil( FUZZ_HI ).year - 1;
+
+        std::uniform_int_distribution<i64> year_dist( year_lo, year_hi );
+        std::uniform_int_distribution<int> month_dist( 1, 12 );
+        std::uniform_int_distribution<int> off_dist( -100, 100 );
+        std::uniform_int_distribution<int> pick( 0, 5 );
+        // Small nudge, so days adjacent to the interesting ones get hit too
+        std::uniform_int_distribution<int> nudge( -2, 2 );
+
+        for( int i = 0; i < 1000000; ++i )
+        {
+            i64 y = year_dist( rng );
+            int m = month_dist( rng );
+
+            // Snap the year onto a boundary that the leap rules care about
+            switch( pick( rng ) )
+            {
+            case 0: y -= ref::fmod( y, 4 ); break;   // leap year
+            case 1: y -= ref::fmod( y, 100 ); break; // century, not leap
+            case 2: y -= ref::fmod( y, 400 ); break; // century, leap
+            case 3: m = 2; break;                    // February
+            case 4:
+                m  = 2;
+                y -= ref::fmod( y, 4 );
+                break; // February of a leap year
+            default: break;
+            }
+
+            // Land on the end of the month, where clamping applies, then nudge
+            int last = ref::days_in_month( y, m );
+            int d    = last + nudge( rng );
+            if( d < 1 ) d = 1;
+            if( d > last ) d = last;
+
+            i64 dse64 = ref::resolve_civil( y, m, d );
+            if( dse64 < FUZZ_LO || dse64 > FUZZ_HI ) continue;
+
+            auto dse = sys_days_t( dse64 );
+            int  k   = off_dist( rng );
+
+            ADD_CONTEXT( "Fuzz (boundary)", i, y, m, d, dse, k );
+
+            ASSERT_EQ_QUIET( i64( civil_add_months( dse, k ) ), ref::add_months( dse, k, false ) );
+            ASSERT_EQ_QUIET( i64( civil_add_months_clamped( dse, k ) ),
+                             ref::add_months( dse, k, true ) );
+            ASSERT_EQ_QUIET( i64( civil_add_years( dse, k ) ), ref::add_years( dse, k, false ) );
+            ASSERT_EQ_QUIET( i64( civil_add_years_clamped( dse, k ) ),
+                             ref::add_years( dse, k, true ) );
         }
     }
 }
