@@ -1,0 +1,27 @@
+include/impl/vtz/civil.h
+  s_ac241310b22047::t_5d682dec21370a 672,677
+  s_ac241310b22047::t_a27eabfb29a126 443-452,467-470,473-475,479-480,482,489,493-496,516-518,520-522,532,534-537,542-543,545-548,550-551,556-558,561-562
+  s_ac241310b22047::t_c6d949168c6713 569-575
+  s_ac241310b22047::t_573f3db1b4a0f1 620-624
+  s_ac241310b22047::t_eef650f319ea27 588-589,594-595
+  s_ac241310b22047::t_bdd6ee287f82ff 650
+  s_ac241310b22047::t_41441a2912d5ed 596,651-655
+etc/test/test_impl/test_civil.cpp
+  s_ac241310b22047::t_e99ea9034cebf7 197-345
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "53ed0f9baa6f372a76f3a79f2f25c451786b5b74",
+  "prompts": {},
+  "sessions": {
+    "s_ac241310b22047": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee1b419c-0472-4325-952b-20f557c00f93",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
