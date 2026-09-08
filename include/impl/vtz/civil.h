@@ -7,7 +7,7 @@
 #include <vtz/strings.h>
 #include <vtz/tz_reader/from_utc.h>
 
-namespace vtz::detail {
+namespace vtz::_civ {
     // clang-format off
     /// Contains the last 2 bits of the number of days in a month
     /// (non-leap-year)
@@ -23,7 +23,251 @@ namespace vtz::detail {
     constexpr u32 DAYS_PER_MONTH_BITS_LEAP = 0b11'10'11'10'11'11'10'11'10'11'01'11'00;
     // month:                                  12 11 10 09 08 07 06 05 04 03 02 01
     // clang-format on
-} // namespace vtz::detail
+
+    /// Returns the number of days from March 1st to the first day of the given
+    /// month, where the month is 0-based and March-based (0 = March, 11 = Feb).
+    ///
+    /// In a March-based year the months follow a regular pattern that repeats
+    /// every 5 months (153 days), which is what makes this a closed form. This
+    /// is the same expression used by to_civil0/resolve_civil0.
+    VTZ_INLINE constexpr u32 month_start( u32 mp ) noexcept {
+        return ( 153 * mp + 2 ) / 5;
+    }
+
+
+    /// Decoded form used by the civil_add_{months,years} family: just enough of
+    /// a decomposition to count leap days between two years. Those functions
+    /// only need *differences*, so the absolute year never appears. A century
+    /// is the right window because inside one there are no 100- or 400-year
+    /// leap exceptions, leaving only "divisible by 4" - a shift, not a
+    /// division.
+    ///
+    /// The magic constants below are guarded by static_asserts in
+    /// etc/test/test_impl/test_civil.cpp, keeping that machinery out of every
+    /// TU that includes this header.
+    struct century_parts {
+        /// Century index, counting March-based centuries from
+        /// CENTURY_ORIGIN. Only its low two bits are ever used
+        /// (a century is a leap century iff `c % 4 == 0`).
+        u32 c;
+        /// Year within the century - [0, 99]
+        u32 z;
+        /// Day within the century - [0, 36524]
+        u32 doc;
+        /// Day of the March-based year - [0, 365]. 365 only on Feb 29th.
+        u32 doy;
+    };
+
+    /// Epoch shift used by the civil_add_* family: 719468 (1970-01-01 ->
+    /// 0000-03-01) plus 14695 whole 400-year eras. Whole eras cancel out of
+    /// every difference we compute, and they lift the result above zero for any
+    /// i32 input - so the decode stays unsigned, where truncating division is
+    /// already floor division and needs no fixups.
+    constexpr u32 CENTURY_ORIGIN = 2147614883u;
+
+    /// Days in a century that does not end in a leap year. An era is 4 of them
+    /// plus the leap day the divisible-by-400 rule puts back: 4 * 36524 + 1.
+    constexpr u32 DAYS_PER_CENTURY = 36524u;
+
+    // The origin must be a whole number of eras past the 0000-03-01 shift, or
+    // the calendar would not line up...
+    static_assert( ( CENTURY_ORIGIN - 719468u ) % 146097u == 0,
+        "CENTURY_ORIGIN must be 719468 plus a whole number of eras" );
+    // ...and at least 2^31, so the smallest i32 still maps above zero.
+    static_assert( CENTURY_ORIGIN >= 2147483648u,
+        "CENTURY_ORIGIN must be >= 2^31 so that u32( days ) + origin "
+        "does not wrap for days == INT32_MIN" );
+
+    /// Multiplier for extracting the century index from the shifted day count:
+    /// `( ( n + 1 ) * CENTURY_MAGIC ) >> 47` is the number of whole
+    /// centuries elapsed. Exact for every u32 day count.
+    constexpr u64 CENTURY_MAGIC = 3853261555ull;
+    constexpr u32 CENTURY_SHIFT = 47u;
+
+    // The 64-bit product cannot overflow, even at the largest u32 input.
+    static_assert(
+        CENTURY_MAGIC <= 18446744073709551615ull / ( 4294967295ull + 1ull ),
+        "( n + 1 ) * CENTURY_MAGIC must not overflow u64" );
+
+    /// First day of century `m`, counting from the origin: 36524 days per
+    /// century plus one leap day for each leap century (every 4th) passed.
+    constexpr u32 century_start( u32 m ) noexcept {
+        return DAYS_PER_CENTURY * m + ( m >> 2 );
+    }
+
+    /// The century index as computed by split_century.
+    constexpr u32 century_of( u32 n ) noexcept {
+        return u32( ( ( u64( n ) + 1 ) * CENTURY_MAGIC ) >> CENTURY_SHIFT );
+    }
+
+    /// Packed table of `30 - <0-based last day>` for each month of a
+    /// March-based year, two bits per month, mp = 0 (March) in the low bits.
+    /// Gives 30 29 30 29 30 30 29 30 29 30 30 27 - the trailing 27 is
+    /// February, which gets +1 in a leap year.
+    constexpr u32 MARCH_MONTH_LAST_BITS = 12652612u;
+
+    /// Multiplier and shift that yield both the March-based month and the day
+    /// within it from the day-of-year in one multiply: the high bits are
+    /// `( 5 * doy + 2 ) / 153` and the low 14 hold `535 * dom`.
+    ///
+    /// Only exact for doy in [0, 365] - the range split_century
+    /// produces. The first doy where it breaks is 428, so the margin is 63
+    /// days; do not widen the doy range without re-deriving these.
+    constexpr u32 MONTH_MAGIC_MUL   = 535u;
+    constexpr u32 MONTH_MAGIC_ADD   = 331u;
+    constexpr u32 MONTH_MAGIC_SHIFT = 14u;
+    constexpr u32 MONTH_MAGIC_MASK  = ( 1u << MONTH_MAGIC_SHIFT ) - 1u;
+
+    /// Split a day count into (century, year-of-century, day-of-century,
+    /// day-of-year).
+    ///
+    /// The era split used by to_civil needs `( doe - doe / 1460 + doe / 36524
+    /// - doe / 146096 ) / 365` - four divisions - to recover the year, because
+    /// a 400-year era straddles the 100- and 400-year leap exceptions. Cutting
+    /// on the century first costs one multiply-shift and leaves a window with
+    /// no exceptions, so the year within it is one multiply-shift too.
+    VTZ_INLINE constexpr century_parts split_century(
+        sys_days_t days ) noexcept {
+        // Unsigned from here on: the origin is large enough that this cannot
+        // wrap below zero for any i32 input.
+        u32 n   = u32( days ) + CENTURY_ORIGIN;
+        u32 c   = century_of( n );
+        u32 doc = n - century_start( c );
+        // Inside a century every 4th year is a leap year with no exceptions, so
+        // 4 years is exactly 1461 days. Scaling by 4 therefore lets a single
+        // division recover the year, and the +3 lines the quotient up on year
+        // boundaries (4 * 365 is 1460, one short of 1461).
+        u32 t   = 4 * doc + 3;
+        u32 z   = t / 1461;              // [0, 99]
+        u32 doy = ( t - 1461 * z ) >> 2; // [0, ( 1461 - 1 ) >> 2] == [0, 365]
+        return { c, z, doc, doy };
+    }
+
+    /// True if the March-based year `z` of century `c` ends with a Feb 29th.
+    /// That February belongs to the *following* calendar year, hence the +1.
+    /// Inside a century only the divisible-by-4 rule applies, so this is a mask
+    /// rather than the full three-way is_leap test.
+    VTZ_INLINE constexpr bool march_year_is_leap( u32 c, u32 z ) noexcept {
+        // z == 99 is the only case where the following year leaves the century,
+        // so it is the only place `c` matters.
+        u32 w = z == 99 ? c : z;
+        return ( w % 4 ) == 3;
+    }
+
+    /// Shared implementation of civil_add_months and civil_add_months_clamped.
+    ///
+    /// Returns `days + delta` instead of decoding to (year, month, day) and
+    /// re-encoding. Month lengths look too irregular for that, but in a
+    /// March-based year each month starts exactly `month_start` days in,
+    /// so a whole-month shift is just the difference of two of those terms plus
+    /// the leap days between the two years. February needs no special case
+    /// either: it is the *last* month of a March-based year, so a leap day is
+    /// only ever appended to a year end, never inserted mid-year.
+    ///
+    /// @tparam Clamp if true, the day of the month is clamped to the last day
+    ///               of the target month, so Jan 31st + 1 month becomes Feb
+    ///               28th. If false, it rolls over into the following month.
+    template<bool Clamp>
+    VTZ_INLINE constexpr sys_days_t add_months_impl(
+        sys_days_t days, i32 months ) noexcept {
+        auto parts = split_century( days );
+        u32  c     = parts.c;
+        u32  z     = parts.z;   // Year of century - [0, 99]
+        u32  doy   = parts.doy; // Day of the March-based year - [0, 365]
+
+        // Month and 0-based day within it from one multiply: high bits give the
+        // month, low bits give 535 * dom.
+        u32 t   = MONTH_MAGIC_MUL * doy + MONTH_MAGIC_ADD;
+        u32 mp  = t >> MONTH_MAGIC_SHIFT; // [0, 11], 0 is March
+        u32 dom = ( t & MONTH_MAGIC_MASK ) / MONTH_MAGIC_MUL;
+
+        // Months from the start of the century to the target. One value carries
+        // the whole target: /12 gives the target year-of-century (which may
+        // fall outside [0, 99]) and /1200 the centuries crossed. Floor
+        // division, because `total` goes negative for large negative offsets.
+        i32 total = i32( 12 * z + mp ) + months;
+        i32 yq    = math::div_floor<12>( total );
+        i32 cq    = math::div_floor<1200>( total );
+        u32 mp2   = u32( total - 12 * yq ); // [0, 11]
+        u32 z2    = u32( yq - 100 * cq );   // [0, 99]
+
+        // Leap days between source and target year. Inside a century that is
+        // `z / 4`; each century crossed adds 24, plus one per leap century,
+        // which is what the `( c & 3 ) + cq` shift counts. `c` enters only
+        // through its low two bits, so the absolute century - and hence the era
+        // - drops out entirely.
+        i32 leap_delta
+            = 24 * cq + ( ( i32( c & 3 ) + cq ) >> 2 ) + i32( z2 >> 2 );
+
+        // 365 days per year plus the leap days, plus where the target month
+        // starts in its year, minus where we started in the century, plus the
+        // day within the month we keep.
+        i32 delta = 365 * yq + leap_delta + i32( month_start( mp2 ) )
+                    - i32( parts.doc ) + i32( dom );
+
+        if constexpr( Clamp )
+        {
+            // The 0-based last day of the target month. February is the last
+            // month of a March-based year, so it is the only one whose length
+            // depends on the leap rule - and its field is the top one, reached
+            // only when mp2 == 11. So the leap bump folds straight into the
+            // table and costs nothing for the other eleven months.
+            u32 bits = MARCH_MONTH_LAST_BITS
+                       - ( u32( march_year_is_leap( c + u32( cq ), z2 ) )
+                           << ( 2 * 11 ) );
+            u32 last = 30 - ( ( bits >> ( 2 * mp2 ) ) & 3 );
+            // Step back, so that eg Jan 31st + 1 month lands on Feb 28th
+            delta -= dom > last ? i32( dom - last ) : 0;
+        }
+
+        return days + delta;
+    }
+
+
+    /// Shared implementation of civil_add_years and civil_add_years_clamped.
+    ///
+    /// Adding N years moves the date by `365 * N` plus the leap days crossed,
+    /// so only the leap count has to be computed. This holds because we count
+    /// from March 1st (the same epoch shift as to_civil0/resolve_civil0): Feb
+    /// 29th is then the *last* day of the year, so every date keeps the same
+    /// offset from its year's March 1st. Feb 29th itself is the sole exception,
+    /// which is what @p Clamp handles.
+    ///
+    /// @tparam Clamp if true, Feb 29th + N years clamps back to Feb 28th when
+    ///               the target year is not a leap year. If false, it rolls
+    ///               over to Mar 1st.
+    template<bool Clamp>
+    VTZ_INLINE constexpr sys_days_t add_years_impl(
+        sys_days_t days, i32 years ) noexcept {
+        auto parts = split_century( days );
+        u32  c     = parts.c;
+        u32  z     = parts.z; // Year of century - [0, 99]
+
+        // Move to the target year, carrying whole centuries out
+        i32 total = i32( z ) + years;
+        i32 cq    = math::div_floor<100>( total );
+        u32 z2    = u32( total - 100 * cq ); // [0, 99]
+
+        // Same leap-day count as add_months_impl
+        i32 leap_delta
+            = 24 * cq + ( ( i32( c & 3 ) + cq ) >> 2 ) + i32( z2 >> 2 );
+
+        // 365 days per year, plus the leap days crossed, minus where we
+        // started within the century
+        i32 delta = 365 * years + leap_delta - i32( z >> 2 );
+
+        if constexpr( Clamp )
+        {
+            // doy == 365 happens only on Feb 29th, since it is the last day of
+            // a March-based year
+            delta
+                -= parts.doy == 365 && !march_year_is_leap( c + u32( cq ), z2 );
+        }
+
+        return days + delta;
+    }
+
+} // namespace vtz::_civ
 
 namespace vtz {
     /// Writes the date as YYYYMMDD. Requires 8 characters of space
@@ -231,7 +475,7 @@ namespace vtz {
     /// @param is_leap true if the year is a leap year
     constexpr u32 last_day_of_month_by_leap(
         u32 month, bool is_leap ) noexcept {
-        u32 bits = detail::DAYS_PER_MONTH_BITS_COMMON | ( u32( is_leap ) << 4 );
+        u32 bits = _civ::DAYS_PER_MONTH_BITS_COMMON | ( u32( is_leap ) << 4 );
         return ( 28 | ( ( bits >> ( 2 * month ) ) & 0x3 ) );
     }
 
@@ -432,21 +676,44 @@ namespace vtz {
 
     /// Add months to the date. Eg, (Dec 13 2025) + 3 months becomes
     /// Mar 13 2026
+    ///
+    /// Note that the day of the month rolls over when the target month is too
+    /// short: Jan 31st + 1 month becomes Mar 3rd. Use civil_add_months_clamped
+    /// to get Feb 28th instead.
     constexpr sys_days_t civil_add_months(
         sys_days_t days, i32 months ) noexcept {
-        auto ymd   = to_civil0( days );
-        auto m0    = ymd.month;
-        auto parts = math::div_floor2<12>( m0 + months );
-        return resolve_civil0( ymd.year + parts.quot, parts.rem, ymd.day );
+        return _civ::add_months_impl<false>( days, months );
+    }
+
+    /// Add years to the date. Eg, (Dec 13 2025) + 3 years becomes
+    /// Dec 13 2028
+    ///
+    /// Note that Feb 29th + N years rolls over to Mar 1st when the target year
+    /// is not a leap year. Use civil_add_years_clamped to get Feb 28th instead.
+    constexpr sys_days_t civil_add_years(
+        sys_days_t days, i32 years ) noexcept {
+        return _civ::add_years_impl<false>( days, years );
+    }
+
+    /// Add months to the date. Eg, (Dec 13 2025) + 3 months becomes
+    /// Mar 13 2026.
+    ///
+    /// Clamps the day of the month, so that we don't have rollover:
+    /// Jan 31st + 1 month becomes Feb 28th (or Feb 29th, in leap years)
+    constexpr sys_days_t civil_add_months_clamped(
+        sys_days_t days, i32 months ) noexcept {
+        return _civ::add_months_impl<true>( days, months );
     }
 
 
     /// Add years to the date. Eg, (Dec 13 2025) + 3 years becomes
     /// Dec 13 2028
-    constexpr sys_days_t civil_add_years(
+    ///
+    /// Clamps the day of the month, so that we don't have rollover:
+    /// Feb 29st + 1 year becomes Feb 28th
+    constexpr sys_days_t civil_add_years_clamped(
         sys_days_t days, i32 years ) noexcept {
-        auto ymd = to_civil0( days );
-        return resolve_civil0( ymd.year + years, ymd.month, ymd.day );
+        return _civ::add_years_impl<true>( days, years );
     }
 
     /// Get the beginning of the month, as days since the epoch. Eg, Dec 13 2025
