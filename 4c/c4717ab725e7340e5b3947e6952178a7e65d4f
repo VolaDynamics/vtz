@@ -1,0 +1,28 @@
+include/impl/vtz/civil.h
+  s_ac241310b22047::t_57bf29ffaed187 607
+  s_ac241310b22047::t_2f6b4c82c38ed4 618
+  h_72614bc0299347 598-606,608-617
+  s_ac241310b22047::t_088fbd17f77bfc 433-519,522-525,528
+  s_ac241310b22047::t_093fb262003775 532-589,592-594,597
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "4cc4717ab725e7340e5b3947e6952178a7e65d4f",
+  "prompts": {},
+  "humans": {
+    "h_72614bc0299347": {
+      "author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  },
+  "sessions": {
+    "s_ac241310b22047": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee1b419c-0472-4325-952b-20f557c00f93",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
