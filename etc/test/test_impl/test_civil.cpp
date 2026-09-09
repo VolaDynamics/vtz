@@ -10,7 +10,9 @@
 #include "vtz_testing.h"
 
 #include <algorithm>
+#include <atomic>
 #include <random>
+#include <thread>
 using namespace vtz;
 
 TEST( vtz_math, div_floor ) {
@@ -1036,4 +1038,180 @@ TEST( vtz, civil_arithmetic_range_ends ) {
             }
         }
     }
+}
+
+
+TEST( vtz, civil_reduced_space ) {
+    /// Exhaustive over the *reduced* state space, which is exhaustive over the
+    /// arithmetic. This is the check that the proof in
+    /// docs/civil_add_algorithms.md section 11 rests on.
+    ///
+    /// Two exact symmetries make a 2^64 input space finite:
+    ///
+    ///   A. `delta` depends on `days` only through `(c % 4, doc)`. The code
+    ///      mentions `c` only as `c & 3` and as `(c + cq) & 3` inside
+    ///      march_year_is_leap, and z/doy/mp/dom are all functions of `doc`. So
+    ///      the day axis has 3 * 36524 + 36525 == 146097 classes - one per day
+    ///      of an era, which is Hinnant's "you only need to debug a single era"
+    ///      surviving the century split.
+    ///
+    ///   B. Shifting by one era adds exactly one era of days. k + 4800 months
+    ///      (== 400 years) sends yq -> yq + 400 and cq -> cq + 4 while leaving
+    ///      mp2 and z2 alone, so delta gains 365 * 400 + 24 * 4 + 1 == 146097.
+    ///      One residue of k modulo 4800 therefore settles every k.
+    ///
+    /// So enumerating 146097 * 4800 classes for the month functions and
+    /// 146097 * 400 for the years covers the algebra completely. Both symmetries
+    /// are checked here too, so the reduction is verified rather than assumed.
+    ///
+    /// What this deliberately does *not* cover is the machine arithmetic at the
+    /// range ends: it runs mid-range so that nothing overflows, and the
+    /// comparison is purely about the calendar arithmetic. Overflow behaviour is
+    /// civil_arithmetic_range_ends' job.
+    ///
+    /// Threaded, because it is ~1.5e9 comparisons against the i64 reference.
+    /// gtest assertions are not usable off the main thread, so the workers
+    /// accumulate counts and the first failure, and the assertions happen below.
+
+    COUNT_ASSERTIONS();
+
+    using namespace vtz::_civ;
+
+    /// Four consecutive centuries covering every value of `c % 4`. Chosen
+    /// mid-range so that shifting by up to 400 years cannot leave sys_days_t -
+    /// this test is about the arithmetic, not the range ends.
+    constexpr u32 CBASE = 58800; // CBASE % 4 == 0
+    static_assert( CBASE % 4 == 0, "CBASE must start on a leap century" );
+
+    auto rep_days = []( u32 cr, u32 doc ) -> i64 {
+        return i64( century_start( CBASE + cr ) ) + doc - i64( CENTURY_ORIGIN );
+    };
+    auto century_len = []( u32 cr ) -> u32 {
+        return u32( century_start( CBASE + cr + 1 ) - century_start( CBASE + cr ) );
+    };
+
+    /// One era, expressed the two ways the symmetries need it
+    constexpr i32 MONTHS_PER_ERA = 4800;
+    constexpr i32 YEARS_PER_ERA  = 400;
+    constexpr i64 DAYS_PER_ERA   = 146097;
+
+    static_assert( MONTHS_PER_ERA == YEARS_PER_ERA * 12 );
+
+    struct Failure {
+        bool        seen = false;
+        char const* who  = "";
+        u32         cr = 0, doc = 0;
+        i32         k   = 0;
+        i64         got = 0, want = 0;
+    };
+    struct Result {
+        i64     checked = 0, failed = 0;
+        Failure first;
+    };
+
+    auto record = []( Result& r, char const* who, u32 cr, u32 doc, i32 k, i64 got, i64 want ) {
+        ++r.checked;
+        if( got == want ) return;
+        ++r.failed;
+        if( !r.first.seen ) r.first = Failure{ true, who, cr, doc, k, got, want };
+    };
+
+    // Capped: ctest may already be running other tests in parallel.
+    unsigned hw = std::thread::hardware_concurrency();
+    unsigned nt = std::min( hw ? hw : 4u, 8u );
+
+    std::vector<Result> results( size_t( nt ), Result{} );
+    {
+        std::vector<std::thread> workers;
+        for( unsigned t = 0; t < nt; ++t )
+            workers.emplace_back( [&, t] {
+                Result& r = results[t];
+                for( u32 cr = 0; cr < 4; ++cr )
+                {
+                    u32 clen = century_len( cr );
+                    for( u32 doc = t; doc < clen; doc += nt )
+                    {
+                        i64 d64 = rep_days( cr, doc );
+                        auto d  = sys_days_t( d64 );
+
+                        for( i32 k = 0; k < MONTHS_PER_ERA; ++k )
+                        {
+                            record( r, "civil_add_months", cr, doc, k,
+                                    civil_add_months( d, k ), ref::add_months( d64, k, false ) );
+                            record( r, "civil_add_months_clamped", cr, doc, k,
+                                    civil_add_months_clamped( d, k ),
+                                    ref::add_months( d64, k, true ) );
+                            if( k < YEARS_PER_ERA )
+                            {
+                                record( r, "civil_add_years", cr, doc, k,
+                                        civil_add_years( d, k ), ref::add_years( d64, k, false ) );
+                                record( r, "civil_add_years_clamped", cr, doc, k,
+                                        civil_add_years_clamped( d, k ),
+                                        ref::add_years( d64, k, true ) );
+                            }
+                        }
+
+                        // Symmetry B, on this representative: one era of shift
+                        // moves the date by exactly one era of days.
+                        for( i32 k = -MONTHS_PER_ERA; k < MONTHS_PER_ERA; k += 97 )
+                        {
+                            i64 lo = i64( civil_add_months( d, k ) ) - d64;
+                            i64 hi = i64( civil_add_months( d, k + MONTHS_PER_ERA ) ) - d64;
+                            record( r, "symmetry B (months)", cr, doc, k, hi - lo, DAYS_PER_ERA );
+                        }
+                        for( i32 k = -YEARS_PER_ERA; k < YEARS_PER_ERA; k += 11 )
+                        {
+                            i64 lo = i64( civil_add_years( d, k ) ) - d64;
+                            i64 hi = i64( civil_add_years( d, k + YEARS_PER_ERA ) ) - d64;
+                            record( r, "symmetry B (years)", cr, doc, k, hi - lo, DAYS_PER_ERA );
+                        }
+
+                        // Symmetry A: the same `c % 4` in a different century
+                        // must give an identical delta.
+                        for( u32 off = 4; off <= 12; off += 4 )
+                        {
+                            i64 e64 = rep_days( cr + off, doc );
+                            auto e  = sys_days_t( e64 );
+                            for( i32 k : { -1201, -13, 0, 1, 1200, 4799 } )
+                            {
+                                record( r, "symmetry A (months)", cr, doc, k,
+                                        i64( civil_add_months( e, k ) ) - e64,
+                                        i64( civil_add_months( d, k ) ) - d64 );
+                                record( r, "symmetry A (years)", cr, doc, k,
+                                        i64( civil_add_years( e, k ) ) - e64,
+                                        i64( civil_add_years( d, k ) ) - d64 );
+                            }
+                        }
+                    }
+                }
+            } );
+        for( auto& w : workers ) w.join();
+    }
+
+    i64     checked = 0, failed = 0;
+    Failure first{};
+    for( auto const& r : results )
+    {
+        checked += r.checked;
+        failed  += r.failed;
+        if( r.first.seen && !first.seen ) first = r.first;
+    }
+
+    if( first.seen )
+        fmt::println( "first failure: {}( {}, {} ) = {}, expected {}  (c%4={}, doc={})",
+                      first.who, rep_days( first.cr, first.doc ), first.k,
+                      first.got, first.want, first.cr, first.doc );
+
+    // The workers cannot call inc() safely, so fold their count in here. This is
+    // what makes the suite's assertion total reflect the work actually done.
+    _test_count_assertions.count += size_t( checked );
+
+    ASSERT_EQ( failed, i64( 0 ) );
+
+    // The class count is a load-bearing part of the reduction: if a century
+    // length or the era changed, the space enumerated above would no longer be
+    // the whole space.
+    u32 classes = 0;
+    for( u32 cr = 0; cr < 4; ++cr ) classes += century_len( cr );
+    ASSERT_EQ( i64( classes ), DAYS_PER_ERA );
 }
