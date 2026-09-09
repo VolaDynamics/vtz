@@ -1,0 +1,23 @@
+etc/test_remote
+  s_ac241310b22047::t_70d3a3352f45c8 27-30
+  s_ac241310b22047::t_467bbc0b6ca898 16-22,43,51,57-66,68-69,71-79
+  s_ac241310b22047::t_5d336846064b23 1-15,23-26,31-42,44-50,52-54,56
+  s_ac241310b22047::t_a1b79c177d158f 55
+  s_ac241310b22047::t_10c2a4c3b0c87f 67,70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "7ccbc9774ad3457167df4a1a0b856530be4a57e5",
+  "prompts": {},
+  "sessions": {
+    "s_ac241310b22047": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee1b419c-0472-4325-952b-20f557c00f93",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Alecto Irene Perez <alecto.perez@voladynamics.com>"
+    }
+  }
+}
