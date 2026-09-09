@@ -63,6 +63,10 @@ namespace vtz::_civ {
     /// every difference we compute, and they lift the result above zero for any
     /// i32 input - so the decode stays unsigned, where truncating division is
     /// already floor division and needs no fixups.
+    ///
+    /// It is also the *smallest* value with the two properties it needs, which
+    /// is why the shifted day count has to be 64-bit: the origin cannot be
+    /// moved down far enough to keep `days + origin` inside a u32.
     constexpr u32 CENTURY_ORIGIN = 2147614883u;
 
     /// Days in a century that does not end in a leap year. An era is 4 of them
@@ -75,29 +79,42 @@ namespace vtz::_civ {
         "CENTURY_ORIGIN must be 719468 plus a whole number of eras" );
     // ...and at least 2^31, so the smallest i32 still maps above zero.
     static_assert( CENTURY_ORIGIN >= 2147483648u,
-        "CENTURY_ORIGIN must be >= 2^31 so that u32( days ) + origin "
-        "does not wrap for days == INT32_MIN" );
+        "CENTURY_ORIGIN must be >= 2^31 so that days + origin is non-negative "
+        "for days == INT32_MIN" );
+    // Together those pin it exactly: one era lower lands below 2^31. So no
+    // era-aligned origin sits closer to 2^31 than this one, and in particular
+    // none makes the shifted count fit in 32 bits.
+    static_assert( CENTURY_ORIGIN - 146097u < 2147483648u,
+        "CENTURY_ORIGIN must be the smallest era-aligned value >= 2^31" );
+
+    /// Largest shifted day count split_century can see. Past 2^32, which is
+    /// what forces the century decode to 64 bits.
+    constexpr u64 MAX_SHIFTED_DAYS = u64( INT32_MAX ) + CENTURY_ORIGIN;
 
     /// Multiplier for extracting the century index from the shifted day count:
     /// `( ( n + 1 ) * CENTURY_MAGIC ) >> 47` is the number of whole
-    /// centuries elapsed. Exact for every u32 day count.
+    /// centuries elapsed. Exact over the whole range split_century produces.
     constexpr u64 CENTURY_MAGIC = 3853261555ull;
     constexpr u32 CENTURY_SHIFT = 47u;
 
-    // The 64-bit product cannot overflow, even at the largest u32 input.
+    // The 64-bit product cannot overflow at the largest shifted day count.
     static_assert(
-        CENTURY_MAGIC <= 18446744073709551615ull / ( 4294967295ull + 1ull ),
+        CENTURY_MAGIC <= 18446744073709551615ull / ( MAX_SHIFTED_DAYS + 1 ),
         "( n + 1 ) * CENTURY_MAGIC must not overflow u64" );
 
     /// First day of century `m`, counting from the origin: 36524 days per
     /// century plus one leap day for each leap century (every 4th) passed.
-    constexpr u32 century_start( u32 m ) noexcept {
-        return DAYS_PER_CENTURY * m + ( m >> 2 );
+    ///
+    /// 64-bit because the last century an i32 day count can reach starts past
+    /// the end of u32.
+    constexpr u64 century_start( u64 m ) noexcept {
+        return u64( DAYS_PER_CENTURY ) * m + ( m >> 2 );
     }
 
-    /// The century index as computed by split_century.
-    constexpr u32 century_of( u32 n ) noexcept {
-        return u32( ( ( u64( n ) + 1 ) * CENTURY_MAGIC ) >> CENTURY_SHIFT );
+    /// The century index as computed by split_century. The result is small - at
+    /// most a few hundred thousand - so only the argument has to be wide.
+    constexpr u32 century_of( u64 n ) noexcept {
+        return u32( ( ( n + 1 ) * CENTURY_MAGIC ) >> CENTURY_SHIFT );
     }
 
     /// Packed table of `30 - <0-based last day>` for each month of a
@@ -128,11 +145,14 @@ namespace vtz::_civ {
     /// no exceptions, so the year within it is one multiply-shift too.
     VTZ_INLINE constexpr century_parts split_century(
         sys_days_t days ) noexcept {
-        // Unsigned from here on: the origin is large enough that this cannot
-        // wrap below zero for any i32 input.
-        u32 n   = u32( days ) + CENTURY_ORIGIN;
+        // Unsigned from here on: the origin is above 2^31, so the shifted count
+        // is non-negative for every i32 input. It is formed in 64 bits because
+        // the sum does not fit in 32 - see MAX_SHIFTED_DAYS - which is what
+        // lets the whole i32 range be accepted rather than all but the top
+        // 131235 days.
+        u64 n   = u64( i64( days ) + i64( CENTURY_ORIGIN ) );
         u32 c   = century_of( n );
-        u32 doc = n - century_start( c );
+        u32 doc = u32( n - century_start( c ) ); // narrows: doc <= 36524
         // Inside a century every 4th year is a leap year with no exceptions, so
         // 4 years is exactly 1461 days. Scaling by 4 therefore lets a single
         // division recover the year, and the +3 lines the quotient up on year
@@ -144,9 +164,11 @@ namespace vtz::_civ {
     }
 
     /// True if the March-based year `z` of century `c` ends with a Feb 29th.
-    /// That February belongs to the *following* calendar year, hence the +1.
-    /// Inside a century only the divisible-by-4 rule applies, so this is a mask
-    /// rather than the full three-way is_leap test.
+    ///
+    /// That February belongs to the *following* calendar year, so the question
+    /// is whether `z + 1` is divisible by 4 - which is `z % 4 == 3`. Inside a
+    /// century only the divisible-by-4 rule applies, so this is a mask rather
+    /// than the full three-way is_leap test.
     VTZ_INLINE constexpr bool march_year_is_leap( u32 c, u32 z ) noexcept {
         // z == 99 is the only case where the following year leaves the century,
         // so it is the only place `c` matters.
@@ -185,7 +207,12 @@ namespace vtz::_civ {
         // the whole target: /12 gives the target year-of-century (which may
         // fall outside [0, 99]) and /1200 the centuries crossed. Floor
         // division, because `total` goes negative for large negative offsets.
-        i32 total = i32( 12 * z + mp ) + months;
+        //
+        // Summed unsigned so that an enormous `months` wraps rather than
+        // overflowing. The divisions below need an exact `total`, and they get
+        // one: wrapping needs `months` past 2^31 / 12 months, which puts the
+        // target ~179 million years out - far outside sys_days_t either way.
+        i32 total = i32( ( 12 * z + mp ) + u32( months ) );
         i32 yq    = math::div_floor<12>( total );
         i32 cq    = math::div_floor<1200>( total );
         u32 mp2   = u32( total - 12 * yq ); // [0, 11]
@@ -196,14 +223,22 @@ namespace vtz::_civ {
         // which is what the `( c & 3 ) + cq` shift counts. `c` enters only
         // through its low two bits, so the absolute century - and hence the era
         // - drops out entirely.
+        //
+        // Stays signed: |cq| <= INT32_MAX / 1200, so this cannot overflow.
         i32 leap_delta
             = 24 * cq + ( ( i32( c & 3 ) + cq ) >> 2 ) + i32( z2 >> 2 );
 
         // 365 days per year plus the leap days, plus where the target month
         // starts in its year, minus where we started in the century, plus the
         // day within the month we keep.
-        i32 delta = 365 * yq + leap_delta + i32( month_start( mp2 ) )
-                    - i32( parts.doc ) + i32( dom );
+        //
+        // Unsigned, because `365 * yq` and the running sum both leave i32 for
+        // shifts of millions of years. Wrapping is exact modulo 2^32, so the
+        // result is right whenever the true date fits in sys_days_t - and where
+        // it does not, the caller was out of range regardless. Signed
+        // arithmetic here would be UB instead.
+        u32 delta = 365u * u32( yq ) + u32( leap_delta ) + month_start( mp2 )
+                    - parts.doc + dom;
 
         if constexpr( Clamp )
         {
@@ -217,10 +252,10 @@ namespace vtz::_civ {
                            << ( 2 * 11 ) );
             u32 last = 30 - ( ( bits >> ( 2 * mp2 ) ) & 3 );
             // Step back, so that eg Jan 31st + 1 month lands on Feb 28th
-            delta -= dom > last ? i32( dom - last ) : 0;
+            delta -= dom > last ? dom - last : 0u;
         }
 
-        return days + delta;
+        return sys_days_t( u32( days ) + delta );
     }
 
 
@@ -243,28 +278,31 @@ namespace vtz::_civ {
         u32  c     = parts.c;
         u32  z     = parts.z; // Year of century - [0, 99]
 
-        // Move to the target year, carrying whole centuries out
-        i32 total = i32( z ) + years;
+        // Move to the target year, carrying whole centuries out. Summed
+        // unsigned for the same reason as add_months_impl: wrapping instead of
+        // overflowing, and `total` is exact for every `years` that could give a
+        // representable answer.
+        i32 total = i32( z + u32( years ) );
         i32 cq    = math::div_floor<100>( total );
         u32 z2    = u32( total - 100 * cq ); // [0, 99]
 
-        // Same leap-day count as add_months_impl
+        // Same leap-day count as add_months_impl, and it cannot overflow either
         i32 leap_delta
             = 24 * cq + ( ( i32( c & 3 ) + cq ) >> 2 ) + i32( z2 >> 2 );
 
         // 365 days per year, plus the leap days crossed, minus where we
-        // started within the century
-        i32 delta = 365 * years + leap_delta - i32( z >> 2 );
+        // started within the century. Unsigned, as in add_months_impl.
+        u32 delta = 365u * u32( years ) + u32( leap_delta ) - ( z >> 2 );
 
         if constexpr( Clamp )
         {
             // doy == 365 happens only on Feb 29th, since it is the last day of
             // a March-based year
-            delta
-                -= parts.doy == 365 && !march_year_is_leap( c + u32( cq ), z2 );
+            delta -= u32(
+                parts.doy == 365 && !march_year_is_leap( c + u32( cq ), z2 ) );
         }
 
-        return days + delta;
+        return sys_days_t( u32( days ) + delta );
     }
 
 } // namespace vtz::_civ
