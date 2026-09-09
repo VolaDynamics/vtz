@@ -3,13 +3,12 @@
 How `civil_add_months`, `civil_add_years`, and their clamped variants work.
 
 This is a companion to Howard Hinnant's [_chrono-Compatible Low-Level Date
-Algorithms_][hinnant], and it assumes you have read that page. Everything about
-the epoch shift, the March-based year, the era decomposition, and the
-`(153*mp + 2)/5` month table is taken from there and is not re-derived here. What
-_is_ derived here is the part that differs: the four `civil_add_*` functions do
-not decode to a `(y, m, d)` triple and re-encode. They compute a day _delta_ and
-add it, and to do that they cut the day count on the **century** rather than on
-the 400-year era.
+Algorithms_][hinnant], and it assumes you have read that page. What it adds is
+the part that differs: the four `civil_add_*` functions do not decode to a
+`(y, m, d)` triple and re-encode. They compute a day _delta_ and add it, over a
+day count cut on the **century** rather than on the 400-year era — a
+decomposition due to Neri and Schneider, credited in
+[§1](#1-what-is-borrowed-and-what-is-new).
 
 [hinnant]: https://howardhinnant.github.io/date_algorithms.html
 
@@ -38,41 +37,58 @@ namespace `vtz::_civ`. It is dense, which is why this document exists.
 
 ## 1. What is borrowed, and what is new
 
-Borrowed from [`civil_from_days`][cfd] and [`days_from_civil`][dfc] without
-change:
+Borrowed from Hinnant's [`civil_from_days`][cfd] and [`days_from_civil`][dfc]
+without change:
 
 - **The epoch shift.** `719468` moves day 0 from 1970-01-01 to 0000-03-01.
 - **The March-based year.** Months are renumbered so that March is month 0 and
-  February is month 11. Hinnant's reason is the whole reason this document has
-  anything easy to say: it "puts the leap day, Feb. 29 as the last day of the
-  year". A leap day is therefore _appended to a year_ and never _inserted into
-  one_.
+  February is month 11. Hinnant's reason for it is what makes everything below
+  easy: it "puts the leap day, Feb. 29 as the last day of the year", so a leap
+  day is _appended to a year_ and never _inserted into one_.
 - **The month table.** `month_start( mp ) == ( 153 * mp + 2 ) / 5` is the number
   of days from March 1st to the first of March-based month `mp`, derived in
-  [_Computing day-of-year from month and day-of-month_][doyfm]. vtz spells it out
-  as a named function in `civil.h`, and both `to_civil` and `resolve_civil` use
-  it inline.
-- **The names.** `doe`, `yoe`, `doy`, `mp`, `z` mean what they mean on Hinnant's
-  page.
+  [_Computing day-of-year from month and day-of-month_][doyfm]. vtz gives it a
+  name; `to_civil` and `resolve_civil` spell the same expression out inline.
+- **The names.** `doy` and `mp` mean what they mean on Hinnant's page, as do
+  `doe` and `yoe` in the era-split functions that are left unchanged.
 
 [cfd]: https://howardhinnant.github.io/date_algorithms.html#civil_from_days
 [dfc]: https://howardhinnant.github.io/date_algorithms.html#days_from_civil
 [doyfm]: https://howardhinnant.github.io/date_algorithms.html#Computing%20day-of-year%20from%20month%20and%20day-of-month
 [mfdoy]: https://howardhinnant.github.io/date_algorithms.html#Computing%20month%20from%20day-of-year
 
+Borrowed from Neri and Schneider's [_Euclidean affine functions_][ns], which is
+where the entire decode of [§3](#3-the-century-as-the-working-window)–[§5](#5-the-month-magic-535-331-14)
+comes from. The [References](#references) have the full accounting:
+
+- **The window is a century, not an era.** Cutting the day count on the century
+  is the first step of their `to_date`. `yoe`/`doe` give way to `z` (year of
+  century, `[0, 99]`) and `doc` (day of century, `[0, 36524]`).
+- **The `4x + 3` scaling, three levels deep.** Century from the day count, year
+  from the day of the century, month from the day of the year: the same affine
+  form each time, each level reusing its own remainder to feed the next.
+- **Month and day-of-month from a single product.** High bits give the month, low
+  bits the day within it.
+
 New here, and the subject of the rest of this document:
 
-- **The window is a century, not an era.** So `yoe`/`doe` become `z` (year of
-  century, `[0, 99]`) and `doc` (day of century, `[0, 36524]`).
 - **Nothing is re-encoded.** The four public functions return `days + delta`.
+  Neri and Schneider give the two conversions and not calendar arithmetic, so the
+  delta formulation of [§7](#7-add_years_impl) and [§8](#8-add_months_impl) does
+  not come from there.
 - **The absolute year never appears.** Only differences are needed, and the
   century index enters every formula through its low two bits alone.
+- **The whole `i32` domain.** Their century step holds `4N + 3` in a `u32`, which
+  bounds the input to `N < 2³⁰` — about a quarter of the `i32` day range. Forming
+  it in 64 bits costs one instruction and buys the rest.
+  [§3.1](#31-an-unsigned-day-count), [§10](#10-the-domain).
 
-The last point deserves emphasis, because it is what makes the century window
-legal. A century is _not_ a self-similar unit of the Gregorian calendar the way
-an era is — 36524 days is the length of a century only three times in four. The
-century works as a window here because these functions never need to know which
-century they are in, only how many century boundaries a shift crosses.
+The second of those is what makes the century window legal _here_. A century is
+_not_ a self-similar unit of the Gregorian calendar the way an era is — 36524 days
+is the length of a century only three times in four. It works because these
+functions never need to know which century they are in, only how many century
+boundaries a shift crosses. Their `to_date` does need the absolute century, and
+recovers the year as `100·C + Z`; nothing below ever does.
 
 ## 2. Why not decode, shift, and re-encode?
 
@@ -110,10 +126,9 @@ exception to the exception. `days_from_civil` then pays the mirror image of the
 same thing on the way back out (`yoe/4 - yoe/100`, plus the floor-division of
 the year by 400).
 
-But a month or year shift does not need an absolute year. It needs to know how
-many days lie between where you are and where you are going, and the calendar's
-irregularities are the _same_ at both ends. If the window is chosen so that the
-irregularities vanish inside it, they cancel out of the difference for free.
+But a month or year shift does not need an absolute year. It needs the number of
+days between where you are and where you are going — and a difference can be
+taken in a window that hides the leap exceptions, where an absolute year cannot.
 
 The century is that window.
 
@@ -139,16 +154,16 @@ of `100c + z + 1`, and that number is a multiple of 100 for exactly one `z`:
 `z == 99`. So for 99 of the 100 years in the window, `div100` and `div400` are
 both false and the rule degenerates to `div4` — a mask.
 
-The hundredth year sits at the window boundary. That is not a coincidence to be
-grateful for, it is the reason the window was chosen this way, and it means the
-one hard case can be handled once per boundary crossing instead of once per
-query. `century_start`'s `m >> 2` does exactly that; [§6](#6-the-collapsed-leap-test)
-is what remains of the three-clause test afterwards.
+The hundredth year sits at the window boundary. That is why the window was chosen
+this way: the one hard case then falls to be handled once per boundary crossing
+rather than once per query, which is what `century_start`'s `m >> 2` does.
+[§6](#6-the-collapsed-leap-test) is all that remains of the three-clause test
+afterwards.
 
-Concretely: inside a century, the year lengths run 365, 365, 365, 366 for
-`z ∈ [0, 95]`, then 365, 365, 365 for `z ∈ [96, 98]`, and year 99 is 366 only if
-the century itself is a leap century. A century is therefore 36524 days long
-three times in four, and 36525 once.
+Concretely: inside century `c` the year lengths run 365, 365, 365, 366 for
+`z ∈ [0, 95]`, then 365, 365, 365 for `z ∈ [96, 98]`, and year 99 is 366 exactly
+when `c % 4 == 3`. A century is therefore 36524 days long three times in four,
+and 36525 once.
 
 ### 3.1 An unsigned day count
 
@@ -168,21 +183,21 @@ declaration:
 1. **It is `719468` plus a whole number of eras.** `2147614883 - 719468 ==
 146097 * 14695`. Whole eras cancel out of every difference the code computes,
    and they do not disturb any `% 4` or `% 400` test, so adding 14695 of them is
-   free. Century index 0 therefore begins on March 1st of the year
-   `-400 * 14695 == -5878000`, which is divisible by 400 — so the century index
-   is aligned with the leap rules, and "century `c` is a leap century" is
-   `c % 4 == 0`.
+   free. Century index 0 therefore begins on March 1st of calendar year
+   `-400 * 14695 == -5878000`, a multiple of 400 — so the century index is
+   aligned with the leap rule, and `c % 4` alone says which of an era's four
+   positions century `c` occupies.
 2. **It is at least 2³¹**, so that `days + CENTURY_ORIGIN` is non-negative even
    at `days == INT32_MIN`, and the decode can be unsigned throughout.
 
-Those two pin the constant _exactly_, and that is why the sum is formed in 64
-bits. The largest era-aligned value below 2³¹ is `2147468786`, which fails
-property 2; so `2147614883` is the smallest usable origin, and
+Those two pin the constant _exactly_: the largest era-aligned value below 2³¹ is
+`2147468786`, which fails property 2, so `2147614883` is the smallest usable
+origin. And the pinning is what forces the sum into 64 bits, since
 
 $$\texttt{MAX\_SHIFTED\_DAYS} = \texttt{INT32\_MAX} + \texttt{CENTURY\_ORIGIN} = 4295098530 > 2^{32} - 1$$
 
-There is no era-aligned origin that keeps the shifted count inside a `u32`.
-Note the shape of the obstruction: the overflow is exactly
+There is no era-aligned origin that keeps the shifted count inside a `u32`, and
+the shape of the obstruction is why: the overflow is exactly
 `CENTURY_ORIGIN - 2³¹ == 131235`, because the sum tops out at
 `2³¹ - 1 + CENTURY_ORIGIN` while a `u32` tops out at `2³² - 1`. Lowering the
 origin to shrink the overflow lowers it below 2³¹ by the same amount. A third
@@ -207,9 +222,10 @@ constexpr u64 century_start( u64 m ) noexcept {
 }
 ```
 
-36524 days per century, plus one extra day for each divisible-by-400 leap day
-already passed. The closed form is worth writing down, because both magic
-constants in this file fall straight out of it:
+36524 days per century, plus one extra day for each divisible-by-400 February
+29th already passed — one per four centuries, contributed by the century that
+ends with it, `c % 4 == 3`. Writing the closed form as a single floor is what
+makes the inverse mechanical:
 
 $$\texttt{century\_start}(m) = 36524m + \left\lfloor \frac{m}{4} \right\rfloor = \left\lfloor \frac{146097m}{4} \right\rfloor$$
 
@@ -227,16 +243,19 @@ c = \max\left\{m : \left\lfloor \tfrac{146097m}{4} \right\rfloor \le n\right\}
   = \left\lfloor \frac{4n+3}{146097} \right\rfloor
 $$
 
-The `4n + 3` form will be familiar if you have read Neri and Schneider's
-[_Euclidean affine functions_][ns] paper — it is the first step of their
-`to_date`. The `-1` in `4(n+1) - 1` is load-bearing: without it, the formula
-reads one century too high on every day that is the last day of an era.
+This is Neri and Schneider's, from [_Euclidean affine functions_][ns]: the
+century step of their `to_date` is `C = (4N + 3) / 146097`, with the day of the
+century falling out of the same remainder. The two levels below it, in
+[§4](#4-split_century) and [§5](#5-the-month-magic-535-331-14), are theirs too.
+
+The `-1` in `4(n+1) - 1` is load-bearing: without it, the formula reads one
+century too high on every day that is the last day of an era.
 
 [ns]: https://arxiv.org/abs/2102.06959
 
-Computing that quotient directly would buy a 64-bit division by a constant, and
-the shifted count already needs 33 bits so there is no narrow form to fall back
-on. Instead:
+Computing that quotient directly would cost a 64-bit division by a constant, and
+the shifted count needs 33 bits, so there is no narrow form to fall back on.
+Instead:
 
 ```cpp
 constexpr u64 CENTURY_MAGIC = 3853261555ull;
@@ -271,15 +290,15 @@ worth keeping straight:
 | Bound                | Value          | What it is                                                                                           |
 | -------------------- | -------------- | ---------------------------------------------------------------------------------------------------- |
 | Reachable            | century 117595 | The century `MAX_SHIFTED_DAYS` lands in. Derived, not written out: `century_of( MAX_SHIFTED_DAYS )`. |
-| `u64`-safe           | century 131071 | Beyond `n == 4787306495`, `(n+1) * M` leaves `u64`.                                                  |
-| Mathematically exact | century 188178 | Where the identity itself first fails.                                                               |
+| `u64`-safe           | century 131071 | Past `n == 4787306495`, `(n + 1) * M` leaves `u64`.                                                  |
+| Mathematically exact | century 188178 | The last century the identity holds for; 188179 is the first to fail.                                |
 
-A factor of 1.6 of headroom over what is reachable, and the failure mode past the
-end is not silent: the reachable bound is checked, so a change that widened the
-day count would trip an assertion rather than start returning wrong centuries.
-Perturbing the multiplier by ±1 also fails — `M + 1` breaks at century 4 and
-`M - 1` at century 23135 — and both are caught by the compile-time guard
-described in [§12.1](#121-compile-time-guards-on-the-constants).
+The binding limit is the `u64` product, and the margin to it is 1.11× — not
+large, but checked: it and the reachable bound are both asserted, so widening the
+day count trips the build rather than quietly returning wrong centuries.
+Perturbing the multiplier by ±1 fails far sooner — `M + 1` already misreads the
+last day of century 3, `M - 1` century 23135 — and both are caught by the
+compile-time guard in [§12.1](#121-compile-time-guards-on-the-constants).
 
 ## 4. `split_century`
 
@@ -299,7 +318,8 @@ VTZ_INLINE constexpr century_parts split_century( sys_days_t days ) noexcept {
 
 The first three lines are [§3](#3-the-century-as-the-working-window). The last
 three extract the year within the century, and they are the _same derivation one
-level down_.
+level down_ — which is how Neri and Schneider's `to_date` proceeds as well, using
+a `2939745 / 2³²` multiply-shift where a division by 1461 serves here.
 
 Inside a century, March-based year `j` begins `365j + ⌊j/4⌋` days after the
 century start — 365 days a year plus the divisible-by-4 leap days, with no
@@ -314,8 +334,8 @@ $$z = \left\lfloor \frac{4 \cdot \texttt{doc} + 3}{1461} \right\rfloor$$
 
 which is `t = 4 * doc + 3; z = t / 1461`. No multiplier is needed this time:
 `doc ≤ 36524`, so `4 * doc + 3` cannot overflow, and the division is by a
-compile-time constant. (`4 * doc` has two zero low bits, so compilers emit the
-`+ 3` as a shifted `orr` rather than an add.)
+compile-time constant. (`4 * doc` has two zero low bits, so the `+ 3` compiles to
+an `orr`, not an add.)
 
 **The remainder is the day of the year, times four.** Write `s = z % 4`. Since
 `1461 ≡ 1 (mod 4)`:
@@ -328,11 +348,12 @@ simultaneously the `-1` that makes the quotient land on year boundaries and the
 padding that keeps the remainder's low two bits from borrowing.
 
 `doy` reaches 365 only on a February 29th, since February is the last month of a
-March-based year. That fact is used twice below.
+March-based year. That is what reduces the year-addition clamp to a single
+subtraction in [§7.2](#72-clamping).
 
 Note what is _absent_: there is no correction term. The
 `- doe/1460 + doe/36524 - doe/146096` apparatus of the era split exists to repair
-leap exceptions that are simply not present inside a century.
+leap exceptions that are not present inside a century.
 
 ## 5. The month magic: 535, 331, 14
 
@@ -352,6 +373,11 @@ two extra requirements: the denominator must be a power of two, so the divide
 becomes a shift, and the _remainder_ must stay usable, so that one product yields
 both halves of the answer.
 
+Both requirements, and reading the whole answer out of one product, are Neri and
+Schneider's — their `to_date` uses `2141 · doy + 197913` with a 16-bit shift. The
+constants differ here only because vtz wants a 0-based March-relative month where
+they number months 3 through 14.
+
 `civil_add_months` therefore does it with one multiply and one division:
 
 ```cpp
@@ -365,10 +391,10 @@ u32 mp  = t >> MONTH_MAGIC_SHIFT;                    // [0, 11], 0 is March
 u32 dom = ( t & MONTH_MAGIC_MASK ) / MONTH_MAGIC_MUL;
 ```
 
-The high bits of a single product give the month; the low bits, still inside the
-same product, give the 0-based day within it. The claim is not that `535/16384`
-approximates `5/153` — it does, but that is not enough and not really the point.
-The right way to see it is as a condition on the twelve month boundaries.
+The high bits of a single product give the month; the low bits of the same product
+give the 0-based day within it. The claim is not that `535/16384` approximates
+`5/153`. It does, but approximation is not the condition — the condition is on the
+twelve month boundaries.
 
 Define, for each March-based month `mp`,
 
@@ -404,9 +430,8 @@ Both are satisfied, with room to spare in most months:
 |   11 | February  |           337 |    402 |                    1002 |
 
 March is the tight one: on March 31st the product is `535·30 + 331 == 16381`,
-three short of the carry into bit 14. This triple is not a comfortable choice
-that happens to work — it is one of a very small set, and the guards in the test
-file exist because of that.
+three short of the carry into bit 14. Three units of slack in the tightest month
+is why the guard in the test file checks every `doy` rather than sampling.
 
 **Where it breaks.** The identity is exact for `doy ∈ [0, 365]`, which is
 precisely the range `split_century` produces, and the first `doy` at which it
@@ -444,9 +469,9 @@ is one instruction cheaper.
 
 So `z == 99` is the only case in which `c` is consulted at all, and even then
 only its low two bits. The three-clause Gregorian test never appears, and neither
-does the absolute year. A four-century sweep is exhaustive for this function —
-both sides depend on `c` only through `c % 4` — and that is exactly what
-`march_year_is_leap_ok` in the test file checks it against.
+does the absolute year. Because both sides depend on `c` only through `c % 4`, a
+four-century sweep is exhaustive for this function, and `march_year_is_leap_ok`
+in the test file is exactly that sweep, against the real `is_leap`.
 
 ## 7. `add_years_impl`
 
@@ -487,12 +512,11 @@ VTZ_INLINE constexpr sys_days_t add_years_impl(
 }
 ```
 
-Two of those lines are unsigned where you might expect `i32`, and that is
-deliberate rather than incidental: `z + u32( years )` and the `delta` chain are
-the only places the arithmetic can leave `i32`, and unsigned overflow is defined
-wrapping where signed overflow is UB. [§11](#11-the-proof) is where that pays
-off — it is what makes the domain exactly "the answer is representable" instead
-of something narrower.
+Two of those lines are unsigned where you might expect `i32`, deliberately:
+`z + u32( years )` and the `delta` chain are the only places the arithmetic can
+leave `i32`, and unsigned overflow is defined wrapping where signed overflow is
+UB. That is what makes the domain exactly "the answer is representable" rather
+than something narrower — see [§11](#11-the-proof).
 
 ### 7.1 Deriving `delta`
 
@@ -629,10 +653,10 @@ helper.
 ### 8.3 Rollover comes out for free
 
 `civil_add_months` is documented to roll over: January 31st plus one month is
-March 3rd, not February 28th. Nothing in the formula implements that. The reason
-it happens anyway is that `delta` is built from `month_start(mp2) + dom` and
-never normalises the result back into a month — so when `dom` exceeds the target
-month's length, the sum simply runs past the month's end.
+March 3rd, not February 28th. Nothing in the formula implements that. It happens
+because `delta` is built from `month_start(mp2) + dom` and never normalises the
+result back into a month, so when `dom` exceeds the target month's length the sum
+simply runs past the month's end.
 
 That is exactly the behaviour of `resolve_civil( y, m, d )` when `d` is out of
 range, which is what the reference implementation in
@@ -688,11 +712,11 @@ where `ideal` means: decode `d` to a Gregorian date, shift the month or year,
 keep the day of the month (clamping it, in the `_clamped` variants), and
 re-encode. [§11](#11-the-proof) proves this.
 
-That is a stronger statement than it may look. It says the _intermediate_
-arithmetic never constrains the caller, even though a shift of a few million
-years produces a `delta` that does not fit in `i32` at all. And it is not a
-statement about what compilers happen to do — there is no undefined behaviour
-anywhere in the four functions, at any input.
+Two things make that stronger than it looks. The _intermediate_ arithmetic never
+constrains the caller, even though a shift of a few million years produces a
+`delta` that does not fit in `i32` at all; and it is not a claim about what
+compilers happen to do, since there is no undefined behaviour anywhere in the four
+functions, at any input.
 
 Two caveats, neither of which weakens the above:
 
@@ -721,16 +745,13 @@ The claim in [§10](#10-the-domain) does not follow from testing: the input spac
 is 2⁶⁴ pairs. It follows from three facts, each of which is either a short
 argument or a finite check.
 
-Throughout, write `w = ideal(d, k) − d` for the true delta, and let `total` be
-the value computed in the code.
-
 ### 11.1 Fact 1: everything after `total` is a ring homomorphism
 
 Look at what the code does from `total` onwards. `yq`, `cq`, `mp2`, `z2` come out
 of `total` by division; after that, every operation is `+`, `−` or `×`:
 
 ```
-delta  = 365·yq + leap_delta + month_start(mp2) − doc + dom      (a sum of products)
+delta  = 365·yq + leap_delta + month_start(mp2) − doc + dom
 result = days + delta
 ```
 
@@ -759,7 +780,8 @@ region where the claim says anything:
 
 - `total = (12z + mp) + months` with `12z + mp ≤ 12·99 + 11 = 1199`, so it
   overflows only for `months ≥ INT32_MAX − 1199 = 2147482448`. It never
-  underflows, since `12z + mp ≥ 0`.
+  underflows, since `12z + mp ≥ 0`. In `add_years_impl` the addend is `z ≤ 99`,
+  so the threshold is `INT32_MAX − 99`.
 - But `ideal` is representable only for `|months| ≤ 141110652`
   ([§10](#10-the-domain)).
 
@@ -799,7 +821,7 @@ single era" surviving the century split intact.
 
 $$\Delta = 365 \cdot 400 + 24 \cdot 4 + 1 = 146000 + 96 + 1 = 146097$$
 
-where the trailing `+ 1` is `⌊((c\&3) + cq + 4)/4⌋ - ⌊((c\&3) + cq)/4⌋`. So
+where the trailing `+ 1` is `⌊((c & 3) + cq + 4)/4⌋ - ⌊((c & 3) + cq)/4⌋`. So
 `delta(k + 4800) = delta(k) + 146097` exactly, and the calendar has the same
 period, so it suffices to check one residue of `k` modulo 4800. For
 `add_years_impl` the period is 400 years by the same argument.
@@ -809,7 +831,7 @@ period, so it suffices to check one residue of `k` modulo 4800. For
 $$146097 \times 4800 = 701{,}265{,}600 \text{ classes (months)}, \qquad 146097 \times 400 = 58{,}438{,}800 \text{ (years)}$$
 
 which is what `TEST( vtz, civil_reduced_space )` enumerates — every class, both
-clamped and unclamped, against the `i64` reference. It runs in seconds.
+clamped and unclamped, against the `i64` reference, in under a second.
 
 ### 11.4 What this is and is not
 
@@ -851,8 +873,9 @@ Every magic constant is checked by `static_assert`, so a bad one fails the build
 rather than a test run. The guards live in
 [`etc/test/test_impl/test_civil.cpp`](../etc/test/test_impl/test_civil.cpp)
 rather than in `civil.h`, so the checking machinery is not recompiled in every
-translation unit that includes the public header. Several of them are exhaustive
-rather than sampled, which is worth spelling out:
+translation unit that includes the public header. Several are exhaustive rather
+than sampled, and the derived constants track the code instead of needing a hand
+recomputation:
 
 - **`century_magic_ok`** checks eight points, and eight is exhaustive. Only step
   points need checking, since both the exact quotient and the magic form are
@@ -945,7 +968,7 @@ It also checks the two symmetries themselves, so the reduction is not merely
 assumed: that `delta` is invariant across centuries with equal `c % 4`, and that
 `delta(k + one era) − delta(k)` is exactly 146097.
 
-That it is not merely a slower restatement of the other tests is measurable. Every
+It is not a slower restatement of the other tests, and that is measurable. Every
 test that predates it uses `|k| ≤ 100`, so none of them ever reaches `|cq| ≥ 2` —
 a shift across more than one century boundary. Adding a spurious `+ cq / 4` to
 `leap_delta` is therefore invisible below `|cq| = 4`, and:
@@ -977,8 +1000,9 @@ accounting and the floor-division of the year by 400. And the four-division
 `yoe` chain is replaced by one widening multiply plus one division by 1461, since
 inside a century there are no leap exceptions to correct for.
 
-The clamped variants cost ten to seventeen instructions more than the plain
-ones, which is the packed-table lookup and the conditional step-back.
+The clamped variants cost ten to seventeen instructions more than the plain ones
+on arm64, fifteen to twenty-seven on x86-64. That is the packed-table lookup and
+the conditional step-back.
 
 **The 64-bit shifted count costs exactly one instruction**, on both
 architectures — two for `civil_add_years_clamped` on x86-64. On arm64 the sign
@@ -997,24 +1021,24 @@ are as of this writing; the names are stable.
 
 |                                            |                                                                                         |
 | ------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `month_start`                              | [civil.h:33](../include/impl/vtz/civil.h#L33)                                           |
-| `century_parts`                            | [civil.h:48](../include/impl/vtz/civil.h#L48)                                           |
-| `CENTURY_ORIGIN`, and its three guards     | [civil.h:70](../include/impl/vtz/civil.h#L70)                                           |
-| `DAYS_PER_CENTURY`                         | [civil.h:74](../include/impl/vtz/civil.h#L74)                                           |
-| `MAX_SHIFTED_DAYS`                         | [civil.h:92](../include/impl/vtz/civil.h#L92)                                           |
-| `CENTURY_MAGIC`, `CENTURY_SHIFT`           | [civil.h:97](../include/impl/vtz/civil.h#L97)                                           |
-| `century_start`                            | [civil.h:110](../include/impl/vtz/civil.h#L110)                                         |
-| `century_of`                               | [civil.h:116](../include/impl/vtz/civil.h#L116)                                         |
-| `MARCH_MONTH_LAST_BITS`                    | [civil.h:124](../include/impl/vtz/civil.h#L124)                                         |
-| `MONTH_MAGIC_*`                            | [civil.h:133](../include/impl/vtz/civil.h#L133)                                         |
-| `split_century`                            | [civil.h:146](../include/impl/vtz/civil.h#L146)                                         |
-| `march_year_is_leap`                       | [civil.h:172](../include/impl/vtz/civil.h#L172)                                         |
-| `add_months_impl`                          | [civil.h:193](../include/impl/vtz/civil.h#L193)                                         |
-| `add_years_impl`                           | [civil.h:275](../include/impl/vtz/civil.h#L275)                                         |
-| `civil_add_months` / `_years` / `_clamped` | [civil.h:721](../include/impl/vtz/civil.h#L721)–[752](../include/impl/vtz/civil.h#L752) |
-| `is_leap`                                  | [civil.h:497](../include/impl/vtz/civil.h#L497)                                         |
-| `to_civil` (era split, unchanged)          | [civil.h:622](../include/impl/vtz/civil.h#L622)                                         |
-| `resolve_civil` (era split, unchanged)     | [civil.h:569](../include/impl/vtz/civil.h#L569)                                         |
+| `month_start`                              | [civil.h:32](../include/impl/vtz/civil.h#L32)                                           |
+| `century_parts`                            | [civil.h:49](../include/impl/vtz/civil.h#L49)                                           |
+| `CENTURY_ORIGIN`, and its three guards     | [civil.h:71](../include/impl/vtz/civil.h#L71)                                           |
+| `DAYS_PER_CENTURY`                         | [civil.h:75](../include/impl/vtz/civil.h#L75)                                           |
+| `MAX_SHIFTED_DAYS`                         | [civil.h:93](../include/impl/vtz/civil.h#L93)                                           |
+| `CENTURY_MAGIC`, `CENTURY_SHIFT`           | [civil.h:98](../include/impl/vtz/civil.h#L98)                                           |
+| `century_start`                            | [civil.h:112](../include/impl/vtz/civil.h#L112)                                         |
+| `century_of`                               | [civil.h:118](../include/impl/vtz/civil.h#L118)                                         |
+| `MARCH_MONTH_LAST_BITS`                    | [civil.h:126](../include/impl/vtz/civil.h#L126)                                         |
+| `MONTH_MAGIC_*`                            | [civil.h:135](../include/impl/vtz/civil.h#L135)                                         |
+| `split_century`                            | [civil.h:148](../include/impl/vtz/civil.h#L148)                                         |
+| `march_year_is_leap`                       | [civil.h:175](../include/impl/vtz/civil.h#L175)                                         |
+| `add_months_impl`                          | [civil.h:196](../include/impl/vtz/civil.h#L196)                                         |
+| `add_years_impl`                           | [civil.h:280](../include/impl/vtz/civil.h#L280)                                         |
+| `civil_add_months` / `_years` / `_clamped` | [civil.h:724](../include/impl/vtz/civil.h#L724)–[755](../include/impl/vtz/civil.h#L755) |
+| `is_leap`                                  | [civil.h:502](../include/impl/vtz/civil.h#L502)                                         |
+| `to_civil` (era split, unchanged)          | [civil.h:625](../include/impl/vtz/civil.h#L625)                                         |
+| `resolve_civil` (era split, unchanged)     | [civil.h:572](../include/impl/vtz/civil.h#L572)                                         |
 | `math::div_floor`                          | [math.h:51](../include/api/vtz/impl/math.h#L51)                                         |
 
 Tests, in [`etc/test/test_impl/test_civil.cpp`](../etc/test/test_impl/test_civil.cpp):
@@ -1039,12 +1063,35 @@ Tests, in [`etc/test/test_impl/test_civil.cpp`](../etc/test/test_impl/test_civil
   `to_civil0`, `resolve_civil` and `resolve_civil0` in `civil.h` are derived
   from `civil_from_days` and `days_from_civil` and carry that attribution.
 - Cassio Neri and Lorenz Schneider, [_Euclidean affine functions and their
-  application to calendar algorithms_][ns], 2021. Not an input to this
-  implementation, but the `4n + 3` scaling in
-  [§3.3](#33-inverting-it) and [§4](#4-split_century) is the first step of their
-  `to_date`, and their framework is the right one for reasoning about why these
-  multiply-shift forms are exact. A century-split variant of the full
-  Neri–Schneider decode is a separate, unmerged line of work.
+  application to calendar algorithms_][ns], 2021. **The decode in
+  [§3](#3-the-century-as-the-working-window)–[§5](#5-the-month-magic-535-331-14)
+  is theirs.** Their `to_date` cuts on the century, recovers the year from the day
+  of the century and the month from the day of the year — the same `4x + 3` affine
+  form at each level, each reusing its own remainder for the level below — and
+  takes the month and the day within it from the high and low bits of one product.
+  `split_century` and the month magic are that algorithm. The correspondence is
+  exact and not merely similar: `doc` here and their `N_C` are the same quantity,
+  because `146097 ≡ 1 (mod 4)` makes the `+ 3` padding agree at every level. Their
+  reference implementation is `algorithms/neri_schneider.hpp` in
+  [cassioneri/eaf][eaf], and libstdc++ implements `<chrono>`'s civil conversions
+  from the same propositions, citing them by name. This is the state of the art,
+  not an optimisation local to vtz.
+
+  Two things here are not in that work. Their century step holds `4N + 3` in a
+  `u32`, which bounds the input to `N < 2³⁰`, roughly a quarter of the `i32` day
+  range; forming it in 64 bits costs one instruction and buys the rest
+  ([§3.1](#31-an-unsigned-day-count)). And their file defines only `to_date` and
+  `to_rata_die`, so the day-delta formulation for month and year addition —
+  together with the observation that a whole-month shift needs the century only
+  through `c mod 4`, which is what makes the delta computable without a decode —
+  is what this document is actually about. vtz reached the shared structure
+  without reference to the paper, which says more about how tightly the calendar
+  constrains the answer than about vtz.
+
+  A century-split variant of the full Neri–Schneider decode, for `to_civil`
+  rather than for arithmetic, is a separate and unmerged line of work.
 - Torbjörn Granlund and Peter L. Montgomery, _Division by invariant integers
   using multiplication_, PLDI '94. The general form of which `CENTURY_MAGIC` and
   the month magic are instances.
+
+[eaf]: https://github.com/cassioneri/eaf

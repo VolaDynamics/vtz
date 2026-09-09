@@ -9,17 +9,16 @@
 
 namespace vtz::_civ {
     // clang-format off
-    /// Contains the last 2 bits of the number of days in a month
-    /// (non-leap-year)
-    ///
-    /// See `days_per_month_standard` for example usage
+    /// Low 2 bits of each month's length in a common year, two bits per month,
+    /// month 1 (January) in the low bits. `28 | field` is the length, which is
+    /// why two bits suffice. See `last_day_of_month_by_leap` for the lookup.
     constexpr u32 DAYS_PER_MONTH_BITS_COMMON = 0b11'10'11'10'11'11'10'11'10'11'00'11'00;
     // month:                                    12 11 10 09 08 07 06 05 04 03 02 01
 
-    /// Contains the last 2 bits of the number of days in a month
-    /// (non-leap-year)
-    ///
-    /// See `days_per_month_standard` for example usage
+    /// As DAYS_PER_MONTH_BITS_COMMON, for a leap year: February's field is 1
+    /// rather than 0. Unused - `last_day_of_month_by_leap` reaches the same
+    /// value by ORing bit 4 into the common table - and kept as the written-out
+    /// form of what that produces.
     constexpr u32 DAYS_PER_MONTH_BITS_LEAP = 0b11'10'11'10'11'11'10'11'10'11'01'11'00;
     // month:                                  12 11 10 09 08 07 06 05 04 03 02 01
     // clang-format on
@@ -27,9 +26,9 @@ namespace vtz::_civ {
     /// Returns the number of days from March 1st to the first day of the given
     /// month, where the month is 0-based and March-based (0 = March, 11 = Feb).
     ///
-    /// In a March-based year the months follow a regular pattern that repeats
-    /// every 5 months (153 days), which is what makes this a closed form. This
-    /// is the same expression used by to_civil0/resolve_civil0.
+    /// A March-based year's month lengths repeat every 5 months (153 days),
+    /// which is what makes this a closed form. to_civil and resolve_civil, and
+    /// their 0-based variants, spell the same expression out inline.
     VTZ_INLINE constexpr u32 month_start( u32 mp ) noexcept {
         return ( 153 * mp + 2 ) / 5;
     }
@@ -42,13 +41,15 @@ namespace vtz::_civ {
     /// leap exceptions, leaving only "divisible by 4" - a shift, not a
     /// division.
     ///
-    /// The magic constants below are guarded by static_asserts in
+    /// docs/civil_add_algorithms.md derives everything in this namespace, and
+    /// states the domain the four public functions are correct on. The magic
+    /// constants below are guarded by static_asserts in
     /// etc/test/test_impl/test_civil.cpp, keeping that machinery out of every
     /// TU that includes this header.
     struct century_parts {
-        /// Century index, counting March-based centuries from
-        /// CENTURY_ORIGIN. Only its low two bits are ever used
-        /// (a century is a leap century iff `c % 4 == 0`).
+        /// Century index, counting March-based centuries from CENTURY_ORIGIN.
+        /// Only its low two bits are ever used: `c % 4 == 3` is the century
+        /// that ends with a divisible-by-400 Feb 29th, and so runs 36525 days.
         u32 c;
         /// Year within the century - [0, 99]
         u32 z;
@@ -81,9 +82,9 @@ namespace vtz::_civ {
     static_assert( CENTURY_ORIGIN >= 2147483648u,
         "CENTURY_ORIGIN must be >= 2^31 so that days + origin is non-negative "
         "for days == INT32_MIN" );
-    // Together those pin it exactly: one era lower lands below 2^31. So no
-    // era-aligned origin sits closer to 2^31 than this one, and in particular
-    // none makes the shifted count fit in 32 bits.
+    // Together those pin it exactly: one era lower lands below 2^31, so no
+    // era-aligned origin sits closer to 2^31 - and none makes the shifted count
+    // fit in 32 bits.
     static_assert( CENTURY_ORIGIN - 146097u < 2147483648u,
         "CENTURY_ORIGIN must be the smallest era-aligned value >= 2^31" );
 
@@ -103,7 +104,8 @@ namespace vtz::_civ {
         "( n + 1 ) * CENTURY_MAGIC must not overflow u64" );
 
     /// First day of century `m`, counting from the origin: 36524 days per
-    /// century plus one leap day for each leap century (every 4th) passed.
+    /// century, plus one day for each divisible-by-400 Feb 29th already passed.
+    /// Every 4th century ends with one, which is what `m >> 2` counts.
     ///
     /// 64-bit because the last century an i32 day count can reach starts past
     /// the end of u32.
@@ -111,25 +113,25 @@ namespace vtz::_civ {
         return u64( DAYS_PER_CENTURY ) * m + ( m >> 2 );
     }
 
-    /// The century index as computed by split_century. The result is small - at
-    /// most a few hundred thousand - so only the argument has to be wide.
+    /// Whole centuries from the origin to shifted day count `n`. The result is
+    /// small - at most a few hundred thousand - so only the argument is wide.
     constexpr u32 century_of( u64 n ) noexcept {
         return u32( ( ( n + 1 ) * CENTURY_MAGIC ) >> CENTURY_SHIFT );
     }
 
     /// Packed table of `30 - <0-based last day>` for each month of a
     /// March-based year, two bits per month, mp = 0 (March) in the low bits.
-    /// Gives 30 29 30 29 30 30 29 30 29 30 30 27 - the trailing 27 is
-    /// February, which gets +1 in a leap year.
+    /// The last days it encodes are 30 29 30 29 30 30 29 30 29 30 30 27; the
+    /// trailing 27 is February, which becomes 28 in a leap year.
     constexpr u32 MARCH_MONTH_LAST_BITS = 12652612u;
 
     /// Multiplier and shift that yield both the March-based month and the day
     /// within it from the day-of-year in one multiply: the high bits are
     /// `( 5 * doy + 2 ) / 153` and the low 14 hold `535 * dom`.
     ///
-    /// Only exact for doy in [0, 365] - the range split_century
-    /// produces. The first doy where it breaks is 428, so the margin is 63
-    /// days; do not widen the doy range without re-deriving these.
+    /// Only exact for doy in [0, 365], which is the range split_century
+    /// produces; the first doy where it breaks is 428. Do not widen the doy
+    /// range without re-deriving these.
     constexpr u32 MONTH_MAGIC_MUL   = 535u;
     constexpr u32 MONTH_MAGIC_ADD   = 331u;
     constexpr u32 MONTH_MAGIC_SHIFT = 14u;
@@ -156,7 +158,8 @@ namespace vtz::_civ {
         // Inside a century every 4th year is a leap year with no exceptions, so
         // 4 years is exactly 1461 days. Scaling by 4 therefore lets a single
         // division recover the year, and the +3 lines the quotient up on year
-        // boundaries (4 * 365 is 1460, one short of 1461).
+        // boundaries (4 * 365 is 1460, one short of 1461). What is left over is
+        // 4 * doy plus a value in [0, 3], which the shift discards.
         u32 t   = 4 * doc + 3;
         u32 z   = t / 1461;              // [0, 99]
         u32 doy = ( t - 1461 * z ) >> 2; // [0, ( 1461 - 1 ) >> 2] == [0, 365]
@@ -180,9 +183,9 @@ namespace vtz::_civ {
     ///
     /// Returns `days + delta` instead of decoding to (year, month, day) and
     /// re-encoding. Month lengths look too irregular for that, but in a
-    /// March-based year each month starts exactly `month_start` days in,
-    /// so a whole-month shift is just the difference of two of those terms plus
-    /// the leap days between the two years. February needs no special case
+    /// March-based year month `mp` starts `month_start( mp )` days into the
+    /// year, so a whole-month shift is the difference of two of those terms
+    /// plus the leap days between the two years. February needs no special case
     /// either: it is the *last* month of a March-based year, so a leap day is
     /// only ever appended to a year end, never inserted mid-year.
     ///
@@ -210,8 +213,9 @@ namespace vtz::_civ {
         //
         // Summed unsigned so that an enormous `months` wraps rather than
         // overflowing. The divisions below need an exact `total`, and they get
-        // one: wrapping needs `months` past 2^31 / 12 months, which puts the
-        // target ~179 million years out - far outside sys_days_t either way.
+        // one: wrapping needs `months` within 1200 of 2^31, a target ~179
+        // million years out. The widest `months` whose answer is representable
+        // at all is 15x smaller than that.
         i32 total = i32( ( 12 * z + mp ) + u32( months ) );
         i32 yq    = math::div_floor<12>( total );
         i32 cq    = math::div_floor<1200>( total );
@@ -219,10 +223,10 @@ namespace vtz::_civ {
         u32 z2    = u32( yq - 100 * cq );   // [0, 99]
 
         // Leap days between source and target year. Inside a century that is
-        // `z / 4`; each century crossed adds 24, plus one per leap century,
-        // which is what the `( c & 3 ) + cq` shift counts. `c` enters only
-        // through its low two bits, so the absolute century - and hence the era
-        // - drops out entirely.
+        // `z / 4`; each century crossed adds 24, plus one for each
+        // divisible-by-400 Feb 29th crossed, which is what the `( c & 3 ) + cq`
+        // shift counts. `c` enters only through its low two bits, so the
+        // absolute century - and hence the era - drops out entirely.
         //
         // Stays signed: |cq| <= INT32_MAX / 1200, so this cannot overflow.
         i32 leap_delta
@@ -236,7 +240,7 @@ namespace vtz::_civ {
         // shifts of millions of years. Wrapping is exact modulo 2^32, so the
         // result is right whenever the true date fits in sys_days_t - and where
         // it does not, the caller was out of range regardless. Signed
-        // arithmetic here would be UB instead.
+        // arithmetic here would be UB.
         u32 delta = 365u * u32( yq ) + u32( leap_delta ) + month_start( mp2 )
                     - parts.doc + dom;
 
@@ -244,9 +248,10 @@ namespace vtz::_civ {
         {
             // The 0-based last day of the target month. February is the last
             // month of a March-based year, so it is the only one whose length
-            // depends on the leap rule - and its field is the top one, reached
-            // only when mp2 == 11. So the leap bump folds straight into the
-            // table and costs nothing for the other eleven months.
+            // depends on the leap rule - and its field is the top one. A leap
+            // year lowers that field by one, so the adjustment is a single
+            // subtraction from the whole word, and the other eleven months
+            // cannot be reached by it.
             u32 bits = MARCH_MONTH_LAST_BITS
                        - ( u32( march_year_is_leap( c + u32( cq ), z2 ) )
                            << ( 2 * 11 ) );
@@ -505,9 +510,7 @@ namespace vtz {
     }
 
 
-    /// Returns the last day of the month given the month, and a param
-    /// specifying if the year is a
-    /// leap year
+    /// Returns the last day of the given month
     ///
     /// @param month the month (1-12)
     /// @param is_leap true if the year is a leap year
@@ -716,8 +719,8 @@ namespace vtz {
     /// Mar 13 2026
     ///
     /// Note that the day of the month rolls over when the target month is too
-    /// short: Jan 31st + 1 month becomes Mar 3rd. Use civil_add_months_clamped
-    /// to get Feb 28th instead.
+    /// short: Jan 31st + 1 month becomes Mar 3rd (Mar 2nd, in a leap year). Use
+    /// civil_add_months_clamped to get Feb 28th instead.
     constexpr sys_days_t civil_add_months(
         sys_days_t days, i32 months ) noexcept {
         return _civ::add_months_impl<false>( days, months );
@@ -748,7 +751,7 @@ namespace vtz {
     /// Dec 13 2028
     ///
     /// Clamps the day of the month, so that we don't have rollover:
-    /// Feb 29st + 1 year becomes Feb 28th
+    /// Feb 29th + 1 year becomes Feb 28th
     constexpr sys_days_t civil_add_years_clamped(
         sys_days_t days, i32 years ) noexcept {
         return _civ::add_years_impl<true>( days, years );
@@ -770,6 +773,9 @@ namespace vtz {
     /// Returns the weekday for the given date, expressed as a number of days
     /// since the epoch, where 0=Sun, 1=Mon, etc
     constexpr dow_t dow_from_days( sys_days_t days_from_epoch ) noexcept {
+        // 0x80000002 is 2^31 + 2: the 2^31 lifts every i32 above zero, so the
+        // remainder needs no sign fixup, and since 2^31 % 7 == 2 the extra +2
+        // brings the total to 4 mod 7 - the weekday of the epoch, a Thursday.
         return dow_t( ( i64( days_from_epoch ) + 0x80000002ull ) % 7 );
     }
 
@@ -781,7 +787,6 @@ namespace vtz {
 
     /// Given a date (eg, 2025 Oct 11, or 2025-10-11), get the weekday as a
     /// number 0-6 where 0=Sun
-
     constexpr dow_t dow_from_civil( i32 year, u32 month, u32 dom ) noexcept {
         return dow_from_days( resolve_civil( year, month, dom ) );
     }
