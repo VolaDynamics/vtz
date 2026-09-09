@@ -378,6 +378,71 @@ namespace {
     static_assert( march_year_is_leap_ok(),
                    "march_year_is_leap must agree with the three-clause is_leap "
                    "for every (c % 4, z)" );
+
+    /// `total` is allowed to wrap, and these guards keep that wrap defined.
+    ///
+    /// An offset within 1200 of 2^31 carries `total` past INT32_MAX, so it lands
+    /// near INT32_MIN. The *floor* quotient then puts `12 * yq` up to 11 below
+    /// `total` - outside i32, because INT32_MIN % 12 is 4 rather than 0. The same
+    /// happens to `100 * cq` in add_years_impl, where INT32_MIN % 100 is 52.
+    /// Taking those remainders in u32 keeps them exact (the true value is in
+    /// [0, 11] and [0, 99]) and, unlike the signed form, defined.
+    ///
+    /// A constant expression cannot overflow a signed integer - it stops being a
+    /// constant expression - so merely *evaluating* the four functions here is
+    /// the test. That turns a regression into a build failure, rather than into
+    /// something only a sanitizer build would notice.
+
+    /// The `months` offset that lands `total` on INT32_MIN + t, derived by
+    /// inverting `total = i32( ( 12 * z + mp ) + u32( months ) )`.
+    constexpr i32 months_total_wrap_k( sys_days_t days, u32 t ) noexcept {
+        auto parts = split_century( days );
+        u32  prod  = MONTH_MAGIC_MUL * parts.doy + MONTH_MAGIC_ADD;
+        u32  mp    = prod >> MONTH_MAGIC_SHIFT;
+        return i32( 0x80000000u + t - ( 12 * parts.z + mp ) );
+    }
+
+    /// The `years` offset that lands `total` on INT32_MIN + t.
+    constexpr i32 years_total_wrap_k( sys_days_t days, u32 t ) noexcept {
+        return i32( 0x80000000u + t - split_century( days ).z );
+    }
+
+    /// Days spanning both ends of i32 and both ends of an era, so that
+    /// `12 * z + mp` takes a spread of values and the wrap window moves with it.
+    constexpr sys_days_t WRAP_PROBE_DAYS[]
+        = { INT32_MIN, INT32_MIN + 1, -719468, -1, 0, 20000, INT32_MAX - 1, INT32_MAX };
+
+    /// The clamp is a step back of a bounded number of days - at most 3 for
+    /// months (Jan 31st -> Feb 28th) and 1 for years (Feb 29th -> Feb 28th). That
+    /// bound holds at every input, wrapped or not, because both variants build
+    /// the same `delta` and differ only by the step. Checking it here is what
+    /// makes these asserts say something, on top of forcing the evaluation.
+    constexpr bool total_wrap_ok() noexcept {
+        for( sys_days_t days : WRAP_PROBE_DAYS )
+        {
+            // t past the window on both sides, so the guard does not depend on
+            // the window's exact width.
+            for( u32 t = 0; t < 16; ++t )
+            {
+                i32 k   = months_total_wrap_k( days, t );
+                u32 gap = u32( civil_add_months( days, k ) )
+                          - u32( civil_add_months_clamped( days, k ) );
+                if( gap > 3 ) return false;
+            }
+            for( u32 t = 0; t < 56; ++t )
+            {
+                i32 k = years_total_wrap_k( days, t );
+                u32 gap
+                    = u32( civil_add_years( days, k ) ) - u32( civil_add_years_clamped( days, k ) );
+                if( gap > 1 ) return false;
+            }
+        }
+        return true;
+    }
+
+    static_assert( total_wrap_ok(),
+                   "civil_add_* must stay evaluable, and the clamp bounded, at "
+                   "offsets that wrap `total` - see the comment above" );
 } // namespace
 
 
@@ -1131,21 +1196,39 @@ TEST( vtz, civil_reduced_space ) {
                     u32 clen = century_len( cr );
                     for( u32 doc = t; doc < clen; doc += nt )
                     {
-                        i64 d64 = rep_days( cr, doc );
-                        auto d  = sys_days_t( d64 );
+                        i64  d64 = rep_days( cr, doc );
+                        auto d   = sys_days_t( d64 );
 
                         for( i32 k = 0; k < MONTHS_PER_ERA; ++k )
                         {
-                            record( r, "civil_add_months", cr, doc, k,
-                                    civil_add_months( d, k ), ref::add_months( d64, k, false ) );
-                            record( r, "civil_add_months_clamped", cr, doc, k,
+                            record( r,
+                                    "civil_add_months",
+                                    cr,
+                                    doc,
+                                    k,
+                                    civil_add_months( d, k ),
+                                    ref::add_months( d64, k, false ) );
+                            record( r,
+                                    "civil_add_months_clamped",
+                                    cr,
+                                    doc,
+                                    k,
                                     civil_add_months_clamped( d, k ),
                                     ref::add_months( d64, k, true ) );
                             if( k < YEARS_PER_ERA )
                             {
-                                record( r, "civil_add_years", cr, doc, k,
-                                        civil_add_years( d, k ), ref::add_years( d64, k, false ) );
-                                record( r, "civil_add_years_clamped", cr, doc, k,
+                                record( r,
+                                        "civil_add_years",
+                                        cr,
+                                        doc,
+                                        k,
+                                        civil_add_years( d, k ),
+                                        ref::add_years( d64, k, false ) );
+                                record( r,
+                                        "civil_add_years_clamped",
+                                        cr,
+                                        doc,
+                                        k,
                                         civil_add_years_clamped( d, k ),
                                         ref::add_years( d64, k, true ) );
                             }
@@ -1170,14 +1253,22 @@ TEST( vtz, civil_reduced_space ) {
                         // must give an identical delta.
                         for( u32 off = 4; off <= 12; off += 4 )
                         {
-                            i64 e64 = rep_days( cr + off, doc );
-                            auto e  = sys_days_t( e64 );
+                            i64  e64 = rep_days( cr + off, doc );
+                            auto e   = sys_days_t( e64 );
                             for( i32 k : { -1201, -13, 0, 1, 1200, 4799 } )
                             {
-                                record( r, "symmetry A (months)", cr, doc, k,
+                                record( r,
+                                        "symmetry A (months)",
+                                        cr,
+                                        doc,
+                                        k,
                                         i64( civil_add_months( e, k ) ) - e64,
                                         i64( civil_add_months( d, k ) ) - d64 );
-                                record( r, "symmetry A (years)", cr, doc, k,
+                                record( r,
+                                        "symmetry A (years)",
+                                        cr,
+                                        doc,
+                                        k,
                                         i64( civil_add_years( e, k ) ) - e64,
                                         i64( civil_add_years( d, k ) ) - d64 );
                             }
@@ -1199,8 +1290,13 @@ TEST( vtz, civil_reduced_space ) {
 
     if( first.seen )
         fmt::println( "first failure: {}( {}, {} ) = {}, expected {}  (c%4={}, doc={})",
-                      first.who, rep_days( first.cr, first.doc ), first.k,
-                      first.got, first.want, first.cr, first.doc );
+                      first.who,
+                      rep_days( first.cr, first.doc ),
+                      first.k,
+                      first.got,
+                      first.want,
+                      first.cr,
+                      first.doc );
 
     // The workers cannot call inc() safely, so fold their count in here. This is
     // what makes the suite's assertion total reflect the work actually done.

@@ -219,8 +219,14 @@ namespace vtz::_civ {
         i32 total = i32( ( 12 * z + mp ) + u32( months ) );
         i32 yq    = math::div_floor<12>( total );
         i32 cq    = math::div_floor<1200>( total );
-        u32 mp2   = u32( total - 12 * yq ); // [0, 11]
-        u32 z2    = u32( yq - 100 * cq );   // [0, 99]
+        // mp2 is `total` mod 12, taken modulo 2^32: the true value is in
+        // [0, 11], so the wrap is exact. It has to be unsigned, because
+        // `12 * yq` underflows i32 once `total` has itself wrapped to near
+        // INT32_MIN - floor division puts the product up to 11 below `total`,
+        // and INT32_MIN % 12 is 4. z2 needs no such care: cq is `total / 1200`,
+        // so `100 * cq` stays under 2^28.
+        u32 mp2 = u32( total ) - 12u * u32( yq ); // [0, 11]
+        u32 z2  = u32( yq - 100 * cq );           // [0, 99]
 
         // Leap days between source and target year. Inside a century that is
         // `z / 4`; each century crossed adds 24, plus one for each
@@ -289,7 +295,11 @@ namespace vtz::_civ {
         // representable answer.
         i32 total = i32( z + u32( years ) );
         i32 cq    = math::div_floor<100>( total );
-        u32 z2    = u32( total - 100 * cq ); // [0, 99]
+        // `total` mod 100, taken modulo 2^32 for the same reason as
+        // add_months_impl's mp2: the true value is in [0, 99] so the wrap is
+        // exact, and signed `100 * cq` would underflow i32 once `total` has
+        // wrapped to near INT32_MIN.
+        u32 z2 = u32( total ) - 100u * u32( cq ); // [0, 99]
 
         // Same leap-day count as add_months_impl, and it cannot overflow either
         i32 leap_delta
