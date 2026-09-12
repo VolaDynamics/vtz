@@ -85,13 +85,6 @@ option(
     OFF
 )
 
-option(
-    VTZ_BUILD_BENCH
-    "Build vtz benchmarks"
-    ON
-)
-
-
 # Set up ccache/sccache for the project
 find_program(COMPILER_CACHE sccache ccache)
 if(COMPILER_CACHE)
@@ -190,12 +183,10 @@ In order to build VTZ without internet, disable `VTZ_REFRESH_TZDATA`.")
             "${BUILD}/data"
     )
 
-    file(
-        CREATE_LINK
-            "${BUILD}/data/${tzdb_stem}"
-            "${BUILD}/data/tzdata"
-        SYMBOLIC
-    )
+    if(EXISTS "${BUILD}/data/${tzdb_stem}")
+        file(REMOVE_RECURSE "${BUILD}/data/tzdata")
+        file(RENAME "${BUILD}/data/${tzdb_stem}" "${BUILD}/data/tzdata")
+    endif()
 endif()
 
 file(GLOB_RECURSE src include/api/*.cpp include/impl/*.cpp)
@@ -405,7 +396,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
 endif()
 
 
-if(PROJECT_IS_TOP_LEVEL AND VTZ_BUILD_BENCH)
+if(PROJECT_IS_TOP_LEVEL AND NOT VTZ_ONLY)
     add_subdirectory(etc/bench)
 endif()
 
